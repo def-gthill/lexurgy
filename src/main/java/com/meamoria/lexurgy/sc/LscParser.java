@@ -127,12 +127,6 @@ public class LscParser extends Parser {
 		public ChangeruleContext changerule(int i) {
 			return getRuleContext(ChangeruleContext.class,i);
 		}
-		public List<ClassdeclContext> classdecl() {
-			return getRuleContexts(ClassdeclContext.class);
-		}
-		public ClassdeclContext classdecl(int i) {
-			return getRuleContext(ClassdeclContext.class,i);
-		}
 		public List<FeaturedeclContext> featuredecl() {
 			return getRuleContexts(FeaturedeclContext.class);
 		}
@@ -150,6 +144,12 @@ public class LscParser extends Parser {
 		}
 		public SymbolContext symbol(int i) {
 			return getRuleContext(SymbolContext.class,i);
+		}
+		public List<ClassdeclContext> classdecl() {
+			return getRuleContexts(ClassdeclContext.class);
+		}
+		public ClassdeclContext classdecl(int i) {
+			return getRuleContext(ClassdeclContext.class,i);
 		}
 		public DeromanizerContext deromanizer() {
 			return getRuleContext(DeromanizerContext.class,0);
@@ -183,11 +183,11 @@ public class LscParser extends Parser {
 			setState(96);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			while (_la==CLASSDECL) {
+			while (_la==FEATUREDECL) {
 				{
 				{
 				setState(88);
-				classdecl();
+				featuredecl();
 				setState(90); 
 				_errHandler.sync(this);
 				_la = _input.LA(1);
@@ -211,11 +211,11 @@ public class LscParser extends Parser {
 			setState(107);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			while (_la==FEATUREDECL) {
+			while (_la==DIACRITIC) {
 				{
 				{
 				setState(99);
-				featuredecl();
+				diacritic();
 				setState(101); 
 				_errHandler.sync(this);
 				_la = _input.LA(1);
@@ -239,11 +239,11 @@ public class LscParser extends Parser {
 			setState(118);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			while (_la==DIACRITIC) {
+			while (_la==SYMBOL) {
 				{
 				{
 				setState(110);
-				diacritic();
+				symbol();
 				setState(112); 
 				_errHandler.sync(this);
 				_la = _input.LA(1);
@@ -267,11 +267,11 @@ public class LscParser extends Parser {
 			setState(129);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			while (_la==SYMBOL) {
+			while (_la==CLASSDECL) {
 				{
 				{
 				setState(121);
-				symbol();
+				classdecl();
 				setState(123); 
 				_errHandler.sync(this);
 				_la = _input.LA(1);
@@ -3029,13 +3029,13 @@ public class LscParser extends Parser {
 		"\3\2\2\28\u0183\3\2\2\2:\u0187\3\2\2\2<\u018b\3\2\2\2>\u019b\3\2\2\2@"+
 		"\u019d\3\2\2\2B\u01a0\3\2\2\2D\u01a3\3\2\2\2F\u01b4\3\2\2\2H\u01b6\3\2"+
 		"\2\2J\u01b9\3\2\2\2L\u01bc\3\2\2\2N\u01bf\3\2\2\2P\u01c1\3\2\2\2R\u01c3"+
-		"\3\2\2\2T\u01d0\3\2\2\2V\u01d2\3\2\2\2X\u01d4\3\2\2\2Z\\\5\4\3\2[]\7\t"+
+		"\3\2\2\2T\u01d0\3\2\2\2V\u01d2\3\2\2\2X\u01d4\3\2\2\2Z\\\5\6\4\2[]\7\t"+
 		"\2\2\\[\3\2\2\2]^\3\2\2\2^\\\3\2\2\2^_\3\2\2\2_a\3\2\2\2`Z\3\2\2\2ad\3"+
-		"\2\2\2b`\3\2\2\2bc\3\2\2\2cm\3\2\2\2db\3\2\2\2eg\5\6\4\2fh\7\t\2\2gf\3"+
+		"\2\2\2b`\3\2\2\2bc\3\2\2\2cm\3\2\2\2db\3\2\2\2eg\5\n\6\2fh\7\t\2\2gf\3"+
 		"\2\2\2hi\3\2\2\2ig\3\2\2\2ij\3\2\2\2jl\3\2\2\2ke\3\2\2\2lo\3\2\2\2mk\3"+
-		"\2\2\2mn\3\2\2\2nx\3\2\2\2om\3\2\2\2pr\5\n\6\2qs\7\t\2\2rq\3\2\2\2st\3"+
+		"\2\2\2mn\3\2\2\2nx\3\2\2\2om\3\2\2\2pr\5\f\7\2qs\7\t\2\2rq\3\2\2\2st\3"+
 		"\2\2\2tr\3\2\2\2tu\3\2\2\2uw\3\2\2\2vp\3\2\2\2wz\3\2\2\2xv\3\2\2\2xy\3"+
-		"\2\2\2y\u0083\3\2\2\2zx\3\2\2\2{}\5\f\7\2|~\7\t\2\2}|\3\2\2\2~\177\3\2"+
+		"\2\2\2y\u0083\3\2\2\2zx\3\2\2\2{}\5\4\3\2|~\7\t\2\2}|\3\2\2\2~\177\3\2"+
 		"\2\2\177}\3\2\2\2\177\u0080\3\2\2\2\u0080\u0082\3\2\2\2\u0081{\3\2\2\2"+
 		"\u0082\u0085\3\2\2\2\u0083\u0081\3\2\2\2\u0083\u0084\3\2\2\2\u0084\u008c"+
 		"\3\2\2\2\u0085\u0083\3\2\2\2\u0086\u0088\5\20\t\2\u0087\u0089\7\t\2\2"+
