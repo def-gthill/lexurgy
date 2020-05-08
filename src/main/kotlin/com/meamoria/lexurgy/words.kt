@@ -70,6 +70,16 @@ abstract class StringSegmentWord<S : StringSegment<S>>(private val stringSegment
         get() = stringSegments.map(type::segmentFromString)
 
     override fun toString(): String = stringSegments.joinToString(separator = "/", postfix = type.toString())
+
+    override fun compareTo(other: Word<S>): Int {
+        for ((thisSegment, otherSegment) in stringSegments.zip(other.segments.map { it.string })) {
+            if (thisSegment < otherSegment) return -1
+            if (thisSegment > otherSegment) return 1
+        }
+        if (stringSegments.size < other.segments.size) return -1
+        if (stringSegments.size > other.segments.size) return 1
+        return 0
+    }
 }
 
 interface StringSegment<S : StringSegment<S>> : Segment<S> {
@@ -87,16 +97,6 @@ data class PhoneticWord(val phoneticSegments: List<String>) :
     StringSegmentWord<PhoneticSegment>(phoneticSegments) {
     override val type: StringSegmentType<PhoneticSegment>
         get() = Phonetic
-
-    override fun compareTo(other: Word<PhoneticSegment>): Int {
-        for ((thisSegment, otherSegment) in phoneticSegments.zip(other.segments.map(PhoneticSegment::string))) {
-            if (thisSegment < otherSegment) return -1
-            if (thisSegment > otherSegment) return 1
-        }
-        if (phoneticSegments.size < other.segments.size) return -1
-        if (phoneticSegments.size > other.segments.size) return 1
-        return 0
-    }
 }
 
 data class PhoneticSegment(override val string: String) : StringSegment<PhoneticSegment> {
