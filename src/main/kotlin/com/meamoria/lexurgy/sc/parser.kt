@@ -191,7 +191,7 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
 
     abstract fun walkRuleList(items: List<T>): T
 
-    fun walkSimpleElement(element: T): T = element
+    open fun walkSimpleElement(element: T): T = element
 
     abstract fun walkEmpty(): T
 

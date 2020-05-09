@@ -23,6 +23,10 @@ interface Word<S : Segment<S>> : Comparable<Word<S>> {
 
     fun slice(indices: IntRange): Word<S> = type.fromSegments(segments.slice(indices))
 
+    fun take(n: Int): Word<S> = type.fromSegments(segments.take(n))
+
+    fun drop(n: Int): Word<S> = type.fromSegments(segments.drop(n))
+
     operator fun plus(other: Word<S>): Word<S> = type.fromSegments(segments + other.segments)
 }
 
