@@ -3,17 +3,18 @@ package com.meamoria.lexurgy.sc
 import com.meamoria.lexurgy.Phonetic
 import com.meamoria.lexurgy.Plain
 import com.meamoria.lexurgy.PlainWord
+import com.meamoria.lexurgy.Segment
 
-class SoundChangerLscWalker : LscWalker<SoundChangerElement>() {
+class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
     override fun walkFile(
-        featureDeclarations: List<SoundChangerElement>,
-        diacriticDeclarations: List<SoundChangerElement>,
-        symbolDeclarations: List<SoundChangerElement>,
-        classDeclarations: List<SoundChangerElement>,
-        deromanizer: SoundChangerElement?,
-        changeRules: List<SoundChangerElement>,
-        romanizer: SoundChangerElement?
-    ): SoundChangerElement {
+        featureDeclarations: List<ParseNode>,
+        diacriticDeclarations: List<ParseNode>,
+        symbolDeclarations: List<ParseNode>,
+        classDeclarations: List<ParseNode>,
+        deromanizer: ParseNode?,
+        changeRules: List<ParseNode>,
+        romanizer: ParseNode?
+    ): ParseNode {
         val declarations = Declarations()
         val linkedRules = changeRules.map { (it as UnlinkedChangeRule).link(declarations) }
         val linkedDeromanizer =
@@ -24,54 +25,54 @@ class SoundChangerLscWalker : LscWalker<SoundChangerElement>() {
     }
 
     override fun walkFeatureDeclaration(
-        featureName: SoundChangerElement,
-        nullAlias: SoundChangerElement?,
-        values: List<SoundChangerElement>,
-        implication: SoundChangerElement?
-    ): SoundChangerElement {
+        featureName: ParseNode,
+        nullAlias: ParseNode?,
+        values: List<ParseNode>,
+        implication: ParseNode?
+    ): ParseNode {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
     override fun walkDiacriticDeclaration(
         diacritic: String,
-        matrix: SoundChangerElement,
+        matrix: ParseNode,
         before: Boolean
-    ): SoundChangerElement {
+    ): ParseNode {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-    override fun walkSymbolDeclaration(symbol: String, matrix: SoundChangerElement?): SoundChangerElement {
+    override fun walkSymbolDeclaration(symbol: String, matrix: ParseNode?): ParseNode {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-    override fun walkDeromanizer(expressions: List<SoundChangerElement>): SoundChangerElement {
+    override fun walkDeromanizer(expressions: List<ParseNode>): ParseNode {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-    override fun walkRomanizer(expressions: List<SoundChangerElement>): SoundChangerElement {
+    override fun walkRomanizer(expressions: List<ParseNode>): ParseNode {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
     override fun walkChangeRule(
         ruleName: String,
-        subrules: List<SoundChangerElement>,
-        ruleFilter: SoundChangerElement?,
+        subrules: List<ParseNode>,
+        ruleFilter: ParseNode?,
         propagate: Boolean
-    ): SoundChangerElement = UnlinkedChangeRule(
+    ): ParseNode = UnlinkedChangeRule(
         ruleName,
         subrules.map { subrule -> (subrule as TList).elements.map { it as UnlinkedRuleExpression } },
-        ruleFilter as? Matrix,
+        ruleFilter as? MatrixNode,
         propagate
     )
 
-    override fun walkSubrule(expressions: List<SoundChangerElement>): SoundChangerElement = tlist(expressions)
+    override fun walkSubrule(expressions: List<ParseNode>): ParseNode = tlist(expressions)
 
     override fun walkRuleExpression(
-        ruleFrom: SoundChangerElement,
-        ruleTo: SoundChangerElement,
-        condition: SoundChangerElement?,
-        exclusion: SoundChangerElement?
-    ): SoundChangerElement = UnlinkedRuleExpression(
+        ruleFrom: ParseNode,
+        ruleTo: ParseNode,
+        condition: ParseNode?,
+        exclusion: ParseNode?
+    ): ParseNode = UnlinkedRuleExpression(
         ruleFrom as UnlinkedRuleElement,
         ruleTo as UnlinkedResultElement,
         (condition as TList?).elementsIfAny().map { it as UnlinkedEnvironment },
@@ -79,68 +80,68 @@ class SoundChangerLscWalker : LscWalker<SoundChangerElement>() {
     )
 
     override fun walkRuleEnvironment(
-        before: SoundChangerElement?,
-        after: SoundChangerElement?,
+        before: ParseNode?,
+        after: ParseNode?,
         boundaryBefore: Boolean,
         boundaryAfter: Boolean
-    ): SoundChangerElement {
+    ): ParseNode {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-    override fun walkRuleSequence(items: List<SoundChangerElement>): SoundChangerElement {
+    override fun walkRuleSequence(items: List<ParseNode>): ParseNode {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-    override fun walkRuleList(items: List<SoundChangerElement>): SoundChangerElement {
+    override fun walkRuleList(items: List<ParseNode>): ParseNode {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-    override fun walkSimpleElement(element: SoundChangerElement): SoundChangerElement = when (element) {
+    override fun walkSimpleElement(element: ParseNode): ParseNode = when (element) {
         is Text -> UnlinkedTextElement(element.text)
         else -> element
     }
 
-    override fun walkEmpty(): SoundChangerElement {
+    override fun walkEmpty(): ParseNode = EmptyElement
+
+    override fun walkMatrix(values: List<ParseNode>): ParseNode {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-    override fun walkMatrix(values: List<SoundChangerElement>): SoundChangerElement {
+    override fun walkFeature(name: String): ParseNode {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-    override fun walkFeature(name: String): SoundChangerElement {
+    override fun walkValue(name: String): ParseNode {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-    override fun walkValue(name: String): SoundChangerElement {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
+    override fun walkText(text: String): ParseNode = Text(text)
 
-    override fun walkText(text: String): SoundChangerElement = Text(text)
+    override fun tlist(items: List<ParseNode>): ParseNode = TList(items)
 
-    override fun tlist(items: List<SoundChangerElement>): SoundChangerElement = TList(items)
+    private class TList(val elements: List<ParseNode>) : ParseNode
 
-    private class TList(val elements: List<SoundChangerElement>) : SoundChangerElement
+    private fun TList?.elementsIfAny(): List<ParseNode> = this?.elements ?: emptyList()
 
-    private fun TList?.elementsIfAny(): List<SoundChangerElement> = this?.elements ?: emptyList()
+    interface ParseNode
 
-    private class UnlinkedDeromanizer(val expressions: List<UnlinkedRuleExpression>): SoundChangerElement {
+    private class UnlinkedDeromanizer(val expressions: List<UnlinkedRuleExpression>) : ParseNode {
         fun link(declarations: Declarations): Deromanizer =
             Deromanizer(expressions.map { it.outPhonetic(declarations) }, declarations)
     }
 
-    private class UnlinkedRomanizer(val expressions: List<UnlinkedRuleExpression>): SoundChangerElement {
+    private class UnlinkedRomanizer(val expressions: List<UnlinkedRuleExpression>) : ParseNode {
         fun link(declarations: Declarations): Romanizer = Romanizer(expressions.map { it.inPhonetic(declarations) })
     }
 
     private class UnlinkedChangeRule(
         val name: String,
         val expressions: List<List<UnlinkedRuleExpression>>,
-        val ruleFilter: Matrix?,
+        val ruleFilter: MatrixNode?,
         val propagate: Boolean
-    ) : SoundChangerElement {
+    ) : ParseNode {
         fun link(declarations: Declarations): ChangeRule =
-            ChangeRule(expressions.map { subrule -> subrule.map { it.phonetic(declarations) } } )
+            ChangeRule(expressions.map { subrule -> subrule.map { it.phonetic(declarations) } })
     }
 
     private class UnlinkedRuleExpression(
@@ -148,7 +149,7 @@ class SoundChangerLscWalker : LscWalker<SoundChangerElement>() {
         val result: UnlinkedResultElement,
         val condition: List<UnlinkedEnvironment>,
         val exclusion: List<UnlinkedEnvironment>
-    ) : SoundChangerElement {
+    ) : ParseNode {
         fun inPhonetic(declarations: Declarations): RuleExpression<PhonS, PlainS> = RuleExpression(
             Phonetic, Plain, declarations,
             match.phonetic(declarations),
@@ -168,12 +169,21 @@ class SoundChangerLscWalker : LscWalker<SoundChangerElement>() {
         )
     }
 
-    private class UnlinkedEnvironment : SoundChangerElement
+    private class UnlinkedEnvironment : ParseNode
 
-    private interface UnlinkedRuleElement : SoundChangerElement {
+    private interface UnlinkedRuleElement : ParseNode {
         fun plain(): Matcher<PlainS>
 
         fun phonetic(declarations: Declarations): Matcher<PhonS>
+    }
+
+    // Base class for elements that don't need to use different logic depending on the word type
+    private interface ChameleonRuleElement : UnlinkedRuleElement {
+        override fun plain(): Matcher<PlainS> = link()
+
+        override fun phonetic(declarations: Declarations): Matcher<PhonS> = link()
+
+        fun <T : Segment<T>> link(): Matcher<T>
     }
 
     private interface UnlinkedResultElement : UnlinkedRuleElement {
@@ -182,6 +192,16 @@ class SoundChangerLscWalker : LscWalker<SoundChangerElement>() {
         fun outPhoneticEmitter(declarations: Declarations): Emitter<PlainS, PhonS>
 
         fun phoneticEmitter(declarations: Declarations): Emitter<PhonS, PhonS>
+    }
+
+    private interface ChameleonResultElement : ChameleonRuleElement, UnlinkedResultElement {
+        override fun inPhoneticEmitter(declarations: Declarations): Emitter<PhonS, PlainS> = linkEmitter()
+
+        override fun outPhoneticEmitter(declarations: Declarations): Emitter<PlainS, PhonS> = linkEmitter()
+
+        override fun phoneticEmitter(declarations: Declarations): Emitter<PhonS, PhonS> = linkEmitter()
+
+        fun <I : Segment<I>, O : Segment<O>> linkEmitter(): Emitter<I, O>
     }
 
     private class UnlinkedTextElement(val text: String) : UnlinkedResultElement {
@@ -200,5 +220,19 @@ class SoundChangerLscWalker : LscWalker<SoundChangerElement>() {
             TextEmitter(declarations.parsePhonetic(text))
     }
 
-    private class Text(val text: String) : SoundChangerElement
+    private object EmptyElement : UnlinkedResultElement {
+        override fun plain(): Matcher<PlainS> = TextMatcher(Plain.empty)
+
+        override fun phonetic(declarations: Declarations): Matcher<PhonS> = TextMatcher(Phonetic.empty)
+
+        override fun inPhoneticEmitter(declarations: Declarations): Emitter<PhonS, PlainS> = TextEmitter(Plain.empty)
+
+        override fun outPhoneticEmitter(declarations: Declarations): Emitter<PlainS, PhonS> = TextEmitter(Phonetic.empty)
+
+        override fun phoneticEmitter(declarations: Declarations): Emitter<PhonS, PhonS> = TextEmitter(Phonetic.empty)
+    }
+
+    private class MatrixNode(val matrix: Matrix) : ParseNode
+
+    private class Text(val text: String) : ParseNode
 }

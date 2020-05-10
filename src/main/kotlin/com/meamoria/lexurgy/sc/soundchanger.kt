@@ -2,11 +2,10 @@ package com.meamoria.lexurgy.sc
 
 import com.meamoria.lexurgy.*
 import java.lang.IllegalArgumentException
-import javax.xml.crypto.dsig.Transform
 
 class SoundChanger(
     val rules: List<ChangeRule>, val deromanizer: Deromanizer, val romanizer: Romanizer
-) : SoundChangerElement {
+) : SoundChangerLscWalker.ParseNode {
 
     operator fun invoke(word: String): String {
         val startWord = PlainWord(word)
@@ -24,11 +23,6 @@ class SoundChanger(
         }
     }
 }
-
-/**
- * Marker interface for components of a sound changer
- */
-interface SoundChangerElement
 
 abstract class SimpleChangeRule<I : Segment<I>, O : Segment<O>>(
     val inType: SegmentType<I>,
@@ -133,7 +127,7 @@ class RuleExpression<I : Segment<I>, O : Segment<O>>(
         for (matchStart in start until word.length) {
             val bindings = Bindings()
             val transformation = transformer.transform(
-                expressionNumber, declarations, word, start, bindings
+                expressionNumber, declarations, word, matchStart, bindings
             ) ?: continue
             return TransformationWithMatchStart(transformation.bindVariables(bindings), matchStart)
         }

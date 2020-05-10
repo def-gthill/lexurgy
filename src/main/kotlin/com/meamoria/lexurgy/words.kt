@@ -61,19 +61,20 @@ data class PlainSegment(val char: Char) : Segment<PlainSegment> {
 
 object Plain : SegmentType<PlainSegment> {
     override fun fromSegments(segments: Iterable<PlainSegment>): Word<PlainSegment> =
-        PlainWord(segments.map(PlainSegment::char).joinToString())
+        PlainWord(segments.map(PlainSegment::char).joinToString(""))
 }
 
 
 abstract class StringSegmentWord<S : StringSegment<S>>(private val stringSegments: List<String>) : Word<S> {
     abstract override val type: StringSegmentType<S>
 
-    override val string: String = stringSegments.joinToString()
+    override val string: String = stringSegments.joinToString("")
 
     override val segments: List<S>
         get() = stringSegments.map(type::segmentFromString)
 
-    override fun toString(): String = stringSegments.joinToString(separator = "/", postfix = type.toString())
+    final override fun toString(): String =
+        stringSegments.joinToString(separator = "/", postfix = " (${type.javaClass.simpleName})")
 
     override fun compareTo(other: Word<S>): Int {
         for ((thisSegment, otherSegment) in stringSegments.zip(other.segments.map { it.string })) {
