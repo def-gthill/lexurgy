@@ -138,12 +138,22 @@ class RuleExpression<I : Segment<I>, O : Segment<O>>(
 
     fun claim(expressionNumber: Int, word: Word<I>): List<Transformation<O>> {
         var index = 0
+        val exclusions = mutableSetOf<Int>()
+
+        while (true) {
+            val exclusionStart = claimNextExclusion(word, index) ?: break
+            exclusions.add(exclusionStart)
+            index = exclusionStart + 1
+        }
+
+        index = 0
         val result = mutableListOf<Transformation<O>>()
 
         while (true) {
             val claimResult = claimNext(expressionNumber, word, index) ?: break
             val (transformation, matchStart) = claimResult
-            result += transformation
+            if (transformation.start !in exclusions)
+                result += transformation
             index = matchStart + 1
         }
 
@@ -164,6 +174,25 @@ class RuleExpression<I : Segment<I>, O : Segment<O>>(
                     declarations, word, transformation.end, bindings
                 ) ?: continue
                 return TransformationWithMatchStart(transformation.bindVariables(bindings), matchStart)
+            }
+        }
+        return null
+    }
+
+    private fun claimNextExclusion(word: Word<I>, start: Int): Int? {
+        for (matchStart in start until word.length) {
+            for (environment in exclusion) {
+                val bindings = Bindings()
+                val beforeMatchEnd = environment.before.claim(
+                    declarations, word, matchStart, bindings
+                ) ?: continue
+                val matchEnd = match.claim(
+                    declarations, word, beforeMatchEnd, bindings
+                ) ?: continue
+                environment.after.claim(
+                    declarations, word, matchEnd, bindings
+                ) ?: continue
+                return beforeMatchEnd
             }
         }
         return null

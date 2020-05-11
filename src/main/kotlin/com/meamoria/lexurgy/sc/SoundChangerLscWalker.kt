@@ -86,8 +86,16 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
     ): ParseNode = UnlinkedRuleExpression(
         ruleFrom as UnlinkedRuleElement,
         ruleTo as UnlinkedResultElement,
-        (condition as TList?).elementsIfAny().map { it as UnlinkedEnvironment },
-        (exclusion as TList?).elementsIfAny().map { it as UnlinkedEnvironment }
+        when(condition) {
+            is TList -> condition.elements.map { it as UnlinkedEnvironment }
+            is UnlinkedEnvironment -> listOf(condition)
+            else -> emptyList()
+        },
+        when(exclusion) {
+            is TList -> exclusion.elements.map { it as UnlinkedEnvironment }
+            is UnlinkedEnvironment -> listOf(exclusion)
+            else -> emptyList()
+        }
     )
 
     override fun walkRuleEnvironment(

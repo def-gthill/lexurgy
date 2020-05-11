@@ -164,4 +164,36 @@ class TestSoundChanger : StringSpec({
         ch("kikuki") shouldBe "tʃikutʃi"
         ch("tutit") shouldBe "tutʃit"
     }
+
+    "We should be able to prevent changes from happening in a specific environment" {
+        val ch1 = lsc(
+            """
+               |simple:
+               |    k => x / a _ // _ a
+               |complex:
+               |    p => f / {a _, e _} // {_ a, _ e}
+            """.trimMargin()
+        )
+
+        ch1("akakekak") shouldBe "akaxekax"
+        ch1("apapepipapu") shouldBe "apapefipafu"
+
+        val ch2 = lsc(
+            """
+               |Feature Manner(stop, fric)
+               |Feature Place(lab, alv, vel)
+               |Symbol p [stop lab]
+               |Symbol t [stop alv]
+               |Symbol k [stop vel]
+               |Symbol f [fric lab]
+               |Symbol s [fric alv]
+               |Symbol x [fric vel]
+               |different-stops:
+               |    [stop ${'$'}Place] => [fric] / _ [stop] // _ [${'$'}Place]
+            """.trimMargin()
+        )
+
+        ch2("aptekpa") shouldBe "aftexpa"
+        ch2("atteppa") shouldBe "atteppa"
+    }
 })
