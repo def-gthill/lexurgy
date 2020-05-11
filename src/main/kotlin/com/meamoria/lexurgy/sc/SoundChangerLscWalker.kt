@@ -136,6 +136,15 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
     override fun walkMatrix(values: List<ParseNode>): ParseNode =
         MatrixNode(Matrix(values.map { (it as ValueNode).value }))
 
+    override fun walkNegatedValue(value: ParseNode): ParseNode =
+        ValueNode(NegatedValue((value as SimpleValueNode).simpleValue.name))
+
+    override fun walkAbsentFeature(feature: ParseNode): ParseNode =
+        ValueNode(AbsentFeature((feature as FeatureNode).name))
+
+    override fun walkFeatureVariable(feature: ParseNode): ParseNode =
+        ValueNode(FeatureVariable((feature as FeatureNode).name))
+
     override fun walkFeature(name: String): ParseNode = FeatureNode(name)
 
     override fun walkValue(name: String): ParseNode = SimpleValueNode(SimpleValue(name))

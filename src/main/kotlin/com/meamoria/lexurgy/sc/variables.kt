@@ -1,3 +1,5 @@
 package com.meamoria.lexurgy.sc
 
-class Bindings
+class Bindings {
+    val features: MutableMap<Feature, SimpleValue> = mutableMapOf()
+}

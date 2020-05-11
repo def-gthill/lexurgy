@@ -12,6 +12,7 @@ class Declarations(
     classes: List<SegmentClass>
 ) {
 
+    private val featureNameToFeatureMap = features.associateBy { it.name }
     private val valueToFeature = features.flatMap { feature ->
         feature.allValues.map { it to feature }
     }.toMap()
@@ -26,6 +27,9 @@ class Declarations(
 //         phoneticParser.parse(text)
 
     fun parsePhonetic(word: Word<PlainS>): Word<PhonS> = parsePhonetic(word.string)
+
+    fun featureNameToFeature(featureName: String): Feature =
+        featureNameToFeatureMap[featureName] ?: throw LscUndefinedName("feature", featureName)
 
     /**
      * Tries to match the specified matrix to the specified phonetic symbol.

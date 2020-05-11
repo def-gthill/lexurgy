@@ -129,6 +129,13 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
 
     override fun visitFancyvalue(ctx: LscParser.FancyvalueContext): T = visit(ctx.getChild(0))
 
+    override fun visitNegvalue(ctx: LscParser.NegvalueContext): T = walkNegatedValue(visit(ctx.value()))
+
+    override fun visitAbsentfeature(ctx: LscParser.AbsentfeatureContext): T = walkAbsentFeature(visit(ctx.feature()))
+
+    override fun visitFeaturevariable(ctx: LscParser.FeaturevariableContext): T =
+        walkFeatureVariable(visit(ctx.feature()))
+
     override fun visitEmpty(ctx: LscParser.EmptyContext): T = walkEmpty()
 
     override fun visitMatrix(ctx: LscParser.MatrixContext): T = walkMatrix(listVisit(ctx.value()))
@@ -196,6 +203,12 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
     abstract fun walkEmpty(): T
 
     abstract fun walkMatrix(values: List<T>): T
+
+    open fun walkNegatedValue(value: T): T = value
+
+    open fun walkAbsentFeature(feature: T): T = feature
+
+    open fun walkFeatureVariable(feature: T): T = feature
 
     abstract fun walkFeature(name: String): T
 
