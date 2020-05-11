@@ -241,13 +241,13 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
     }
 
     // Base class for elements whose only word type dependency is forwarding to sub-elements
-    private interface ContainerRuleElement<S : UnlinkedRuleElement> : UnlinkedRuleElement {
+    private interface ContainerRuleElement : UnlinkedRuleElement {
         override fun plain(): Matcher<PlainS> = matcher(elements.map { it.plain() })
 
         override fun phonetic(declarations: Declarations): Matcher<PhonS> =
             matcher(elements.map { it.phonetic(declarations) })
 
-        val elements: List<S>
+        val elements: List<UnlinkedRuleElement>
 
         fun <T : Segment<T>> matcher(elements: List<Matcher<T>>): Matcher<T>
     }
@@ -270,19 +270,20 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
         fun <I : Segment<I>, O : Segment<O>> linkEmitter(): Emitter<I, O>
     }
 
-    private interface ContainerResultElement<S : UnlinkedResultElement> :
-        ContainerRuleElement<S>, UnlinkedResultElement {
+    private abstract class ContainerResultElement : ContainerRuleElement, UnlinkedResultElement {
 
         override fun inPhoneticEmitter(declarations: Declarations): Emitter<PhonS, PlainS> =
-            emitter(elements.map { it.inPhoneticEmitter(declarations) })
+            emitter(resultElements.map { it.inPhoneticEmitter(declarations) })
 
         override fun outPhoneticEmitter(declarations: Declarations): Emitter<PlainS, PhonS> =
-            emitter(elements.map { it.outPhoneticEmitter(declarations) })
+            emitter(resultElements.map { it.outPhoneticEmitter(declarations) })
 
         override fun phoneticEmitter(declarations: Declarations): Emitter<PhonS, PhonS> =
-            emitter(elements.map { it.phoneticEmitter(declarations) })
+            emitter(resultElements.map { it.phoneticEmitter(declarations) })
 
-        fun <I : Segment<I>, O : Segment<O>> emitter(elements: List<Emitter<I, O>>): Emitter<I, O>
+        val resultElements: List<UnlinkedResultElement> by lazy { elements.map { it as UnlinkedResultElement } }
+
+        abstract fun <I : Segment<I>, O : Segment<O>> emitter(elements: List<Emitter<I, O>>): Emitter<I, O>
     }
 
     private object UnlinkedWordStartElement : ChameleonRuleElement {
@@ -293,10 +294,8 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
         override fun <T : Segment<T>> link(): Matcher<T> = WordEndMatcher()
     }
 
-    private class UnlinkedSequenceElement(ruleElements: List<UnlinkedRuleElement>) :
-        ContainerResultElement<UnlinkedResultElement> {
-
-        override val elements: List<UnlinkedResultElement> = ruleElements.map { it as UnlinkedResultElement }
+    private class UnlinkedSequenceElement(override val elements: List<UnlinkedRuleElement>) :
+        ContainerResultElement() {
 
         override fun <T : Segment<T>> matcher(elements: List<Matcher<T>>): Matcher<T> = SequenceMatcher(elements)
 

@@ -277,4 +277,28 @@ class TestSoundChanger : StringSpec({
         ch("psataba") shouldBe "pʰaaba"
         ch("patsaba") shouldBe "pataba"
     }
+
+    "We should be able to mark the word boundary with a $" {
+        val ch1 = lsc(
+            """
+               |boundary-h-drop:
+               |    h => * / $ _
+               |    h => * / _ $
+            """.trimMargin()
+        )
+
+        ch1("hahahahah") shouldBe "ahahaha"
+
+        val ch2 = lsc(
+            """
+               |overly-specific:
+               |    a => e / $ b _ t $
+            """.trimMargin()
+        )
+
+        ch2("bat") shouldBe "bet"
+        ch2("abat") shouldBe "abat"
+        ch2("bata") shouldBe "bata"
+        ch2("cat") shouldBe "cat"
+    }
 })
