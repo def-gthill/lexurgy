@@ -1,6 +1,5 @@
 package com.meamoria.lexurgy.sc
 
-import com.meamoria.lexurgy.joinCommas
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
@@ -216,7 +215,7 @@ class TestLscParse : StringSpec({
         ): String = (
                 featureDeclarations + diacriticDeclarations + symbolDeclarations + classDeclarations +
                         listOfNotNull(deromanizer) + changeRules + listOfNotNull(romanizer)
-                ).joinCommas()
+                ).joinToString()
 
         override fun walkFeatureDeclaration(
             featureName: String,
@@ -226,7 +225,7 @@ class TestLscParse : StringSpec({
         ): String {
             val nullAliasList = listOfNotNull(nullAlias?.let {"na($it)"})
             val implicationList = listOfNotNull(implication?.let {"impl($it)"})
-            return "fdec($featureName, ${(nullAliasList + values + implicationList).joinCommas()})"
+            return "fdec($featureName, ${(nullAliasList + values + implicationList).joinToString()})"
         }
 
         override fun walkDiacriticDeclaration(diacritic: String, matrix: String, before: Boolean): String =
@@ -235,9 +234,9 @@ class TestLscParse : StringSpec({
         override fun walkSymbolDeclaration(symbol: String, matrix: String?): String =
             "sym($symbol${optionalArg(matrix)})"
 
-        override fun walkDeromanizer(expressions: List<String>): String = "drom(${expressions.joinCommas()})"
+        override fun walkDeromanizer(expressions: List<String>): String = "drom(${expressions.joinToString()})"
 
-        override fun walkRomanizer(expressions: List<String>): String = "rom(${expressions.joinCommas()})"
+        override fun walkRomanizer(expressions: List<String>): String = "rom(${expressions.joinToString()})"
 
         override fun walkChangeRule(
             ruleName: String,
@@ -252,7 +251,7 @@ class TestLscParse : StringSpec({
             return "rule($ruleName, $expressionString$filterText$propagateText)"
         }
 
-        override fun walkSubrule(expressions: List<String>): String = expressions.joinCommas()
+        override fun walkSubrule(expressions: List<String>): String = expressions.joinToString()
 
         override fun walkRuleExpression(
             ruleFrom: String,
@@ -272,13 +271,13 @@ class TestLscParse : StringSpec({
             return "env(${beforeText}_${afterText})"
         }
 
-        override fun walkRuleSequence(items: List<String>): String = "seq(${items.joinCommas()})"
+        override fun walkRuleSequence(items: List<String>): String = "seq(${items.joinToString()})"
 
-        override fun walkRuleList(items: List<String>): String = "list(${items.joinCommas()})"
+        override fun walkRuleList(items: List<String>): String = "list(${items.joinToString()})"
 
         override fun walkEmpty(): String = "null"
 
-        override fun walkMatrix(values: List<String>): String = "mat(${values.joinCommas()})"
+        override fun walkMatrix(values: List<String>): String = "mat(${values.joinToString()})"
 
         override fun walkValue(name: String): String = "v($name)"
 
@@ -286,7 +285,7 @@ class TestLscParse : StringSpec({
 
         override fun walkText(text: String): String = text
 
-        override fun tlist(items: List<String>): String = items.joinCommas()
+        override fun tlist(items: List<String>): String = items.joinToString()
 
         private fun optionalArg(inText: String?, outText: String? = null): String =
             if (inText == null) "" else (outText ?: ", $inText")

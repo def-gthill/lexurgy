@@ -11,7 +11,15 @@ class Declarations(
     symbols: List<Symbol>,
     classes: List<SegmentClass>
 ) {
+
+    private val valueToFeature = features.flatMap { feature ->
+        feature.allValues.map { it to feature }
+    }.toMap()
+
     private val symbolSegmentToSymbol = symbols.associateBy { it.name }
+    private val matrixToSimpleSymbol = symbols.associateBy { it.matrix }
+
+    private val matrixToSymbolCache = mutableMapOf<Matrix, PhoneticSegment>()
 
     fun parsePhonetic(text: String): Word<PhoneticSegment> =
         PhoneticWord(text.chunked(1))
@@ -42,20 +50,45 @@ class Declarations(
     }
 
     fun matrixToSymbol(matrix: Matrix): PhoneticSegment {
-        TODO()
+        matrixToSymbolCache[matrix]?.let { return it }
+
+        return matrixToSimpleSymbol[matrix]?.let {
+            PhoneticSegment(it.name)
+        }?.also {
+            matrixToSymbolCache[matrix] = it
+        } ?: throw LscInvalidMatrix(matrix)
     }
 
     fun updateMatrix(oldMatrix: Matrix, updateMatrix: Matrix): Matrix {
-        TODO()
+        val oldMatrixFeatures = oldMatrix.simpleValues.associateBy { valueToFeatureOrThrow(it) }
+        val newMatrixValues = oldMatrix.valueList.toMutableList()
+        for (value in updateMatrix.valueList) {
+            val updateFeature = valueToFeatureOrThrow(value as SimpleValue)
+            oldMatrixFeatures[updateFeature]?.let { newMatrixValues.remove(it) }
+            newMatrixValues += value
+        }
+        return Matrix(newMatrixValues)
     }
+
+    private fun valueToFeatureOrThrow(value: SimpleValue): Feature =
+        valueToFeature[value] ?: throw LscUndefinedName("feature value", value.name)
 }
 
 class SegmentClass
 
-class Feature(val name: String, val values: List<SimpleValue>, val nullAlias: SimpleValue? = null)
+class Feature(val name: String, val values: List<SimpleValue>, val nullAlias: SimpleValue? = null) {
+    val allValues: List<SimpleValue> = listOfNotNull(nullAlias) + values
 
-class Symbol(val name: String, val matrix: Matrix)
+    override fun toString(): String = values.joinToString(prefix = "$name(", postfix = ")")
+}
+
+class Symbol(val name: String, val matrix: Matrix) {
+    override fun toString(): String = name + if (matrix.valueList.isEmpty()) "" else " $matrix"
+}
 
 class ComplexSymbol(val symbol: Symbol, diacritics: List<Diacritic> = emptyList())
 
 class Diacritic
+
+class LscUndefinedName(val nameType: String, val undefinedName: String) :
+        Exception("The $nameType name $undefinedName is not defined")

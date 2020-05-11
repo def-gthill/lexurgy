@@ -11,8 +11,6 @@ fun <K, V> MutableMap<K, V>.setdefault(key: K, newValue: V): V {
     return result ?: newValue
 }
 
-fun <T> Iterable<T>.joinCommas(): String = joinToString(", ")
-
 /**
  * Puts the number in front of the word, with the word correctly marked for singular/plural.
  * For example:

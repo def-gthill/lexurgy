@@ -126,4 +126,22 @@ class TestSoundChanger : StringSpec({
         ch("klaptrap") shouldBe "lara"
         ch("fniftikuf") shouldBe "fnifiuf"
     }
+
+    "We should be able to alter matrix features with a rule" {
+        val ch = lsc(
+            """
+               |Feature Voicing(unvcd, vcd)
+               |Feature Manner(stop, nonstop)
+               |Symbol p [unvcd stop]
+               |Symbol b [vcd stop]
+               |Symbol f [unvcd nonstop]
+               |Symbol v [vcd nonstop]
+               |devoice-all:
+               |    [vcd] => [unvcd]
+            """.trimMargin()
+        )
+
+        ch("bivalve") shouldBe "pifalfe"
+        ch("prefabricative") shouldBe "prefapricatife"
+    }
 })
