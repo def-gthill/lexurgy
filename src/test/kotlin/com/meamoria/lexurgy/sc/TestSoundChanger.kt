@@ -6,6 +6,14 @@ import io.kotest.matchers.shouldBe
 class TestSoundChanger : StringSpec({
     val lsc = SoundChanger.Companion::fromLsc
 
+    "An empty file should parse into a sound changer that returns each word unmodified" {
+        val ch = lsc("")
+
+        ch("foo") shouldBe "foo"
+        ch("fgdgfggfgfggffdf") shouldBe "fgdgfggfgfggffdf"
+        ch("thefiveboxingwizardsjumpquickly") shouldBe "thefiveboxingwizardsjumpquickly"
+    }
+
     "We should be able to declare a simple character-to-character change rule" {
         val ch = lsc(
             """
@@ -65,6 +73,34 @@ class TestSoundChanger : StringSpec({
                | aaab => q
                | aaa => z
                | aa => x
+            """.trimMargin()
+        )
+
+        ch2("baaabaaa") shouldBe "bqz"
+        ch2("baaacaaa") shouldBe "bzcz"
+        ch2("baaaacaa") shouldBe "bzacx"
+        ch2("baaaaaaabaaaaa") shouldBe "bzaqzx"
+    }
+
+    "Overlapping sequence rules should be resolved in precedence order" {
+        val ch1 = lsc(
+            """
+               |decluster: 
+               | k n => * n
+               | s k => * k
+            """.trimMargin()
+        )
+
+        ch1("skem") shouldBe "kem"
+        ch1("knum") shouldBe "num"
+        ch1("sknit") shouldBe "snit"
+
+        val ch2 = lsc(
+            """
+               |repetitious:
+               | aa a b => * q *
+               | a aa => z *
+               | a a => * x
             """.trimMargin()
         )
 

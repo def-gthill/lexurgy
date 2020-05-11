@@ -2,7 +2,7 @@ grammar Lsc;
 
 lscfile:
     (featuredecl NEWLINE+)* (diacritic NEWLINE+)* (symbol NEWLINE+)* (classdecl NEWLINE+)* (deromanizer NEWLINE+)?
-    changerule (NEWLINE+ changerule)*
+    changerule? (NEWLINE+ changerule)*
     (NEWLINE+ romanizer)?
     NEWLINE?;
 

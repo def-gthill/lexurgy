@@ -104,10 +104,30 @@ class RuleExpression<I : Segment<I>, O : Segment<O>>(
     val transformer = makeTransformer(match, result)
 
     private fun makeTransformer(match: Matcher<I>, result: Emitter<I, O>): Transformer<I, O> =
-        if (match is SimpleMatcher && result is SimpleEmitter)
+        if (match is SequenceMatcher) {
+            if (result is SequenceEmitter) {
+                if (match.elements.size == result.elements.size) {
+                    SequenceTransformer(outType, match.elements.zip(result.elements, this::makeTransformer))
+                } else {
+                    mismatchedLengths(match, result, match.elements.size, result.elements.size)
+                }
+            } else {
+                mismatchedLengths(match, result, match.elements.size, 1)
+            }
+        } else if (result is SequenceEmitter) {
+            mismatchedLengths(match, result, 1, result.elements.size)
+        } else if (match is SimpleMatcher && result is SimpleEmitter) {
             SimpleTransformer(match, result)
-        else throw IllegalArgumentException(
-            "Invalid element types: ${match.javaClass.name} and ${result.javaClass.name}")
+        } else {
+            throw IllegalArgumentException(
+                "Invalid element types: ${match.javaClass.name} and ${result.javaClass.name}")
+        }
+
+    private fun mismatchedLengths(
+        match: Matcher<I>, result: Emitter<I, O>, matchLength: Int, resultLength: Int
+    ): Nothing = throw LscInvalidRuleExpression(
+        match, result, "Found ${enpl(matchLength, "element")} on the left side but $resultLength on the right side"
+    )
 
     fun claim(expressionNumber: Int, word: Word<I>): List<Transformation<O>> {
         var index = 0
@@ -136,3 +156,7 @@ class RuleExpression<I : Segment<I>, O : Segment<O>>(
 }
 
 data class TransformationWithMatchStart<O : Segment<O>>(val transformation: Transformation<O>, val matchStart: Int)
+
+class LscInvalidRuleExpression(
+    val matcher: Matcher<*>, val emitter: Emitter<*, *>, message: String) :
+        Exception(message)

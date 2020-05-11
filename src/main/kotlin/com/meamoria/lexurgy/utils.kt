@@ -13,6 +13,20 @@ fun <K, V> MutableMap<K, V>.setdefault(key: K, newValue: V): V {
 
 fun <T> Iterable<T>.joinCommas(): String = joinToString(", ")
 
+/**
+ * Puts the number in front of the word, with the word correctly marked for singular/plural.
+ * For example:
+ *
+ * - ``enpl(1, "cat")`` yields ``"1 cat"``.
+ * - ``enpl(3, "cat")`` yields ``"3 cats"``.
+ * - ``enpl(3, "box")`` yields ``"3 boxs"``; use the ``plural`` argument to specify the plural manually.
+ * - ``enpl(3, "box", "boxes")`` correctly yields ``"3 boxes"``.
+ */
+fun enpl(number: Int, word: String, plural: String? = null): String {
+    val form = if (number == 1) word else plural ?: word + "s"
+    return "$number $form"
+}
+
 internal abstract class BoringErrorListener : ANTLRErrorListener {
     override fun reportAttemptingFullContext(
         recognizer: Parser?,

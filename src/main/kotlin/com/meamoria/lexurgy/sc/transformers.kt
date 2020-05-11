@@ -1,12 +1,35 @@
 package com.meamoria.lexurgy.sc
 
 import com.meamoria.lexurgy.Segment
+import com.meamoria.lexurgy.SegmentType
 import com.meamoria.lexurgy.Word
 
 interface Transformer<I : Segment<I>, O : Segment<O>> {
     fun transform(
         order: Int, declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings
     ): UnboundTransformation<O>?
+}
+
+class SequenceTransformer<I : Segment<I>, O : Segment<O>>(
+    val outType: SegmentType<O>,
+    val elements: List<Transformer<I, O>>
+) : Transformer<I, O> {
+    override fun transform(
+        order: Int, declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings
+    ): UnboundTransformation<O>? {
+        var elementStart = start
+        val resultBits = mutableListOf<UnboundTransformation<O>>()
+        for (element in elements) {
+            val transformation = element.transform(order, declarations, word, elementStart, bindings) ?: return null
+            elementStart += transformation.length
+            resultBits += transformation
+        }
+
+        fun result(finalBindings: Bindings): Word<O> =
+            outType.join(resultBits.map { it.result(finalBindings) })
+
+        return UnboundTransformation(order, start, elementStart - start, ::result, resultBits)
+    }
 }
 
 class SimpleTransformer<I : Segment<I>, O : Segment<O>>(
