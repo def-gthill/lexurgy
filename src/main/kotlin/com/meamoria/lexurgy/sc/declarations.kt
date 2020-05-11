@@ -13,6 +13,7 @@ class Declarations(
     private val valueToFeature = features.flatMap { feature ->
         feature.allValues.map { it to feature }
     }.toMap()
+    private val nulls = features.mapNotNull { it.nullAlias }
 
     private val diacriticNameToDiacritic = diacritics.associateBy { it.name }
 
@@ -43,10 +44,15 @@ class Declarations(
     fun symbolMatches(symbol: PhoneticSegment, matrix: Matrix, bindings: Bindings): Boolean {
         val complexSymbolMatrix = symbolToMatrix(symbol) ?: return false
         for (value in matrix.valueList) {
-            if (!value.matches(this, complexSymbolMatrix, bindings)) return false
+            val realValue = if (value.isNull())
+                AbsentFeature(valueToFeature.getValue(value as SimpleValue).name)
+            else value
+            if (!realValue.matches(this, complexSymbolMatrix, bindings)) return false
         }
         return true
     }
+
+    private fun MatrixValue.isNull(): Boolean = this in nulls
 
     fun symbolToMatrix(symbol: PhoneticSegment): Matrix? {
         val (core, before, after) = phoneticParser.breakDiacritics(symbol.string)
@@ -58,21 +64,25 @@ class Declarations(
 
     private fun complexSymbolToMatrix(symbol: ComplexSymbol): Matrix {
         var result = symbol.symbol.matrix
-        for (diacritic in symbol.diacritics) result = updateMatrix(result, diacritic.matrix)
+        for (diacritic in symbol.diacritics) result = result.update(diacritic.matrix)
         return result
     }
 
     fun matrixToSymbol(matrix: Matrix): PhoneticSegment {
         matrixToSymbolCache[matrix]?.let { return it }
 
-        val result = matrixToSimpleSymbol[matrix]?.let {
+        val realMatrix = matrix.removeExplicitNulls()
+
+        val result = matrixToSimpleSymbol[realMatrix]?.let {
             PhoneticSegment(it.name)
-        } ?: searchDiacritics(matrix)?.let {
+        } ?: searchDiacritics(realMatrix)?.let {
             PhoneticSegment(it.string)
-        } ?: throw LscInvalidMatrix(matrix)
+        } ?: throw LscInvalidMatrix(realMatrix)
 
         return result.also { matrixToSymbolCache[matrix] = it }
     }
+
+    private fun Matrix.removeExplicitNulls(): Matrix = Matrix(valueList.filterNot { it.isNull() })
 
     private fun searchDiacritics(
         matrix: Matrix,
@@ -99,9 +109,9 @@ class Declarations(
         return difference.size
     }
 
-    fun updateMatrix(oldMatrix: Matrix, updateMatrix: Matrix): Matrix {
-        val oldMatrixFeatures = oldMatrix.simpleValues.associateBy { valueToFeatureOrThrow(it) }
-        val newMatrixValues = oldMatrix.valueList.toMutableList()
+    fun Matrix.update(updateMatrix: Matrix): Matrix {
+        val oldMatrixFeatures = simpleValues.associateBy { valueToFeatureOrThrow(it) }
+        val newMatrixValues = valueList.toMutableList()
         for (value in updateMatrix.valueList) {
             val updateFeature = valueToFeatureOrThrow(value as SimpleValue)
             oldMatrixFeatures[updateFeature]?.let { newMatrixValues.remove(it) }

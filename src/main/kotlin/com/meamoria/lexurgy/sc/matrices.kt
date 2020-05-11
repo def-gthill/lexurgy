@@ -44,7 +44,7 @@ data class NegatedValue(val value: String): MatrixValue {
 
 data class AbsentFeature(val feature: String): MatrixValue {
     override fun matches(declarations: Declarations, matrix: Matrix, bindings: Bindings): Boolean =
-        declarations.featureNameToFeature(feature).values.any { it in matrix.valueSet }
+        declarations.featureNameToFeature(feature).values.none { it in matrix.valueSet }
 }
 
 data class FeatureVariable(val feature: String): MatrixValue {

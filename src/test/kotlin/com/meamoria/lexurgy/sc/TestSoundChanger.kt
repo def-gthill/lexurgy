@@ -257,4 +257,24 @@ class TestSoundChanger : StringSpec({
         ch("patsaba") shouldBe "pataba"
         ch("petetsa") shouldBe "pecetʰa"
     }
+
+    "We should be able to rename the \"absent\" value of a feature" {
+        val ch = lsc(
+            """
+               |Feature Place(lab, apic)
+               |Feature Breath(*plain, aspir)
+               |Diacritic ʰ [aspir]
+               |Symbol p [lab]
+               |Symbol t [apic]
+               |aspiration:
+               |    [plain] s => [aspir] *
+               |lenition:
+               |    [aspir] => [plain] / a _ a
+               |    [plain] => * / a _ a
+            """.trimMargin()
+        )
+
+        ch("psataba") shouldBe "pʰaaba"
+        ch("patsaba") shouldBe "pataba"
+    }
 })

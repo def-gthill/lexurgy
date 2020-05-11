@@ -17,10 +17,12 @@ interface SimpleEmitter<I : Segment<I>, O : Segment<O>> : Emitter<I, O> {
 class MatrixEmitter(val matrix: Matrix) : SimpleEmitter<PhonS, PhonS> {
     override fun result(declarations: Declarations, original: Word<PhonS>): UnboundResult<PhonS> =
         {bindings ->
-            val boundMatrix = matrix.bindVariables(bindings)
-            val matchMatrix = declarations.symbolToMatrix(original[0])!!
-            val resultMatrix = declarations.updateMatrix(matchMatrix, boundMatrix)
-            Phonetic.fromSegments(listOf(declarations.matrixToSymbol(resultMatrix)))
+            with(declarations) {
+                val boundMatrix = matrix.bindVariables(bindings)
+                val matchMatrix = symbolToMatrix(original[0])!!
+                val resultMatrix = matchMatrix.update(boundMatrix)
+                Phonetic.fromSegments(listOf(matrixToSymbol(resultMatrix)))
+            }
         }
 }
 
