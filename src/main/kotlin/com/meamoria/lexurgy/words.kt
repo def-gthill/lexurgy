@@ -115,3 +115,58 @@ object Phonetic : StringSegmentType<PhoneticSegment> {
 
     override fun segmentFromString(string: String): PhoneticSegment = PhoneticSegment(string)
 }
+
+class PhoneticParser(
+    val segments: List<String>, val beforeDiacritics: List<String>, val afterDiacritics: List<String>
+) {
+    private val fullDict = segments.associateWith { 0 } +
+            beforeDiacritics.associateWith { -1 } +
+            afterDiacritics.associateWith { 1 }
+
+    private val tree = SegmentTree(fullDict)
+
+    fun parse(word: String): PhoneticWord {
+        var segStart = 0
+        var cursor = 0
+        var coreFound = false
+        val parsedSegments = mutableListOf<String>()
+
+        fun doneSegment() {
+            parsedSegments += word.substring(segStart, cursor)
+            segStart = cursor
+        }
+
+        while (cursor < word.length) {
+            val match = tree.tryMatch(word.drop(cursor))
+            if (match == null) {
+                if (coreFound) doneSegment()
+                cursor++
+                coreFound = true
+            } else {
+                val (matchString, matchType) = match
+                if (matchType == -1) {
+                    // Before diacritic
+                    if (coreFound) doneSegment()
+                    cursor += matchString.length
+                    if (cursor >= word.length)
+                        throw DanglingDiacritic(word, cursor - matchString.length, matchString)
+                } else if (matchType == 0) {
+                    // Core symbol
+                    if (coreFound) doneSegment()
+                    cursor += matchString.length
+                    coreFound = true
+                } else {
+                    // After diacritic
+                    if (coreFound) cursor += matchString.length
+                    else throw DanglingDiacritic(word, cursor, matchString)
+                }
+            }
+        }
+
+        if (cursor > segStart) doneSegment()
+        return PhoneticWord(parsedSegments)
+    }
+}
+
+class DanglingDiacritic(word: String, position: Int, diacritic: String) :
+        Exception("The diacritic $diacritic at position $position in $word isn't attached to a symbol")

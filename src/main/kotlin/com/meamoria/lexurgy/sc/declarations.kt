@@ -1,9 +1,6 @@
 package com.meamoria.lexurgy.sc
 
-import com.meamoria.lexurgy.PhoneticSegment
-import com.meamoria.lexurgy.PhoneticWord
-import com.meamoria.lexurgy.PlainSegment
-import com.meamoria.lexurgy.Word
+import com.meamoria.lexurgy.*
 
 class Declarations(
     features: List<Feature>,
@@ -22,9 +19,14 @@ class Declarations(
 
     private val matrixToSymbolCache = mutableMapOf<Matrix, PhoneticSegment>()
 
+    private val phoneticParser = PhoneticParser(
+        symbols.map { it.name },
+        diacritics.filter { it.before }.map { it.name },
+        diacritics.filterNot { it.before }.map { it.name }
+    )
+
     fun parsePhonetic(text: String): Word<PhoneticSegment> =
-        PhoneticWord(text.chunked(1))
-//         phoneticParser.parse(text)
+        phoneticParser.parse(text)
 
     fun parsePhonetic(word: Word<PlainS>): Word<PhonS> = parsePhonetic(word.string)
 
@@ -92,7 +94,7 @@ class Symbol(val name: String, val matrix: Matrix) {
 
 class ComplexSymbol(val symbol: Symbol, diacritics: List<Diacritic> = emptyList())
 
-class Diacritic
+data class Diacritic(val name: String, val before: Boolean)
 
 class LscUndefinedName(val nameType: String, val undefinedName: String) :
-        Exception("The $nameType name $undefinedName is not defined")
+    Exception("The $nameType name $undefinedName is not defined")

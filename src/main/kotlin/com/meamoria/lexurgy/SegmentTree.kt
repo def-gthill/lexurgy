@@ -17,6 +17,21 @@ class SegmentTree<T>(map: Map<String, T>) {
         }
     }
 
+    fun tryMatch(string: String): Pair<String, T>? {
+        val match = StringBuilder()
+        var curtree = root
+        for (char in string) {
+            curtree.children[char]?.let {
+                curtree = it
+                match.append(char)
+            } ?: break
+        }
+
+        return curtree.value?.let {
+            Pair(match.toString(), it)
+        }
+    }
+
     override fun toString(): String = "SegmentTree" + root.subtreeString()
 
     private inner class Node {

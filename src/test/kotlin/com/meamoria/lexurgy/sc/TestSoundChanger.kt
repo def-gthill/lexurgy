@@ -196,4 +196,40 @@ class TestSoundChanger : StringSpec({
         ch2("aptekpa") shouldBe "aftexpa"
         ch2("atteppa") shouldBe "atteppa"
     }
+
+    "A change should still proceed even if its environment is also changing" {
+        val ch = lsc(
+            """
+                dissimilate:
+                e => i / e _
+                i => e / i _
+            """.trimIndent()
+        )
+
+        ch("beeeeeeee") shouldBe "beiiiiiii"
+        ch("beeiieeii") shouldBe "beiieeiie"
+    }
+
+    "Multiple-character symbols should be recognized as single symbols" {
+        val ch = lsc(
+            """
+               |Feature Place(lab, apic)
+               |Feature Manner(stop, sonor)
+               |Feature Nasal(unnas, nas)
+               |Symbol b [lab stop unnas]
+               |Symbol ᵐb [lab stop nas]
+               |Symbol w [lab sonor unnas]
+               |Symbol m [lab sonor nas]
+               |Symbol d [apic stop unnas]
+               |Symbol ⁿd [apic stop nas]
+               |Symbol l [apic sonor unnas]
+               |Symbol n [apic sonor nas]
+               |sonorize:
+               |    [stop] => [sonor] / a _ a
+            """.trimMargin()
+        )
+
+        ch("babaⁿdade") shouldBe "bawanade"
+        ch("baᵐbaⁿdebada") shouldBe "bamaⁿdebala"
+    }
 })
