@@ -144,4 +144,24 @@ class TestSoundChanger : StringSpec({
         ch("bivalve") shouldBe "pifalfe"
         ch("prefabricative") shouldBe "prefapricatife"
     }
+
+    "We should be able to restrict changes to a specific environment" {
+        val ch = lsc(
+            """
+               |Feature Depth(front, back)
+               |Feature Place(alv, pal, vel)
+               |Symbol i [front]
+               |Symbol u [back]
+               |Symbol t [alv]
+               |Symbol tʃ [pal]
+               |Symbol k [vel]
+               |soft-c:
+               |    [alv] => [pal] / _ [front]
+               |    [vel] => [pal] / _ [front]
+            """.trimMargin()
+        )
+
+        ch("kikuki") shouldBe "tʃikutʃi"
+        ch("tutit") shouldBe "tutʃit"
+    }
 })

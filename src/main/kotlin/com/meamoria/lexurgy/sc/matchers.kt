@@ -7,6 +7,16 @@ interface Matcher<I : Segment<I>> {
     fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int?
 }
 
+class WordStartMatcher<I : Segment<I>> : Matcher<I> {
+    override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int? =
+        start.takeIf { it == 0 }
+}
+
+class WordEndMatcher<I : Segment<I>> : Matcher<I> {
+    override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int? =
+        start.takeIf { it == word.length }
+}
+
 class SequenceMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : Matcher<I> {
     override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int? {
         var elementStart = start

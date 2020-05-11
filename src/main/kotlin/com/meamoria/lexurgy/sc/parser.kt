@@ -103,12 +103,12 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
 
     override fun visitEnvironlist(ctx: LscParser.EnvironlistContext): T = tlist(listVisit(ctx.ruleenviron()))
 
-    override fun visitRuleenviron(ctx: LscParser.RuleenvironContext): T = walkRuleEnvironment(
+    override fun visitRuleenviron(ctx: LscParser.RuleenvironContext): T = tlist(listOf(walkRuleEnvironment(
         optionalVisit(ctx.rulebefore()),
         optionalVisit(ctx.ruleafter()),
         ctx.boundarybefore() != null,
         ctx.boundaryafter() != null
-    )
+    )))
 
     override fun visitRulebefore(ctx: LscParser.RulebeforeContext): T = visit(ctx.ruleelement())
 

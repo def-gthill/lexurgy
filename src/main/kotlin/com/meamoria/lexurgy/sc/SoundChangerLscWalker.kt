@@ -95,9 +95,20 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
         after: ParseNode?,
         boundaryBefore: Boolean,
         boundaryAfter: Boolean
-    ): ParseNode {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
+    ): ParseNode = UnlinkedEnvironment(
+        (before as? UnlinkedRuleElement).let {
+            if (boundaryBefore) {
+                if (it == null) UnlinkedWordStartElement
+                else UnlinkedSequenceElement(listOf(UnlinkedWordStartElement, it))
+            } else it
+        },
+        (after as? UnlinkedRuleElement).let {
+            if (boundaryAfter) {
+                if (it == null) UnlinkedWordEndElement
+                else UnlinkedSequenceElement(listOf(it, UnlinkedWordEndElement))
+            } else it
+        }
+    )
 
     override fun walkRuleSequence(items: List<ParseNode>): ParseNode =
         UnlinkedSequenceElement(items.map { it as UnlinkedRuleElement })
@@ -167,23 +178,39 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
         fun inPhonetic(declarations: Declarations): RuleExpression<PhonS, PlainS> = RuleExpression(
             Phonetic, Plain, declarations,
             match.phonetic(declarations),
-            result.inPhoneticEmitter(declarations)
+            result.inPhoneticEmitter(declarations),
+            condition.map { it.phonetic(declarations) },
+            exclusion.map { it.phonetic(declarations) }
         )
 
         fun outPhonetic(declarations: Declarations): RuleExpression<PlainS, PhonS> = RuleExpression(
             Plain, Phonetic, declarations,
             match.plain(),
-            result.outPhoneticEmitter(declarations)
+            result.outPhoneticEmitter(declarations),
+            condition.map { it.plain() },
+            exclusion.map { it.plain() }
         )
 
         fun phonetic(declarations: Declarations): RuleExpression<PhonS, PhonS> = RuleExpression(
             Phonetic, Phonetic, declarations,
             match.phonetic(declarations),
-            result.phoneticEmitter(declarations)
+            result.phoneticEmitter(declarations),
+            condition.map { it.phonetic(declarations) },
+            exclusion.map { it.phonetic(declarations) }
         )
     }
 
-    private class UnlinkedEnvironment : ParseNode
+    private class UnlinkedEnvironment(val before: UnlinkedRuleElement?, val after: UnlinkedRuleElement?) : ParseNode {
+        fun plain(): Environment<PlainS> = Environment(
+            before?.plain() ?: TextMatcher(Plain.empty),
+            after?.plain() ?: TextMatcher(Plain.empty)
+        )
+
+        fun phonetic(declarations: Declarations): Environment<PhonS> = Environment(
+            before?.phonetic(declarations) ?: TextMatcher(Phonetic.empty),
+            after?.phonetic(declarations) ?: TextMatcher(Phonetic.empty)
+        )
+    }
 
     private interface UnlinkedRuleElement : ParseNode {
         fun plain(): Matcher<PlainS>
@@ -243,6 +270,14 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
             emitter(elements.map { it.phoneticEmitter(declarations) })
 
         fun <I : Segment<I>, O : Segment<O>> emitter(elements: List<Emitter<I, O>>): Emitter<I, O>
+    }
+
+    private object UnlinkedWordStartElement : ChameleonRuleElement {
+        override fun <T : Segment<T>> link(): Matcher<T> = WordStartMatcher()
+    }
+
+    private object UnlinkedWordEndElement : ChameleonRuleElement {
+        override fun <T : Segment<T>> link(): Matcher<T> = WordEndMatcher()
     }
 
     private class UnlinkedSequenceElement(ruleElements: List<UnlinkedRuleElement>) :

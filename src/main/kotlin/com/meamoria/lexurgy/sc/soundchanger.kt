@@ -99,9 +99,15 @@ class RuleExpression<I : Segment<I>, O : Segment<O>>(
     val outType: SegmentType<O>,
     val declarations: Declarations,
     val match: Matcher<I>,
-    val result: Emitter<I, O>
+    val result: Emitter<I, O>,
+    val condition: List<Environment<I>>,
+    val exclusion: List<Environment<I>>
 ) {
     val transformer = makeTransformer(match, result)
+
+    private val realEnvironment =
+        if (condition.isEmpty()) listOf(Environment(TextMatcher(inType.empty), TextMatcher(inType.empty)))
+        else condition
 
     private fun makeTransformer(match: Matcher<I>, result: Emitter<I, O>): Transformer<I, O> =
         if (match is SequenceMatcher) {
@@ -120,7 +126,8 @@ class RuleExpression<I : Segment<I>, O : Segment<O>>(
             SimpleTransformer(match, result)
         } else {
             throw IllegalArgumentException(
-                "Invalid element types: ${match.javaClass.name} and ${result.javaClass.name}")
+                "Invalid element types: ${match.javaClass.name} and ${result.javaClass.name}"
+            )
         }
 
     private fun mismatchedLengths(
@@ -145,11 +152,19 @@ class RuleExpression<I : Segment<I>, O : Segment<O>>(
 
     private fun claimNext(expressionNumber: Int, word: Word<I>, start: Int): TransformationWithMatchStart<O>? {
         for (matchStart in start until word.length) {
-            val bindings = Bindings()
-            val transformation = transformer.transform(
-                expressionNumber, declarations, word, matchStart, bindings
-            ) ?: continue
-            return TransformationWithMatchStart(transformation.bindVariables(bindings), matchStart)
+            for (environment in realEnvironment) {
+                val bindings = Bindings()
+                val beforeMatchEnd = environment.before.claim(
+                    declarations, word, matchStart, bindings
+                ) ?: continue
+                val transformation = transformer.transform(
+                    expressionNumber, declarations, word, beforeMatchEnd, bindings
+                ) ?: continue
+                environment.after.claim(
+                    declarations, word, transformation.end, bindings
+                ) ?: continue
+                return TransformationWithMatchStart(transformation.bindVariables(bindings), matchStart)
+            }
         }
         return null
     }
@@ -157,8 +172,11 @@ class RuleExpression<I : Segment<I>, O : Segment<O>>(
 
 data class TransformationWithMatchStart<O : Segment<O>>(val transformation: Transformation<O>, val matchStart: Int)
 
+class Environment<I : Segment<I>>(val before: Matcher<I>, val after: Matcher<I>)
+
 class LscInvalidRuleExpression(
-    val matcher: Matcher<*>, val emitter: Emitter<*, *>, message: String) :
-        Exception(message)
+    val matcher: Matcher<*>, val emitter: Emitter<*, *>, message: String
+) :
+    Exception(message)
 
 class LscMatrixInPlain(val matrix: Matrix) : Exception("Feature matrices aren't allowed in a romanized context")
