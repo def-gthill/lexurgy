@@ -160,3 +160,5 @@ data class TransformationWithMatchStart<O : Segment<O>>(val transformation: Tran
 class LscInvalidRuleExpression(
     val matcher: Matcher<*>, val emitter: Emitter<*, *>, message: String) :
         Exception(message)
+
+class LscMatrixInPlain(val matrix: Matrix) : Exception("Feature matrices aren't allowed in a romanized context")

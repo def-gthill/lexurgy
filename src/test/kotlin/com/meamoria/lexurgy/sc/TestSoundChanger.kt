@@ -109,4 +109,21 @@ class TestSoundChanger : StringSpec({
         ch2("baaaacaa") shouldBe "bzacx"
         ch2("baaaaaaabaaaaa") shouldBe "bzaqzx"
     }
+
+    "We should be able to match sounds against a simple feature matrix" {
+        val ch = lsc(
+            """
+               |Feature Manner(stop, nonstop)
+               |Symbol p [stop]
+               |Symbol t [stop]
+               |Symbol k [stop]
+               |Symbol f [nonstop]
+               |drop-stop:
+               |    [stop] => *
+            """.trimMargin()
+        )
+
+        ch("klaptrap") shouldBe "lara"
+        ch("fniftikuf") shouldBe "fnifiuf"
+    }
 })
