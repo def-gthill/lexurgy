@@ -34,52 +34,52 @@ class Declarations(
 
     fun parsePhonetic(word: Word<PlainS>): Word<PhonS> = parsePhonetic(word.string)
 
-    fun featureNameToFeature(featureName: String): Feature =
-        featureNameToFeatureMap[featureName] ?: throw LscUndefinedName("feature", featureName)
+    fun String.toFeature(): Feature =
+        featureNameToFeatureMap[this] ?: throw LscUndefinedName("feature", this)
 
     /**
      * Tries to match the specified matrix to the specified phonetic symbol.
      * Returns true if the matrix matched, false otherwise. Binds variables.
      */
-    fun symbolMatches(symbol: PhoneticSegment, matrix: Matrix, bindings: Bindings): Boolean {
-        val complexSymbolMatrix = symbolToMatrix(symbol) ?: return false
+    fun PhoneticSegment.matches(matrix: Matrix, bindings: Bindings): Boolean {
+        val complexSymbolMatrix = toMatrix() ?: return false
         for (value in matrix.valueList) {
             val realValue = if (value.isNull())
                 AbsentFeature(valueToFeature.getValue(value as SimpleValue).name)
             else value
-            if (!realValue.matches(this, complexSymbolMatrix, bindings)) return false
+            if (!realValue.matches(this@Declarations, complexSymbolMatrix, bindings)) return false
         }
         return true
     }
 
     private fun MatrixValue.isNull(): Boolean = this in nulls
 
-    fun symbolToMatrix(symbol: PhoneticSegment): Matrix? {
-        val (core, before, after) = phoneticParser.breakDiacritics(symbol.string)
+    fun PhoneticSegment.toMatrix(): Matrix? {
+        val (core, before, after) = phoneticParser.breakDiacritics(string)
         val coreSymbol = symbolNameToSymbol[core] ?: return null
         val diacritics = (before + after).map { diacriticNameToDiacritic.getValue(it) }
         val complexSymbol = ComplexSymbol(coreSymbol, diacritics)
-        return complexSymbolToMatrix(complexSymbol)
+        return complexSymbol.toMatrix()
     }
 
-    private fun complexSymbolToMatrix(symbol: ComplexSymbol): Matrix {
-        var result = symbol.symbol.matrix
-        for (diacritic in symbol.diacritics) result = result.update(diacritic.matrix)
+    private fun ComplexSymbol.toMatrix(): Matrix {
+        var result = symbol.matrix
+        for (diacritic in diacritics) result = result.update(diacritic.matrix)
         return result
     }
 
-    fun matrixToSymbol(matrix: Matrix): PhoneticSegment {
-        matrixToSymbolCache[matrix]?.let { return it }
+    fun Matrix.toSymbol(): PhoneticSegment {
+        matrixToSymbolCache[this]?.let { return it }
 
-        val realMatrix = matrix.removeExplicitNulls()
+        val matrix = removeExplicitNulls()
 
-        val result = matrixToSimpleSymbol[realMatrix]?.let {
+        val result = matrixToSimpleSymbol[matrix]?.let {
             PhoneticSegment(it.name)
-        } ?: searchDiacritics(realMatrix)?.let {
+        } ?: searchDiacritics(matrix)?.let {
             PhoneticSegment(it.string)
-        } ?: throw LscInvalidMatrix(realMatrix)
+        } ?: throw LscInvalidMatrix(matrix)
 
-        return result.also { matrixToSymbolCache[matrix] = it }
+        return result.also { matrixToSymbolCache[this] = it }
     }
 
     private fun Matrix.removeExplicitNulls(): Matrix = Matrix(valueList.filterNot { it.isNull() })
@@ -89,11 +89,11 @@ class Declarations(
         candidates: List<ComplexSymbol> = symbolsAsComplexSymbols,
         bestDistance: Int? = null
     ): ComplexSymbol? {
-        val sortedCandidates = candidates.sortedBy { symbolToMatrixDistance(it, matrix) }
-        sortedCandidates.first().takeIf { symbolToMatrixDistance(it, matrix) == 0 }?.let { return it }
+        val sortedCandidates = candidates.sortedBy { it.distanceTo(matrix) }
+        sortedCandidates.first().takeIf { it.distanceTo(matrix) == 0 }?.let { return it }
 
         for (candidate in sortedCandidates) {
-            val candidateDistance = symbolToMatrixDistance(candidate, matrix)
+            val candidateDistance = candidate.distanceTo(matrix)
             if (bestDistance != null && candidateDistance >= bestDistance) return null
             val withDiacritics = diacritics.map(candidate::withDiacritic)
             searchDiacritics(matrix, withDiacritics, candidateDistance)?.let { return it }
@@ -101,8 +101,8 @@ class Declarations(
         return null
     }
 
-    private fun symbolToMatrixDistance(symbol: ComplexSymbol, matrix: Matrix): Int {
-        val symbolMatrix = complexSymbolToMatrix(symbol)
+    private fun ComplexSymbol.distanceTo(matrix: Matrix): Int {
+        val symbolMatrix = toMatrix()
         val difference = (matrix.simpleValues.filterNot { it in symbolMatrix.simpleValues } +
                 symbolMatrix.simpleValues.filterNot { it in matrix.simpleValues }
                 )
@@ -110,18 +110,18 @@ class Declarations(
     }
 
     fun Matrix.update(updateMatrix: Matrix): Matrix {
-        val oldMatrixFeatures = simpleValues.associateBy { valueToFeatureOrThrow(it) }
+        val oldMatrixFeatures = simpleValues.associateBy { it.toFeatureOrThrow() }
         val newMatrixValues = valueList.toMutableList()
         for (value in updateMatrix.valueList) {
-            val updateFeature = valueToFeatureOrThrow(value as SimpleValue)
+            val updateFeature = (value as SimpleValue).toFeatureOrThrow()
             oldMatrixFeatures[updateFeature]?.let { newMatrixValues.remove(it) }
             newMatrixValues += value
         }
         return Matrix(newMatrixValues)
     }
 
-    private fun valueToFeatureOrThrow(value: SimpleValue): Feature =
-        valueToFeature[value] ?: throw LscUndefinedName("feature value", value.name)
+    private fun SimpleValue.toFeatureOrThrow(): Feature =
+        valueToFeature[this] ?: throw LscUndefinedName("feature value", name)
 }
 
 class SegmentClass

@@ -19,9 +19,9 @@ class MatrixEmitter(val matrix: Matrix) : SimpleEmitter<PhonS, PhonS> {
         {bindings ->
             with(declarations) {
                 val boundMatrix = matrix.bindVariables(bindings)
-                val matchMatrix = symbolToMatrix(original[0])!!
+                val matchMatrix = original[0].toMatrix()!!
                 val resultMatrix = matchMatrix.update(boundMatrix)
-                Phonetic.fromSegments(listOf(matrixToSymbol(resultMatrix)))
+                Phonetic.fromSegments(listOf(resultMatrix.toSymbol()))
             }
         }
 }

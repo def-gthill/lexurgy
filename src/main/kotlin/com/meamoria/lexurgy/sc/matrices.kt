@@ -9,7 +9,7 @@ class Matrix(val valueList: List<MatrixValue>) {
         var updated = false
         val values = valueList.toMutableList()
         for ((feature, value) in bindings.features) {
-            val index = values.indexOfFirst { it is FeatureVariable && it.feature == feature.name }
+            val index = values.indexOfFirst { it is FeatureVariable && it.featureName == feature.name }
             if (index >= 0) {
                 values.removeAt(index)
                 values.add(value)
@@ -42,18 +42,22 @@ data class NegatedValue(val value: String): MatrixValue {
         value !in matrix.simpleValueStrings
 }
 
-data class AbsentFeature(val feature: String): MatrixValue {
+data class AbsentFeature(val featureName: String): MatrixValue {
     override fun matches(declarations: Declarations, matrix: Matrix, bindings: Bindings): Boolean =
-        declarations.featureNameToFeature(feature).values.none { it in matrix.valueSet }
+        with (declarations) {
+            featureName.toFeature().values.none { it in matrix.valueSet }
+        }
 }
 
-data class FeatureVariable(val feature: String): MatrixValue {
+data class FeatureVariable(val featureName: String): MatrixValue {
     override fun matches(declarations: Declarations, matrix: Matrix, bindings: Bindings): Boolean {
-        val featureObject = declarations.featureNameToFeature(feature)
-        val match = featureObject.allValues.filter { it in matrix.valueSet }
-        return match.firstOrNull()?.let {
-            bindings.features[featureObject] = it
-        } != null
+        with (declarations) {
+            val featureObject = featureName.toFeature()
+            val match = featureObject.allValues.filter { it in matrix.valueSet }
+            return match.firstOrNull()?.let {
+                bindings.features[featureObject] = it
+            } != null
+        }
     }
 }
 

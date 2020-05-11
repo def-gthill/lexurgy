@@ -31,9 +31,11 @@ interface SimpleMatcher<I : Segment<I>> : Matcher<I>
 
 class MatrixMatcher(val matrix: Matrix) : SimpleMatcher<PhonS> {
     override fun claim(declarations: Declarations, word: Word<PhonS>, start: Int, bindings: Bindings): Int? {
-        val boundMatrix = matrix.bindVariables(bindings)
-        return if (start < word.length && declarations.symbolMatches(word[start], boundMatrix, bindings)) start + 1
-        else null
+        with(declarations) {
+            val boundMatrix = matrix.bindVariables(bindings)
+            return if (start < word.length && word[start].matches(boundMatrix, bindings)) start + 1
+            else null
+        }
     }
 }
 
