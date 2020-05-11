@@ -232,4 +232,29 @@ class TestSoundChanger : StringSpec({
         ch("babaⁿdade") shouldBe "bawanade"
         ch("baᵐbaⁿdebada") shouldBe "bamaⁿdebala"
     }
+
+    "Diacritics should be able to modify features" {
+        val ch = lsc(
+            """
+               |Feature Place(lab, apic)
+               |Feature Breath(vcd, plain, aspir)
+               |Diacritic ʰ [aspir]
+               |Symbol p [lab plain]
+               |Symbol b [lab vcd]
+               |Symbol t [apic plain]
+               |Symbol d [apic vcd]
+               |aspiration:
+               |    [plain] s => [aspir] *
+               |lenition:
+               |    [aspir] => [plain] / a _ a
+               |    [plain] => [vcd] / a _ a
+               |palatal:
+               |    t => c / e _
+            """.trimMargin()
+        )
+
+        ch("psataba") shouldBe "pʰadaba"
+        ch("patsaba") shouldBe "pataba"
+        ch("petetsa") shouldBe "pecetʰa"
+    }
 })

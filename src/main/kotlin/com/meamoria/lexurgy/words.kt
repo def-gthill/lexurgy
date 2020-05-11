@@ -166,7 +166,40 @@ class PhoneticParser(
         if (cursor > segStart) doneSegment()
         return PhoneticWord(parsedSegments)
     }
+
+    fun breakDiacritics(symbol: String): DiacriticBreakdown {
+        var cursor = 0
+        val before = mutableListOf<String>()
+        var core: String? = null
+        val after = mutableListOf<String>()
+        while (cursor < symbol.length) {
+            val match = tree.tryMatch(symbol.drop(cursor)) ?: return DiacriticBreakdown(symbol)
+            val (matchString, matchType) = match
+            if (matchType == -1) {
+                // Before diacritic
+                if (core != null) throw DanglingDiacritic(symbol, cursor, matchString)
+                cursor += matchString.length
+                before += matchString
+                if (cursor >= symbol.length) throw DanglingDiacritic(symbol, cursor - matchString.length, matchString)
+            } else if (matchType == 0) {
+                // Core symbol
+                if (core != null) throw DanglingDiacritic(symbol, cursor, matchString)
+                cursor += matchString.length
+                core = matchString
+            } else {
+                // After diacritic
+                if (core == null) throw DanglingDiacritic(symbol, cursor, matchString)
+                cursor += matchString.length
+                after += matchString
+            }
+        }
+        if (core == null) throw DanglingDiacritic(symbol, cursor, symbol.lastOrNull()?.toString() ?: "")
+        return DiacriticBreakdown(core, before, after)
+    }
 }
+
+data class DiacriticBreakdown(
+    val core: String, val before: List<String> = emptyList(), val after: List<String> = emptyList())
 
 class DanglingDiacritic(word: String, position: Int, diacritic: String) :
         Exception("The diacritic $diacritic at position $position in $word isn't attached to a symbol")

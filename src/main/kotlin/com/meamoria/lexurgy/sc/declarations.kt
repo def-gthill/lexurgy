@@ -3,10 +3,10 @@ package com.meamoria.lexurgy.sc
 import com.meamoria.lexurgy.*
 
 class Declarations(
-    features: List<Feature>,
-    diacritics: List<Diacritic>,
-    symbols: List<Symbol>,
-    classes: List<SegmentClass>
+    val features: List<Feature>,
+    val diacritics: List<Diacritic>,
+    val symbols: List<Symbol>,
+    val classes: List<SegmentClass>
 ) {
 
     private val featureNameToFeatureMap = features.associateBy { it.name }
@@ -14,7 +14,10 @@ class Declarations(
         feature.allValues.map { it to feature }
     }.toMap()
 
-    private val symbolSegmentToSymbol = symbols.associateBy { it.name }
+    private val diacriticNameToDiacritic = diacritics.associateBy { it.name }
+
+    private val symbolsAsComplexSymbols = symbols.map { ComplexSymbol(it) }
+    private val symbolNameToSymbol = symbols.associateBy { it.name }
     private val matrixToSimpleSymbol = symbols.associateBy { it.matrix }
 
     private val matrixToSymbolCache = mutableMapOf<Matrix, PhoneticSegment>()
@@ -46,23 +49,54 @@ class Declarations(
     }
 
     fun symbolToMatrix(symbol: PhoneticSegment): Matrix? {
-        val coreSymbol = symbolSegmentToSymbol[symbol.string] ?: return null
-        val complexSymbol = ComplexSymbol(coreSymbol)
+        val (core, before, after) = phoneticParser.breakDiacritics(symbol.string)
+        val coreSymbol = symbolNameToSymbol[core] ?: return null
+        val diacritics = (before + after).map { diacriticNameToDiacritic.getValue(it) }
+        val complexSymbol = ComplexSymbol(coreSymbol, diacritics)
         return complexSymbolToMatrix(complexSymbol)
     }
 
     private fun complexSymbolToMatrix(symbol: ComplexSymbol): Matrix {
-        return symbol.symbol.matrix
+        var result = symbol.symbol.matrix
+        for (diacritic in symbol.diacritics) result = updateMatrix(result, diacritic.matrix)
+        return result
     }
 
     fun matrixToSymbol(matrix: Matrix): PhoneticSegment {
         matrixToSymbolCache[matrix]?.let { return it }
 
-        return matrixToSimpleSymbol[matrix]?.let {
+        val result = matrixToSimpleSymbol[matrix]?.let {
             PhoneticSegment(it.name)
-        }?.also {
-            matrixToSymbolCache[matrix] = it
+        } ?: searchDiacritics(matrix)?.let {
+            PhoneticSegment(it.string)
         } ?: throw LscInvalidMatrix(matrix)
+
+        return result.also { matrixToSymbolCache[matrix] = it }
+    }
+
+    private fun searchDiacritics(
+        matrix: Matrix,
+        candidates: List<ComplexSymbol> = symbolsAsComplexSymbols,
+        bestDistance: Int? = null
+    ): ComplexSymbol? {
+        val sortedCandidates = candidates.sortedBy { symbolToMatrixDistance(it, matrix) }
+        sortedCandidates.first().takeIf { symbolToMatrixDistance(it, matrix) == 0 }?.let { return it }
+
+        for (candidate in sortedCandidates) {
+            val candidateDistance = symbolToMatrixDistance(candidate, matrix)
+            if (bestDistance != null && candidateDistance >= bestDistance) return null
+            val withDiacritics = diacritics.map(candidate::withDiacritic)
+            searchDiacritics(matrix, withDiacritics, candidateDistance)?.let { return it }
+        }
+        return null
+    }
+
+    private fun symbolToMatrixDistance(symbol: ComplexSymbol, matrix: Matrix): Int {
+        val symbolMatrix = complexSymbolToMatrix(symbol)
+        val difference = (matrix.simpleValues.filterNot { it in symbolMatrix.simpleValues } +
+                symbolMatrix.simpleValues.filterNot { it in matrix.simpleValues }
+                )
+        return difference.size
     }
 
     fun updateMatrix(oldMatrix: Matrix, updateMatrix: Matrix): Matrix {
@@ -92,9 +126,19 @@ class Symbol(val name: String, val matrix: Matrix) {
     override fun toString(): String = name + if (matrix.valueList.isEmpty()) "" else " $matrix"
 }
 
-class ComplexSymbol(val symbol: Symbol, diacritics: List<Diacritic> = emptyList())
+class ComplexSymbol(val symbol: Symbol, val diacritics: List<Diacritic> = emptyList()) {
+    val string = (diacritics.filter { it.before }.map { it.name } +
+            listOf(symbol.name) +
+            diacritics.filterNot { it.before }.map { it.name }
+            ).joinToString("")
 
-data class Diacritic(val name: String, val before: Boolean)
+    fun withDiacritic(diacritic: Diacritic): ComplexSymbol =
+        ComplexSymbol(symbol, diacritics + diacritic)
+
+    override fun toString(): String = string
+}
+
+data class Diacritic(val name: String, val matrix: Matrix, val before: Boolean)
 
 class LscUndefinedName(val nameType: String, val undefinedName: String) :
     Exception("The $nameType name $undefinedName is not defined")

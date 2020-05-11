@@ -45,13 +45,9 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
         )
     )
 
-    override fun walkDiacriticDeclaration(
-        diacritic: String,
-        matrix: ParseNode,
-        before: Boolean
-    ): ParseNode {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
+    override fun walkDiacriticDeclaration(diacritic: String, matrix: ParseNode, before: Boolean): ParseNode =
+        DiacriticDeclarationNode(Diacritic(diacritic, (matrix as MatrixNode).matrix, before)
+    )
 
     override fun walkSymbolDeclaration(symbol: String, matrix: ParseNode?): ParseNode =
         SymbolDeclarationNode(Symbol(symbol, (matrix as? MatrixNode)?.matrix ?: Matrix(emptyList())))
