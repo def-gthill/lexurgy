@@ -1,5 +1,6 @@
 package com.meamoria.lexurgy.sc
 
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 
@@ -24,6 +25,16 @@ class TestSoundChanger : StringSpec({
 
         ch("maxel") shouldBe "mahel"
         ch("expexax") shouldBe "ehpehah"
+    }
+
+    "A file with syntax errors should fail to parse even if the start is valid" {
+        shouldThrow<LscNotParsable> { lsc(
+            """
+                a-rule:
+                x=>h
+                ]]]]]
+            """.trimIndent()
+        ) }
     }
 
     "We should be able to declare multiple rules in a file, executed sequentially" {
