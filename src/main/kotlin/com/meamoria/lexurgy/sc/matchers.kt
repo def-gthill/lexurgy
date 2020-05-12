@@ -27,6 +27,19 @@ class SequenceMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : Matcher<
     }
 }
 
+class ListMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : Matcher<I> {
+    override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int? {
+        for (element in elements) {
+            val altBindings = bindings.copy()
+            element.claim(declarations, word, start, altBindings)?.let {
+                bindings.combine(altBindings)
+                return it
+            }
+        }
+        return null
+    }
+}
+
 interface SimpleMatcher<I : Segment<I>> : Matcher<I>
 
 class MatrixMatcher(val matrix: Matrix) : SimpleMatcher<PhonS> {

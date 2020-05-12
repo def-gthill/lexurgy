@@ -10,6 +10,8 @@ interface Emitter<I : Segment<I>, O : Segment<O>>
 
 class SequenceEmitter<I : Segment<I>, O : Segment<O>>(val elements: List<Emitter<I, O>>) : Emitter<I, O>
 
+class ListEmitter<I : Segment<I>, O : Segment<O>>(val elements: List<Emitter<I, O>>) : Emitter<I, O>
+
 interface SimpleEmitter<I : Segment<I>, O : Segment<O>> : Emitter<I, O> {
     fun result(declarations: Declarations, original: Word<I>): UnboundResult<O>
 }

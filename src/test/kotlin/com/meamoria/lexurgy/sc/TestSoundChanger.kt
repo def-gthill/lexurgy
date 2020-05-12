@@ -301,4 +301,19 @@ class TestSoundChanger : StringSpec({
         ch2("bata") shouldBe "bata"
         ch2("cat") shouldBe "cat"
     }
+
+    "We should be able to write compact changes with alternative lists" {
+        val ch = lsc(
+            """
+                vowel-shift:
+                {o, u} => {u, y}
+                {i, e} => {e, a} / _ {m, n}
+            """.trimIndent()
+        )
+
+        ch("botu") shouldBe "buty"
+        ch("tintin") shouldBe "tenten"
+        ch("tenpin") shouldBe "tanpen"
+        ch("mitochondrion") shouldBe "mituchundriun"
+    }
 })

@@ -110,7 +110,19 @@ class RuleExpression<I : Segment<I>, O : Segment<O>>(
         else condition
 
     private fun makeTransformer(match: Matcher<I>, result: Emitter<I, O>): Transformer<I, O> =
-        if (match is SequenceMatcher) {
+        if (match is ListMatcher) {
+            if (result is ListEmitter) {
+                if (match.elements.size == result.elements.size) {
+                    ListTransformer(match.elements.zip(result.elements, this::makeTransformer))
+                } else {
+                    mismatchedLengths(match, result, match.elements.size, result.elements.size)
+                }
+            } else {
+                ListTransformer(match.elements.map { makeTransformer(it, result) })
+            }
+        } else if (result is ListEmitter) {
+            mismatchedLengths(match, result, 1, result.elements.size)
+        } else if (match is SequenceMatcher) {
             if (result is SequenceEmitter) {
                 if (match.elements.size == result.elements.size) {
                     SequenceTransformer(outType, match.elements.zip(result.elements, this::makeTransformer))

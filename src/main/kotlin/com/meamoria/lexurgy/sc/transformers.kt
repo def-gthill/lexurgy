@@ -32,6 +32,23 @@ class SequenceTransformer<I : Segment<I>, O : Segment<O>>(
     }
 }
 
+class ListTransformer<I : Segment<I>, O : Segment<O>>(
+    val elements: List<Transformer<I, O>>
+) : Transformer<I, O> {
+    override fun transform(
+        order: Int, declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings
+    ): UnboundTransformation<O>? {
+        for (element in elements) {
+            val altBindings = bindings.copy()
+            element.transform(order, declarations, word, start, altBindings)?.let {
+                bindings.combine(altBindings)
+                return it
+            }
+        }
+        return null
+    }
+}
+
 class SimpleTransformer<I : Segment<I>, O : Segment<O>>(
     val matcher: SimpleMatcher<I>,
     val emitter: SimpleEmitter<I, O>

@@ -46,8 +46,9 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
     )
 
     override fun walkDiacriticDeclaration(diacritic: String, matrix: ParseNode, before: Boolean): ParseNode =
-        DiacriticDeclarationNode(Diacritic(diacritic, (matrix as MatrixNode).matrix, before)
-    )
+        DiacriticDeclarationNode(
+            Diacritic(diacritic, (matrix as MatrixNode).matrix, before)
+        )
 
     override fun walkSymbolDeclaration(symbol: String, matrix: ParseNode?): ParseNode =
         SymbolDeclarationNode(Symbol(symbol, (matrix as? MatrixNode)?.matrix ?: Matrix(emptyList())))
@@ -82,12 +83,12 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
     ): ParseNode = UnlinkedRuleExpression(
         ruleFrom as UnlinkedRuleElement,
         ruleTo as UnlinkedResultElement,
-        when(condition) {
+        when (condition) {
             is TList -> condition.elements.map { it as UnlinkedEnvironment }
             is UnlinkedEnvironment -> listOf(condition)
             else -> emptyList()
         },
-        when(exclusion) {
+        when (exclusion) {
             is TList -> exclusion.elements.map { it as UnlinkedEnvironment }
             is UnlinkedEnvironment -> listOf(exclusion)
             else -> emptyList()
@@ -117,9 +118,8 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
     override fun walkRuleSequence(items: List<ParseNode>): ParseNode =
         UnlinkedSequenceElement(items.map { it as UnlinkedRuleElement })
 
-    override fun walkRuleList(items: List<ParseNode>): ParseNode {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
+    override fun walkRuleList(items: List<ParseNode>): ParseNode =
+        UnlinkedListElement(items.map { it as UnlinkedRuleElement })
 
     override fun walkSimpleElement(element: ParseNode): ParseNode = when (element) {
         is TextNode -> UnlinkedTextElement(element.text)
@@ -301,6 +301,15 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
 
         override fun <I : Segment<I>, O : Segment<O>> emitter(elements: List<Emitter<I, O>>): Emitter<I, O> =
             SequenceEmitter(elements)
+    }
+
+    private class UnlinkedListElement(override val elements: List<UnlinkedRuleElement>) :
+        ContainerResultElement() {
+
+        override fun <T : Segment<T>> matcher(elements: List<Matcher<T>>): Matcher<T> = ListMatcher(elements)
+
+        override fun <I : Segment<I>, O : Segment<O>> emitter(elements: List<Emitter<I, O>>): Emitter<I, O> =
+            ListEmitter(elements)
     }
 
     private class UnlinkedTextElement(val text: String) : UnlinkedResultElement {
