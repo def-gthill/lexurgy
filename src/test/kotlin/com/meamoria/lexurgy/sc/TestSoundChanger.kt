@@ -330,4 +330,63 @@ class TestSoundChanger : StringSpec({
         ch("unim") shouldBe "ynim"
         ch("enmnenmni") shouldBe "enmninmni"
     }
+
+    "We should be able to specify multiple possible environments for a change" {
+        val ch1 = lsc(
+            """
+                boundary-h-drop:
+                h => * / {$ _, _ $}
+            """.trimIndent()
+        )
+
+        ch1("hahahahah") shouldBe "ahahaha"
+
+        val ch2 = lsc(
+            """
+                fancy-frication:
+                {p, t, k} => {f, ts, x} / {_ a, {a, e, i, o, u} _ {e, i, o, u}}
+            """.trimIndent()
+        )
+
+        ch2("patika") shouldBe "fatsixa"
+        ch2("topeka") shouldBe "tofexa"
+        ch2("tentaklop") shouldBe "tentsaklop"
+    }
+
+    "A negated matrix value should only match sounds that don't have that feature value" {
+        val ch = lsc(
+            """
+                Feature Place(lab, alv, glot)
+                Feature Voicing(unvcd, vcd)
+                Symbol f [unvcd lab]
+                Symbol v [vcd lab]
+                Symbol s [unvcd alv]
+                Symbol z [vcd alv]
+                Symbol h [unvcd glot]
+                h-is-special:
+                [unvcd !glot] => [vcd] / a _ a
+            """.trimIndent()
+        )
+
+        ch("ahafasa") shouldBe "ahavaza"
+    }
+
+    "An absent feature value should only match sounds that don't have any value from that feature" {
+        val ch = lsc(
+            """
+                Feature Manner(stop, fric, nas)
+                Feature Voicing(unvcd, vcd)
+                Symbol t [stop unvcd]
+                Symbol d [stop vcd]
+                Symbol n [nas]
+                stop-to-nasal:
+                [stop] => [nas *Voicing] / a _ a
+                drop-nasal:
+                [*Voicing] => * / _ [stop]
+            """.trimIndent()
+        )
+
+        ch("antata") shouldBe "atana"
+        ch("adtata") shouldBe "adtana"
+    }
 })

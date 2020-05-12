@@ -47,7 +47,7 @@ class Declarations(
             val realValue = if (value.isNull())
                 AbsentFeature(valueToFeature.getValue(value as SimpleValue).name)
             else value
-            if (!realValue.matches(this@Declarations, complexSymbolMatrix, bindings)) return false
+            if (!realValue.matches(complexSymbolMatrix, bindings)) return false
         }
         return true
     }
@@ -113,15 +113,24 @@ class Declarations(
         val oldMatrixFeatures = simpleValues.associateBy { it.toFeatureOrThrow() }
         val newMatrixValues = valueList.toMutableList()
         for (value in updateMatrix.valueList) {
-            val updateFeature = (value as SimpleValue).toFeatureOrThrow()
-            oldMatrixFeatures[updateFeature]?.let { newMatrixValues.remove(it) }
-            newMatrixValues += value
+            if (value is AbsentFeature) {
+                val updateFeature = value.featureName.toFeature()
+                oldMatrixFeatures[updateFeature]?.let { newMatrixValues.remove(it) }
+            }
+            else {
+                val updateFeature = (value as SimpleValue).toFeatureOrThrow()
+                oldMatrixFeatures[updateFeature]?.let { newMatrixValues.remove(it) }
+                newMatrixValues += value
+            }
         }
         return Matrix(newMatrixValues)
     }
 
     private fun SimpleValue.toFeatureOrThrow(): Feature =
         valueToFeature[this] ?: throw LscUndefinedName("feature value", name)
+
+    fun MatrixValue.matches(matrix: Matrix, bindings: Bindings): Boolean =
+        matches(this@Declarations, matrix, bindings)
 }
 
 class SegmentClass
