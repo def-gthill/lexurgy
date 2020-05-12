@@ -187,7 +187,7 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
         val propagate: Boolean
     ) : ParseNode {
         fun link(declarations: Declarations): ChangeRule =
-            ChangeRule(expressions.map { subrule -> subrule.map { it.phonetic(declarations) } })
+            ChangeRule(name, expressions.map { subrule -> subrule.map { it.phonetic(declarations) } })
     }
 
     private class UnlinkedRuleExpression(

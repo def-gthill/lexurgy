@@ -26,9 +26,13 @@ class MatrixEmitter(val matrix: Matrix) : SimpleEmitter<PhonS, PhonS> {
                 Phonetic.fromSegments(listOf(resultMatrix.toSymbol()))
             }
         }
+
+    override fun toString(): String = matrix.toString()
 }
 
 class TextEmitter<I : Segment<I>, O : Segment<O>>(val text: Word<O>) : SimpleEmitter<I, O> {
     override fun result(declarations: Declarations, original: Word<I>): UnboundResult<O> =
         { text }
+
+    override fun toString(): String = text.string.ifEmpty { "*" }
 }

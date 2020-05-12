@@ -389,4 +389,24 @@ class TestSoundChanger : StringSpec({
         ch("antata") shouldBe "atana"
         ch("adtata") shouldBe "adtana"
     }
+
+    "We should be able to copy feature variables from one matrix to another using feature variables" {
+        val ch = lsc(
+            """
+                Feature Height(low, high)
+                Feature Depth(front, back)
+                Symbol a [low back]
+                Symbol e [low front]
+                Symbol o [high back]
+                Symbol i [high front]
+                short-harmony:
+                [] => [${'$'}Height] / [${'$'}Height] n+ _
+                [${'$'}Height ${'$'}Depth] => * / [${'$'}Height ${'$'}Depth] _
+            """.trimIndent()
+        )
+
+        ch("anni") shouldBe "anne"
+        ch("inna") shouldBe "inno"
+        ch("beetaamae") shouldBe "betamae"
+    }
 })

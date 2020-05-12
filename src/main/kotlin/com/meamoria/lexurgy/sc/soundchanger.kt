@@ -22,6 +22,9 @@ class SoundChanger(
             return parser.parseFile(code) as SoundChanger
         }
     }
+
+    override fun toString(): String = (listOf(deromanizer) + rules + romanizer).joinToString(
+        separator = "; ", prefix = "SoundChanger(", postfix = ")")
 }
 
 abstract class SimpleChangeRule<I : Segment<I>, O : Segment<O>>(
@@ -59,6 +62,8 @@ abstract class SimpleChangeRule<I : Segment<I>, O : Segment<O>>(
         }
         return result
     }
+
+    override fun toString(): String = expressions.joinToString().ifBlank { "<no changes>" }
 }
 
 typealias PhonS = PhoneticSegment
@@ -81,7 +86,7 @@ class Romanizer(expressions: List<RuleExpression<PhonS, PlainS>>) :
     }
 }
 
-class ChangeRule(expressions: List<List<RuleExpression<PhonS, PhonS>>>) {
+class ChangeRule(val name: String, expressions: List<List<RuleExpression<PhonS, PhonS>>>) {
     val subrules: List<SimpleChangeRule<PhonS, PhonS>> = expressions.map { Subrule(it) }
 
     operator fun invoke(word: Word<PhonS>): Word<PhonS> {
@@ -92,6 +97,10 @@ class ChangeRule(expressions: List<List<RuleExpression<PhonS, PhonS>>>) {
 
     private class Subrule(expressions: List<RuleExpression<PhonS, PhonS>>) :
         SimpleChangeRule<PhonS, PhonS>(Phonetic, Phonetic, expressions, { x -> x })
+
+    override fun toString(): String = subrules.joinToString(
+        separator = " then ", prefix = "Rule $name: "
+    )
 }
 
 class RuleExpression<I : Segment<I>, O : Segment<O>>(
@@ -209,11 +218,24 @@ class RuleExpression<I : Segment<I>, O : Segment<O>>(
         }
         return null
     }
+
+    override fun toString(): String {
+        fun environtext(sep: String, environ: List<Environment<I>>) =
+            when (environ.size) {
+                0 -> ""
+                1 -> " $sep ${environ.single()}"
+                else -> " $sep ${environ.joinToString(prefix = "{", postfix = "}")}"
+            }
+
+        return "$match => $result${environtext("/", condition)}${environtext("//", exclusion)}"
+    }
 }
 
 data class TransformationWithMatchStart<O : Segment<O>>(val transformation: Transformation<O>, val matchStart: Int)
 
-class Environment<I : Segment<I>>(val before: Matcher<I>, val after: Matcher<I>)
+class Environment<I : Segment<I>>(val before: Matcher<I>, val after: Matcher<I>) {
+    override fun toString(): String = "$before _ $after"
+}
 
 class LscInvalidRuleExpression(
     val matcher: Matcher<*>, val emitter: Emitter<*, *>, message: String

@@ -25,6 +25,8 @@ class SequenceMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : Matcher<
         }
         return elementStart
     }
+
+    override fun toString(): String = elements.joinToString(separator = " ", prefix = "(", postfix = ")")
 }
 
 class CaptureMatcher<I : Segment<I>>(val element: Matcher<I>, val number: Int) : Matcher<I> {
@@ -44,6 +46,8 @@ class RepeaterMatcher<I : Segment<I>>(val element: Matcher<I>, val type: Repeate
         }
         return elementStart.takeIf { times >= type.minReps }
     }
+
+    override fun toString(): String = "$element${type.string}"
 }
 
 class ListMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : Matcher<I> {
@@ -69,9 +73,13 @@ class MatrixMatcher(val matrix: Matrix) : SimpleMatcher<PhonS> {
             else null
         }
     }
+
+    override fun toString(): String = matrix.toString()
 }
 
 class TextMatcher<I : Segment<I>>(val text: Word<I>) : SimpleMatcher<I> {
     override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int? =
         if (word.drop(start).take(text.length) == text) start + text.length else null
+
+    override fun toString(): String = text.string.ifEmpty { "*" }
 }

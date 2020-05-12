@@ -59,6 +59,8 @@ data class FeatureVariable(val featureName: String): MatrixValue {
             } != null
         }
     }
+
+    override fun toString(): String = "$$featureName"
 }
 
 data class SimpleValue(val name: String): MatrixValue {
