@@ -121,6 +121,14 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
 
     override fun visitSequenceelement(ctx: LscParser.SequenceelementContext): T = visit(ctx.getChild(0))
 
+    override fun visitRulecapture(ctx: LscParser.RulecaptureContext): T =
+        walkRuleCapture(visit(ctx.getChild(0)), visit(ctx.captureref()))
+
+    override fun visitRulerepeater(ctx: LscParser.RulerepeaterContext): T =
+        walkRuleRepeater(visit(ctx.getChild(0)), visit(ctx.repeatertype()))
+
+    override fun visitRulegroup(ctx: LscParser.RulegroupContext): T = visit(ctx.ruleelement())
+
     override fun visitRulelist(ctx: LscParser.RulelistContext): T = walkRuleList(listVisit(ctx.ruleelement()))
 
     override fun visitSimpleelement(ctx: LscParser.SimpleelementContext): T = walkSimpleElement(visit(ctx.getChild(0)))
@@ -137,6 +145,15 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
         walkFeatureVariable(visit(ctx.feature()))
 
     override fun visitEmpty(ctx: LscParser.EmptyContext): T = walkEmpty()
+
+    override fun visitRepeatertype(ctx: LscParser.RepeatertypeContext): T = walkRepeaterType(
+        when {
+            ctx.ATLEASTONE() != null -> RepeaterType.ONE_OR_MORE
+            ctx.NULL() != null -> RepeaterType.ZERO_OR_MORE
+            ctx.OPTIONAL() != null -> RepeaterType.ZERO_OR_ONE
+            else -> throw AssertionError()
+        }
+    )
 
     override fun visitMatrix(ctx: LscParser.MatrixContext): T = walkMatrix(listVisit(ctx.value()))
 
@@ -196,11 +213,17 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
 
     abstract fun walkRuleSequence(items: List<T>): T
 
+    open fun walkRuleCapture(item: T, capture: T): T = item
+
+    open fun walkRuleRepeater(item: T, repeaterType: T): T = item
+
     abstract fun walkRuleList(items: List<T>): T
 
     open fun walkSimpleElement(element: T): T = element
 
     abstract fun walkEmpty(): T
+
+    open fun walkRepeaterType(type: RepeaterType): T = throw NotImplementedError()
 
     abstract fun walkMatrix(values: List<T>): T
 

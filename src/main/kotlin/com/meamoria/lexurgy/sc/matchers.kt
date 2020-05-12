@@ -27,6 +27,25 @@ class SequenceMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : Matcher<
     }
 }
 
+class CaptureMatcher<I : Segment<I>>(val element: Matcher<I>, val number: Int) : Matcher<I> {
+    override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int? {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+}
+
+class RepeaterMatcher<I : Segment<I>>(val element: Matcher<I>, val type: RepeaterType) : Matcher<I> {
+    override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int? {
+        var elementStart = start
+        var times = 0
+        while (elementStart < word.length) {
+            elementStart = element.claim(declarations, word, elementStart, bindings) ?: break
+            times++
+            if (type.maxReps?.let { times >= it } == true) break
+        }
+        return elementStart.takeIf { times >= type.minReps }
+    }
+}
+
 class ListMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : Matcher<I> {
     override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int? {
         for (element in elements) {
@@ -52,7 +71,7 @@ class MatrixMatcher(val matrix: Matrix) : SimpleMatcher<PhonS> {
     }
 }
 
-class TextMatcher<I: Segment<I>>(val text: Word<I>) : SimpleMatcher<I> {
+class TextMatcher<I : Segment<I>>(val text: Word<I>) : SimpleMatcher<I> {
     override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int? =
         if (word.drop(start).take(text.length) == text) start + text.length else null
 }

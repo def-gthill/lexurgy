@@ -316,4 +316,18 @@ class TestSoundChanger : StringSpec({
         ch("tenpin") shouldBe "tanpen"
         ch("mitochondrion") shouldBe "mituchundriun"
     }
+
+    "We should be able to match repeated segments" {
+        val ch = lsc(
+            """
+                umlaut:
+                {a, e, u} => {e, i, y} / _ {m, n}+ i {m, n}* $
+            """.trimIndent()
+        )
+
+        ch("anni") shouldBe "enni"
+        ch("uim") shouldBe "uim"
+        ch("unim") shouldBe "ynim"
+        ch("enmnenmni") shouldBe "enmninmni"
+    }
 })

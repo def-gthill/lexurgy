@@ -118,6 +118,12 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
     override fun walkRuleSequence(items: List<ParseNode>): ParseNode =
         UnlinkedSequenceElement(items.map { it as UnlinkedRuleElement })
 
+    override fun walkRuleCapture(item: ParseNode, capture: ParseNode): ParseNode =
+        UnlinkedCaptureElement(item as UnlinkedRuleElement, capture as CaptureRefNode)
+
+    override fun walkRuleRepeater(item: ParseNode, repeaterType: ParseNode): ParseNode =
+        UnlinkedRepeaterElement(item as UnlinkedRuleElement, repeaterType as RepeaterTypeNode)
+
     override fun walkRuleList(items: List<ParseNode>): ParseNode =
         UnlinkedListElement(items.map { it as UnlinkedRuleElement })
 
@@ -128,6 +134,8 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
     }
 
     override fun walkEmpty(): ParseNode = EmptyElement
+
+    override fun walkRepeaterType(type: RepeaterType): ParseNode = RepeaterTypeNode(type)
 
     override fun walkMatrix(values: List<ParseNode>): ParseNode =
         MatrixNode(Matrix(values.map { (it as ValueNode).value }))
@@ -303,6 +311,24 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
             SequenceEmitter(elements)
     }
 
+    private class UnlinkedCaptureElement(val element: UnlinkedRuleElement, val capture: CaptureRefNode) :
+        UnlinkedRuleElement {
+
+        override fun plain(): Matcher<PlainS> = CaptureMatcher(element.plain(), capture.number)
+
+        override fun phonetic(declarations: Declarations): Matcher<PhonS> =
+            CaptureMatcher(element.phonetic(declarations), capture.number)
+    }
+
+    private class UnlinkedRepeaterElement(val element: UnlinkedRuleElement, val repeaterType: RepeaterTypeNode) :
+        UnlinkedRuleElement {
+
+        override fun plain(): Matcher<PlainS> = RepeaterMatcher(element.plain(), repeaterType.type)
+
+        override fun phonetic(declarations: Declarations): Matcher<PhonS> =
+            RepeaterMatcher(element.phonetic(declarations), repeaterType.type)
+    }
+
     private class UnlinkedListElement(override val elements: List<UnlinkedRuleElement>) :
         ContainerResultElement() {
 
@@ -354,6 +380,10 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
 
         override fun phoneticEmitter(declarations: Declarations): Emitter<PhonS, PhonS> = TextEmitter(Phonetic.empty)
     }
+
+    private class CaptureRefNode(val number: Int) : ParseNode
+
+    private class RepeaterTypeNode(val type: RepeaterType) : ParseNode
 
     private class MatrixNode(val matrix: Matrix) : ParseNode
 
