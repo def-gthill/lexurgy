@@ -32,6 +32,13 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
         return SoundChanger(linkedRules, linkedDeromanizer, linkedRomanizer)
     }
 
+    override fun walkClassDeclaration(className: ParseNode, sounds: List<ParseNode>): ParseNode = ClassDeclarationNode(
+        SegmentClass(
+            (className as SimpleValueNode).simpleValue.name,
+            sounds.map { (it as TextNode).text }
+        )
+    )
+
     override fun walkFeatureDeclaration(
         featureName: ParseNode,
         nullAlias: ParseNode?,
@@ -134,6 +141,11 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
     }
 
     override fun walkEmpty(): ParseNode = EmptyElement
+
+    override fun walkClassReference(value: ParseNode): ParseNode =
+        ClassReferenceElement((value as SimpleValueNode).simpleValue.name)
+
+    override fun walkCaptureReference(number: Int): ParseNode = CaptureRefNode(number)
 
     override fun walkRepeaterType(type: RepeaterType): ParseNode = RepeaterTypeNode(type)
 
@@ -294,6 +306,20 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
         abstract fun <I : Segment<I>, O : Segment<O>> emitter(elements: List<Emitter<I, O>>): Emitter<I, O>
     }
 
+    // Base class for elements that are invalid in plain context, and throw an exception indicating this
+    private abstract class PhoneticOnlyResultElement : UnlinkedResultElement {
+        override fun plain(): Matcher<PlainS> = foundInPlain()
+
+        override fun inPhoneticEmitter(declarations: Declarations): Emitter<PhonS, PlainS> =
+            foundInPlain()
+
+        override fun outPhoneticEmitter(declarations: Declarations): Emitter<PlainS, PhonS> =
+            foundInPlain()
+
+        // Throw the desired exception
+        abstract fun foundInPlain(): Nothing
+    }
+
     private object UnlinkedWordStartElement : ChameleonRuleElement {
         override fun <T : Segment<T>> link(): Matcher<T> = WordStartMatcher()
     }
@@ -354,18 +380,12 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
             TextEmitter(declarations.parsePhonetic(text))
     }
 
-    private class UnlinkedMatrixElement(val matrix: Matrix) : UnlinkedResultElement {
-        override fun plain(): Matcher<PlainS> = throw LscMatrixInPlain(matrix)
-
+    private class UnlinkedMatrixElement(val matrix: Matrix) : PhoneticOnlyResultElement() {
         override fun phonetic(declarations: Declarations): Matcher<PhonS> = MatrixMatcher(matrix)
 
-        override fun inPhoneticEmitter(declarations: Declarations): Emitter<PhonS, PlainS> =
-            throw LscMatrixInPlain(matrix)
-
-        override fun outPhoneticEmitter(declarations: Declarations): Emitter<PlainS, PhonS> =
-            throw LscMatrixInPlain(matrix)
-
         override fun phoneticEmitter(declarations: Declarations): Emitter<PhonS, PhonS> = MatrixEmitter(matrix)
+
+        override fun foundInPlain(): Nothing = throw LscMatrixInPlain(matrix)
     }
 
     private object EmptyElement : UnlinkedResultElement {
@@ -379,6 +399,20 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
             TextEmitter(Phonetic.empty)
 
         override fun phoneticEmitter(declarations: Declarations): Emitter<PhonS, PhonS> = TextEmitter(Phonetic.empty)
+    }
+
+    private class ClassReferenceElement(val name: String) : PhoneticOnlyResultElement() {
+        override fun phonetic(declarations: Declarations): Matcher<PhonS> =
+            with (declarations) {
+                ListMatcher(name.toClass().sounds.map { UnlinkedTextElement(it).phonetic(this) })
+            }
+
+        override fun phoneticEmitter(declarations: Declarations): Emitter<PhonS, PhonS> =
+            with (declarations) {
+                ListEmitter(name.toClass().sounds.map { UnlinkedTextElement(it).phoneticEmitter(this) })
+            }
+
+        override fun foundInPlain(): Nothing = throw LscClassInPlain(name)
     }
 
     private class CaptureRefNode(val number: Int) : ParseNode

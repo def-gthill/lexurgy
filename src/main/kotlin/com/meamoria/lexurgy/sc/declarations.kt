@@ -23,6 +23,8 @@ class Declarations(
 
     private val matrixToSymbolCache = mutableMapOf<Matrix, PhoneticSegment>()
 
+    private val classNameToClass = classes.associateBy { it.name }
+
     private val phoneticParser = PhoneticParser(
         symbols.map { it.name },
         diacritics.filter { it.before }.map { it.name },
@@ -36,6 +38,9 @@ class Declarations(
 
     fun String.toFeature(): Feature =
         featureNameToFeatureMap[this] ?: throw LscUndefinedName("feature", this)
+
+    fun String.toClass(): SegmentClass =
+        classNameToClass[this] ?: throw LscUndefinedName("sound class", this)
 
     /**
      * Tries to match the specified matrix to the specified phonetic symbol.
@@ -110,7 +115,7 @@ class Declarations(
     }
 
     fun Matrix.update(updateMatrix: Matrix): Matrix {
-        val oldMatrixFeatures = simpleValues.associateBy { it.toFeatureOrThrow() }
+        val oldMatrixFeatures = simpleValues.associateBy { it.toFeature() }
         val newMatrixValues = valueList.toMutableList()
         for (value in updateMatrix.valueList) {
             if (value is AbsentFeature) {
@@ -118,7 +123,7 @@ class Declarations(
                 oldMatrixFeatures[updateFeature]?.let { newMatrixValues.remove(it) }
             }
             else {
-                val updateFeature = (value as SimpleValue).toFeatureOrThrow()
+                val updateFeature = (value as SimpleValue).toFeature()
                 oldMatrixFeatures[updateFeature]?.let { newMatrixValues.remove(it) }
                 newMatrixValues += value
             }
@@ -126,14 +131,14 @@ class Declarations(
         return Matrix(newMatrixValues)
     }
 
-    private fun SimpleValue.toFeatureOrThrow(): Feature =
+    private fun SimpleValue.toFeature(): Feature =
         valueToFeature[this] ?: throw LscUndefinedName("feature value", name)
 
     fun MatrixValue.matches(matrix: Matrix, bindings: Bindings): Boolean =
         matches(this@Declarations, matrix, bindings)
 }
 
-class SegmentClass
+class SegmentClass(val name: String, val sounds: List<String>)
 
 class Feature(val name: String, val values: List<SimpleValue>, val nullAlias: SimpleValue? = null) {
     val allValues: List<SimpleValue> = listOfNotNull(nullAlias) + values

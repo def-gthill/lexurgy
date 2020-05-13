@@ -217,6 +217,9 @@ class TestLscParse : StringSpec({
                         listOfNotNull(deromanizer) + changeRules + listOfNotNull(romanizer)
                 ).joinToString()
 
+        override fun walkClassDeclaration(className: String, sounds: List<String>): String =
+            "cdec($className, ${sounds.joinToString()})"
+
         override fun walkFeatureDeclaration(
             featureName: String,
             nullAlias: String?,
@@ -276,6 +279,10 @@ class TestLscParse : StringSpec({
         override fun walkRuleList(items: List<String>): String = "list(${items.joinToString()})"
 
         override fun walkEmpty(): String = "null"
+
+        override fun walkClassReference(value: String): String = "c($value)"
+
+        override fun walkCaptureReference(number: Int): String = "cap($number)"
 
         override fun walkMatrix(values: List<String>): String = "mat(${values.joinToString()})"
 

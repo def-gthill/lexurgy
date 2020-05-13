@@ -52,6 +52,11 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
         optionalVisit(ctx.romanizer())
     )
 
+    override fun visitClassdecl(ctx: LscParser.ClassdeclContext): T = walkClassDeclaration(
+        visit(ctx.value()),
+        listVisit(ctx.text())
+    )
+
     override fun visitFeaturedecl(ctx: LscParser.FeaturedeclContext): T = walkFeatureDeclaration(
         visit(ctx.feature()),
         optionalVisit(ctx.nullalias()),
@@ -133,6 +138,10 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
 
     override fun visitSimpleelement(ctx: LscParser.SimpleelementContext): T = walkSimpleElement(visit(ctx.getChild(0)))
 
+    override fun visitClassref(ctx: LscParser.ClassrefContext): T = walkClassReference(visit(ctx.value()))
+
+    override fun visitCaptureref(ctx: LscParser.CapturerefContext): T = walkCaptureReference(ctx.NUMBER().text.toInt())
+
     override fun visitFancymatrix(ctx: LscParser.FancymatrixContext): T = walkMatrix(listVisit(ctx.fancyvalue()))
 
     override fun visitFancyvalue(ctx: LscParser.FancyvalueContext): T = visit(ctx.getChild(0))
@@ -172,6 +181,8 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
         changeRules: List<T>,
         romanizer: T?
     ): T
+
+    abstract fun walkClassDeclaration(className: T, sounds: List<T>): T
 
     abstract fun walkFeatureDeclaration(
         featureName: T,
@@ -222,6 +233,10 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
     open fun walkSimpleElement(element: T): T = element
 
     abstract fun walkEmpty(): T
+
+    abstract fun walkClassReference(value: T): T
+
+    abstract fun walkCaptureReference(number: Int): T
 
     open fun walkRepeaterType(type: RepeaterType): T = throw NotImplementedError()
 

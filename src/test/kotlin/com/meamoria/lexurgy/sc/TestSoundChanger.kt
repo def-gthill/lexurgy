@@ -402,7 +402,7 @@ class TestSoundChanger : StringSpec({
     }
 
     "We should be able to copy feature variables from one matrix to another using feature variables" {
-        val ch = lsc(
+        val ch1 = lsc(
             """
                 Feature Height(low, high)
                 Feature Depth(front, back)
@@ -416,8 +416,43 @@ class TestSoundChanger : StringSpec({
             """.trimIndent()
         )
 
-        ch("anni") shouldBe "anne"
-        ch("inna") shouldBe "inno"
-        ch("beetaamae") shouldBe "betamae"
+        ch1("anni") shouldBe "anne"
+        ch1("inna") shouldBe "inno"
+        ch1("beetaamae") shouldBe "betamae"
+
+        val ch2 = lsc(
+            """
+                Feature Height(low, high)
+                Feature Depth(front, back)
+                Feature Rounding(round, unround)
+                Symbol a [low back unround]
+                Symbol o [low back round]
+                Symbol e [low front unround]
+                Symbol ö [low front round]
+                Symbol ï [high back unround]
+                Symbol u [high back round]
+                Symbol i [high front unround]
+                Symbol ü [high front round]
+                coalescence:
+                {[${'$'}Rounding ${'$'}Height] [high ${'$'}Depth], [high ${'$'}Depth] [${'$'}Rounding ${'$'}Height]} => [${'$'}Rounding ${'$'}Depth ${'$'}Height] *
+            """.trimIndent()
+        )
+
+        ch2("duomaitio") shouldBe "dometö"
+    }
+
+    "We should be able to define reusable alternative lists as sound classes" {
+        val ch = lsc(
+            """
+                Class vowel {a, e, i, o, u}
+                Class unvcdstop {p, t, k}
+                Class vcdstop {b, d, g}
+                intervocalic-lenition:
+                @unvcdstop => @vcdstop / @vowel _ @vowel
+            """.trimIndent()
+        )
+
+        ch("apetiko") shouldBe "abedigo"
+        ch("aptiko") shouldBe "aptigo"
     }
 })

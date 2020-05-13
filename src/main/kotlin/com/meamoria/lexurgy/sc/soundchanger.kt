@@ -242,4 +242,6 @@ class LscInvalidRuleExpression(
 ) :
     Exception(message)
 
-class LscMatrixInPlain(val matrix: Matrix) : Exception("Feature matrices aren't allowed in a romanized context")
+class LscMatrixInPlain(val matrix: Matrix) : Exception("Feature matrix $matrix isn't allowed in a romanized context")
+
+class LscClassInPlain(val className: String): Exception("Sound class $className isn't allowed in a romanized context")
