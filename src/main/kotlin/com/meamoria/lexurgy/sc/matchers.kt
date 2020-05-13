@@ -29,12 +29,6 @@ class SequenceMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : Matcher<
     override fun toString(): String = elements.joinToString(separator = " ", prefix = "(", postfix = ")")
 }
 
-class CaptureMatcher<I : Segment<I>>(val element: Matcher<I>, val number: Int) : Matcher<I> {
-    override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int? {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-}
-
 class RepeaterMatcher<I : Segment<I>>(val element: Matcher<I>, val type: RepeaterType) : Matcher<I> {
     override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int? {
         var elementStart = start
@@ -65,14 +59,29 @@ class ListMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : Matcher<I> {
 
 interface SimpleMatcher<I : Segment<I>> : Matcher<I>
 
+class CaptureMatcher(val element: Matcher<PhonS>, val number: Int) : SimpleMatcher<PhonS> {
+    override fun claim(declarations: Declarations, word: Word<PhonS>, start: Int, bindings: Bindings): Int? =
+        element.claim(declarations, word, start, bindings)?.also { end ->
+            bindings.captures[number] = word.slice(start until end)
+        }
+}
+
+class CaptureReferenceMatcher(val number: Int): SimpleMatcher<PhonS> {
+    override fun claim(declarations: Declarations, word: Word<PhonS>, start: Int, bindings: Bindings): Int? =
+        bindings.captures[number]?.let { capturedText ->
+            return (start + capturedText.length).takeIf { end ->
+                word.slice(start until end) == capturedText
+            }
+        } ?: throw LscUnboundCapture(number)
+}
+
 class MatrixMatcher(val matrix: Matrix) : SimpleMatcher<PhonS> {
-    override fun claim(declarations: Declarations, word: Word<PhonS>, start: Int, bindings: Bindings): Int? {
+    override fun claim(declarations: Declarations, word: Word<PhonS>, start: Int, bindings: Bindings): Int? =
         with(declarations) {
             val boundMatrix = matrix.bindVariables(bindings)
-            return if (start < word.length && word[start].matches(boundMatrix, bindings)) start + 1
+            if (start < word.length && word[start].matches(boundMatrix, bindings)) start + 1
             else null
         }
-    }
 
     override fun toString(): String = matrix.toString()
 }

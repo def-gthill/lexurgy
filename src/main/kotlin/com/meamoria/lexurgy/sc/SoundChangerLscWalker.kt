@@ -4,7 +4,6 @@ import com.meamoria.lexurgy.Phonetic
 import com.meamoria.lexurgy.Plain
 import com.meamoria.lexurgy.PlainWord
 import com.meamoria.lexurgy.Segment
-import java.text.ParseException
 
 class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
     override fun walkFile(
@@ -126,7 +125,7 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
         UnlinkedSequenceElement(items.map { it as UnlinkedRuleElement })
 
     override fun walkRuleCapture(item: ParseNode, capture: ParseNode): ParseNode =
-        UnlinkedCaptureElement(item as UnlinkedRuleElement, capture as CaptureRefNode)
+        UnlinkedCaptureElement(item as UnlinkedRuleElement, capture as CaptureReferenceElement)
 
     override fun walkRuleRepeater(item: ParseNode, repeaterType: ParseNode): ParseNode =
         UnlinkedRepeaterElement(item as UnlinkedRuleElement, repeaterType as RepeaterTypeNode)
@@ -145,7 +144,7 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
     override fun walkClassReference(value: ParseNode): ParseNode =
         ClassReferenceElement((value as SimpleValueNode).simpleValue.name)
 
-    override fun walkCaptureReference(number: Int): ParseNode = CaptureRefNode(number)
+    override fun walkCaptureReference(number: Int): ParseNode = CaptureReferenceElement(number)
 
     override fun walkRepeaterType(type: RepeaterType): ParseNode = RepeaterTypeNode(type)
 
@@ -272,6 +271,13 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
         fun <T : Segment<T>> matcher(elements: List<Matcher<T>>): Matcher<T>
     }
 
+    private abstract class PhoneticOnlyRuleElement : UnlinkedRuleElement {
+        override fun plain(): Matcher<PlainS> = foundInPlain()
+
+        // Throw the desired exception
+        abstract fun foundInPlain(): Nothing
+    }
+
     private interface UnlinkedResultElement : UnlinkedRuleElement {
         fun inPhoneticEmitter(declarations: Declarations): Emitter<PhonS, PlainS>
 
@@ -307,17 +313,12 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
     }
 
     // Base class for elements that are invalid in plain context, and throw an exception indicating this
-    private abstract class PhoneticOnlyResultElement : UnlinkedResultElement {
-        override fun plain(): Matcher<PlainS> = foundInPlain()
-
+    private abstract class PhoneticOnlyResultElement : PhoneticOnlyRuleElement(), UnlinkedResultElement {
         override fun inPhoneticEmitter(declarations: Declarations): Emitter<PhonS, PlainS> =
             foundInPlain()
 
         override fun outPhoneticEmitter(declarations: Declarations): Emitter<PlainS, PhonS> =
             foundInPlain()
-
-        // Throw the desired exception
-        abstract fun foundInPlain(): Nothing
     }
 
     private object UnlinkedWordStartElement : ChameleonRuleElement {
@@ -337,13 +338,13 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
             SequenceEmitter(elements)
     }
 
-    private class UnlinkedCaptureElement(val element: UnlinkedRuleElement, val capture: CaptureRefNode) :
-        UnlinkedRuleElement {
-
-        override fun plain(): Matcher<PlainS> = CaptureMatcher(element.plain(), capture.number)
+    private class UnlinkedCaptureElement(val element: UnlinkedRuleElement, val capture: CaptureReferenceElement) :
+        PhoneticOnlyRuleElement() {
 
         override fun phonetic(declarations: Declarations): Matcher<PhonS> =
             CaptureMatcher(element.phonetic(declarations), capture.number)
+
+        override fun foundInPlain(): Nothing = throw LscCaptureInPlain(capture.number)
     }
 
     private class UnlinkedRepeaterElement(val element: UnlinkedRuleElement, val repeaterType: RepeaterTypeNode) :
@@ -415,7 +416,15 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
         override fun foundInPlain(): Nothing = throw LscClassInPlain(name)
     }
 
-    private class CaptureRefNode(val number: Int) : ParseNode
+    private class CaptureReferenceElement(val number: Int) : PhoneticOnlyResultElement() {
+        override fun phonetic(declarations: Declarations): Matcher<PhonS> =
+            CaptureReferenceMatcher(number)
+
+        override fun phoneticEmitter(declarations: Declarations): Emitter<PhonS, PhonS> =
+            CaptureReferenceEmitter(number)
+
+        override fun foundInPlain(): Nothing = throw LscCaptureInPlain(number)
+    }
 
     private class RepeaterTypeNode(val type: RepeaterType) : ParseNode
 

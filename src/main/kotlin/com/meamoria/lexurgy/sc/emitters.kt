@@ -16,6 +16,13 @@ interface SimpleEmitter<I : Segment<I>, O : Segment<O>> : Emitter<I, O> {
     fun result(declarations: Declarations, original: Word<I>): UnboundResult<O>
 }
 
+class CaptureReferenceEmitter(val number: Int): SimpleEmitter<PhonS, PhonS> {
+    override fun result(declarations: Declarations, original: Word<PhonS>): UnboundResult<PhonS> =
+        { bindings ->
+            bindings.captures[number] ?: throw LscUnboundCapture(number)
+        }
+}
+
 class MatrixEmitter(val matrix: Matrix) : SimpleEmitter<PhonS, PhonS> {
     override fun result(declarations: Declarations, original: Word<PhonS>): UnboundResult<PhonS> =
         {bindings ->

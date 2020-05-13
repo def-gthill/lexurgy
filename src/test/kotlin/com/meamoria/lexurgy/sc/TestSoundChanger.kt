@@ -455,4 +455,20 @@ class TestSoundChanger : StringSpec({
         ch("apetiko") shouldBe "abedigo"
         ch("aptiko") shouldBe "aptigo"
     }
+
+    "We should be able to implement gemination and degemination with captures" {
+        val ch = lsc(
+            """
+                Class stop {p, t, k}
+                Class fricative {f, s, x}
+                stop-gemination:
+                h @stop$1 => $1 $1
+                fricative-degemination:
+                @fricative$1 => * / _ $1
+            """.trimIndent()
+        )
+
+        ch("ahpessi") shouldBe "appesi"
+        ch("ifsehkasxo") shouldBe "ifsekkasxo"
+    }
 })
