@@ -2,6 +2,8 @@ package com.meamoria.lexurgy.sc
 
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.beOfType
+import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 
 class TestSoundChanger : StringSpec({
@@ -470,5 +472,156 @@ class TestSoundChanger : StringSpec({
 
         ch("ahpessi") shouldBe "appesi"
         ch("ifsehkasxo") shouldBe "ifsekkasxo"
+    }
+
+    "We should be able to implement metathesis with captures" {
+        val ch = lsc(
+            """
+                Class stop {p, t, k}
+                Class fricative {f, s, x}
+                Class vowel {a, e, i, o, u}
+                metathesis:
+                @stop$1 @fricative$2 => $2 $1 / @vowel _ @vowel
+            """.trimIndent()
+        )
+
+        ch("taksidepsi") shouldBe "taskidespi"
+        ch("fnitficuts") shouldBe "fnifticuts"
+    }
+
+    "We should be able to sequence rule expressions rather than having them all happen at once" {
+        val chain = lsc(
+            """
+                Symbol ts
+                chain:
+                t => ts
+                ts => s
+                s => h
+                h => *
+            """.trimIndent()
+        )
+
+        val nonchain = lsc(
+            """
+                Symbol ts
+                not-a-chain:
+                t => ts
+                Then: ts => s
+                Then:
+                s => h
+                h => *
+            """.trimIndent()
+        )
+
+        chain("tatsasaha") shouldBe "tsasahaa"
+        nonchain("tatsasaha") shouldBe "hahahaa"
+    }
+
+    "A rule with a filter should only operate on sounds that pass the filter" {
+        val ch = lsc(
+            """
+                Feature Height(low, high)
+                Feature Depth(front, back)
+                Symbol a [low back]
+                Symbol e [low front]
+                Symbol o [high back]
+                Symbol i [high front]
+                harmony [front]:
+                [] => [${'$'}Height] / [${'$'}Height] _
+                echo-deletion [back]:
+                [${'$'}Height] [${'$'}Height] => [front] *
+                fancy-breaking [high]:
+                i => ai / o _
+            """.trimIndent()
+        )
+
+        ch("enni") shouldBe "enne"
+        ch("onna") shouldBe "onna"
+        ch("ibstveki") shouldBe "ibstvike"
+
+        ch("onno") shouldBe "inn"
+        ch("onni") shouldBe "onnai"
+
+        shouldThrow<LscInvalidRuleExpression> { lsc("harmony [vowel]:\n[low] * => [high] a") }
+        shouldThrow<LscInvalidRuleExpression> { lsc("harmony [vowel]:\n[low] ai => [high] a") }
+    }
+
+    "Overlapping rules in a filter rule should be resolved in precedence order" {
+        val ch = lsc(
+            """
+                Feature Type(vowel)
+                Feature Height(low, mid, high)
+                Symbol a [vowel low]
+                Symbol e [vowel mid]
+                Symbol i [vowel high]
+                levelling [vowel]:
+                a i => e e
+                i a => e e
+            """.trimIndent()
+        )
+
+        ch("hapi") shouldBe "hepe"
+        ch("hapipa") shouldBe "hepepa"
+        ch("hipapi") shouldBe "hipepe"
+    }
+
+    "A propagating rule should be applied repeatedly until the word stabilizes" {
+        val ch1 = lsc(
+            """
+                Feature Height(low, high)
+                Feature Depth(front, back)
+                Feature Rounding(unrnd, rnd)
+                Feature Type(cons, vowel)
+                Symbol a [vowel low back unrnd]
+                Symbol e [vowel low front unrnd]
+                Symbol o [vowel low back rnd]
+                Symbol ø [vowel low front rnd]
+                Symbol ɨ [vowel high back unrnd]
+                Symbol i [vowel high front unrnd]
+                Symbol u [vowel high back rnd]
+                Symbol y [vowel high front rnd]
+                harmony-forward [vowel] propagate:
+                [] => [${'$'}Depth] / [${'$'}Depth] _
+                harmony-backward [vowel] propagate:
+                [] => [${'$'}Rounding] / _ [${'$'}Rounding]
+            """.trimIndent()
+        )
+
+        ch1("enotahu") shouldBe "ønøtøhy"
+        ch1("ypatoka") shouldBe "ipeteke"
+
+        val ch2 = lsc(
+            """
+                bouncing propagate:
+                a => e / b _
+                e => a / _ d
+            """.trimIndent()
+        )
+
+        val ex = shouldThrow<LscRuleNotApplicable> { ch2("bed") }
+        ex.cause should beOfType<LscDivergingPropagation>()
+    }
+
+    "A deromanizer should convert plain words to phonetic, and a romanizer should do the opposite" {
+        val ch = lsc(
+            """
+                Feature Type(cons, vowel)
+                Feature Depth(front, central, back)
+                Symbol a [vowel central]
+                Symbol i [vowel front]
+                Symbol u [vowel back]
+                Deromanizer:
+                sh => ʃ
+                sh-loss:
+                ʃ => s
+                Romanizer:
+                k => qu / _ [front]
+                k => c
+                f => v / [vowel] _ [vowel]
+            """.trimIndent()
+        )
+
+        ch("shaki") shouldBe "saqui"
+        ch("kafash") shouldBe "cavas"
     }
 })

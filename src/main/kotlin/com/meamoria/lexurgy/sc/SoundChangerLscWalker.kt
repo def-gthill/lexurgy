@@ -1,9 +1,6 @@
 package com.meamoria.lexurgy.sc
 
-import com.meamoria.lexurgy.Phonetic
-import com.meamoria.lexurgy.Plain
-import com.meamoria.lexurgy.PlainWord
-import com.meamoria.lexurgy.Segment
+import com.meamoria.lexurgy.*
 
 class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
     override fun walkFile(
@@ -59,13 +56,11 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
     override fun walkSymbolDeclaration(symbol: String, matrix: ParseNode?): ParseNode =
         SymbolDeclarationNode(Symbol(symbol, (matrix as? MatrixNode)?.matrix ?: Matrix(emptyList())))
 
-    override fun walkDeromanizer(expressions: List<ParseNode>): ParseNode {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
+    override fun walkDeromanizer(expressions: List<ParseNode>): ParseNode =
+        UnlinkedDeromanizer(expressions.map { it as UnlinkedRuleExpression })
 
-    override fun walkRomanizer(expressions: List<ParseNode>): ParseNode {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
+    override fun walkRomanizer(expressions: List<ParseNode>): ParseNode =
+        UnlinkedRomanizer(expressions.map { it as UnlinkedRuleExpression })
 
     override fun walkChangeRule(
         ruleName: String,
@@ -198,7 +193,18 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
         val propagate: Boolean
     ) : ParseNode {
         fun link(declarations: Declarations): ChangeRule =
-            ChangeRule(name, expressions.map { subrule -> subrule.map { it.phonetic(declarations) } })
+            ChangeRule(
+                name,
+                expressions.map { subrule -> subrule.map { it.phonetic(declarations, ruleFilter != null) } },
+                ruleFilter?.let { filter ->
+                    { segment: PhoneticSegment ->
+                        with(declarations) {
+                            segment.matches(filter.matrix, Bindings())
+                        }
+                    }
+                },
+                propagate
+            )
     }
 
     private class UnlinkedRuleExpression(
@@ -223,12 +229,13 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
             exclusion.map { it.plain() }
         )
 
-        fun phonetic(declarations: Declarations): RuleExpression<PhonS, PhonS> = RuleExpression(
+        fun phonetic(declarations: Declarations, filtered: Boolean): RuleExpression<PhonS, PhonS> = RuleExpression(
             Phonetic, Phonetic, declarations,
             match.phonetic(declarations),
             result.phoneticEmitter(declarations),
             condition.map { it.phonetic(declarations) },
-            exclusion.map { it.phonetic(declarations) }
+            exclusion.map { it.phonetic(declarations) },
+            filtered
         )
     }
 
