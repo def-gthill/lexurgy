@@ -55,14 +55,14 @@ abstract class SimpleChangeRule<I : Segment<I>, O : Segment<O>>(
         return outType.join(bits)
     }
 
-    private fun filterWord(word: Word<I>): Pair<Word<I>, IntArray> {
-        if (filter == null) return word to IntArray(0)
+    private fun filterWord(word: Word<I>): Pair<Word<I>, IntArray?> {
+        if (filter == null) return word to null
 
         val resultBits = mutableListOf<I>()
         val filterMap = mutableListOf<Int>()
         var filterIndex = 0
         for ((i, seg) in word.segments.withIndex()) {
-            if (filter(seg)) {
+            if (filter.invoke(seg)) {
                 resultBits += seg
                 filterMap += i
                 filterIndex++
@@ -86,9 +86,15 @@ abstract class SimpleChangeRule<I : Segment<I>, O : Segment<O>>(
     }
 
     private fun unfilterTransformations(
-        filterMap: IntArray, transformations: List<Transformation<O>>
+        filterMap: IntArray?, transformations: List<Transformation<O>>
     ): List<Transformation<O>> {
-        TODO()
+        if (filterMap == null) return transformations
+
+        return transformations.flatMap { tr ->
+            tr.elementalSubs.map { sub ->
+                Transformation(sub.order, filterMap[sub.start], 1, sub.result)
+            }
+        }
     }
 
     override fun toString(): String = expressions.joinToString().ifBlank { "<no changes>" }
@@ -146,13 +152,13 @@ class RuleExpression<I : Segment<I>, O : Segment<O>>(
     val exclusion: List<Environment<I>>,
     val filtered: Boolean = false
 ) {
-    val transformer = makeTransformerWithFilterChecks(match, result)
+    val transformer = makeTransformer(match, result)
 
     private val realEnvironment =
         if (condition.isEmpty()) listOf(Environment(TextMatcher(inType.empty), TextMatcher(inType.empty)))
         else condition
 
-    private fun makeTransformerWithFilterChecks(match: Matcher<I>, result: Emitter<I, O>): Transformer<I, O> {
+    private fun makeTransformer(match: Matcher<I>, result: Emitter<I, O>): Transformer<I, O> {
         if (filtered && match is TextMatcher) {
             if (match.text.string.isEmpty()) {
                 throw LscInvalidRuleExpression(
@@ -165,11 +171,11 @@ class RuleExpression<I : Segment<I>, O : Segment<O>>(
                 )
             }
         }
-        return makeTransformer(match, result)
+        return makeTransformerChecked(match, result)
     }
 
 
-    private fun makeTransformer(match: Matcher<I>, result: Emitter<I, O>): Transformer<I, O> =
+    private fun makeTransformerChecked(match: Matcher<I>, result: Emitter<I, O>): Transformer<I, O> =
         if (match is ListMatcher) {
             if (result is ListEmitter) {
                 if (match.elements.size == result.elements.size) {

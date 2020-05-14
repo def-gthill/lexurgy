@@ -8,7 +8,9 @@ typealias UnboundResult<T> = (Bindings) -> Word<T>
 
 interface Emitter<I : Segment<I>, O : Segment<O>>
 
-class SequenceEmitter<I : Segment<I>, O : Segment<O>>(val elements: List<Emitter<I, O>>) : Emitter<I, O>
+class SequenceEmitter<I : Segment<I>, O : Segment<O>>(val elements: List<Emitter<I, O>>) : Emitter<I, O> {
+    override fun toString(): String = elements.joinToString(separator = " ", prefix = "(", postfix = ")")
+}
 
 class ListEmitter<I : Segment<I>, O : Segment<O>>(val elements: List<Emitter<I, O>>) : Emitter<I, O>
 

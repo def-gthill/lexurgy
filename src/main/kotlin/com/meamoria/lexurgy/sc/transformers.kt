@@ -70,7 +70,7 @@ data class Transformation<O : Segment<O>>(
     val end = start + length
 
     val elementalSubs: List<Transformation<O>>
-        get() = if (subs.isEmpty()) listOf(this) else subs.flatMap { it.subs }
+        get() = if (subs.isEmpty()) listOf(this) else subs.flatMap { it.elementalSubs }
 }
 
 data class UnboundTransformation<O : Segment<O>>(
