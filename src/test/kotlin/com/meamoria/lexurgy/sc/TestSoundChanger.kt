@@ -1,5 +1,6 @@
 package com.meamoria.lexurgy.sc
 
+import com.meamoria.lexurgy.loadList
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.beOfType
@@ -623,5 +624,32 @@ class TestSoundChanger : StringSpec({
 
         ch("shaki") shouldBe "saqui"
         ch("kafash") shouldBe "cavas"
+    }
+
+    "This sample list of Three Rivers words should evolve into Muipidan words how they did in the old sound changer" {
+        val expected = listOf(
+            "hullïdo",
+            "opayto",
+            "ok'oyto",
+            "hmallede",
+            "hmuhlïdo",
+            "hugo",
+            "hukhïgo",
+            "hube",
+            "huphïbe",
+            "su",
+            "im",
+            "osayto",
+            "un",
+            "kaf",
+            "klo",
+            "kmuhlue",
+            "kaslahn",
+            "k'esas"
+        )
+
+        val changer = SoundChanger.fromLscFile("test/muipidan.lsc")
+        val words = loadList("test/ptr_test.wli")
+        changer.change(words) shouldBe expected
     }
 })

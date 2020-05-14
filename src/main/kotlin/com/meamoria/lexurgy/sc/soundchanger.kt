@@ -1,6 +1,7 @@
 package com.meamoria.lexurgy.sc
 
 import com.meamoria.lexurgy.*
+import java.io.File
 import java.lang.IllegalArgumentException
 
 class SoundChanger(
@@ -12,10 +13,18 @@ class SoundChanger(
     operator fun invoke(word: String): String {
         val startWord = PlainWord(word)
         var curWord = deromanizer(startWord)
-        for (rule in rules) curWord = rule(curWord)
+        for (rule in rules) {
+            try {
+                curWord = rule(curWord)
+            } catch (e: Exception) {
+                throw LscRuleNotApplicable(e, rule.name, word, curWord.string)
+            }
+        }
         val endWord = romanizer(curWord)
         return endWord.string
     }
+
+    fun change(words: List<String>): List<String> = words.map(this::invoke)
 
     companion object {
         fun fromLsc(code: String): SoundChanger {
@@ -23,6 +32,9 @@ class SoundChanger(
             val parser = LscInterpreter(walker)
             return parser.parseFile(code) as SoundChanger
         }
+
+        fun fromLscFile(pathName: String): SoundChanger =
+            fromLsc(File(pathName).readLines().joinToString("\n"))
     }
 
     override fun toString(): String = (listOf(deromanizer) + rules + romanizer).joinToString(
@@ -124,11 +136,30 @@ class ChangeRule(
     val name: String,
     expressions: List<List<RuleExpression<PhonS, PhonS>>>,
     val filter: ((PhoneticSegment) -> Boolean)?,
-    val propagate: Boolean) {
+    val propagate: Boolean
+) {
+    private val maxPropagateSteps = 100
 
     val subrules: List<SimpleChangeRule<PhonS, PhonS>> = expressions.map { Subrule(it, filter) }
 
     operator fun invoke(word: Word<PhonS>): Word<PhonS> {
+        if (propagate) {
+            var curWord = word
+            val steps = mutableSetOf(curWord)
+            for (i in 1..maxPropagateSteps) {
+                val newWord = applyOnce(curWord)
+                if (newWord == curWord) return newWord
+                if (newWord in steps) throw LscDivergingPropagation(this, word.string, steps.map { it.string })
+                steps += newWord
+                curWord = newWord
+            }
+            throw LscDivergingPropagation(this, word.string, steps.map { it.string }.takeLast(5))
+        } else {
+            return applyOnce(word)
+        }
+    }
+
+    private fun applyOnce(word: Word<PhonS>): Word<PhonS> {
         var curWord = word
         for (subrule in subrules) curWord = subrule(curWord)
         return curWord
@@ -164,8 +195,7 @@ class RuleExpression<I : Segment<I>, O : Segment<O>>(
                 throw LscInvalidRuleExpression(
                     match, result, "Asterisks aren't allowed on the match side of filtered rules"
                 )
-            }
-            else if (match.text.string.length > 1) {
+            } else if (match.text.string.length > 1) {
                 throw LscInvalidRuleExpression(
                     match, result, "Multi-segment matches aren't allowed on the match side of filtered rules"
                 )
