@@ -1,45 +1,165 @@
 package com.meamoria.lexurgy.sc
 
 import com.meamoria.lexurgy.*
-import java.io.File
 import java.lang.IllegalArgumentException
+import java.nio.file.Path
+import java.nio.file.Paths
+import kotlin.time.ExperimentalTime
+import kotlin.time.measureTimedValue
 
 class SoundChanger(
+    val declarations: Declarations,
     val rules: List<ChangeRule>,
     val deromanizer: Deromanizer,
     val romanizer: Romanizer
 ) : SoundChangerLscWalker.ParseNode {
+    operator fun invoke(word: String): String = change(listOf(word)).single()
 
-    operator fun invoke(word: String): String {
-        val startWord = PlainWord(word)
-        var curWord = deromanizer(startWord)
+    @ExperimentalTime
+    fun changeFiles(
+        wordsPath: Path,
+        startAt: String? = null,
+        stopBefore: String? = null,
+        inSuffix: String? = null,
+        outSuffix: String = "ev",
+        debugWords: List<String> = emptyList()
+    ) {
+        console("Applying changes to words in $wordsPath")
+
+        DebugLogger.debugFilePath = Paths.get(wordsPath.toFile().nameWithoutExtension + ".debug")
+
+        val words = loadList(wordsPath, suffix = inSuffix)
+        val (results, time) = measureTimedValue {
+            change(
+                words,
+                startAt = startAt,
+                stopBefore = stopBefore,
+                debugWords = debugWords
+            )
+        }
+
+        console("Applied the changes to ${enpl(words.size, "word")} in ${"%.3f".format(time.inSeconds)} seconds")
+
+        dumpList(wordsPath, results, suffix = outSuffix)
+
+        console("Wrote the final forms to ${suffixPath(wordsPath, outSuffix)}")
+    }
+
+    fun change(
+        words: List<String>,
+        startAt: String? = null,
+        stopBefore: String? = null,
+        debugWords: List<String> = emptyList()
+    ): List<String> {
+        val debugIndices = words.withIndex().filter { it.value in debugWords }.map { it.index }
+        val startWords =
+            if (startAt == null) applyRule(deromanizer, words, words.map(::PlainWord), debugIndices)
+            else words.map(declarations::parsePhonetic)
+
+        var curWords = startWords
+        var started = false
+        var stopped = false
+
+        if (!DebugLogger.debugFilePathIsInitialized) DebugLogger.debugFilePath = Paths.get("words.debug")
+
         for (rule in rules) {
+            if (rule.name == stopBefore) {
+                stopped = true
+                break
+            }
+            if (!started && (startAt == null || rule.name == startAt)) {
+                started = true
+            }
+            if (started) {
+                curWords = applyRule(rule, words, curWords, debugIndices)
+            }
+        }
+
+        if (stopBefore != null && !stopped) {
+            console("WARNING: No rule called $stopBefore; all rules applied")
+        }
+        if (!started) {
+            console("WARNING: No rule called $startAt; no rules applied")
+        }
+        return if (stopBefore == null) curWords.map { it.string }
+        else applyRule(romanizer, words, curWords, debugIndices).map { it.string }
+    }
+
+    private fun <I : Segment<I>, O : Segment<O>> applyRule(
+        rule: NamedRule<I, O>, origWords: List<String>, curWords: List<Word<I>>, debugIndices: List<Int>
+    ): List<Word<O>> =
+        curWords.zip(origWords) { curWord, word ->
             try {
-                curWord = rule(curWord)
+                rule(curWord)
             } catch (e: Exception) {
                 throw LscRuleNotApplicable(e, rule.name, word, curWord.string)
             }
+        }.also {newWords ->
+            for (i in debugIndices) {
+                if (newWords[i] != curWords[i]) {
+                    debug("Applied $rule.name: ${curWords[i].string} -> ${newWords[i].string}")
+                }
+            }
         }
-        val endWord = romanizer(curWord)
-        return endWord.string
-    }
-
-    fun change(words: List<String>): List<String> = words.map(this::invoke)
 
     companion object {
+        @ExperimentalTime
+        fun changeFiles(
+            changesPath: Path,
+            wordsPath: Path,
+            startAt: String? = null,
+            stopBefore: String? = null,
+            inSuffix: String? = null,
+            outSuffix: String = "ev",
+            debugWords: List<String> = emptyList()
+        ) {
+            console("Loading sound changes from $changesPath")
+            val changer = fromLscFile(changesPath)
+            changer.changeFiles(
+                wordsPath,
+                startAt = startAt,
+                stopBefore = stopBefore,
+                inSuffix = inSuffix,
+                outSuffix = outSuffix,
+                debugWords = debugWords
+            )
+        }
+
+        fun change(
+            changes: String,
+            words: List<String>,
+            startAt: String? = null,
+            stopBefore: String? = null,
+            debugWords: List<String> = emptyList()
+        ): List<String> {
+            val changer = fromLsc(changes)
+            return changer.change(
+                words,
+                startAt = startAt,
+                stopBefore = stopBefore,
+                debugWords = debugWords
+            )
+        }
+
         fun fromLsc(code: String): SoundChanger {
             val walker = SoundChangerLscWalker()
             val parser = LscInterpreter(walker)
             return parser.parseFile(code) as SoundChanger
         }
 
-        fun fromLscFile(pathName: String): SoundChanger =
-            fromLsc(File(pathName).readLines().joinToString("\n"))
+        fun fromLscFile(path: Path): SoundChanger =
+            fromLsc(path.toFile().readLines().joinToString("\n"))
     }
 
     override fun toString(): String = (listOf(deromanizer) + rules + romanizer).joinToString(
         separator = "; ", prefix = "SoundChanger(", postfix = ")"
     )
+}
+
+interface NamedRule<I : Segment<I>, O : Segment<O>> {
+    val name: String
+
+    operator fun invoke(word: Word<I>): Word<O>
 }
 
 abstract class SimpleChangeRule<I : Segment<I>, O : Segment<O>>(
@@ -116,7 +236,11 @@ typealias PhonS = PhoneticSegment
 typealias PlainS = PlainSegment
 
 class Deromanizer(expressions: List<RuleExpression<PlainS, PhonS>>, declarations: Declarations) :
-    SimpleChangeRule<PlainS, PhonS>(Plain, Phonetic, expressions, defaultRuleFor(declarations)) {
+    SimpleChangeRule<PlainS, PhonS>(Plain, Phonetic, expressions, defaultRuleFor(declarations)),
+        NamedRule<PlainS, PhonS>
+{
+    override val name: String = "deromanizer"
+
     companion object {
         fun empty(declarations: Declarations): Deromanizer = Deromanizer(emptyList(), declarations)
 
@@ -126,23 +250,27 @@ class Deromanizer(expressions: List<RuleExpression<PlainS, PhonS>>, declarations
 }
 
 class Romanizer(expressions: List<RuleExpression<PhonS, PlainS>>) :
-    SimpleChangeRule<PhonS, PlainS>(Phonetic, Plain, expressions, { PlainWord(it.string) }) {
+    SimpleChangeRule<PhonS, PlainS>(Phonetic, Plain, expressions, { PlainWord(it.string) }),
+        NamedRule<PhonS, PlainS>
+{
+    override val name: String = "romanizer"
+
     companion object {
         fun empty(): Romanizer = Romanizer(emptyList())
     }
 }
 
 class ChangeRule(
-    val name: String,
+    override val name: String,
     expressions: List<List<RuleExpression<PhonS, PhonS>>>,
     val filter: ((PhoneticSegment) -> Boolean)?,
     val propagate: Boolean
-) {
+) : NamedRule<PhonS, PhonS> {
     private val maxPropagateSteps = 100
 
     val subrules: List<SimpleChangeRule<PhonS, PhonS>> = expressions.map { Subrule(it, filter) }
 
-    operator fun invoke(word: Word<PhonS>): Word<PhonS> {
+    override operator fun invoke(word: Word<PhonS>): Word<PhonS> {
         if (propagate) {
             var curWord = word
             val steps = mutableSetOf(curWord)

@@ -25,7 +25,7 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
             (deromanizer as? UnlinkedDeromanizer)?.link(declarations) ?: Deromanizer.empty(declarations)
         val linkedRomanizer =
             (romanizer as? UnlinkedRomanizer)?.link(declarations) ?: Romanizer.empty()
-        return SoundChanger(linkedRules, linkedDeromanizer, linkedRomanizer)
+        return SoundChanger(declarations, linkedRules, linkedDeromanizer, linkedRomanizer)
     }
 
     override fun walkClassDeclaration(className: ParseNode, sounds: List<ParseNode>): ParseNode = ClassDeclarationNode(

@@ -6,6 +6,8 @@ import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.beOfType
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
+import java.nio.file.Path
+import java.nio.file.Paths
 
 class TestSoundChanger : StringSpec({
     val lsc = SoundChanger.Companion::fromLsc
@@ -682,8 +684,8 @@ class TestSoundChanger : StringSpec({
             "k'esas"
         )
 
-        val changer = SoundChanger.fromLscFile("test/muipidan.lsc")
-        val words = loadList("test/ptr_test.wli")
+        val changer = SoundChanger.fromLscFile(Paths.get("test", "muipidan.lsc"))
+        val words = loadList(Paths.get("test", "ptr_test.wli"))
         changer.change(words) shouldBe expected
     }
 })

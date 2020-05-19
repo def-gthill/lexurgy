@@ -7,6 +7,8 @@ import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.multiple
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.path
+import com.meamoria.lexurgy.sc.SoundChanger
+import kotlin.time.ExperimentalTime
 
 class Lexurgy : CliktCommand() {
     override fun run() = Unit
@@ -42,15 +44,17 @@ class SC : CliktCommand(
         help = "A word to record debugging information for. Can be provided multiple times to specify several words to debug."
     ).multiple()
 
+    @ExperimentalTime
     override fun run() {
-        echo("Called sc:")
-        echo("Changes = $changes")
-        echo("Words = $words")
-        echo("Start at $startAt")
-        echo("Stop before $stopBefore")
-        echo("In suffix = $inSuffix")
-        echo("Out suffix = $outSuffix")
-        echo("Debug words = $debugWords")
+        SoundChanger.changeFiles(
+            changes,
+            words,
+            startAt = startAt,
+            stopBefore = stopBefore,
+            inSuffix = inSuffix,
+            outSuffix = outSuffix,
+            debugWords = debugWords
+        )
     }
 }
 
