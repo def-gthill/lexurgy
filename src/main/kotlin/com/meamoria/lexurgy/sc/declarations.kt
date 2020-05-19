@@ -47,7 +47,7 @@ class Declarations(
      * Returns true if the matrix matched, false otherwise. Binds variables.
      */
     fun PhoneticSegment.matches(matrix: Matrix, bindings: Bindings): Boolean {
-        val complexSymbolMatrix = toMatrix() ?: return false
+        val complexSymbolMatrix = toMatrix() ?: Matrix(emptyList())
         for (value in matrix.valueList) {
             val realValue = if (value.isNull())
                 AbsentFeature(valueToFeature.getValue(value as SimpleValue).name)

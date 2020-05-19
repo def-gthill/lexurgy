@@ -275,16 +275,17 @@ class TestSoundChanger : StringSpec({
     "We should be able to rename the \"absent\" value of a feature" {
         val ch = lsc(
             """
+               |Feature Manner(stop)
                |Feature Place(lab, apic)
                |Feature Breath(*plain, aspir)
                |Diacritic ʰ [aspir]
-               |Symbol p [lab]
-               |Symbol t [apic]
+               |Symbol p [stop lab]
+               |Symbol t [stop apic]
                |aspiration:
-               |    [plain] s => [aspir] *
+               |    [stop plain] s => [aspir] *
                |lenition:
-               |    [aspir] => [plain] / a _ a
-               |    [plain] => * / a _ a
+               |    [stop aspir] => [plain] / a _ a
+               |    [stop plain] => * / a _ a
             """.trimMargin()
         )
 
@@ -388,15 +389,16 @@ class TestSoundChanger : StringSpec({
     "An absent feature value should only match sounds that don't have any value from that feature" {
         val ch = lsc(
             """
+                Feature Type(cons)
                 Feature Manner(stop, fric, nas)
                 Feature Voicing(unvcd, vcd)
-                Symbol t [stop unvcd]
-                Symbol d [stop vcd]
-                Symbol n [nas]
+                Symbol t [cons stop unvcd]
+                Symbol d [cons stop vcd]
+                Symbol n [cons nas]
                 stop-to-nasal:
                 [stop] => [nas *Voicing] / a _ a
                 drop-nasal:
-                [*Voicing] => * / _ [stop]
+                [cons *Voicing] => * / _ [stop]
             """.trimIndent()
         )
 
@@ -624,6 +626,38 @@ class TestSoundChanger : StringSpec({
 
         ch("shaki") shouldBe "saqui"
         ch("kafash") shouldBe "cavas"
+    }
+
+    "The matrix to symbol converter should still work if some symbols don't have features" {
+        val ch = lsc(
+            """
+                Feature Type(*cons, vowel)
+                Feature Height(low, high)
+                Feature Depth(front, back)
+                Feature Stress(*unstr, str)
+                Diacritic ˈ (before) [str]
+                Symbol a [vowel low]
+                Symbol i [vowel high front]
+                Symbol u [vowel high back]
+                Symbol ts, dz
+                stress-shift [vowel]:
+                [vowel] => [str] / _ [] $
+            """.trimIndent()
+        )
+
+        ch("vlimura") shouldBe "vlimˈura"
+    }
+
+    "Symbols with no features should count as lacking all features (and having all nulls)" {
+        val ch = lsc(
+            """
+                Feature Type(*cons, vowel)
+                coda-h:
+                h => * / _ [cons]
+            """.trimIndent()
+        )
+
+        ch("sohko") shouldBe "soko"
     }
 
     "This sample list of Three Rivers words should evolve into Muipidan words how they did in the old sound changer" {
