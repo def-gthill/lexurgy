@@ -19,7 +19,7 @@ class SC : CliktCommand(
             "By default, the output file has the suffix \"_ev\" added, but this can be changed with the --out-suffix option."
 ) {
     val changes by argument().path(mustBeReadable = true)
-    val words by argument().path(mustBeReadable = true)
+    val words by argument().path()
     val startAt by option(
         "-a", "--start-at",
         help = "The rule to start at. Lexurgy will apply this change and all subsequent changes."
