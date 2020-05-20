@@ -1,6 +1,9 @@
 package com.meamoria.lexurgy.sc
 
-import com.meamoria.lexurgy.*
+import com.meamoria.lexurgy.PhoneticParser
+import com.meamoria.lexurgy.PhoneticSegment
+import com.meamoria.lexurgy.Word
+import java.util.concurrent.ConcurrentHashMap
 
 class Declarations(
     val features: List<Feature>,
@@ -21,7 +24,7 @@ class Declarations(
     private val symbolNameToSymbol = symbols.associateBy { it.name }
     private val matrixToSimpleSymbol = symbols.associateBy { it.matrix }
 
-    private val matrixToSymbolCache = mutableMapOf<Matrix, PhoneticSegment>()
+    private val matrixToSymbolCache = ConcurrentHashMap<Matrix, PhoneticSegment>()
 
     private val classNameToClass = classes.associateBy { it.name }
 
