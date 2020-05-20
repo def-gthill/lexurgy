@@ -4,6 +4,7 @@ import com.meamoria.lexurgy.*
 import java.lang.IllegalArgumentException
 import java.nio.file.Path
 import java.nio.file.Paths
+import kotlin.streams.toList
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTimedValue
 
@@ -88,13 +89,13 @@ class SoundChanger(
     private fun <I : Segment<I>, O : Segment<O>> applyRule(
         rule: NamedRule<I, O>, origWords: List<String>, curWords: List<Word<I>>, debugIndices: List<Int>
     ): List<Word<O>> =
-        curWords.zip(origWords) { curWord, word ->
+        curWords.zip(origWords).parallelStream().map { (curWord, word) ->
             try {
                 rule(curWord)
             } catch (e: Exception) {
                 throw LscRuleNotApplicable(e, rule.name, word, curWord.string)
             }
-        }.also {newWords ->
+        }.toList().also {newWords ->
             for (i in debugIndices) {
                 if (newWords[i] != curWords[i]) {
                     debug("Applied $rule.name: ${curWords[i].string} -> ${newWords[i].string}")
