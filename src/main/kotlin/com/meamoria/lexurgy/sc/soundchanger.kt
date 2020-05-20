@@ -81,8 +81,8 @@ class SoundChanger(
         if (!started) {
             console("WARNING: No rule called $startAt; no rules applied")
         }
-        return if (stopBefore == null) curWords.map { it.string }
-        else applyRule(romanizer, words, curWords, debugIndices).map { it.string }
+        return if (stopBefore == null) applyRule(romanizer, words, curWords, debugIndices).map { it.string }
+        else curWords.map { it.string }
     }
 
     private fun <I : Segment<I>, O : Segment<O>> applyRule(
