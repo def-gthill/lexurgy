@@ -3,6 +3,7 @@ package com.meamoria.lexurgy
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.subcommands
 import com.github.ajalt.clikt.parameters.arguments.argument
+import com.github.ajalt.clikt.parameters.arguments.multiple
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.multiple
 import com.github.ajalt.clikt.parameters.options.option
@@ -15,11 +16,11 @@ class Lexurgy : CliktCommand() {
 }
 
 class SC : CliktCommand(
-    help = "Applies sound changes from CHANGES (a .lsc file) to the words in WORDS (a .wli file). " +
-            "By default, the output file has the suffix \"_ev\" added, but this can be changed with the --out-suffix option."
+    help = "Applies sound changes from CHANGES (a .lsc file) to the words in WORDS (one or more .wli files). " +
+            "By default, the output files have the suffix \"_ev\" added, but this can be changed with the --out-suffix option."
 ) {
     val changes by argument().path(mustBeReadable = true)
-    val words by argument().path()
+    val words by argument().path().multiple()
     val startAt by option(
         "-a", "--start-at",
         help = "The rule to start at. Lexurgy will apply this change and all subsequent changes."
@@ -30,12 +31,12 @@ class SC : CliktCommand(
     )
     val inSuffix by option(
         "-i", "--in-suffix",
-        help = "The suffix on the input filename WORDS. " +
+        help = "The suffix on the input filenames in WORDS. " +
                 "E.g. if this is \"old\" and WORDS is \"foo.wli\", Lexurgy will read words from foo_old.wli instead."
     )
     val outSuffix by option(
         "-o", "--out-suffix",
-        help = "The suffix on the output filename. " +
+        help = "The suffix on the output filenames. " +
                 "E.g. if this is \"new\" and WORDS is \"foo.wli\", Lexurgy will write the changed words to foo_new.wli. " +
                 "Defaults to \"ev\"."
     ).default("ev")

@@ -18,32 +18,34 @@ class SoundChanger(
 
     @ExperimentalTime
     fun changeFiles(
-        wordsPath: Path,
+        wordsPaths: List<Path>,
         startAt: String? = null,
         stopBefore: String? = null,
         inSuffix: String? = null,
         outSuffix: String = "ev",
         debugWords: List<String> = emptyList()
     ) {
-        console("Applying changes to words in ${suffixPath(wordsPath, inSuffix)}")
+        for (wordsPath in wordsPaths) {
+            console("Applying changes to words in ${suffixPath(wordsPath, inSuffix)}")
 
-        DebugLogger.debugFilePath = Paths.get(wordsPath.toFile().nameWithoutExtension + ".debug")
+            DebugLogger.debugFilePath = Paths.get(wordsPath.toFile().nameWithoutExtension + ".debug")
 
-        val words = loadList(wordsPath, suffix = inSuffix)
-        val (results, time) = measureTimedValue {
-            change(
-                words,
-                startAt = startAt,
-                stopBefore = stopBefore,
-                debugWords = debugWords
-            )
+            val words = loadList(wordsPath, suffix = inSuffix)
+            val (results, time) = measureTimedValue {
+                change(
+                    words,
+                    startAt = startAt,
+                    stopBefore = stopBefore,
+                    debugWords = debugWords
+                )
+            }
+
+            console("Applied the changes to ${enpl(words.size, "word")} in ${"%.3f".format(time.inSeconds)} seconds")
+
+            dumpList(wordsPath, results, suffix = outSuffix)
+
+            console("Wrote the final forms to ${suffixPath(wordsPath, outSuffix)}")
         }
-
-        console("Applied the changes to ${enpl(words.size, "word")} in ${"%.3f".format(time.inSeconds)} seconds")
-
-        dumpList(wordsPath, results, suffix = outSuffix)
-
-        console("Wrote the final forms to ${suffixPath(wordsPath, outSuffix)}")
     }
 
     fun change(
@@ -107,7 +109,7 @@ class SoundChanger(
         @ExperimentalTime
         fun changeFiles(
             changesPath: Path,
-            wordsPath: Path,
+            wordsPaths: List<Path>,
             startAt: String? = null,
             stopBefore: String? = null,
             inSuffix: String? = null,
@@ -117,7 +119,7 @@ class SoundChanger(
             console("Loading sound changes from $changesPath")
             val changer = fromLscFile(changesPath)
             changer.changeFiles(
-                wordsPath,
+                wordsPaths,
                 startAt = startAt,
                 stopBefore = stopBefore,
                 inSuffix = inSuffix,
