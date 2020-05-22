@@ -5,31 +5,31 @@ import org.antlr.v4.runtime.*
 import org.antlr.v4.runtime.tree.ParseTree
 
 class LscInterpreter<T>(val walker: LscWalker<T>) {
-    fun parseFile(text: String): T = parseAndWalk(text) { makeLscParser(it).lscfile() }
+    fun parseFile(text: String): T = parseAndWalk(text) { it.lscfile() }
 
-    fun parseFeatureDeclaration(text: String): T = parseAndWalk(text) { makeLscParser(it).featuredecl() }
+    fun parseFeatureDeclaration(text: String): T = parseAndWalk(text) { it.featuredecl() }
 
-    fun parseDiacriticDeclaration(text: String): T = parseAndWalk(text) { makeLscParser(it).diacritic() }
+    fun parseDiacriticDeclaration(text: String): T = parseAndWalk(text) { it.diacritic() }
 
-    fun parseSymbolDeclaration(text: String): T = parseAndWalk(text) { makeLscParser(it).symbol() }
+    fun parseSymbolDeclaration(text: String): T = parseAndWalk(text) { it.symbol() }
 
-    fun parseDeromanizer(text: String): T = parseAndWalk(text) { makeLscParser(it).deromanizer() }
+    fun parseDeromanizer(text: String): T = parseAndWalk(text) { it.deromanizer() }
 
-    fun parseRomanizer(text: String): T = parseAndWalk(text) { makeLscParser(it).romanizer() }
+    fun parseRomanizer(text: String): T = parseAndWalk(text) { it.romanizer() }
 
-    fun parseChangeRule(text: String): T = parseAndWalk(text) { makeLscParser(it).changerule() }
+    fun parseChangeRule(text: String): T = parseAndWalk(text) { it.changerule() }
 
-    fun parseMatrix(text: String): T = parseAndWalk(text) { makeLscParser(it).matrix() }
+    fun parseMatrix(text: String): T = parseAndWalk(text) { it.matrix() }
 
-    fun parseFeature(text: String): T = parseAndWalk(text) { makeLscParser(it).feature() }
+    fun parseFeature(text: String): T = parseAndWalk(text) { it.feature() }
 
-    fun parseValue(text: String): T = parseAndWalk(text) { makeLscParser(it).value() }
+    fun parseValue(text: String): T = parseAndWalk(text) { it.value() }
 
-    private fun parseAndWalk(text: String, parser: (TokenStream) -> ParseTree): T {
+    private fun parseAndWalk(text: String, parser: (LscParser) -> ParseTree): T {
         val inputStream = CharStreams.fromString(text)
         val lexer = LscLexer(inputStream)
         val tokenStream = CommonTokenStream(lexer)
-        val tree = parser(tokenStream)
+        val tree = parser(makeLscParser(tokenStream))
         return walker.visit(tree)!!
     }
 

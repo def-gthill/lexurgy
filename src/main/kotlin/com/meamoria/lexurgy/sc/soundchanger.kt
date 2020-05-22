@@ -25,7 +25,7 @@ class SoundChanger(
         outSuffix: String = "ev",
         debugWords: List<String> = emptyList()
     ) {
-        console("Applying changes to words in $wordsPath")
+        console("Applying changes to words in ${suffixPath(wordsPath, inSuffix)}")
 
         DebugLogger.debugFilePath = Paths.get(wordsPath.toFile().nameWithoutExtension + ".debug")
 
