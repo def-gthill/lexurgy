@@ -10,7 +10,8 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
         classDeclarations: List<ParseNode>,
         deromanizer: ParseNode?,
         changeRules: List<ParseNode>,
-        romanizer: ParseNode?
+        romanizer: ParseNode?,
+        intermediateRomanizers: List<RomanizerToFollowingRule<ParseNode>>
     ): ParseNode {
         val declarations = Declarations(
             featureDeclarations.map { (it as FeatureDeclarationNode).feature },
@@ -22,10 +23,14 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
         )
         val linkedRules = changeRules.map { (it as UnlinkedChangeRule).link(declarations) }
         val linkedDeromanizer =
-            (deromanizer as? UnlinkedDeromanizer)?.link(declarations) ?: Deromanizer.empty(declarations)
+            (deromanizer as UnlinkedDeromanizer?)?.link(declarations) ?: Deromanizer.empty(declarations)
         val linkedRomanizer =
-            (romanizer as? UnlinkedRomanizer)?.link(declarations) ?: Romanizer.empty()
-        return SoundChanger(declarations, linkedRules, linkedDeromanizer, linkedRomanizer)
+            (romanizer as UnlinkedRomanizer?)?.link(declarations) ?: Romanizer.empty()
+        val linkedIntermediateRomanizers = intermediateRomanizers.map {
+            (it.rule as UnlinkedChangeRule).name to
+                    (it.romanizer as UnlinkedIntermediateRomanizer).link(declarations)
+        }.toMap()
+        return SoundChanger(declarations, linkedRules, linkedDeromanizer, linkedRomanizer, linkedIntermediateRomanizers)
     }
 
     override fun walkClassDeclaration(className: ParseNode, sounds: List<ParseNode>): ParseNode = ClassDeclarationNode(
@@ -61,6 +66,9 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
 
     override fun walkRomanizer(expressions: List<ParseNode>): ParseNode =
         UnlinkedRomanizer(expressions.map { it as UnlinkedRuleExpression })
+
+    override fun walkIntermediateRomanizer(ruleName: String, expressions: List<ParseNode>): ParseNode =
+        UnlinkedIntermediateRomanizer(ruleName, expressions.map { it as UnlinkedRuleExpression })
 
     override fun walkChangeRule(
         ruleName: String,
@@ -165,8 +173,6 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
 
     private class TList(val elements: List<ParseNode>) : ParseNode
 
-    private fun TList?.elementsIfAny(): List<ParseNode> = this?.elements ?: emptyList()
-
     interface ParseNode
 
     private class FeatureDeclarationNode(val feature: Feature) : ParseNode
@@ -184,6 +190,13 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
 
     private class UnlinkedRomanizer(val expressions: List<UnlinkedRuleExpression>) : ParseNode {
         fun link(declarations: Declarations): Romanizer = Romanizer(expressions.map { it.inPhonetic(declarations) })
+    }
+
+    private class UnlinkedIntermediateRomanizer(
+        val name: String, val expressions: List<UnlinkedRuleExpression>
+    ) : ParseNode {
+        fun link(declarations: Declarations): SoundChanger.IntermediateRomanizer =
+            SoundChanger.IntermediateRomanizer(name, Romanizer(expressions.map { it.inPhonetic(declarations) }))
     }
 
     private class UnlinkedChangeRule(
@@ -291,16 +304,6 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
         fun outPhoneticEmitter(declarations: Declarations): Emitter<PlainS, PhonS>
 
         fun phoneticEmitter(declarations: Declarations): Emitter<PhonS, PhonS>
-    }
-
-    private interface ChameleonResultElement : ChameleonRuleElement, ResultElement {
-        override fun inPhoneticEmitter(declarations: Declarations): Emitter<PhonS, PlainS> = linkEmitter()
-
-        override fun outPhoneticEmitter(declarations: Declarations): Emitter<PlainS, PhonS> = linkEmitter()
-
-        override fun phoneticEmitter(declarations: Declarations): Emitter<PhonS, PhonS> = linkEmitter()
-
-        fun <I : Segment<I>, O : Segment<O>> linkEmitter(): Emitter<I, O>
     }
 
     private abstract class ContainerResultElement : ContainerRuleElement, ResultElement {

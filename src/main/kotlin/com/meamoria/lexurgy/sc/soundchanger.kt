@@ -6,13 +6,15 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import kotlin.streams.toList
 import kotlin.time.ExperimentalTime
+import kotlin.time.TimedValue
 import kotlin.time.measureTimedValue
 
 class SoundChanger(
     val declarations: Declarations,
     val rules: List<ChangeRule>,
     val deromanizer: Deromanizer,
-    val romanizer: Romanizer
+    val romanizer: Romanizer,
+    val intermediateRomanizers: Map<String, IntermediateRomanizer> = emptyMap()
 ) : SoundChangerLscWalker.ParseNode {
     operator fun invoke(word: String): String = change(listOf(word)).single()
 
@@ -23,27 +25,50 @@ class SoundChanger(
         stopBefore: String? = null,
         inSuffix: String? = null,
         outSuffix: String = "ev",
-        debugWords: List<String> = emptyList()
+        debugWords: List<String> = emptyList(),
+        intermediates: Boolean = false
     ) {
         for (wordsPath in wordsPaths) {
             console("Applying changes to words in ${suffixPath(wordsPath, inSuffix)}")
 
-            DebugLogger.debugFilePath = Paths.get(wordsPath.toFile().nameWithoutExtension + ".debug")
+            DebugLogger.debugFilePath = suffixPath(wordsPath, "trace")
 
             val words = loadList(wordsPath, suffix = inSuffix)
-            val (results, time) = measureTimedValue {
-                change(
-                    words,
-                    startAt = startAt,
-                    stopBefore = stopBefore,
-                    debugWords = debugWords
-                )
+
+            val (finalWords, time) = if (intermediates) {
+                val (stages, time) = measureTimedValue {
+                    changeWithIntermediates(
+                        words,
+                        startAt = startAt,
+                        stopBefore = stopBefore,
+                        debugWords = debugWords
+                    )
+                }
+
+                for ((name, stageWords) in stages) {
+                    if (name != null) {
+                        dumpList(wordsPath, stageWords, suffix = name)
+                        console("Wrote the forms at stage $name to ${suffixPath(wordsPath, name)}")
+                    }
+                }
+
+                TimedValue(stages.getValue(null), time)
+            } else {
+                measureTimedValue {
+                    change(
+                        words,
+                        startAt = startAt,
+                        stopBefore = stopBefore,
+                        debugWords = debugWords
+                    )
+                }
             }
 
-            console("Applied the changes to ${enpl(words.size, "word")} in ${"%.3f".format(time.inSeconds)} seconds")
+            console(
+                "Applied the changes to ${enpl(words.size, "word")} in ${"%.3f".format(time.inSeconds)} seconds"
+            )
 
-            dumpList(wordsPath, results, suffix = outSuffix)
-
+            dumpList(wordsPath, finalWords, suffix = outSuffix)
             console("Wrote the final forms to ${suffixPath(wordsPath, outSuffix)}")
         }
     }
@@ -53,11 +78,27 @@ class SoundChanger(
         startAt: String? = null,
         stopBefore: String? = null,
         debugWords: List<String> = emptyList()
-    ): List<String> {
+    ): List<String> = changeWithIntermediates(
+        words, startAt = startAt, stopBefore = stopBefore, debugWords = debugWords
+    ).getValue(null)
+
+    /**
+     * Runs the sound changes on the specified words, capturing intermediate stages using the sound changer's
+     * intermediate romanizers. This produces a map associating the name of each romanizer to the intermediate
+     * words produced by that romanizer. The final results are included under the ``null`` key.
+     */
+    fun changeWithIntermediates(
+        words: List<String>,
+        startAt: String? = null,
+        stopBefore: String? = null,
+        debugWords: List<String> = emptyList()
+    ): Map<String?, List<String>> {
         val debugIndices = words.withIndex().filter { it.value in debugWords }.map { it.index }
         val startWords =
             if (startAt == null) applyRule(deromanizer, words, words.map(::PlainWord), debugIndices)
             else words.map(declarations::parsePhonetic)
+
+        val result = mutableMapOf<String?, List<String>>()
 
         var curWords = startWords
         var started = false
@@ -69,6 +110,9 @@ class SoundChanger(
             if (rule.name == stopBefore) {
                 stopped = true
                 break
+            }
+            intermediateRomanizers[rule.name]?.let { rom ->
+                result[rom.name] = applyRule(rom.romanizer, words, curWords, debugIndices).map { it.string }
             }
             if (!started && (startAt == null || rule.name == startAt)) {
                 started = true
@@ -84,8 +128,11 @@ class SoundChanger(
         if (!started) {
             console("WARNING: No rule called $startAt; no rules applied")
         }
-        return if (stopBefore == null) applyRule(romanizer, words, curWords, debugIndices).map { it.string }
+
+        result[null] = if (stopBefore == null) applyRule(romanizer, words, curWords, debugIndices).map { it.string }
         else curWords.map { it.string }
+
+        return result
     }
 
     private fun <I : Segment<I>, O : Segment<O>> applyRule(
@@ -114,7 +161,8 @@ class SoundChanger(
             stopBefore: String? = null,
             inSuffix: String? = null,
             outSuffix: String = "ev",
-            debugWords: List<String> = emptyList()
+            debugWords: List<String> = emptyList(),
+            intermediates: Boolean = false
         ) {
             console("Loading sound changes from $changesPath")
             val changer = fromLscFile(changesPath)
@@ -124,7 +172,8 @@ class SoundChanger(
                 stopBefore = stopBefore,
                 inSuffix = inSuffix,
                 outSuffix = outSuffix,
-                debugWords = debugWords
+                debugWords = debugWords,
+                intermediates = intermediates
             )
         }
 
@@ -157,6 +206,8 @@ class SoundChanger(
     override fun toString(): String = (listOf(deromanizer) + rules + romanizer).joinToString(
         separator = "; ", prefix = "SoundChanger(", postfix = ")"
     )
+
+    data class IntermediateRomanizer(val name: String, val romanizer: Romanizer)
 }
 
 interface NamedRule<I : Segment<I>, O : Segment<O>> {

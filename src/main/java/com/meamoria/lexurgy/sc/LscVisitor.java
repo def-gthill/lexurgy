@@ -65,6 +65,12 @@ public interface LscVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitRomanizer(LscParser.RomanizerContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link LscParser#interromanizer}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitInterromanizer(LscParser.InterromanizerContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link LscParser#changerule}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

@@ -6,7 +6,6 @@ import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.beOfType
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
-import java.nio.file.Path
 import java.nio.file.Paths
 
 class TestSoundChanger : StringSpec({
@@ -660,6 +659,34 @@ class TestSoundChanger : StringSpec({
         )
 
         ch("sohko") shouldBe "soko"
+    }
+
+    "Running with intermediate romanizers should produce multiple result lists" {
+        val ch = lsc(
+            """
+                Deromanizer:
+                ch => tʃ
+                change-a:
+                tʃ => ʃ
+                Romanizer-a:
+                ʃ => sh
+                change-b:
+                a => æ
+                Romanizer-b:
+                ʃ => x
+                æ => aa
+                change-final:
+                ʃ => s
+                Romanizer:
+                æ => ä
+            """.trimIndent()
+        )
+
+        ch.changeWithIntermediates(listOf("chachi", "vanechak")) shouldBe mapOf(
+            "a" to listOf("shashi", "vaneshak"),
+            "b" to listOf("xaaxi", "vaanexaak"),
+            null to listOf("säsi", "vänesäk")
+        )
     }
 
     "This sample list of Three Rivers words should evolve into Muipidan words how they did in the old sound changer" {

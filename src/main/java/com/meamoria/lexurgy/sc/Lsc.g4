@@ -2,7 +2,7 @@ grammar Lsc;
 
 lscfile:
     (featuredecl NEWLINE+)* (diacritic NEWLINE+)* (symbol NEWLINE+)* (classdecl NEWLINE+)* (deromanizer NEWLINE+)?
-    changerule? (NEWLINE+ changerule)*
+    changerule? ((NEWLINE+ (changerule | interromanizer))* NEWLINE+ changerule)?
     (NEWLINE+ romanizer)?
     NEWLINE? EOF;
 
@@ -15,6 +15,7 @@ symbolname: text;
 
 deromanizer: DEROMANIZER RULESTART (NEWLINE+ ruleexpression)+;
 romanizer: ROMANIZER RULESTART (NEWLINE+ ruleexpression)+;
+interromanizer: ROMANIZER HYPHEN rulename RULESTART (NEWLINE+ ruleexpression)+;
 
 changerule: rulename (WHITESPACE matrix)? (WHITESPACE PROPAGATE)? RULESTART NEWLINE subrule (NEWLINE SUBRULE RULESTART (WHITESPACE | NEWLINE) subrule)*;
 subrule: ruleexpression (NEWLINE ruleexpression)*;

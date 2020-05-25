@@ -5,6 +5,7 @@ import com.github.ajalt.clikt.core.subcommands
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.arguments.multiple
 import com.github.ajalt.clikt.parameters.options.default
+import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.multiple
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.path
@@ -40,10 +41,15 @@ class SC : CliktCommand(
                 "E.g. if this is \"new\" and WORDS is \"foo.wli\", Lexurgy will write the changed words to foo_new.wli. " +
                 "Defaults to \"ev\"."
     ).default("ev")
-    val debugWords by option(
-        "-d", "--debug-word",
-        help = "A word to record debugging information for. Can be provided multiple times to specify several words to debug."
+    val traceWords by option(
+        "-t", "--trace-word",
+        help = "A word to trace the evolution of. Can be provided multiple times to specify several words to trace."
     ).multiple()
+    val intermediates by option(
+        "-m", "--intermediates",
+        help = "Use intermediate romanizers to dump intermediate forms of the words. " +
+                "The resulting files have the romanizer names as suffixes."
+    ).flag("-f", "--final-only", default = false)
 
     @ExperimentalTime
     override fun run() {
@@ -54,7 +60,8 @@ class SC : CliktCommand(
             stopBefore = stopBefore,
             inSuffix = inSuffix,
             outSuffix = outSuffix,
-            debugWords = debugWords
+            debugWords = traceWords,
+            intermediates = intermediates
         )
     }
 }

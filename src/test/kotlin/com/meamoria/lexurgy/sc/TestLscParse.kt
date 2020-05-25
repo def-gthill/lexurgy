@@ -211,7 +211,8 @@ class TestLscParse : StringSpec({
             classDeclarations: List<String>,
             deromanizer: String?,
             changeRules: List<String>,
-            romanizer: String?
+            romanizer: String?,
+            intermediateRomanizers: List<RomanizerToFollowingRule<String>>
         ): String = (
                 featureDeclarations + diacriticDeclarations + symbolDeclarations + classDeclarations +
                         listOfNotNull(deromanizer) + changeRules + listOfNotNull(romanizer)
@@ -240,6 +241,9 @@ class TestLscParse : StringSpec({
         override fun walkDeromanizer(expressions: List<String>): String = "drom(${expressions.joinToString()})"
 
         override fun walkRomanizer(expressions: List<String>): String = "rom(${expressions.joinToString()})"
+
+        override fun walkIntermediateRomanizer(ruleName: String, expressions: List<String>): String =
+            "introm($ruleName, ${expressions.joinToString()})"
 
         override fun walkChangeRule(
             ruleName: String,
