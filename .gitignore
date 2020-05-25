@@ -113,3 +113,4 @@ fabric.properties
 hs_err_pid*
 
 /test/*ev.wli
+/test/*trace.wli

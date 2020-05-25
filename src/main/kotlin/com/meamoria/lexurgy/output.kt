@@ -1,6 +1,12 @@
 package com.meamoria.lexurgy
 
 import com.github.ajalt.clikt.output.TermUi.echo
+import com.sun.jna.Native
+import com.sun.jna.Platform
+import com.sun.jna.Pointer
+import com.sun.jna.platform.win32.Kernel32
+import com.sun.jna.platform.win32.WinNT
+import com.sun.jna.ptr.IntByReference
 import java.io.IOException
 import java.nio.file.Path
 
@@ -29,7 +35,48 @@ object DebugLogger {
         get() = this::debugFilePath.isInitialized
 
     fun debugEcho(message: String) {
-        echo(message)
+        debugPrinter.print(message)
+    }
+
+    private val debugPrinter: DebugPrinter =
+        if (Platform.isWindows()) WindowsPrinter() else RegularPrinter()
+
+    private interface DebugPrinter {
+        fun print(message: String)
+    }
+
+    private class RegularPrinter : DebugPrinter {
+        override fun print(message: String) = echo(message)
+    }
+
+    // Uses the WriteConsoleW system call to force the console to display Unicode.
+    private class WindowsPrinter : DebugPrinter {
+
+        private val kernel: KernelWithUnicode = Native.load("Kernel32", KernelWithUnicode::class.java)
+        private val consoleHandle: WinNT.HANDLE = kernel.GetStdHandle(Kernel32.STD_OUTPUT_HANDLE)
+
+        override fun print(message: String) {
+            val mode = IntByReference()
+            if (kernel.GetConsoleMode(consoleHandle, mode)) {
+                val chars = (message + System.lineSeparator()).toCharArray()
+                if (!kernel.WriteConsoleW(consoleHandle.pointer, chars, chars.size, IntByReference(), null)) {
+                    echo(message)
+                }
+            } else {
+                echo(message)
+            }
+        }
+    }
+
+    private interface KernelWithUnicode : Kernel32 {
+        @Suppress("FunctionName")
+        fun WriteConsoleW(
+            hConsoleOutput: Pointer?,
+            lpBuffer: CharArray?,
+            nNumberOfCharsToWrite: Int,
+            lpNumberOfCharsWritten: IntByReference?,
+            lpReserved: Pointer?
+        ): Boolean
     }
 }
 
