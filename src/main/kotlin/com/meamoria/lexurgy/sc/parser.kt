@@ -69,6 +69,7 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
                     changeRules += rule
                     if (curRomanizer != null) {
                         romanizers += RomanizerToFollowingRule(curRomanizer, rule)
+                        curRomanizer = null
                     }
                 }
             }

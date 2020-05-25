@@ -31,7 +31,7 @@ class SoundChanger(
         for (wordsPath in wordsPaths) {
             console("Applying changes to words in ${suffixPath(wordsPath, inSuffix)}")
 
-            DebugLogger.debugFilePath = suffixPath(wordsPath, "trace")
+            DebugLogger.setPath(suffixPath(wordsPath, "trace"))
 
             val words = loadList(wordsPath, suffix = inSuffix)
 
@@ -104,7 +104,7 @@ class SoundChanger(
         var started = false
         var stopped = false
 
-        if (!DebugLogger.debugFilePathIsInitialized) DebugLogger.debugFilePath = Paths.get("words.debug")
+        if (!DebugLogger.debugFilePathIsInitialized) DebugLogger.setPath(Paths.get("words.debug"))
 
         for (rule in rules) {
             if (rule.name == stopBefore) {
@@ -147,7 +147,7 @@ class SoundChanger(
         }.toList().also {newWords ->
             for (i in debugIndices) {
                 if (newWords[i] != curWords[i]) {
-                    debug("Applied $rule.name: ${curWords[i].string} -> ${newWords[i].string}")
+                    debug("Applied ${rule.name}: ${curWords[i].string} -> ${newWords[i].string}")
                 }
             }
         }

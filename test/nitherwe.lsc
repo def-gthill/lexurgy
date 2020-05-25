@@ -1,0 +1,118 @@
+Feature Sibilant(sibilant)
+Feature Sibtype(coronal, lateral, palatal)
+Feature Manner(affricate, fricative)
+Feature Voicing(voiced, unvoiced)
+
+Symbol ts [sibilant unvoiced coronal affricate]
+Symbol tɬ [sibilant unvoiced lateral affricate]
+Symbol tɕ [sibilant unvoiced palatal affricate]
+Symbol dz [sibilant voiced coronal affricate]
+Symbol dɮ [sibilant voiced lateral affricate]
+Symbol dʑ [sibilant voiced palatal affricate]
+Symbol s [sibilant unvoiced coronal fricative]
+Symbol ɬ [sibilant unvoiced lateral fricative]
+Symbol ɕ [sibilant unvoiced palatal fricative]
+Symbol z [sibilant voiced coronal fricative]
+Symbol ɮ [sibilant voiced lateral fricative]
+Symbol ʑ [sibilant voiced palatal fricative]
+
+Class vowel {a, ɛ, e, i, ɔ, o, u}
+Class cons {p, t, k, b, d, g, ts, tɬ, tɕ, dz, dɮ, dʑ, s, ɬ, ɕ, h, v, ð, z, ɮ, ʑ, ɣ, m, n, r, l}
+
+Deromanizer:
+    tl => tɬ
+    ll => l
+    l => ɬ
+    y => j
+    é => e
+    ó => o
+    e => ɛ
+    o => ɔ
+
+voiced-stops:
+    {b, d, g} => {w, r, j} / @vowel _ @vowel
+
+vowel-colouring:
+    {a, ɛ, e, i} w => {ɔ, ɔ, o, u} * / _ @vowel
+    {a, ɛ, e} j => {ɛ, e, i} * / _ @vowel
+    Then: {j, w} => * / @vowel _ @vowel
+
+vowel-shift:
+    {e, ɔ} => {i, o} / {$ {@cons, j, w}* _, _ $}
+    {ɛ, ɔ} => {e, a}
+    u => wa / $ @cons* _ // {j, w} _
+    u => o
+
+nasal-syllabification:
+    @vowel {m, n} => * {m̩, n̩} / {_ {@cons, j, w}, _ $}
+    Then:
+    m => * / _ m̩
+    n => * / _ n̩
+
+stop-voicing:
+    {p, t, k, ts, tɬ} => {b, d, g, dz, dɮ} / @vowel _ @vowel
+
+Romanizer-onev:
+    tɬ => tl
+    ɬ => l
+    l => ll
+    j => y
+    m̩ => m
+    n̩ => n
+
+lateral-coalescence:
+    ɬ {t, d, ts, s} => * {tɬ, dɮ, tɬ, ɬ}
+
+coda-dropping:
+    @cons => * / {_ @cons+ @vowel, _ $}
+
+palatalization:
+    {[sibilant], t, d} {i, j} => {[palatal], tɕ, dʑ} {i, *}
+    {k, g} j => {tɕ, dʒ} *
+
+glide-collapse:
+    j {a, e} => * {e, i} / @cons _
+    {j, w} => * / @cons _
+
+hiatus-collapse:
+    {e, i} => j / _ @vowel // _ {e, i}
+    Then: o => w / _ @vowel // _ o
+    Then: ai => e
+    Then: @vowel => * / @vowel _ // @vowel @vowel _
+
+Romanizer-mnev:
+    tɬ => tl
+    tɕ => tx
+    dɮ => dc
+    dʑ => dj
+    ɬ => l
+    ɕ => x
+    l => ll
+    j => y
+    m̩ => m
+    n̩ => n
+
+h-loss:
+    h => *
+
+sibilant-harmony [sibilant] propagate:
+    [] => [$Sibtype] / [$Sibtype !coronal] _
+
+voiced-lenition:
+    {b, d, g, dz, dɮ, dʑ} => {v, ð, ɣ, z, ɮ, ʑ}
+
+g-dropping:
+    ɣ => *
+
+Romanizer:
+    tɬ => tl
+    tɕ => tx
+    ɬ => l
+    ɕ => x
+    ð => d
+    ɮ => c
+    ʑ => j
+    l => ll
+    j => y
+    m̩ => m
+    n̩ => n
