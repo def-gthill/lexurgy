@@ -1,7 +1,6 @@
 package com.meamoria.lexurgy.sc
 
 import com.meamoria.lexurgy.*
-
 class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
     override fun walkFile(
         featureDeclarations: List<ParseNode>,
@@ -127,8 +126,10 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
     override fun walkRuleSequence(items: List<ParseNode>): ParseNode =
         SequenceElement(items.map { it as RuleElement })
 
-    override fun walkRuleCapture(item: ParseNode, capture: ParseNode): ParseNode =
-        CaptureElement(item as RuleElement, capture as CaptureReferenceElement)
+    override fun walkRuleCapture(item: ParseNode, capture: ParseNode): ParseNode = when (item) {
+        is MatrixNode -> CaptureElement(MatrixElement(item.matrix), capture as CaptureReferenceElement)
+        else -> CaptureElement(item as RuleElement, capture as CaptureReferenceElement)
+    }
 
     override fun walkRuleRepeater(item: ParseNode, repeaterType: ParseNode): ParseNode =
         RepeaterElement(item as RuleElement, repeaterType as RepeaterTypeNode)
@@ -448,3 +449,4 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
 
     private class TextNode(val text: String) : ParseNode
 }
+

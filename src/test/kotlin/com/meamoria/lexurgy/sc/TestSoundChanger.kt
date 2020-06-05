@@ -1,6 +1,7 @@
 package com.meamoria.lexurgy.sc
 
 import com.meamoria.lexurgy.loadList
+import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.beOfType
@@ -478,6 +479,28 @@ class TestSoundChanger : StringSpec({
         ch("ifsehkasxo") shouldBe "ifsekkasxo"
     }
 
+    "We should be able to implement gemination and degemination with matrix captures" {
+        val ch = lsc(
+            """
+                Feature Manner(stop, fricative)
+                Feature Place(labial, alveolar, velar)
+                Symbol p [labial stop]
+                Symbol t [alveolar stop]
+                Symbol k [velar stop]
+                Symbol f [labial fricative]
+                Symbol s [alveolar fricative]
+                Symbol x [velar fricative]
+                stop-gemination:
+                h [stop]$1 => $1 $1
+                fricative-degemination:
+                [fricative]$1 => * / _ $1
+            """.trimIndent()
+        )
+
+        ch("ahpessi") shouldBe "appesi"
+        ch("ifsehkasxo") shouldBe "ifsekkasxo"
+    }
+
     "We should be able to implement metathesis with captures" {
         val ch = lsc(
             """
@@ -548,6 +571,7 @@ class TestSoundChanger : StringSpec({
 
         shouldThrow<LscInvalidRuleExpression> { lsc("harmony [vowel]:\n[low] * => [high] a") }
         shouldThrow<LscInvalidRuleExpression> { lsc("harmony [vowel]:\n[low] ai => [high] a") }
+        shouldNotThrowAny { lsc("Symbol ai\nharmony [vowel]:\n[low] ai => [high] a") }
     }
 
     "Overlapping rules in a filter rule should be resolved in precedence order" {
@@ -687,6 +711,22 @@ class TestSoundChanger : StringSpec({
             "b" to listOf("xaaxi", "vaanexaak"),
             null to listOf("säsi", "vänesäk")
         )
+    }
+
+    "!The Kharulian consonant separation rule should break apart consecutive consonants" {
+        // My current position is "don't fix this". Put warnings in the documentation that different environment
+        // lengths don't mix well in alternative environments.
+        val ch = lsc(
+            """
+                Class vowel {a, i, ə}
+                Class cons {p, t, k, s, m, n, l, r}
+                break-up-clusters:
+                    * => ə / {$ @cons _ @cons, @cons @cons _ @cons, @vowel @cons _ @cons $}
+            """.trimIndent()
+        )
+
+        ch("mtmkaasr") shouldBe "mətəməkaasər"
+        ch("tmkipnralpt") shouldBe "təməkipnəralpət"
     }
 
     "This sample list of Three Rivers words should evolve into Muipidan words how they did in the old sound changer" {

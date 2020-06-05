@@ -373,11 +373,11 @@ class RuleExpression<I : Segment<I>, O : Segment<O>>(
 
     private fun makeTransformer(match: Matcher<I>, result: Emitter<I, O>): Transformer<I, O> {
         if (filtered && match is TextMatcher) {
-            if (match.text.string.isEmpty()) {
+            if (match.text.length == 0) {
                 throw LscInvalidRuleExpression(
                     match, result, "Asterisks aren't allowed on the match side of filtered rules"
                 )
-            } else if (match.text.string.length > 1) {
+            } else if (match.text.length > 1) {
                 throw LscInvalidRuleExpression(
                     match, result, "Multi-segment matches aren't allowed on the match side of filtered rules"
                 )
