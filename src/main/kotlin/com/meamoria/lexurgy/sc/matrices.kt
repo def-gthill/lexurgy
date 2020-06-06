@@ -1,5 +1,7 @@
 package com.meamoria.lexurgy.sc
 
+import com.meamoria.lexurgy.LscUserError
+
 class Matrix(val valueList: List<MatrixValue>) {
     val valueSet: Set<MatrixValue> = valueList.toSet()
     val simpleValues: Set<SimpleValue> = valueSet.filterIsInstanceTo(mutableSetOf())
@@ -37,21 +39,21 @@ interface MatrixValue {
     fun matches(declarations: Declarations, matrix: Matrix, bindings: Bindings): Boolean
 }
 
-data class NegatedValue(val value: String): MatrixValue {
+data class NegatedValue(val value: String) : MatrixValue {
     override fun matches(declarations: Declarations, matrix: Matrix, bindings: Bindings): Boolean =
         value !in matrix.simpleValueStrings
 }
 
-data class AbsentFeature(val featureName: String): MatrixValue {
+data class AbsentFeature(val featureName: String) : MatrixValue {
     override fun matches(declarations: Declarations, matrix: Matrix, bindings: Bindings): Boolean =
-        with (declarations) {
+        with(declarations) {
             featureName.toFeature().values.none { it in matrix.valueSet }
         }
 }
 
-data class FeatureVariable(val featureName: String): MatrixValue {
+data class FeatureVariable(val featureName: String) : MatrixValue {
     override fun matches(declarations: Declarations, matrix: Matrix, bindings: Bindings): Boolean {
-        with (declarations) {
+        with(declarations) {
             val featureObject = featureName.toFeature()
             val match = featureObject.allValues.filter { it in matrix.valueSet }
             return match.firstOrNull()?.let {
@@ -63,7 +65,7 @@ data class FeatureVariable(val featureName: String): MatrixValue {
     override fun toString(): String = "$$featureName"
 }
 
-data class SimpleValue(val name: String): MatrixValue {
+data class SimpleValue(val name: String) : MatrixValue {
     override fun matches(declarations: Declarations, matrix: Matrix, bindings: Bindings): Boolean =
         name in matrix.simpleValueStrings
 
@@ -71,4 +73,4 @@ data class SimpleValue(val name: String): MatrixValue {
 }
 
 class LscInvalidMatrix(val matrix: Matrix) :
-    Exception("No combination of a symbol and diacritics has the matrix $matrix")
+    LscUserError("No combination of a symbol and diacritics has the matrix $matrix")

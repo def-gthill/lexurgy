@@ -10,7 +10,7 @@ import com.sun.jna.ptr.IntByReference
 import java.io.IOException
 import java.nio.file.Path
 
-fun console(message: String) = echo(message)
+fun console(message: String) = DebugLogger.debugEcho(message)
 
 fun debug(message: String) {
     DebugLogger.debugEcho(message)

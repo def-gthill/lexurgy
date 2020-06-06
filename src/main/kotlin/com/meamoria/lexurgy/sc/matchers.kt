@@ -70,7 +70,7 @@ class CaptureReferenceMatcher(val number: Int): SimpleMatcher<PhonS> {
     override fun claim(declarations: Declarations, word: Word<PhonS>, start: Int, bindings: Bindings): Int? =
         bindings.captures[number]?.let { capturedText ->
             return (start + capturedText.length).takeIf { end ->
-                word.slice(start until end) == capturedText
+                word.drop(start).take(end - start) == capturedText
             }
         } ?: throw LscUnboundCapture(number)
 }

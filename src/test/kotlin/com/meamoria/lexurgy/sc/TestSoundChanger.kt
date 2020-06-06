@@ -499,6 +499,8 @@ class TestSoundChanger : StringSpec({
 
         ch("ahpessi") shouldBe "appesi"
         ch("ifsehkasxo") shouldBe "ifsekkasxo"
+        // Tests that we don't get crashes if the rule is looking for a geminate off the end of the word.
+        ch("affes") shouldBe "afes"
     }
 
     "We should be able to implement metathesis with captures" {

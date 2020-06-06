@@ -1,5 +1,6 @@
 package com.meamoria.lexurgy.sc
 
+import com.meamoria.lexurgy.LscUserError
 import com.meamoria.lexurgy.PhoneticParser
 import com.meamoria.lexurgy.PhoneticSegment
 import com.meamoria.lexurgy.Word
@@ -168,4 +169,4 @@ class ComplexSymbol(val symbol: Symbol, val diacritics: List<Diacritic> = emptyL
 data class Diacritic(val name: String, val matrix: Matrix, val before: Boolean)
 
 class LscUndefinedName(val nameType: String, val undefinedName: String) :
-    Exception("The $nameType name $undefinedName is not defined")
+    LscUserError("The $nameType name $undefinedName is not defined")

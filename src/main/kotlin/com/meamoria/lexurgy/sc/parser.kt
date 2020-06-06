@@ -1,6 +1,7 @@
 package com.meamoria.lexurgy.sc
 
 import com.meamoria.lexurgy.BoringErrorListener
+import com.meamoria.lexurgy.LscUserError
 import org.antlr.v4.runtime.*
 import org.antlr.v4.runtime.tree.ParseTree
 
@@ -311,4 +312,4 @@ private class LscErrorListener : BoringErrorListener() {
 }
 
 class LscNotParsable(val line: Int, val column: Int, val offendingSymbol: String, message: String) :
-    Exception("$message (Line $line, column $column)")
+    LscUserError("$message (Line $line, column $column)")

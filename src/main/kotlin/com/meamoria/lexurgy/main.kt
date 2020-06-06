@@ -50,19 +50,36 @@ class SC : CliktCommand(
         help = "Use intermediate romanizers to dump intermediate forms of the words. " +
                 "The resulting files have the romanizer names as suffixes."
     ).flag("-f", "--final-only", default = false)
+    val developer by option(
+        "-d", "--developer",
+        help = "Write the full trace when Lexurgy encounters a fatal error. " +
+                "Use this if you want to submit a bug report."
+    ).flag("-u", "--user", default = false)
 
     @ExperimentalTime
     override fun run() {
-        SoundChanger.changeFiles(
-            changes,
-            words,
-            startAt = startAt,
-            stopBefore = stopBefore,
-            inSuffix = inSuffix,
-            outSuffix = outSuffix,
-            debugWords = traceWords,
-            intermediates = intermediates
-        )
+        try {
+            SoundChanger.changeFiles(
+                changes,
+                words,
+                startAt = startAt,
+                stopBefore = stopBefore,
+                inSuffix = inSuffix,
+                outSuffix = outSuffix,
+                debugWords = traceWords,
+                intermediates = intermediates
+            )
+        } catch (e: Exception) {
+            if (developer) throw e
+            else when (e) {
+                is UserError ->
+                    console(e.message.toString())
+                else -> console(
+                    "Lexurgy couldn't apply the changes because of an unexpected error. " +
+                            "Rerun with developer mode turned on (-d) and submit a bug report with the output attached."
+                )
+            }
+        }
     }
 }
 

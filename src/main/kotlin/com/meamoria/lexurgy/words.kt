@@ -202,4 +202,4 @@ data class DiacriticBreakdown(
     val core: String, val before: List<String> = emptyList(), val after: List<String> = emptyList())
 
 class DanglingDiacritic(word: String, position: Int, diacritic: String) :
-        Exception("The diacritic $diacritic at position $position in $word isn't attached to a symbol")
+        UserError("The diacritic $diacritic at position $position in $word isn't attached to a symbol")

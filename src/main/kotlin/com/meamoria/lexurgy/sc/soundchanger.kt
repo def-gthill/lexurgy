@@ -142,7 +142,8 @@ class SoundChanger(
             try {
                 rule(curWord)
             } catch (e: Exception) {
-                throw LscRuleNotApplicable(e, rule.name, word, curWord.string)
+                if (e is LscUserError) throw LscRuleNotApplicable(e, rule.name, word, curWord.string)
+                else throw e
             }
         }.toList().also {newWords ->
             for (i in debugIndices) {
@@ -506,25 +507,27 @@ class Environment<I : Segment<I>>(val before: Matcher<I>, val after: Matcher<I>)
     override fun toString(): String = "$before _ $after"
 }
 
-class LscRuleNotApplicable(cause: Exception, rule: String, originalWord: String, currentWord: String) :
-    Exception(
+class LscRuleNotApplicable(cause: UserError, rule: String, originalWord: String, currentWord: String) :
+    LscUserError(
         "Rule $rule could not be applied to word $currentWord (originally $originalWord)\nReason: ${cause.message}",
         cause
     )
 
 class LscInvalidRuleExpression(
     val matcher: Matcher<*>, val emitter: Emitter<*, *>, message: String
-) :
-    Exception(message)
+) : LscUserError(message)
 
-class LscMatrixInPlain(val matrix: Matrix) : Exception("Feature matrix $matrix isn't allowed in a romanized context")
+class LscMatrixInPlain(val matrix: Matrix) :
+    LscUserError("Feature matrix $matrix isn't allowed in a romanized context")
 
-class LscClassInPlain(val className: String) : Exception("Sound class $className isn't allowed in a romanized context")
+class LscClassInPlain(val className: String) :
+    LscUserError("Sound class $className isn't allowed in a romanized context")
 
-class LscCaptureInPlain(val number: Int) : Exception("Capture $number isn't allowed in a romanized context")
+class LscCaptureInPlain(val number: Int) :
+    LscUserError("Capture $number isn't allowed in a romanized context")
 
 class LscDivergingPropagation(val rule: ChangeRule, val initialWord: String, val wordsAtAbort: List<String>) :
-    Exception(
+    LscUserError(
         "Propagating rule $rule applied to rule $initialWord appears " +
                 "not to settle on a result; the last few versions of the word were ${wordsAtAbort.joinToString(" -> ")}"
     )
