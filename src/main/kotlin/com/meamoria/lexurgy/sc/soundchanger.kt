@@ -31,7 +31,7 @@ class SoundChanger(
         for (wordsPath in wordsPaths) {
             console("Applying changes to words in ${suffixPath(wordsPath, inSuffix)}")
 
-            DebugLogger.setPath(suffixPath(wordsPath, "trace"))
+            UnicodeLogger.path = suffixPath(wordsPath, "trace")
 
             val words = loadList(wordsPath, suffix = inSuffix)
 
@@ -104,7 +104,7 @@ class SoundChanger(
         var started = false
         var stopped = false
 
-        if (!DebugLogger.debugFilePathIsInitialized) DebugLogger.setPath(Paths.get("words.debug"))
+        if (!UnicodeLogger.debugFilePathIsInitialized) UnicodeLogger.path = Paths.get("words.debug")
 
         for (rule in rules) {
             if (rule.name == stopBefore) {
@@ -143,9 +143,9 @@ class SoundChanger(
                 rule(curWord)
             } catch (e: Exception) {
                 if (e is LscUserError) throw LscRuleNotApplicable(e, rule.name, word, curWord.string)
-                else throw e
+                else throw LscRuleCrashed(e, rule.name, word, curWord.string)
             }
-        }.toList().also {newWords ->
+        }.toList().also { newWords ->
             for (i in debugIndices) {
                 if (newWords[i] != curWords[i]) {
                     debug("Applied ${rule.name}: ${curWords[i].string} -> ${newWords[i].string}")
@@ -292,8 +292,7 @@ typealias PlainS = PlainSegment
 
 class Deromanizer(expressions: List<RuleExpression<PlainS, PhonS>>, declarations: Declarations) :
     SimpleChangeRule<PlainS, PhonS>(Plain, Phonetic, expressions, defaultRuleFor(declarations)),
-        NamedRule<PlainS, PhonS>
-{
+    NamedRule<PlainS, PhonS> {
     override val name: String = "deromanizer"
 
     companion object {
@@ -306,8 +305,7 @@ class Deromanizer(expressions: List<RuleExpression<PlainS, PhonS>>, declarations
 
 class Romanizer(expressions: List<RuleExpression<PhonS, PlainS>>) :
     SimpleChangeRule<PhonS, PlainS>(Phonetic, Plain, expressions, { PlainWord(it.string) }),
-        NamedRule<PhonS, PlainS>
-{
+    NamedRule<PhonS, PlainS> {
     override val name: String = "romanizer"
 
     companion object {
@@ -507,10 +505,16 @@ class Environment<I : Segment<I>>(val before: Matcher<I>, val after: Matcher<I>)
     override fun toString(): String = "$before _ $after"
 }
 
-class LscRuleNotApplicable(cause: UserError, rule: String, originalWord: String, currentWord: String) :
+class LscRuleNotApplicable(val reason: UserError, val rule: String, val originalWord: String, val currentWord: String) :
     LscUserError(
-        "Rule $rule could not be applied to word $currentWord (originally $originalWord)\nReason: ${cause.message}",
-        cause
+        "Rule $rule could not be applied to word $currentWord (originally $originalWord)\nReason: ${reason.message}",
+        reason
+    )
+
+class LscRuleCrashed(val reason: Exception, val rule: String, val originalWord: String, val currentWord: String) :
+    Exception(
+        "Rule $rule encountered a programming error when applied to word $currentWord (originally $originalWord)",
+        reason
     )
 
 class LscInvalidRuleExpression(
