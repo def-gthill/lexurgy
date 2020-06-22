@@ -1,20 +1,18 @@
-.. Lexurgy documentation master file, created by
-   sphinx-quickstart on Mon May 25 21:12:50 2020.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+Lexurgy
+=======
 
-Welcome to Lexurgy's documentation!
-===================================
+Lexurgy is a toolkit for conlangers. It currently has two components:
+
+- Gen, a word generator. Currently, this is a direct imitation of Awkwords, but available offline.
+- SC, a sound change simulator. This is inspired by Rosenfelder's SCA and Bangs' Phonix, but has important features both of them lack.
+
+A third component - Flex, an inflection simulator - is under development.
+
+Found a bug? Want to request a feature? Open an issue on `GitHub <https://github.com/def-gthill/lexurgy/issues>`_.
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   gen
+   sc
