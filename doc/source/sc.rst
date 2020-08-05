@@ -37,6 +37,17 @@ Any of these positions can contain multiple characters::
 
 Rule names must use only lowercase letters and hyphens.
 
+Any line that starts with # is a comment, and Lexurgy will ignore it::
+
+    # These rules palatalize k to s in three steps.
+    palatalization-1:
+        k => tʃ / _ i
+    palatalization-2:
+        # This is unconditional!
+        tʃ => ʃ
+    palatalization-3:
+        ʃ => s
+
 Alternative lists
 *****************
 
@@ -54,16 +65,13 @@ you use alternative lists, like this::
 
 You can also use alternative lists in the old sound and new sound parts of the rule.
 If only the old sound is an alternative list, all of the sounds in it will change
-into the single new sound.
-
-::
+into the single new sound::
 
     glottal-stop:
         {p, t, k} => ʔ / {a, e, i, o, u} _ {a, e, i, o, u}
 
-If both are alternative lists, they must be the same length, and each sound in the old list will change into the corresponding sound in the new list.
-
-::
+If both are alternative lists, they must be the same length, and each sound in the old list
+will change into the corresponding sound in the new list::
 
     intervocalic-lenition:
         {p, t, k} => {b, d, g} / {a, e, i, o, u} _ {a, e, i, o, u}
@@ -72,10 +80,17 @@ This will turn [p] into [b], [t] into [d], and [k] into [g].
 
 It's invalid to have a single sound turn into an alternative list.
 
+Alternative environments
+************************
+
+The alternative list mechanism can be used not just for sounds, but for entire environments.
+For example, this rule
+
 Word boundaries
 ***************
 
-You can specify that a rule only applies at the beginning or end of a word by marking the word boundary with a $::
+You can specify that a rule only applies at the beginning or end of a word by marking the
+word boundary with a $::
 
     aspirate-initial-stop:
         {p, t, k} => {pʰ, tʰ, kʰ} / $ _
@@ -92,7 +107,8 @@ If you want to delete a sound entirely, put an asterisk in place of the new soun
     drop-final-vowel:
         {a, e, i, o, u} => * / _ $
 
-Similarly, you can add epenthetic sounds by putting an asterisk before the change arrow and specifying the environment where the sound should appear::
+Similarly, you can add epenthetic sounds by putting an asterisk before the change arrow
+and specifying the environment where the sound should appear::
 
     spanish-e:
         * => e / _ s {p, t, k}
@@ -100,44 +116,53 @@ Similarly, you can add epenthetic sounds by putting an asterisk before the chang
 Exclusions
 **********
 
-Sometimes it's easier to say when a change *doesn't* occur than when it does. You can specify exceptions to a rule using a double slash::
+Sometimes it's easier to say when a change *doesn't* occur than when it does. You can
+specify exceptions to a rule using a double slash::
 
-    <insert example here>
+    i-before-e-except-after-c:
+        * => i / _ e // c _
+
+
 
 Simultaneous rules
 ~~~~~~~~~~~~~~~~~~
 
-
+You can put several rules under a single rule name. This tells Lexurgy to apply all of these
+rules simultaneously. 
 
 Sound classes
 ~~~~~~~~~~~~~
 
-You can define premade lists of sounds at the top of the file.
-
-::
+You can define premade lists of sounds at the top of the file::
 
     Class vowel {a, e, i, o, u}
     Class unvcdstop {p, t, k}
     Class vcdstop {b, d, g}
 
-When you use these in rules, they act just like alternative lists. So you can implement intervocalic lenition like this::
+When you use these in rules, they act just like alternative lists. So you can implement
+intervocalic lenition like this::
 
     @unvcdstop => @vcdstop / @vowel _ @vowel
 
-Lexurgy automatically expands this rule into
-
-::
+Lexurgy automatically expands this rule into::
 
     {p, t, k} => {b, d, g} / {a, e, i, o, u} _ {a, e, i, o, u}
 
-But if you use the same lists often, having short names for them saves a lot of typing and makes your intentions clearer.
+But if you use the same lists often, having short names for them saves
+a lot of typing and makes your intentions clearer.
 
-Lexurgy's sound classes should be familiar to users of Rosenfelder's SCA. But unlike in Rosenfelder's SCA, the sounds in a sound class can be multiple characters long, and work the way you would expect.
+Lexurgy's sound classes should be familiar to users of Rosenfelder's SCA.
+But unlike in Rosenfelder's SCA, the sounds in a sound class can be multiple
+characters long, and work the way you would expect.
 
 Feature matrices
 ~~~~~~~~~~~~~~~~
 
-Another, more flexible way of generalizing rules is to define each sound as a matrix of features. This is inspired by distinctive feature theory (via Bangs's Phonix), but the syntax is designed for practical conlanging rather than theoretical soundness. In addition, not every sound needs to be defined with features, so you can freely mix feature matrices with sound classes and plain text in your rules.
+Another, more flexible way of generalizing rules is to define each sound as a
+matrix of features. This is inspired by distinctive feature theory (via Bangs's Phonix),
+but the syntax is designed for practical conlanging rather than theoretical soundness.
+In addition, not every sound needs to be defined with features, so you can freely
+mix feature matrices with sound classes and plain text in your rules.
 
 Feature variables
 *****************
@@ -169,6 +194,14 @@ Propagation
 Romanization
 ~~~~~~~~~~~~
 
-It's a good idea to do all the sound changes in phonetic notation (e.g. IPA). But you probably do most of the work for your languages in their romanization systems. You can define romanization rules at the beginning and end of any sound change applier, but Lexurgy SC supports specific notation for it so your intention is clear. Just define a special rule at the beginning with the name "Deromanizer" and another rule at the end with the name "Romanizer". Like any rule, the expressions within the romanization rules are applied simultaneously, and earlier rules take precedence over later ones.
+It's a good idea to do all the sound changes in phonetic notation (e.g. IPA).
+But you probably do most of the work for your languages in their romanization systems.
+You can define romanization rules at the beginning and end of any sound change applier,
+but Lexurgy SC supports specific notation for it so your intention is clear.
+Just define a special rule at the beginning with the name "Deromanizer"
+and another rule at the end with the name "Romanizer". Like any rule, the expressions
+within the romanization rules are applied simultaneously, and earlier rules
+take precedence over later ones.
 
-Some features, like matrices, aren't allowed in the input to the deromanizer or the output of the romanizer, since they operate on sounds, not letters.
+Some features, like matrices, aren't allowed in the input to the deromanizer
+or the output of the romanizer, since they operate on sounds, not letters.
