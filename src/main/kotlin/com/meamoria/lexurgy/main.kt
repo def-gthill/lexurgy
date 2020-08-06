@@ -53,6 +53,17 @@ class SC : CliktCommand(
         help = "Use intermediate romanizers to dump intermediate forms of the words. " +
                 "The resulting files have the romanizer names as suffixes."
     ).flag("-f", "--final-only", default = false)
+    val compareStages by option(
+        "-s", "--compare-stages",
+        help = "Print the original form of the word (and any intermediates if -m is enabled) " +
+                "alongside the evolved form in the output files."
+    ).flag("-S", "--no-compare-stages", default = true)
+    val compareVersions by option(
+        "-v", "--compare-versions",
+        help = "Compare the output files to the existing versions of the same files, " +
+                "flagging any changes. Useful if you're tweaking the .lsc file and " +
+                "want to make sure your changes don't have unintended consequences."
+    ).flag("-V", "--no-compare-versions", default = false)
     val developer by option(
         "-d", "--developer",
         help = "Write the full trace when Lexurgy encounters a fatal error. " +
@@ -70,7 +81,9 @@ class SC : CliktCommand(
                 inSuffix = inSuffix,
                 outSuffix = outSuffix,
                 debugWords = traceWords,
-                intermediates = intermediates
+                intermediates = intermediates,
+                compareStages = compareStages,
+                compareVersions = compareVersions
             )
         } catch (e: Exception) {
             val writer = PrintWriter(ConsoleWriter)
