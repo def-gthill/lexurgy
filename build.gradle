@@ -4,7 +4,7 @@ plugins {
 }
 
 group 'com.meamoria'
-version '0.4.0-20200805'
+version '0.4.0'
 
 repositories {
     mavenCentral()

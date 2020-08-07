@@ -47,9 +47,27 @@ class TestSoundChangerWithFiles : StringSpec({
         listFrom("ptr_test_2_ev.wli") shouldBe listFrom("ptr_test_2_ev_versions.wli")
     }
 
-    "!Compare versions and compare stages should work together" {
+    "Compare versions and compare stages should work together" {
+        listTo(listFrom("ptr_test_1_ev_previous.wli"), "ptr_test_1_ev.wli")
+        listTo(listFrom("ptr_test_2_ev_previous.wli"), "ptr_test_2_ev.wli")
+        changer.changeFiles(
+            listOf(pathOf("ptr_test_1.wli"), pathOf("ptr_test_2.wli")),
+            compareStages = true,
+            compareVersions = true
+        )
+        listFrom("ptr_test_1_ev.wli") shouldBe listFrom("ptr_test_1_ev_stages_versions.wli")
+        listFrom("ptr_test_2_ev.wli") shouldBe listFrom("ptr_test_2_ev_stages_versions.wli")
     }
 
-    "!Compare versions should still work if the previous version had markup in it" {
+    "Compare versions should still work if the previous version had markup in it" {
+        listTo(listFrom("ptr_test_1_ev_previous_with_markup.wli"), "ptr_test_1_ev.wli")
+        listTo(listFrom("ptr_test_2_ev_previous_with_markup.wli"), "ptr_test_2_ev.wli")
+        changer.changeFiles(
+            listOf(pathOf("ptr_test_1.wli"), pathOf("ptr_test_2.wli")),
+            compareStages = true,
+            compareVersions = true
+        )
+        listFrom("ptr_test_1_ev.wli") shouldBe listFrom("ptr_test_1_ev_stages_versions.wli")
+        listFrom("ptr_test_2_ev.wli") shouldBe listFrom("ptr_test_2_ev_stages_versions.wli")
     }
 })

@@ -80,7 +80,7 @@ class SoundChanger(
 
             val versionCompare =
                 if (compareVersions) {
-                    val previous = loadList(wordsPath, suffix = outSuffix)
+                    val previous = loadList(wordsPath, suffix = outSuffix, removeMarkup = true)
                     makeVersionComparisons(finalWords, previous, stageCompare)
                 } else stageCompare
 
