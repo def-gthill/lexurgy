@@ -1,5 +1,6 @@
 package com.meamoria.lexurgy.sc
 
+import com.meamoria.lexurgy.dumpList
 import com.meamoria.lexurgy.loadList
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
@@ -14,6 +15,9 @@ class TestSoundChangerWithFiles : StringSpec({
 
     fun listFrom(vararg pathComponents: String): List<String> =
         loadList(pathOf(*pathComponents))
+
+    fun listTo(words: List<String>, vararg pathComponents: String) =
+        dumpList(pathOf(*pathComponents), words)
 
     val changer = SoundChanger.fromLscFile(pathOf("muipidan.lsc"))
 
@@ -30,5 +34,22 @@ class TestSoundChangerWithFiles : StringSpec({
         )
         listFrom("ptr_test_1_ev.wli") shouldBe listFrom("ptr_test_1_ev_stages.wli")
         listFrom("ptr_test_2_ev.wli") shouldBe listFrom("ptr_test_2_ev_stages.wli")
+    }
+
+    "The --compare-versions setting should print the previous version in the output" {
+        listTo(listFrom("ptr_test_1_ev_previous.wli"), "ptr_test_1_ev.wli")
+        listTo(listFrom("ptr_test_2_ev_previous.wli"), "ptr_test_2_ev.wli")
+        changer.changeFiles(
+            listOf(pathOf("ptr_test_1.wli"), pathOf("ptr_test_2.wli")),
+            compareVersions = true
+        )
+        listFrom("ptr_test_1_ev.wli") shouldBe listFrom("ptr_test_1_ev_versions.wli")
+        listFrom("ptr_test_2_ev.wli") shouldBe listFrom("ptr_test_2_ev_versions.wli")
+    }
+
+    "!Compare versions and compare stages should work together" {
+    }
+
+    "!Compare versions should still work if the previous version had markup in it" {
     }
 })
