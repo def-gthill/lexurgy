@@ -87,9 +87,13 @@ class SoundChanger(
             )
 
             dumpList(wordsPath, finalWords, suffix = outSuffix)
-            val markupPath = wordsPath.replaceExtension("wlm")
-            dumpList(markupPath, versionCompare, suffix = outSuffix)
             console("Wrote the final forms to ${suffixPath(wordsPath, outSuffix)}")
+
+            if (compareStages || compareVersions) {
+                val markupPath = wordsPath.replaceExtension("wlm")
+                dumpList(markupPath, versionCompare, suffix = outSuffix)
+                console("Wrote comparison markup to ${suffixPath(markupPath, outSuffix)}")
+            }
         }
     }
 
