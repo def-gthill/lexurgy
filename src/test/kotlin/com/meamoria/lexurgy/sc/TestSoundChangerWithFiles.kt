@@ -27,13 +27,15 @@ class TestSoundChangerWithFiles : StringSpec({
         listFrom("ptr_test_2_ev.wli") shouldBe listFrom("ptr_test_2_ev_expected.wli")
     }
 
-    "The --compare-stages setting should print the original in the output" {
+    "The --compare-stages setting should print the original in a wlm file" {
         changer.changeFiles(
             listOf(pathOf("ptr_test_1.wli"), pathOf("ptr_test_2.wli")),
             compareStages = true
         )
-        listFrom("ptr_test_1_ev.wli") shouldBe listFrom("ptr_test_1_ev_stages.wli")
-        listFrom("ptr_test_2_ev.wli") shouldBe listFrom("ptr_test_2_ev_stages.wli")
+        listFrom("ptr_test_1_ev.wli") shouldBe listFrom("ptr_test_1_ev_expected.wli")
+        listFrom("ptr_test_1_ev.wlm") shouldBe listFrom("ptr_test_1_ev_stages.wlm")
+        listFrom("ptr_test_2_ev.wli") shouldBe listFrom("ptr_test_2_ev_expected.wli")
+        listFrom("ptr_test_2_ev.wlm") shouldBe listFrom("ptr_test_2_ev_stages.wlm")
     }
 
     "The --compare-versions setting should print the previous version in the output" {
@@ -43,8 +45,8 @@ class TestSoundChangerWithFiles : StringSpec({
             listOf(pathOf("ptr_test_1.wli"), pathOf("ptr_test_2.wli")),
             compareVersions = true
         )
-        listFrom("ptr_test_1_ev.wli") shouldBe listFrom("ptr_test_1_ev_versions.wli")
-        listFrom("ptr_test_2_ev.wli") shouldBe listFrom("ptr_test_2_ev_versions.wli")
+        listFrom("ptr_test_1_ev.wlm") shouldBe listFrom("ptr_test_1_ev_versions.wlm")
+        listFrom("ptr_test_2_ev.wlm") shouldBe listFrom("ptr_test_2_ev_versions.wlm")
     }
 
     "Compare versions and compare stages should work together" {
@@ -55,20 +57,8 @@ class TestSoundChangerWithFiles : StringSpec({
             compareStages = true,
             compareVersions = true
         )
-        listFrom("ptr_test_1_ev.wli") shouldBe listFrom("ptr_test_1_ev_stages_versions.wli")
-        listFrom("ptr_test_2_ev.wli") shouldBe listFrom("ptr_test_2_ev_stages_versions.wli")
-    }
-
-    "Compare versions should still work if the previous version had markup in it" {
-        listTo(listFrom("ptr_test_1_ev_previous_with_markup.wli"), "ptr_test_1_ev.wli")
-        listTo(listFrom("ptr_test_2_ev_previous_with_markup.wli"), "ptr_test_2_ev.wli")
-        changer.changeFiles(
-            listOf(pathOf("ptr_test_1.wli"), pathOf("ptr_test_2.wli")),
-            compareStages = true,
-            compareVersions = true
-        )
-        listFrom("ptr_test_1_ev.wli") shouldBe listFrom("ptr_test_1_ev_stages_versions.wli")
-        listFrom("ptr_test_2_ev.wli") shouldBe listFrom("ptr_test_2_ev_stages_versions.wli")
+        listFrom("ptr_test_1_ev.wlm") shouldBe listFrom("ptr_test_1_ev_stages_versions.wlm")
+        listFrom("ptr_test_2_ev.wlm") shouldBe listFrom("ptr_test_2_ev_stages_versions.wlm")
     }
 
     "Compare should correctly align the separators when the words contain IPA diacritics" {
@@ -77,6 +67,6 @@ class TestSoundChangerWithFiles : StringSpec({
             listOf(pathOf("test_robust_length.wli")),
             compareStages = true
         )
-        listFrom("test_robust_length_ev.wli") shouldBe listFrom("test_robust_length_expected.wli")
+        listFrom("test_robust_length_ev.wlm") shouldBe listFrom("test_robust_length_expected.wlm")
     }
 })

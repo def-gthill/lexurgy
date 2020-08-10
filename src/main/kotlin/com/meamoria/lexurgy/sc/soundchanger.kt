@@ -78,7 +78,7 @@ class SoundChanger(
 
             val versionCompare =
                 if (compareVersions) {
-                    val previous = loadList(wordsPath, suffix = outSuffix, removeMarkup = true)
+                    val previous = loadList(wordsPath, suffix = outSuffix)
                     makeVersionComparisons(finalWords, previous, stageCompare)
                 } else stageCompare
 
@@ -86,7 +86,9 @@ class SoundChanger(
                 "Applied the changes to ${enpl(words.size, "word")} in ${"%.3f".format(time.inSeconds)} seconds"
             )
 
-            dumpList(wordsPath, versionCompare, suffix = outSuffix)
+            dumpList(wordsPath, finalWords, suffix = outSuffix)
+            val markupPath = wordsPath.replaceExtension("wlm")
+            dumpList(markupPath, versionCompare, suffix = outSuffix)
             console("Wrote the final forms to ${suffixPath(wordsPath, outSuffix)}")
         }
     }
