@@ -56,12 +56,12 @@ class SC : CliktCommand(
     val compareStages by option(
         "-s", "--compare-stages",
         help = "Print the original form of the word (and any intermediates if -m is enabled) " +
-                "alongside the evolved form in the output files."
+                "alongside the evolved form in .wlm files parallel to the output files."
     ).flag("-S", "--no-compare-stages", default = true)
     val compareVersions by option(
         "-v", "--compare-versions",
         help = "Compare the output files to the existing versions of the same files, " +
-                "flagging any changes. Useful if you're tweaking the .lsc file and " +
+                "flagging any changes in .wlm files. Useful if you're tweaking the .lsc file and " +
                 "want to make sure your changes don't have unintended consequences."
     ).flag("-V", "--no-compare-versions", default = false)
     val developer by option(
