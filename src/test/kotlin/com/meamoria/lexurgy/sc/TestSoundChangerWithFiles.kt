@@ -70,4 +70,13 @@ class TestSoundChangerWithFiles : StringSpec({
         listFrom("ptr_test_1_ev.wli") shouldBe listFrom("ptr_test_1_ev_stages_versions.wli")
         listFrom("ptr_test_2_ev.wli") shouldBe listFrom("ptr_test_2_ev_stages_versions.wli")
     }
+
+    "Compare should correctly align the separators when the words contain IPA diacritics" {
+        val dChanger = SoundChanger.fromLsc("add-d:\n* => d / _ $")
+        dChanger.changeFiles(
+            listOf(pathOf("test_robust_length.wli")),
+            compareStages = true
+        )
+        listFrom("test_robust_length_ev.wli") shouldBe listFrom("test_robust_length_expected.wli")
+    }
 })

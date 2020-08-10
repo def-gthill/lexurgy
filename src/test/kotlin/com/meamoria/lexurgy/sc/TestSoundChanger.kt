@@ -126,6 +126,25 @@ class TestSoundChanger : StringSpec({
         ch2("baaaaaaabaaaaa") shouldBe "bzaqzx"
     }
 
+    "We should be able to implement deletion and epenthesis with * rules" {
+        val ch = lsc(
+            """
+                deletion:
+                    a => * / $ _
+                    i => * / _ $
+                    u => * / s _ s
+                epenthesis:
+                    * => i / $ _ d
+                    * => a / _ $
+                    * => u / d _ d
+            """.trimIndent()
+        )
+
+        ch("afoobi") shouldBe "fooba"
+        ch("dasusad") shouldBe "idassada"
+        ch("muddud") shouldBe "mudududa"
+    }
+
     "We should be able to match sounds against a simple feature matrix" {
         val ch = lsc(
             """

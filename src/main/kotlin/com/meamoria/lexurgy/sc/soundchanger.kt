@@ -1,8 +1,6 @@
 package com.meamoria.lexurgy.sc
 
 import com.meamoria.lexurgy.*
-import java.io.File
-import java.lang.IllegalArgumentException
 import java.nio.file.Path
 import java.nio.file.Paths
 import kotlin.streams.toList
@@ -102,7 +100,7 @@ class SoundChanger(
             val resultLine =
                 if (stages.all { it == stages.first() }) stages.first()
                 else stages.zip(maxLengths) { stage, length ->
-                    stage.padEnd(length)
+                    stage.padEndCombining(length)
                 }.joinToString(" => ").trim()
             result += resultLine
         }
@@ -123,7 +121,7 @@ class SoundChanger(
             }
         ) { compare, previousWord ->
             if (previousWord == null) compare
-            else compare.padEnd(maxLength + 1) + "XX " + previousWord
+            else compare.padEndCombining(maxLength + 1) + "XX " + previousWord
         }
     }
 
@@ -510,7 +508,7 @@ class RuleExpression<I : Segment<I>, O : Segment<O>>(
     }
 
     private fun claimNext(expressionNumber: Int, word: Word<I>, start: Int): TransformationWithMatchStart<O>? {
-        for (matchStart in start until word.length) {
+        for (matchStart in start..word.length) {
             for (environment in realEnvironment) {
                 val bindings = Bindings()
                 val beforeMatchEnd = environment.before.claim(
@@ -577,6 +575,7 @@ class LscRuleCrashed(val reason: Exception, val rule: String, val originalWord: 
         reason
     )
 
+@Suppress("unused")
 class LscInvalidRuleExpression(
     val matcher: Matcher<*>, val emitter: Emitter<*, *>, message: String
 ) : LscUserError(message)
