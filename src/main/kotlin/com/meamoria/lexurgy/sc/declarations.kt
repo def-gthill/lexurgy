@@ -23,7 +23,7 @@ class Declarations(
 
     private val symbolsAsComplexSymbols = symbols.map { ComplexSymbol(it) }
     private val symbolNameToSymbol = symbols.associateBy { it.name }
-    private val matrixToSimpleSymbol = symbols.associateBy { it.matrix }
+    private val matrixToSimpleSymbol = symbols.associateBy { it.matrix.removeExplicitNulls() }
 
     private val matrixToSymbolCache = ConcurrentHashMap<Matrix, PhoneticSegment>()
 

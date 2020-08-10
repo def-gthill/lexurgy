@@ -297,21 +297,25 @@ class TestSoundChanger : StringSpec({
         val ch = lsc(
             """
                |Feature Manner(stop)
-               |Feature Place(lab, apic)
+               |Feature Place(lab, apic, vel)
                |Feature Breath(*plain, aspir)
                |Diacritic ʰ [aspir]
                |Symbol p [stop lab]
                |Symbol t [stop apic]
+               |Symbol k [stop vel plain]
                |aspiration:
                |    [stop plain] s => [aspir] *
                |lenition:
                |    [stop aspir] => [plain] / a _ a
                |    [stop plain] => * / a _ a
+               |velar-shift:
+               |    [stop] => [vel] / _ u
             """.trimMargin()
         )
 
         ch("psataba") shouldBe "pʰaaba"
         ch("patsaba") shouldBe "pataba"
+        ch("putsu") shouldBe "kukʰu"
     }
 
     "We should be able to mark the word boundary with a $" {
