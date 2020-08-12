@@ -12,7 +12,9 @@ class SequenceEmitter<I : Segment<I>, O : Segment<O>>(val elements: List<Emitter
     override fun toString(): String = elements.joinToString(separator = " ", prefix = "(", postfix = ")")
 }
 
-class ListEmitter<I : Segment<I>, O : Segment<O>>(val elements: List<Emitter<I, O>>) : Emitter<I, O>
+class ListEmitter<I : Segment<I>, O : Segment<O>>(val elements: List<Emitter<I, O>>) : Emitter<I, O> {
+    override fun toString(): String = elements.joinToString(prefix = "{", postfix = "}")
+}
 
 interface SimpleEmitter<I : Segment<I>, O : Segment<O>> : Emitter<I, O> {
     fun result(declarations: Declarations, original: Word<I>): UnboundResult<O>

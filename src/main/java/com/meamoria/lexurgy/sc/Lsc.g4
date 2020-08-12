@@ -9,7 +9,7 @@ lscfile:
 classdecl: CLASSDECL WHITESPACE value WHITESPACE LISTSTART text (SEP text)* LISTEND;
 featuredecl: FEATUREDECL WHITESPACE feature OPAREN (nullalias SEP)? value (SEP value)* CPAREN (CHANGE matrix)?;
 nullalias: NULL value;
-diacritic: DIACRITIC WHITESPACE STR1 WHITESPACE (DIABEFORE WHITESPACE)? matrix;
+diacritic: DIACRITIC WHITESPACE STR1 WHITESPACE (DIABEFORE WHITESPACE)? (DIAFLOATING WHITESPACE)? matrix;
 symbol: SYMBOL WHITESPACE symbolname ((SEP symbolname)* | WHITESPACE matrix);
 symbolname: text;
 
@@ -80,6 +80,7 @@ CLASSDECL: 'Class';
 FEATUREDECL: 'Feature';
 DIACRITIC: 'Diacritic';
 DIABEFORE: '(before)';
+DIAFLOATING: '(floating)';
 SYMBOL: 'Symbol';
 DEROMANIZER: 'Deromanizer';
 ROMANIZER: 'Romanizer';

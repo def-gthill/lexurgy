@@ -1,5 +1,6 @@
 package com.meamoria.lexurgy.sc
 
+import com.meamoria.lexurgy.PhoneticWord
 import com.meamoria.lexurgy.Segment
 import com.meamoria.lexurgy.Word
 
@@ -55,6 +56,8 @@ class ListMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : Matcher<I> {
         }
         return null
     }
+
+    override fun toString(): String = elements.joinToString(prefix = "{", postfix = "}")
 }
 
 interface SimpleMatcher<I : Segment<I>> : Matcher<I>
@@ -66,7 +69,7 @@ class CaptureMatcher(val element: Matcher<PhonS>, val number: Int) : SimpleMatch
         }
 }
 
-class CaptureReferenceMatcher(val number: Int): SimpleMatcher<PhonS> {
+class CaptureReferenceMatcher(val number: Int) : SimpleMatcher<PhonS> {
     override fun claim(declarations: Declarations, word: Word<PhonS>, start: Int, bindings: Bindings): Int? =
         bindings.captures[number]?.let { capturedText ->
             return (start + capturedText.length).takeIf { end ->
@@ -87,8 +90,18 @@ class MatrixMatcher(val matrix: Matrix) : SimpleMatcher<PhonS> {
 }
 
 class TextMatcher<I : Segment<I>>(val text: Word<I>) : SimpleMatcher<I> {
-    override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int? =
-        if (word.drop(start).take(text.length) == text) start + text.length else null
+    override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int? {
+        val wordStart = word.drop(start).take(text.length)
+        val matches = if (wordStart is PhoneticWord && text is PhoneticWord) {
+            wordStart.length == text.length &&
+                    with(declarations) {
+                        wordStart.segments.zip(text.segments) { wordSegment, textSegment ->
+                            wordSegment.matches(textSegment)
+                        }.all { it }
+                    }
+        } else wordStart == text
+        return if (matches) start + text.length else null
+    }
 
     override fun toString(): String = text.string.ifEmpty { "*" }
 }

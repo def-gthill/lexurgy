@@ -95,7 +95,8 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
     override fun visitDiacritic(ctx: LscParser.DiacriticContext): T = walkDiacriticDeclaration(
         ctx.STR1().text!!,
         visit(ctx.matrix()),
-        ctx.DIABEFORE() != null
+        ctx.DIABEFORE() != null,
+        ctx.DIAFLOATING() != null
     )
 
     override fun visitSymbol(ctx: LscParser.SymbolContext): T {
@@ -223,7 +224,9 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
         implication: T?
     ): T
 
-    protected abstract fun walkDiacriticDeclaration(diacritic: String, matrix: T, before: Boolean): T
+    protected abstract fun walkDiacriticDeclaration(
+        diacritic: String, matrix: T, before: Boolean, floating: Boolean
+    ): T
 
     protected abstract fun walkSymbolDeclaration(symbol: String, matrix: T? = null): T
 
@@ -311,5 +314,6 @@ private class LscErrorListener : BoringErrorListener() {
     }
 }
 
+@Suppress("unused")
 class LscNotParsable(val line: Int, val column: Int, val offendingSymbol: String, message: String) :
     LscUserError("$message (Line $line, column $column)")

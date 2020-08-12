@@ -20,6 +20,7 @@ class Declarations(
     private val nulls = features.mapNotNull { it.nullAlias }
 
     private val diacriticNameToDiacritic = diacritics.associateBy { it.name }
+    private val floatingDiacritics = diacritics.filter { it.floating }
 
     private val symbolsAsComplexSymbols = symbols.map { ComplexSymbol(it) }
     private val symbolNameToSymbol = symbols.associateBy { it.name }
@@ -47,7 +48,23 @@ class Declarations(
         classNameToClass[this] ?: throw LscUndefinedName("sound class", this)
 
     /**
-     * Tries to match the specified matrix to the specified phonetic symbol.
+     * Checks if this segment is the same as the specified pattern plus
+     * any number of floating diacritics.
+     */
+    fun PhoneticSegment.matches(pattern: PhoneticSegment): Boolean {
+        if (floatingDiacritics.isEmpty()) return this == pattern
+        val thisSymbol = this.toComplexSymbol() ?: return this == pattern
+        if (!floatingDiacritics.any { it in thisSymbol.diacritics }) return this == pattern
+        val patternSymbol = pattern.toComplexSymbol() ?: return this == pattern
+        return searchDiacritics(
+            thisSymbol.toMatrix(),
+            listOf(patternSymbol),
+            availableDiacritics = floatingDiacritics
+        ) == this.toComplexSymbol()
+    }
+
+    /**
+     * Tries to match the specified matrix to the this phonetic symbol.
      * Returns true if the matrix matched, false otherwise. Binds variables.
      */
     fun PhoneticSegment.matches(matrix: Matrix, bindings: Bindings): Boolean {
@@ -63,13 +80,14 @@ class Declarations(
 
     private fun MatrixValue.isNull(): Boolean = this in nulls
 
-    fun PhoneticSegment.toMatrix(): Matrix? {
+    fun PhoneticSegment.toComplexSymbol(): ComplexSymbol? {
         val (core, before, after) = phoneticParser.breakDiacritics(string)
         val coreSymbol = symbolNameToSymbol[core] ?: return null
         val diacritics = (before + after).map { diacriticNameToDiacritic.getValue(it) }
-        val complexSymbol = ComplexSymbol(coreSymbol, diacritics)
-        return complexSymbol.toMatrix()
+        return ComplexSymbol(coreSymbol, diacritics)
     }
+
+    fun PhoneticSegment.toMatrix(): Matrix? = toComplexSymbol()?.toMatrix()
 
     private fun ComplexSymbol.toMatrix(): Matrix {
         var result = symbol.matrix
@@ -96,7 +114,8 @@ class Declarations(
     private fun searchDiacritics(
         matrix: Matrix,
         candidates: List<ComplexSymbol> = symbolsAsComplexSymbols,
-        bestDistance: Int? = null
+        bestDistance: Int? = null,
+        availableDiacritics: List<Diacritic> = diacritics
     ): ComplexSymbol? {
         val sortedCandidates = candidates.sortedBy { it.distanceTo(matrix) }
         sortedCandidates.first().takeIf { it.distanceTo(matrix) == 0 }?.let { return it }
@@ -104,7 +123,7 @@ class Declarations(
         for (candidate in sortedCandidates) {
             val candidateDistance = candidate.distanceTo(matrix)
             if (bestDistance != null && candidateDistance >= bestDistance) return null
-            val withDiacritics = diacritics.map(candidate::withDiacritic)
+            val withDiacritics = availableDiacritics.map(candidate::withDiacritic)
             searchDiacritics(matrix, withDiacritics, candidateDistance)?.let { return it }
         }
         return null
@@ -154,7 +173,7 @@ class Symbol(val name: String, val matrix: Matrix) {
     override fun toString(): String = name + if (matrix.valueList.isEmpty()) "" else " $matrix"
 }
 
-class ComplexSymbol(val symbol: Symbol, val diacritics: List<Diacritic> = emptyList()) {
+data class ComplexSymbol(val symbol: Symbol, val diacritics: List<Diacritic> = emptyList()) {
     val string = (diacritics.filter { it.before }.map { it.name } +
             listOf(symbol.name) +
             diacritics.filterNot { it.before }.map { it.name }
@@ -166,7 +185,7 @@ class ComplexSymbol(val symbol: Symbol, val diacritics: List<Diacritic> = emptyL
     override fun toString(): String = string
 }
 
-data class Diacritic(val name: String, val matrix: Matrix, val before: Boolean)
+data class Diacritic(val name: String, val matrix: Matrix, val before: Boolean, val floating: Boolean)
 
 class LscUndefinedName(val nameType: String, val undefinedName: String) :
     LscUserError("The $nameType name $undefinedName is not defined")

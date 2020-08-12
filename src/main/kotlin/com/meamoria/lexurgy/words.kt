@@ -147,6 +147,7 @@ class PhoneticParser(
                 if (matchType == -1) {
                     // Before diacritic
                     if (coreFound) doneSegment()
+                    coreFound = false
                     cursor += matchString.length
                     if (cursor >= word.length)
                         throw DanglingDiacritic(word, cursor - matchString.length, matchString)

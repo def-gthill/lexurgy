@@ -232,8 +232,10 @@ class TestLscParse : StringSpec({
             return "fdec($featureName, ${(nullAliasList + values + implicationList).joinToString()})"
         }
 
-        override fun walkDiacriticDeclaration(diacritic: String, matrix: String, before: Boolean): String =
-            "dia($diacritic, $matrix${if (before) ", bf" else ""})"
+        override fun walkDiacriticDeclaration(
+            diacritic: String, matrix: String, before: Boolean, floating: Boolean
+        ): String =
+            "dia($diacritic, $matrix${if (before) ", bf" else ""}${if (floating) ", fl" else ""})"
 
         override fun walkSymbolDeclaration(symbol: String, matrix: String?): String =
             "sym($symbol${optionalArg(matrix)})"

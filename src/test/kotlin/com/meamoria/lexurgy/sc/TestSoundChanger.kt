@@ -293,6 +293,36 @@ class TestSoundChanger : StringSpec({
         ch("petetsa") shouldBe "pecetʰa"
     }
 
+    "Symbol literals should match symbols with floating diacritics" {
+        val ch = lsc(
+            """
+                Feature Height(low, high)
+                Feature Depth(front, back)
+                Feature Stress(*unstressed, stressed)
+                Feature Tone(*lowtone, hightone)
+                Feature Atr(*natr, atr)
+                Diacritic ˈ (before) (floating) [stressed]
+                Diacritic ́  (floating) [hightone]
+                Diacritic ̘  [atr]
+                Symbol a [low back]
+                Symbol e [low front]
+                Symbol u [high back]
+                Symbol i [high front]
+                w-back:
+                    {e, i} => {a, u} / _ w
+                stress-raise:
+                    {ˈa, ˈe} => {ˈu, ˈi}
+                tone-atr:
+                    {ú, í} => {u̘, i̘}
+                j-front:
+                    {a, u} => {e, i} / _ j
+            """.trimIndent()
+        )
+
+        ch("tˈewtáj") shouldBe "tˈuwtéj"
+        ch("tˈájtaj") shouldBe "tˈu̘jtej"
+    }
+
     "We should be able to rename the \"absent\" value of a feature" {
         val ch = lsc(
             """
