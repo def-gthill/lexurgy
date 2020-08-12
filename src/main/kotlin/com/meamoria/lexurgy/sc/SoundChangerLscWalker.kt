@@ -262,8 +262,8 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
         )
 
         fun phonetic(declarations: Declarations): Environment<PhonS> = Environment(
-            before?.phonetic(declarations) ?: TextMatcher(Phonetic.empty),
-            after?.phonetic(declarations) ?: TextMatcher(Phonetic.empty)
+            before?.phonetic(declarations) ?: SymbolMatcher(Phonetic.empty),
+            after?.phonetic(declarations) ?: SymbolMatcher(Phonetic.empty)
         )
     }
 
@@ -382,16 +382,16 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
         override fun plain(): Matcher<PlainS> = TextMatcher(PlainWord(text))
 
         override fun phonetic(declarations: Declarations): Matcher<PhonS> =
-            TextMatcher(declarations.parsePhonetic(text))
+            SymbolMatcher(declarations.parsePhonetic(text))
 
         override fun inPhoneticEmitter(declarations: Declarations): Emitter<PhonS, PlainS> =
             TextEmitter(PlainWord(text))
 
         override fun outPhoneticEmitter(declarations: Declarations): Emitter<PlainS, PhonS> =
-            TextEmitter(declarations.parsePhonetic(text))
+            SymbolEmitter(declarations.parsePhonetic(text))
 
         override fun phoneticEmitter(declarations: Declarations): Emitter<PhonS, PhonS> =
-            TextEmitter(declarations.parsePhonetic(text))
+            SymbolEmitter(declarations.parsePhonetic(text))
     }
 
     private class MatrixElement(val matrix: Matrix) : PhoneticOnlyResultElement() {
@@ -403,16 +403,15 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
     }
 
     private object EmptyElement : ResultElement {
-        override fun plain(): Matcher<PlainS> = TextMatcher(Plain.empty)
+        override fun plain(): Matcher<PlainS> = NullMatcher()
 
-        override fun phonetic(declarations: Declarations): Matcher<PhonS> = TextMatcher(Phonetic.empty)
+        override fun phonetic(declarations: Declarations): Matcher<PhonS> = NullMatcher()
 
-        override fun inPhoneticEmitter(declarations: Declarations): Emitter<PhonS, PlainS> = TextEmitter(Plain.empty)
+        override fun inPhoneticEmitter(declarations: Declarations): Emitter<PhonS, PlainS> = NullEmitter(Plain)
 
-        override fun outPhoneticEmitter(declarations: Declarations): Emitter<PlainS, PhonS> =
-            TextEmitter(Phonetic.empty)
+        override fun outPhoneticEmitter(declarations: Declarations): Emitter<PlainS, PhonS> = NullEmitter(Phonetic)
 
-        override fun phoneticEmitter(declarations: Declarations): Emitter<PhonS, PhonS> = TextEmitter(Phonetic.empty)
+        override fun phoneticEmitter(declarations: Declarations): Emitter<PhonS, PhonS> = NullEmitter(Phonetic)
     }
 
     private class ClassReferenceElement(val name: String) : PhoneticOnlyResultElement() {

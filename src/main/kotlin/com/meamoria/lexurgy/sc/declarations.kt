@@ -1,9 +1,6 @@
 package com.meamoria.lexurgy.sc
 
-import com.meamoria.lexurgy.LscUserError
-import com.meamoria.lexurgy.PhoneticParser
-import com.meamoria.lexurgy.PhoneticSegment
-import com.meamoria.lexurgy.Word
+import com.meamoria.lexurgy.*
 import java.util.concurrent.ConcurrentHashMap
 
 class Declarations(
@@ -54,7 +51,7 @@ class Declarations(
     fun PhoneticSegment.matches(pattern: PhoneticSegment): Boolean {
         if (floatingDiacritics.isEmpty()) return this == pattern
         val thisSymbol = this.toComplexSymbol() ?: return this == pattern
-        if (!floatingDiacritics.any { it in thisSymbol.diacritics }) return this == pattern
+        if (!thisSymbol.diacritics.any { it.floating } ) return this == pattern
         val patternSymbol = pattern.toComplexSymbol() ?: return this == pattern
         return searchDiacritics(
             thisSymbol.toMatrix(),
@@ -80,6 +77,19 @@ class Declarations(
 
     private fun MatrixValue.isNull(): Boolean = this in nulls
 
+    fun PhoneticSegment.withFloatingDiacriticsFrom(other: PhoneticSegment): PhoneticSegment {
+        if (floatingDiacritics.isEmpty()) return this
+        val otherSymbol = other.toComplexSymbol() ?: return this
+        val otherFloating = otherSymbol.diacritics.filter { it.floating }
+        if (otherFloating.isEmpty()) return this
+        val thisSymbol = this.toComplexSymbol() ?: return this
+        var result = thisSymbol
+        for (diacritic in otherFloating) {
+            if (diacritic !in result.diacritics) result = result.withDiacritic(diacritic)
+        }
+        return result.toPhoneticSegment()
+    }
+
     fun PhoneticSegment.toComplexSymbol(): ComplexSymbol? {
         val (core, before, after) = phoneticParser.breakDiacritics(string)
         val coreSymbol = symbolNameToSymbol[core] ?: return null
@@ -89,11 +99,15 @@ class Declarations(
 
     fun PhoneticSegment.toMatrix(): Matrix? = toComplexSymbol()?.toMatrix()
 
-    private fun ComplexSymbol.toMatrix(): Matrix {
+    fun Symbol.toPhoneticSegment(): PhoneticSegment = PhoneticSegment(name)
+
+    fun ComplexSymbol.toMatrix(): Matrix {
         var result = symbol.matrix
         for (diacritic in diacritics) result = result.update(diacritic.matrix)
         return result
     }
+
+    fun ComplexSymbol.toPhoneticSegment(): PhoneticSegment = PhoneticSegment(string)
 
     fun Matrix.toSymbol(): PhoneticSegment {
         matrixToSymbolCache[this]?.let { return it }
@@ -101,9 +115,9 @@ class Declarations(
         val matrix = removeExplicitNulls()
 
         val result = matrixToSimpleSymbol[matrix]?.let {
-            PhoneticSegment(it.name)
+            it.toPhoneticSegment()
         } ?: searchDiacritics(matrix)?.let {
-            PhoneticSegment(it.string)
+            it.toPhoneticSegment()
         } ?: throw LscInvalidMatrix(matrix)
 
         return result.also { matrixToSymbolCache[this] = it }

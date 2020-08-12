@@ -419,7 +419,7 @@ class ChangeRule(
 }
 
 class RuleExpression<I : Segment<I>, O : Segment<O>>(
-    val inType: SegmentType<I>,
+    @Suppress("unused") val inType: SegmentType<I>,
     val outType: SegmentType<O>,
     val declarations: Declarations,
     val match: Matcher<I>,
@@ -431,16 +431,16 @@ class RuleExpression<I : Segment<I>, O : Segment<O>>(
     val transformer = makeTransformer(match, result)
 
     private val realEnvironment =
-        if (condition.isEmpty()) listOf(Environment(TextMatcher(inType.empty), TextMatcher(inType.empty)))
+        if (condition.isEmpty()) listOf(Environment(NullMatcher(), NullMatcher()))
         else condition
 
     private fun makeTransformer(match: Matcher<I>, result: Emitter<I, O>): Transformer<I, O> {
-        if (filtered && match is TextMatcher) {
-            if (match.text.length == 0) {
+        if (filtered) {
+            if (match is NullMatcher) {
                 throw LscInvalidRuleExpression(
                     match, result, "Asterisks aren't allowed on the match side of filtered rules"
                 )
-            } else if (match.text.length > 1) {
+            } else if (match is AbstractTextMatcher && match.text.length > 1) {
                 throw LscInvalidRuleExpression(
                     match, result, "Multi-segment matches aren't allowed on the match side of filtered rules"
                 )

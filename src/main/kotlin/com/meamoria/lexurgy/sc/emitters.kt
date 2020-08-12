@@ -1,8 +1,6 @@
 package com.meamoria.lexurgy.sc
 
-import com.meamoria.lexurgy.Phonetic
-import com.meamoria.lexurgy.Segment
-import com.meamoria.lexurgy.Word
+import com.meamoria.lexurgy.*
 
 typealias UnboundResult<T> = (Bindings) -> Word<T>
 
@@ -41,9 +39,34 @@ class MatrixEmitter(val matrix: Matrix) : SimpleEmitter<PhonS, PhonS> {
     override fun toString(): String = matrix.toString()
 }
 
-class TextEmitter<I : Segment<I>, O : Segment<O>>(val text: Word<O>) : SimpleEmitter<I, O> {
-    override fun result(declarations: Declarations, original: Word<I>): UnboundResult<O> =
-        { text }
+class SymbolEmitter<I : Segment<I>>(val text: Word<PhonS>) : SimpleEmitter<I, PhonS> {
+    override fun result(declarations: Declarations, original: Word<I>): UnboundResult<PhonS> {
+        if (original is PhoneticWord && original.length == text.length) {
+            val result = with(declarations) {
+                original.segments.zip(text.segments) { originalSegment, textSegment ->
+                    textSegment.withFloatingDiacriticsFrom(originalSegment)
+                }
+            }
+            return { Phonetic.fromSegments(result) }
+        } else {
+            return { text }
+        }
+    }
 
     override fun toString(): String = text.string.ifEmpty { "*" }
+}
+
+class TextEmitter<I : Segment<I>>(val text: Word<PlainS>) : SimpleEmitter<I, PlainS> {
+    override fun result(declarations: Declarations, original: Word<I>): UnboundResult<PlainS> {
+        return { text }
+    }
+
+    override fun toString(): String = text.string.ifEmpty { "*" }
+}
+
+class NullEmitter<I: Segment<I>, O: Segment<O>>(val outType: SegmentType<O>) : SimpleEmitter<I, O> {
+    override fun result(declarations: Declarations, original: Word<I>): UnboundResult<O> =
+        { outType.empty }
+
+    override fun toString(): String = "*"
 }

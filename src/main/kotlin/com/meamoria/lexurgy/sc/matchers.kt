@@ -1,6 +1,5 @@
 package com.meamoria.lexurgy.sc
 
-import com.meamoria.lexurgy.PhoneticWord
 import com.meamoria.lexurgy.Segment
 import com.meamoria.lexurgy.Word
 
@@ -89,19 +88,35 @@ class MatrixMatcher(val matrix: Matrix) : SimpleMatcher<PhonS> {
     override fun toString(): String = matrix.toString()
 }
 
-class TextMatcher<I : Segment<I>>(val text: Word<I>) : SimpleMatcher<I> {
-    override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int? {
+abstract class AbstractTextMatcher<I : Segment<I>>(val text: Word<I>) : SimpleMatcher<I>
+
+class SymbolMatcher(text: Word<PhonS>) : AbstractTextMatcher<PhonS>(text) {
+    override fun claim(declarations: Declarations, word: Word<PhonS>, start: Int, bindings: Bindings): Int? {
         val wordStart = word.drop(start).take(text.length)
-        val matches = if (wordStart is PhoneticWord && text is PhoneticWord) {
-            wordStart.length == text.length &&
-                    with(declarations) {
-                        wordStart.segments.zip(text.segments) { wordSegment, textSegment ->
-                            wordSegment.matches(textSegment)
-                        }.all { it }
-                    }
-        } else wordStart == text
+        val matches = wordStart.length == text.length &&
+                with(declarations) {
+                    wordStart.segments.zip(text.segments) { wordSegment, textSegment ->
+                        wordSegment.matches(textSegment)
+                    }.all { it }
+                }
         return if (matches) start + text.length else null
     }
 
     override fun toString(): String = text.string.ifEmpty { "*" }
+}
+
+class TextMatcher(text: Word<PlainS>) : AbstractTextMatcher<PlainS>(text) {
+    override fun claim(declarations: Declarations, word: Word<PlainS>, start: Int, bindings: Bindings): Int? {
+        val wordStart = word.drop(start).take(text.length)
+        return if (wordStart == text) start + text.length else null
+    }
+
+    override fun toString(): String = text.string
+}
+
+class NullMatcher<I : Segment<I>> : SimpleMatcher<I> {
+    override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int? =
+        start
+
+    override fun toString(): String = "*"
 }
