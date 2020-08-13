@@ -58,7 +58,7 @@ class SimpleTransformer<I : Segment<I>, O : Segment<O>>(
     ): UnboundTransformation<O>? {
         val claimEnd = matcher.claim(declarations, word, start, bindings) ?: return null
         val claim = word.slice(start until claimEnd)
-        val result = emitter.result(declarations, claim)
+        val result = emitter.result(declarations, matcher, claim)
         return UnboundTransformation(order, start, claimEnd - start, result)
     }
 }

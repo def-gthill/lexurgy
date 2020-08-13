@@ -7,6 +7,13 @@ fun <K, V> MutableMap<K, V>.setdefault(key: K, newValue: V): V {
     return result ?: newValue
 }
 
+fun <T, R, S, V> Iterable<T>.zip3(
+    other1: Iterable<R>, other2: Iterable<S>, transform: (T, R, S) -> V
+): List<V> = zip(other1).zip(other2) { tr, s ->
+    val (t, r) = tr
+    transform(t, r, s)
+}
+
 /**
  * Adds spaces to pad this string to the specified length, but adding extra
  * spaces to compensate for combining characters that don't take up horizontal

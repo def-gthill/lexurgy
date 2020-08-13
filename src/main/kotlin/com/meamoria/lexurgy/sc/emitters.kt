@@ -15,19 +15,23 @@ class ListEmitter<I : Segment<I>, O : Segment<O>>(val elements: List<Emitter<I, 
 }
 
 interface SimpleEmitter<I : Segment<I>, O : Segment<O>> : Emitter<I, O> {
-    fun result(declarations: Declarations, original: Word<I>): UnboundResult<O>
+    fun result(declarations: Declarations, matcher: SimpleMatcher<I>, original: Word<I>): UnboundResult<O>
 }
 
-class CaptureReferenceEmitter(val number: Int): SimpleEmitter<PhonS, PhonS> {
-    override fun result(declarations: Declarations, original: Word<PhonS>): UnboundResult<PhonS> =
+class CaptureReferenceEmitter(val number: Int) : SimpleEmitter<PhonS, PhonS> {
+    override fun result(
+        declarations: Declarations, matcher: SimpleMatcher<PhonS>, original: Word<PhonS>
+    ): UnboundResult<PhonS> =
         { bindings ->
             bindings.captures[number] ?: throw LscUnboundCapture(number)
         }
 }
 
 class MatrixEmitter(val matrix: Matrix) : SimpleEmitter<PhonS, PhonS> {
-    override fun result(declarations: Declarations, original: Word<PhonS>): UnboundResult<PhonS> =
-        {bindings ->
+    override fun result(
+        declarations: Declarations, matcher: SimpleMatcher<PhonS>, original: Word<PhonS>
+    ): UnboundResult<PhonS> =
+        { bindings ->
             with(declarations) {
                 val boundMatrix = matrix.bindVariables(bindings)
                 val matchMatrix = original[0].toMatrix() ?: Matrix(emptyList())
@@ -40,11 +44,18 @@ class MatrixEmitter(val matrix: Matrix) : SimpleEmitter<PhonS, PhonS> {
 }
 
 class SymbolEmitter<I : Segment<I>>(val text: Word<PhonS>) : SimpleEmitter<I, PhonS> {
-    override fun result(declarations: Declarations, original: Word<I>): UnboundResult<PhonS> {
-        if (original is PhoneticWord && original.length == text.length) {
+    override fun result(
+        declarations: Declarations, matcher: SimpleMatcher<I>, original: Word<I>
+    ): UnboundResult<PhonS> {
+        if (
+            matcher is SymbolMatcher && original is PhoneticWord &&
+            matcher.text.length == text.length && original.length == text.length
+        ) {
             val result = with(declarations) {
-                original.segments.zip(text.segments) { originalSegment, textSegment ->
-                    textSegment.withFloatingDiacriticsFrom(originalSegment)
+                matcher.text.segments.zip3(
+                    original.segments, text.segments
+                ) { matcherSegment, originalSegment, textSegment ->
+                    textSegment.withFloatingDiacriticsFrom(originalSegment, excluding = matcherSegment)
                 }
             }
             return { Phonetic.fromSegments(result) }
@@ -57,15 +68,19 @@ class SymbolEmitter<I : Segment<I>>(val text: Word<PhonS>) : SimpleEmitter<I, Ph
 }
 
 class TextEmitter<I : Segment<I>>(val text: Word<PlainS>) : SimpleEmitter<I, PlainS> {
-    override fun result(declarations: Declarations, original: Word<I>): UnboundResult<PlainS> {
+    override fun result(
+        declarations: Declarations, matcher: SimpleMatcher<I>, original: Word<I>
+    ): UnboundResult<PlainS> {
         return { text }
     }
 
     override fun toString(): String = text.string.ifEmpty { "*" }
 }
 
-class NullEmitter<I: Segment<I>, O: Segment<O>>(val outType: SegmentType<O>) : SimpleEmitter<I, O> {
-    override fun result(declarations: Declarations, original: Word<I>): UnboundResult<O> =
+class NullEmitter<I : Segment<I>, O : Segment<O>>(val outType: SegmentType<O>) : SimpleEmitter<I, O> {
+    override fun result(
+        declarations: Declarations, matcher: SimpleMatcher<I>, original: Word<I>
+    ): UnboundResult<O> =
         { outType.empty }
 
     override fun toString(): String = "*"

@@ -19,7 +19,7 @@ class Declarations(
     private val diacriticNameToDiacritic = diacritics.associateBy { it.name }
     private val floatingDiacritics = diacritics.filter { it.floating }
 
-    private val symbolsAsComplexSymbols = symbols.map { ComplexSymbol(it) }
+    private val symbolsAsComplexSymbols = symbols.map { complexSymbol(it) }
     private val symbolNameToSymbol = symbols.associateBy { it.name }
     private val matrixToSimpleSymbol = symbols.associateBy { it.matrix.removeExplicitNulls() }
 
@@ -51,7 +51,7 @@ class Declarations(
     fun PhoneticSegment.matches(pattern: PhoneticSegment): Boolean {
         if (floatingDiacritics.isEmpty()) return this == pattern
         val thisSymbol = this.toComplexSymbol() ?: return this == pattern
-        if (!thisSymbol.diacritics.any { it.floating } ) return this == pattern
+        if (!thisSymbol.diacritics.any { it.floating }) return this == pattern
         val patternSymbol = pattern.toComplexSymbol() ?: return this == pattern
         return searchDiacritics(
             thisSymbol.toMatrix(),
@@ -77,10 +77,15 @@ class Declarations(
 
     private fun MatrixValue.isNull(): Boolean = this in nulls
 
-    fun PhoneticSegment.withFloatingDiacriticsFrom(other: PhoneticSegment): PhoneticSegment {
+    fun PhoneticSegment.withFloatingDiacriticsFrom(
+        other: PhoneticSegment, excluding: PhoneticSegment? = null
+    ): PhoneticSegment {
         if (floatingDiacritics.isEmpty()) return this
+        val excludingDiacritics = excluding?.toComplexSymbol()?.diacritics ?: listOf()
         val otherSymbol = other.toComplexSymbol() ?: return this
-        val otherFloating = otherSymbol.diacritics.filter { it.floating }
+        val otherFloating = otherSymbol.diacritics.filter {
+            it.floating && it !in excludingDiacritics
+        }
         if (otherFloating.isEmpty()) return this
         val thisSymbol = this.toComplexSymbol() ?: return this
         var result = thisSymbol
@@ -94,12 +99,23 @@ class Declarations(
         val (core, before, after) = phoneticParser.breakDiacritics(string)
         val coreSymbol = symbolNameToSymbol[core] ?: return null
         val diacritics = (before + after).map { diacriticNameToDiacritic.getValue(it) }
-        return ComplexSymbol(coreSymbol, diacritics)
+        return complexSymbol(coreSymbol, diacritics)
     }
 
     fun PhoneticSegment.toMatrix(): Matrix? = toComplexSymbol()?.toMatrix()
 
     fun Symbol.toPhoneticSegment(): PhoneticSegment = PhoneticSegment(name)
+
+    /**
+     * Creates a ``ComplexSymbol`` with the specified core and diacritics. This
+     * is a member of ``Declarations`` (and the ``ComplexSymbol`` constructor is
+     * marked ``internal``) because it enforces declaration order on the diacritics.
+     */
+    fun complexSymbol(coreSymbol: Symbol, diacritics: Iterable<Diacritic> = emptyList()): ComplexSymbol =
+        ComplexSymbol(coreSymbol, this.diacritics.filter { it in diacritics })
+
+    fun ComplexSymbol.withDiacritic(diacritic: Diacritic): ComplexSymbol =
+        complexSymbol(symbol, diacritics + diacritic)
 
     fun ComplexSymbol.toMatrix(): Matrix {
         var result = symbol.matrix
@@ -114,11 +130,9 @@ class Declarations(
 
         val matrix = removeExplicitNulls()
 
-        val result = matrixToSimpleSymbol[matrix]?.let {
-            it.toPhoneticSegment()
-        } ?: searchDiacritics(matrix)?.let {
-            it.toPhoneticSegment()
-        } ?: throw LscInvalidMatrix(matrix)
+        val result = matrixToSimpleSymbol[matrix]?.toPhoneticSegment()
+            ?: searchDiacritics(matrix)?.toPhoneticSegment()
+            ?: throw LscInvalidMatrix(matrix)
 
         return result.also { matrixToSymbolCache[this] = it }
     }
@@ -137,8 +151,8 @@ class Declarations(
         for (candidate in sortedCandidates) {
             val candidateDistance = candidate.distanceTo(matrix)
             if (bestDistance != null && candidateDistance >= bestDistance) return null
-            val withDiacritics = availableDiacritics.map(candidate::withDiacritic)
-            searchDiacritics(matrix, withDiacritics, candidateDistance)?.let { return it }
+            val withDiacritics = availableDiacritics.map { candidate.withDiacritic(it) }
+            searchDiacritics(matrix, withDiacritics, candidateDistance, availableDiacritics)?.let { return it }
         }
         return null
     }
@@ -158,8 +172,7 @@ class Declarations(
             if (value is AbsentFeature) {
                 val updateFeature = value.featureName.toFeature()
                 oldMatrixFeatures[updateFeature]?.let { newMatrixValues.remove(it) }
-            }
-            else {
+            } else {
                 val updateFeature = (value as SimpleValue).toFeature()
                 oldMatrixFeatures[updateFeature]?.let { newMatrixValues.remove(it) }
                 newMatrixValues += value
@@ -187,14 +200,17 @@ class Symbol(val name: String, val matrix: Matrix) {
     override fun toString(): String = name + if (matrix.valueList.isEmpty()) "" else " $matrix"
 }
 
-data class ComplexSymbol(val symbol: Symbol, val diacritics: List<Diacritic> = emptyList()) {
+/**
+ * A symbol with diacritics.
+ *
+ * The constructor is marked ``internal`` because validation depends on the declarations.
+ * Use the ``complexSymbol`` function in ``Declarations`` to create instances.
+ */
+data class ComplexSymbol internal constructor(val symbol: Symbol, val diacritics: List<Diacritic>) {
     val string = (diacritics.filter { it.before }.map { it.name } +
             listOf(symbol.name) +
             diacritics.filterNot { it.before }.map { it.name }
             ).joinToString("")
-
-    fun withDiacritic(diacritic: Diacritic): ComplexSymbol =
-        ComplexSymbol(symbol, diacritics + diacritic)
 
     override fun toString(): String = string
 }
