@@ -53,6 +53,11 @@ class SC : CliktCommand(
         help = "Use intermediate romanizers to dump intermediate forms of the words. " +
                 "The resulting files have the romanizer names as suffixes."
     ).flag("-f", "--final-only", default = false)
+    val romanize by option(
+        "-r", "--romanize",
+        help = "Romanize the output wordlists. If false, the raw phonetic forms are " +
+                "written instead (and --compare-versions is automatically turned off)."
+    ).flag("-p", "--phonetic", default = true)
     val compareStages by option(
         "-s", "--compare-stages",
         help = "Print the original form of the word (and any intermediates if -m is enabled) " +
@@ -82,8 +87,9 @@ class SC : CliktCommand(
                 outSuffix = outSuffix,
                 debugWords = traceWords,
                 intermediates = intermediates,
+                romanize = romanize,
                 compareStages = compareStages,
-                compareVersions = compareVersions
+                compareVersions = compareVersions && romanize
             )
         } catch (e: Exception) {
             val writer = PrintWriter(ConsoleWriter)

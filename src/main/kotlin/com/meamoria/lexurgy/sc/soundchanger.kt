@@ -26,6 +26,7 @@ class SoundChanger(
         outSuffix: String = "ev",
         debugWords: List<String> = emptyList(),
         intermediates: Boolean = false,
+        romanize: Boolean = true,
         compareStages: Boolean = false,
         compareVersions: Boolean = false
     ) {
@@ -42,7 +43,8 @@ class SoundChanger(
                         words,
                         startAt = startAt,
                         stopBefore = stopBefore,
-                        debugWords = debugWords
+                        debugWords = debugWords,
+                        romanize = romanize
                     )
                 }
 
@@ -65,7 +67,8 @@ class SoundChanger(
                             words,
                             startAt = startAt,
                             stopBefore = stopBefore,
-                            debugWords = debugWords
+                            debugWords = debugWords,
+                            romanize = romanize
                         )
                     )
                 }
@@ -137,9 +140,14 @@ class SoundChanger(
         words: List<String>,
         startAt: String? = null,
         stopBefore: String? = null,
-        debugWords: List<String> = emptyList()
+        debugWords: List<String> = emptyList(),
+        romanize: Boolean = true
     ): List<String> = changeWithIntermediates(
-        words, startAt = startAt, stopBefore = stopBefore, debugWords = debugWords
+        words,
+        startAt = startAt,
+        stopBefore = stopBefore,
+        debugWords = debugWords,
+        romanize = romanize
     ).getValue(null)
 
     /**
@@ -151,7 +159,8 @@ class SoundChanger(
         words: List<String>,
         startAt: String? = null,
         stopBefore: String? = null,
-        debugWords: List<String> = emptyList()
+        debugWords: List<String> = emptyList(),
+        romanize: Boolean = true
     ): Map<String?, List<String>> {
         val debugIndices = words.withIndex().filter { it.value in debugWords }.map { it.index }
         val startWords =
@@ -166,13 +175,18 @@ class SoundChanger(
 
         if (!UnicodeLogger.debugFilePathIsInitialized) UnicodeLogger.path = Paths.get("words.debug")
 
+        fun maybeReplace(realRomanizer: Romanizer): Romanizer =
+            if (romanize) realRomanizer else Romanizer.empty()
+
         for (rule in rules) {
             if (rule.name == stopBefore) {
                 stopped = true
                 break
             }
             intermediateRomanizers[rule.name]?.let { rom ->
-                result[rom.name] = applyRule(rom.romanizer, words, curWords, debugIndices).map { it.string }
+                result[rom.name] = applyRule(
+                    maybeReplace(rom.romanizer), words, curWords, debugIndices
+                ).map { it.string }
             }
             if (!started && (startAt == null || rule.name == startAt)) {
                 started = true
@@ -189,7 +203,9 @@ class SoundChanger(
             console("WARNING: No rule called $startAt; no rules applied")
         }
 
-        result[null] = if (stopBefore == null) applyRule(romanizer, words, curWords, debugIndices).map { it.string }
+        result[null] = if (stopBefore == null) applyRule(
+            maybeReplace(romanizer), words, curWords, debugIndices
+        ).map { it.string }
         else curWords.map { it.string }
 
         return result
@@ -224,6 +240,7 @@ class SoundChanger(
             outSuffix: String = "ev",
             debugWords: List<String> = emptyList(),
             intermediates: Boolean = false,
+            romanize: Boolean = true,
             compareStages: Boolean = false,
             compareVersions: Boolean = false
         ) {
@@ -237,6 +254,7 @@ class SoundChanger(
                 outSuffix = outSuffix,
                 debugWords = debugWords,
                 intermediates = intermediates,
+                romanize = romanize,
                 compareStages = compareStages,
                 compareVersions = compareVersions
             )
