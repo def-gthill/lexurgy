@@ -1,6 +1,7 @@
 package com.meamoria.lexurgy.sc
 
 import com.meamoria.lexurgy.*
+
 class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
     override fun walkFile(
         featureDeclarations: List<ParseNode>,
@@ -62,14 +63,14 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
     override fun walkSymbolDeclaration(symbol: String, matrix: ParseNode?): ParseNode =
         SymbolDeclarationNode(Symbol(symbol, (matrix as? MatrixNode)?.matrix ?: Matrix(emptyList())))
 
-    override fun walkDeromanizer(expressions: List<ParseNode>): ParseNode =
-        UnlinkedDeromanizer(expressions.map { it as UnlinkedRuleExpression })
+    override fun walkDeromanizer(subrules: List<ParseNode>): ParseNode =
+        UnlinkedDeromanizer(subrules.convert())
 
-    override fun walkRomanizer(expressions: List<ParseNode>): ParseNode =
-        UnlinkedRomanizer(expressions.map { it as UnlinkedRuleExpression })
+    override fun walkRomanizer(subrules: List<ParseNode>): ParseNode =
+        UnlinkedRomanizer(subrules.convert())
 
-    override fun walkIntermediateRomanizer(ruleName: String, expressions: List<ParseNode>): ParseNode =
-        UnlinkedIntermediateRomanizer(ruleName, expressions.map { it as UnlinkedRuleExpression })
+    override fun walkIntermediateRomanizer(ruleName: String, subrules: List<ParseNode>): ParseNode =
+        UnlinkedIntermediateRomanizer(ruleName, subrules.convert())
 
     override fun walkChangeRule(
         ruleName: String,
@@ -78,10 +79,15 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
         propagate: Boolean
     ): ParseNode = UnlinkedChangeRule(
         ruleName,
-        subrules.map { subrule -> (subrule as TList).elements.map { it as UnlinkedRuleExpression } },
+        subrules.convert(),
         ruleFilter as? MatrixNode,
         propagate
     )
+
+    private fun List<ParseNode>.convert(): List<List<UnlinkedRuleExpression>> =
+        map { subrule ->
+            (subrule as TList).elements.map { it as UnlinkedRuleExpression }
+        }
 
     override fun walkSubrule(expressions: List<ParseNode>): ParseNode = tlist(expressions)
 
@@ -174,6 +180,8 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
 
     override fun tlist(items: List<ParseNode>): ParseNode = TList(items)
 
+    override fun untlist(list: ParseNode): List<ParseNode> = (list as TList).elements
+
     private class TList(val elements: List<ParseNode>) : ParseNode
 
     interface ParseNode
@@ -186,20 +194,31 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
 
     private class ClassDeclarationNode(val segmentClass: SegmentClass) : ParseNode
 
-    private class UnlinkedDeromanizer(val expressions: List<UnlinkedRuleExpression>) : ParseNode {
+    private class UnlinkedDeromanizer(val expressions: List<List<UnlinkedRuleExpression>>) : ParseNode {
         fun link(declarations: Declarations): Deromanizer =
-            Deromanizer(expressions.map { it.outPhonetic(declarations) }, declarations)
+            Deromanizer(
+                expressions.first().map { it.outPhonetic(declarations) },
+                expressions.drop(1).nestedMap { it.phonetic(declarations, false) },
+                declarations
+            )
     }
 
-    private class UnlinkedRomanizer(val expressions: List<UnlinkedRuleExpression>) : ParseNode {
-        fun link(declarations: Declarations): Romanizer = Romanizer(expressions.map { it.inPhonetic(declarations) })
+    private class UnlinkedRomanizer(val expressions: List<List<UnlinkedRuleExpression>>) : ParseNode {
+        fun link(declarations: Declarations): Romanizer =
+            Romanizer(
+                expressions.dropLast(1).nestedMap { it.phonetic(declarations, false) },
+                expressions.last().map { it.inPhonetic(declarations) }
+            )
     }
 
     private class UnlinkedIntermediateRomanizer(
-        val name: String, val expressions: List<UnlinkedRuleExpression>
+        val name: String, val expressions: List<List<UnlinkedRuleExpression>>
     ) : ParseNode {
         fun link(declarations: Declarations): SoundChanger.IntermediateRomanizer =
-            SoundChanger.IntermediateRomanizer(name, Romanizer(expressions.map { it.inPhonetic(declarations) }))
+            SoundChanger.IntermediateRomanizer(name, Romanizer(
+                expressions.dropLast(1).nestedMap { it.phonetic(declarations, false) },
+                expressions.last().map { it.inPhonetic(declarations) }
+            ))
     }
 
     private class UnlinkedChangeRule(
@@ -211,7 +230,7 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
         fun link(declarations: Declarations): ChangeRule =
             ChangeRule(
                 name,
-                expressions.map { subrule -> subrule.map { it.phonetic(declarations, ruleFilter != null) } },
+                expressions.nestedMap { it.phonetic(declarations, ruleFilter != null) },
                 ruleFilter?.let { filter ->
                     { segment: PhoneticSegment ->
                         with(declarations) {
@@ -416,12 +435,12 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
 
     private class ClassReferenceElement(val name: String) : PhoneticOnlyResultElement() {
         override fun phonetic(declarations: Declarations): Matcher<PhonS> =
-            with (declarations) {
+            with(declarations) {
                 ListMatcher(name.toClass().sounds.map { TextElement(it).phonetic(this) })
             }
 
         override fun phoneticEmitter(declarations: Declarations): Emitter<PhonS, PhonS> =
-            with (declarations) {
+            with(declarations) {
                 ListEmitter(name.toClass().sounds.map { TextElement(it).phoneticEmitter(this) })
             }
 

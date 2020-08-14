@@ -240,12 +240,12 @@ class TestLscParse : StringSpec({
         override fun walkSymbolDeclaration(symbol: String, matrix: String?): String =
             "sym($symbol${optionalArg(matrix)})"
 
-        override fun walkDeromanizer(expressions: List<String>): String = "drom(${expressions.joinToString()})"
+        override fun walkDeromanizer(subrules: List<String>): String = "drom(${subrules.joinToString()})"
 
-        override fun walkRomanizer(expressions: List<String>): String = "rom(${expressions.joinToString()})"
+        override fun walkRomanizer(subrules: List<String>): String = "rom(${subrules.joinToString()})"
 
-        override fun walkIntermediateRomanizer(ruleName: String, expressions: List<String>): String =
-            "introm($ruleName, ${expressions.joinToString()})"
+        override fun walkIntermediateRomanizer(ruleName: String, subrules: List<String>): String =
+            "introm($ruleName, ${subrules.joinToString()})"
 
         override fun walkChangeRule(
             ruleName: String,
@@ -298,7 +298,9 @@ class TestLscParse : StringSpec({
 
         override fun walkText(text: String): String = text
 
-        override fun tlist(items: List<String>): String = items.joinToString()
+        override fun tlist(items: List<String>): String = items.joinToString("|")
+
+        override fun untlist(list: String): List<String> = list.split("|")
 
         private fun optionalArg(inText: String?, outText: String? = null): String =
             if (inText == null) "" else (outText ?: ", $inText")

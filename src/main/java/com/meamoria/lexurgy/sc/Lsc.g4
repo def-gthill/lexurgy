@@ -13,11 +13,12 @@ diacritic: DIACRITIC WHITESPACE STR1 WHITESPACE (DIABEFORE WHITESPACE)? (DIAFLOA
 symbol: SYMBOL WHITESPACE symbolname ((SEP symbolname)* | WHITESPACE matrix);
 symbolname: text;
 
-deromanizer: DEROMANIZER RULESTART (NEWLINE+ ruleexpression)+;
-romanizer: ROMANIZER RULESTART (NEWLINE+ ruleexpression)+;
-interromanizer: ROMANIZER HYPHEN rulename RULESTART (NEWLINE+ ruleexpression)+;
+deromanizer: DEROMANIZER RULESTART NEWLINE subrules;
+romanizer: ROMANIZER RULESTART NEWLINE subrules;
+interromanizer: ROMANIZER HYPHEN rulename RULESTART NEWLINE subrules;
 
-changerule: rulename (WHITESPACE matrix)? (WHITESPACE PROPAGATE)? RULESTART NEWLINE subrule (NEWLINE SUBRULE RULESTART (WHITESPACE | NEWLINE) subrule)*;
+changerule: rulename (WHITESPACE matrix)? (WHITESPACE PROPAGATE)? RULESTART NEWLINE subrules;
+subrules: subrule (NEWLINE SUBRULE RULESTART (WHITESPACE | NEWLINE) subrule)*;
 subrule: ruleexpression (NEWLINE ruleexpression)*;
 rulename: VALUE (HYPHEN VALUE)*;
 ruleexpression: rulefrom CHANGE ruleto (CONDITION condition)? (EXCLUSION exclusion)?;

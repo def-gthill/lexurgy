@@ -107,19 +107,22 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
     }
 
     override fun visitDeromanizer(ctx: LscParser.DeromanizerContext): T =
-        walkDeromanizer(listVisit(ctx.ruleexpression()))
+        walkDeromanizer(untlist(visit(ctx.subrules())))
 
-    override fun visitRomanizer(ctx: LscParser.RomanizerContext): T = walkRomanizer(listVisit(ctx.ruleexpression()))
+    override fun visitRomanizer(ctx: LscParser.RomanizerContext): T =
+        walkRomanizer(untlist(visit(ctx.subrules())))
 
     override fun visitInterromanizer(ctx: LscParser.InterromanizerContext): T =
-        walkIntermediateRomanizer(ctx.rulename().text!!, listVisit(ctx.ruleexpression()))
+        walkIntermediateRomanizer(ctx.rulename().text!!, untlist(visit(ctx.subrules())))
 
     override fun visitChangerule(ctx: LscParser.ChangeruleContext): T = walkChangeRule(
         ctx.rulename().text!!,
-        listVisit(ctx.subrule()),
+        untlist(visit(ctx.subrules())),
         optionalVisit(ctx.matrix()),
         ctx.PROPAGATE() != null
     )
+
+    override fun visitSubrules(ctx: LscParser.SubrulesContext): T = tlist(listVisit(ctx.subrule()))
 
     override fun visitSubrule(ctx: LscParser.SubruleContext): T = walkSubrule(listVisit(ctx.ruleexpression()))
 
@@ -230,11 +233,11 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
 
     protected abstract fun walkSymbolDeclaration(symbol: String, matrix: T? = null): T
 
-    protected abstract fun walkDeromanizer(expressions: List<T>): T
+    protected abstract fun walkDeromanizer(subrules: List<T>): T
 
-    protected abstract fun walkRomanizer(expressions: List<T>): T
+    protected abstract fun walkRomanizer(subrules: List<T>): T
 
-    protected abstract fun walkIntermediateRomanizer(ruleName: String, expressions: List<T>): T
+    protected abstract fun walkIntermediateRomanizer(ruleName: String, subrules: List<T>): T
 
     protected abstract fun walkChangeRule(
         ruleName: String,
@@ -295,6 +298,11 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
      * Packages a list of T's into an object that is also a T, so that visit functions can return lists
      */
     protected abstract fun tlist(items: List<T>): T
+
+    /**
+     * Unpackages items from a tlist.
+     */
+    protected abstract fun untlist(list: T): List<T>
 
     private fun listVisit(node: List<ParseTree>): List<T> = node.map { visit(it) }
 

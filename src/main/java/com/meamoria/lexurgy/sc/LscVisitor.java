@@ -77,6 +77,12 @@ public interface LscVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitChangerule(LscParser.ChangeruleContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link LscParser#subrules}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitSubrules(LscParser.SubrulesContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link LscParser#subrule}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

@@ -14,6 +14,9 @@ fun <T, R, S, V> Iterable<T>.zip3(
     transform(t, r, s)
 }
 
+fun <T, R> Iterable<Iterable<T>>.nestedMap(transform: (T) -> R): List<List<R>> =
+    map { it.map(transform) }
+
 /**
  * Adds spaces to pad this string to the specified length, but adding extra
  * spaces to compensate for combining characters that don't take up horizontal

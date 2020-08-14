@@ -708,6 +708,50 @@ class TestSoundChanger : StringSpec({
         ch("kafash") shouldBe "cavas"
     }
 
+    "Deromanizers and romanizers should be able to have additional phonetic rules that apply on the phonetic side" {
+        val ch = lsc(
+            """
+                Feature Type(vowel, cons)
+                Feature Height(low, high)
+                Feature Depth(front, back)
+                Feature Stress(*unstressed, stressed)
+                Feature Length(*short, long)
+                Diacritic ˈ (before) [stressed]
+                Diacritic ː [long]
+                Symbol a [vowel low back]
+                Symbol e [vowel low front]
+                Symbol u [vowel high back]
+                Symbol i [vowel high front]
+                Symbol tʃ
+                Deromanizer:
+                    sh => ʃ
+                    ch => tʃ
+                    Then:
+                    [vowel] => [stressed] / $ [!vowel]? _
+                palatal-shift:
+                    tʃ => ʃ
+                    ʃ => s
+                stress-lengthen:
+                    [vowel stressed] => [long]
+                stress-shift:
+                    [stressed] => [unstressed]
+                    Then: [vowel] => [stressed] / _ [!vowel]? $
+                Romanizer:
+                    [long]${"$"}1 * => ${"$"}1 ${"$"}1
+                    Then:
+                    [long] => [short]
+                    Then:
+                    ʃ => sh
+                    {ˈa, ˈe, ˈu, ˈi} => {á, é, ú, í}
+                    
+            """.trimIndent()
+        )
+
+        ch("shamu") shouldBe "saamú"
+        ch("arima") shouldBe "aarimá"
+        ch("chamek") shouldBe "shaamék"
+    }
+
     "The matrix to symbol converter should still work if some symbols don't have features" {
         val ch = lsc(
             """

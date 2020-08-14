@@ -281,7 +281,7 @@ interface NamedRule<I : Segment<I>, O : Segment<O>> {
     operator fun invoke(word: Word<I>): Word<O>
 }
 
-abstract class SimpleChangeRule<I : Segment<I>, O : Segment<O>>(
+class SimpleChangeRule<I : Segment<I>, O : Segment<O>>(
     val inType: SegmentType<I>,
     val outType: SegmentType<O>,
     val expressions: List<RuleExpression<I, O>>,
@@ -354,38 +354,54 @@ abstract class SimpleChangeRule<I : Segment<I>, O : Segment<O>>(
 typealias PhonS = PhoneticSegment
 typealias PlainS = PlainSegment
 
-class Deromanizer(expressions: List<RuleExpression<PlainS, PhonS>>, declarations: Declarations) :
-    SimpleChangeRule<PlainS, PhonS>(Plain, Phonetic, expressions, defaultRuleFor(declarations)),
-    NamedRule<PlainS, PhonS> {
+class Deromanizer(
+    deromanizerExpressions: List<RuleExpression<PlainS, PhonS>>,
+    phoneticExpressions: List<List<RuleExpression<PhonS, PhonS>>>,
+    declarations: Declarations
+) : NamedRule<PlainS, PhonS> {
     override val name: String = "deromanizer"
 
+    val deromanizerRule = SimpleChangeRule(Plain, Phonetic, deromanizerExpressions, defaultRuleFor(declarations))
+    val phoneticRules = ChangeRule(name, phoneticExpressions)
+
+    override fun invoke(word: Word<PlainS>): Word<PhonS> =
+        phoneticRules.invoke(deromanizerRule.invoke(word))
+
     companion object {
-        fun empty(declarations: Declarations): Deromanizer = Deromanizer(emptyList(), declarations)
+        fun empty(declarations: Declarations): Deromanizer = Deromanizer(emptyList(), emptyList(), declarations)
 
         private fun defaultRuleFor(declarations: Declarations): (Word<PlainS>) -> Word<PhonS> =
             declarations::parsePhonetic
     }
 }
 
-class Romanizer(expressions: List<RuleExpression<PhonS, PlainS>>) :
-    SimpleChangeRule<PhonS, PlainS>(Phonetic, Plain, expressions, { PlainWord(it.string) }),
-    NamedRule<PhonS, PlainS> {
+class Romanizer(
+    phoneticExpressions: List<List<RuleExpression<PhonS, PhonS>>>,
+    romanizerExpressions: List<RuleExpression<PhonS, PlainS>>
+) : NamedRule<PhonS, PlainS> {
     override val name: String = "romanizer"
 
+    val phoneticRules = ChangeRule(name, phoneticExpressions)
+    val romanizerRule = SimpleChangeRule(Phonetic, Plain, romanizerExpressions, { PlainWord(it.string) })
+
+    override fun invoke(word: Word<PhonS>): Word<PlainS> =
+        romanizerRule.invoke(phoneticRules.invoke(word))
+
     companion object {
-        fun empty(): Romanizer = Romanizer(emptyList())
+        fun empty(): Romanizer = Romanizer(emptyList(), emptyList())
     }
 }
 
 class ChangeRule(
     override val name: String,
     expressions: List<List<RuleExpression<PhonS, PhonS>>>,
-    val filter: ((PhoneticSegment) -> Boolean)?,
-    val propagate: Boolean
+    val filter: ((PhoneticSegment) -> Boolean)? = null,
+    val propagate: Boolean = false
 ) : NamedRule<PhonS, PhonS> {
     private val maxPropagateSteps = 100
 
-    val subrules: List<SimpleChangeRule<PhonS, PhonS>> = expressions.map { Subrule(it, filter) }
+    val subrules: List<SimpleChangeRule<PhonS, PhonS>> =
+        expressions.map { SimpleChangeRule(Phonetic, Phonetic, it, { x -> x }, filter) }
 
     override operator fun invoke(word: Word<PhonS>): Word<PhonS> {
         if (propagate) {
@@ -409,9 +425,6 @@ class ChangeRule(
         for (subrule in subrules) curWord = subrule(curWord)
         return curWord
     }
-
-    private class Subrule(expressions: List<RuleExpression<PhonS, PhonS>>, filter: ((PhoneticSegment) -> Boolean)?) :
-        SimpleChangeRule<PhonS, PhonS>(Phonetic, Phonetic, expressions, { x -> x }, filter)
 
     override fun toString(): String = subrules.joinToString(
         separator = " then ", prefix = "Rule $name: "
