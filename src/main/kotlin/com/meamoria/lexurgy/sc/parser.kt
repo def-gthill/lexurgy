@@ -205,7 +205,7 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
 
     override fun visitValue(ctx: LscParser.ValueContext): T = walkValue(ctx.VALUE().text)
 
-    override fun visitText(ctx: LscParser.TextContext): T = walkText(ctx.text)
+    override fun visitText(ctx: LscParser.TextContext): T = walkText(ctx.getChild(0).text, ctx.NEGATION() != null)
 
     protected abstract fun walkFile(
         featureDeclarations: List<T>,
@@ -292,7 +292,7 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
 
     protected abstract fun walkValue(name: String): T
 
-    protected abstract fun walkText(text: String): T
+    protected abstract fun walkText(text: String, exact: Boolean): T
 
     /**
      * Packages a list of T's into an object that is also a T, so that visit functions can return lists

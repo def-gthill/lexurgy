@@ -53,7 +53,7 @@ repeatertype: ATLEASTONE | NULL | OPTIONAL;
 matrix: MATSTART value? (WHITESPACE value)* MATEND;
 feature: FEATURE;
 value: VALUE;
-text: FEATURE | VALUE | STR1 | STR;
+text: (FEATURE | VALUE | STR1 | STR) NEGATION?;
 
 COMMENT: (WHITESPACE? COMMENTSTART ~[\n\r]*) -> skip;
 SEP: ',' WHITESPACE?;

@@ -146,7 +146,7 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
         ListElement(items.map { it as RuleElement })
 
     override fun walkSimpleElement(element: ParseNode): ParseNode = when (element) {
-        is TextNode -> TextElement(element.text)
+        is TextNode -> TextElement(element.text, element.exact)
         is MatrixNode -> MatrixElement(element.matrix)
         else -> element
     }
@@ -176,7 +176,7 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
 
     override fun walkValue(name: String): ParseNode = SimpleValueNode(SimpleValue(name))
 
-    override fun walkText(text: String): ParseNode = TextNode(text)
+    override fun walkText(text: String, exact: Boolean): ParseNode = TextNode(text, exact)
 
     override fun tlist(items: List<ParseNode>): ParseNode = TList(items)
 
@@ -276,13 +276,13 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
 
     private class UnlinkedEnvironment(val before: RuleElement?, val after: RuleElement?) : ParseNode {
         fun plain(): Environment<PlainS> = Environment(
-            before?.plain() ?: TextMatcher(Plain.empty),
-            after?.plain() ?: TextMatcher(Plain.empty)
+            before?.plain() ?: NullMatcher(),
+            after?.plain() ?: NullMatcher()
         )
 
         fun phonetic(declarations: Declarations): Environment<PhonS> = Environment(
-            before?.phonetic(declarations) ?: SymbolMatcher(Phonetic.empty),
-            after?.phonetic(declarations) ?: SymbolMatcher(Phonetic.empty)
+            before?.phonetic(declarations) ?: NullMatcher(),
+            after?.phonetic(declarations) ?: NullMatcher()
         )
     }
 
@@ -397,20 +397,26 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
             ListEmitter(elements)
     }
 
-    private class TextElement(val text: String) : ResultElement {
+    private class TextElement(val text: String, val exact: Boolean = false) : ResultElement {
         override fun plain(): Matcher<PlainS> = TextMatcher(PlainWord(text))
 
         override fun phonetic(declarations: Declarations): Matcher<PhonS> =
-            SymbolMatcher(declarations.parsePhonetic(text))
+            declarations.parsePhonetic(text).let {
+                if (exact) TextMatcher(it) else SymbolMatcher(it)
+            }
 
         override fun inPhoneticEmitter(declarations: Declarations): Emitter<PhonS, PlainS> =
             TextEmitter(PlainWord(text))
 
         override fun outPhoneticEmitter(declarations: Declarations): Emitter<PlainS, PhonS> =
-            SymbolEmitter(declarations.parsePhonetic(text))
+            declarations.parsePhonetic(text).let {
+                if (exact) TextEmitter(it) else SymbolEmitter(it)
+            }
 
         override fun phoneticEmitter(declarations: Declarations): Emitter<PhonS, PhonS> =
-            SymbolEmitter(declarations.parsePhonetic(text))
+            declarations.parsePhonetic(text).let {
+                if (exact) TextEmitter(it) else SymbolEmitter(it)
+            }
     }
 
     private class MatrixElement(val matrix: Matrix) : PhoneticOnlyResultElement() {
@@ -467,6 +473,6 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
 
     private class SimpleValueNode(val simpleValue: SimpleValue) : ValueNode(simpleValue)
 
-    private class TextNode(val text: String) : ParseNode
+    private class TextNode(val text: String, val exact: Boolean) : ParseNode
 }
 

@@ -323,6 +323,32 @@ class TestSoundChanger : StringSpec({
         ch("tˈájtaj") shouldBe "tˈu̘jtej"
     }
 
+    "Symbol literals with ! after them should force an exact match" {
+        val ch = lsc(
+            """
+                Feature Height(low, high)
+                Feature Depth(front, back)
+                Feature Stress(*unstressed, stressed)
+                Feature Tone(*lowtone, hightone)
+                Diacritic ˈ (before) (floating) [stressed]
+                Diacritic ́  (floating) [hightone]
+                Symbol a [low back]
+                Symbol e [low front]
+                Symbol u [high back]
+                Symbol i [high front]
+                w-back:
+                    {e!, i!} => {a, u} / _ w
+                stress-raise:
+                    {ˈa!, ˈe!} => {ˈu, ˈi}
+                j-front:
+                    {a!, u!} => {e, i} / _ j
+            """.trimIndent()
+        )
+
+        ch("tˈewtew") shouldBe "tˈiwtaw"
+        ch("tájtaj") shouldBe "tájtej"
+    }
+
     "We should be able to rename the \"absent\" value of a feature" {
         val ch = lsc(
             """

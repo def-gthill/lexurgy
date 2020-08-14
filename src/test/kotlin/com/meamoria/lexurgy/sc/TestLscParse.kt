@@ -296,7 +296,7 @@ class TestLscParse : StringSpec({
 
         override fun walkFeature(name: String): String = "f($name)"
 
-        override fun walkText(text: String): String = text
+        override fun walkText(text: String, exact: Boolean): String = text + if (exact) "!" else ""
 
         override fun tlist(items: List<String>): String = items.joinToString("|")
 

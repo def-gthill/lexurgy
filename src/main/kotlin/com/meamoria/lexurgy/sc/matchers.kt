@@ -105,8 +105,8 @@ class SymbolMatcher(text: Word<PhonS>) : AbstractTextMatcher<PhonS>(text) {
     override fun toString(): String = text.string.ifEmpty { "*" }
 }
 
-class TextMatcher(text: Word<PlainS>) : AbstractTextMatcher<PlainS>(text) {
-    override fun claim(declarations: Declarations, word: Word<PlainS>, start: Int, bindings: Bindings): Int? {
+class TextMatcher<I : Segment<I>>(text: Word<I>) : AbstractTextMatcher<I>(text) {
+    override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int? {
         val wordStart = word.drop(start).take(text.length)
         return if (wordStart == text) start + text.length else null
     }

@@ -67,10 +67,10 @@ class SymbolEmitter<I : Segment<I>>(val text: Word<PhonS>) : SimpleEmitter<I, Ph
     override fun toString(): String = text.string.ifEmpty { "*" }
 }
 
-class TextEmitter<I : Segment<I>>(val text: Word<PlainS>) : SimpleEmitter<I, PlainS> {
+class TextEmitter<I : Segment<I>, O : Segment<O>>(val text: Word<O>) : SimpleEmitter<I, O> {
     override fun result(
         declarations: Declarations, matcher: SimpleMatcher<I>, original: Word<I>
-    ): UnboundResult<PlainS> {
+    ): UnboundResult<O> {
         return { text }
     }
 
