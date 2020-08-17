@@ -48,15 +48,28 @@ class SymbolEmitter<I : Segment<I>>(val text: Word<PhonS>) : SimpleEmitter<I, Ph
         declarations: Declarations, matcher: SimpleMatcher<I>, original: Word<I>
     ): UnboundResult<PhonS> {
         if (
-            matcher is SymbolMatcher && original is PhoneticWord &&
-            matcher.text.length == text.length && original.length == text.length
+            matcher is SymbolMatcher && original is PhoneticWord
         ) {
             val result = with(declarations) {
-                matcher.text.segments.zip3(
-                    original.segments, text.segments
-                ) { matcherSegment, originalSegment, textSegment ->
-                    textSegment.withFloatingDiacriticsFrom(originalSegment, excluding = matcherSegment)
-                }
+                if (matcher.text.length == text.length && original.length == text.length) {
+                    matcher.text.segments.zip3(
+                        original.segments, text.segments
+                    ) { matcherSegment, originalSegment, textSegment ->
+                        textSegment.withFloatingDiacriticsFrom(originalSegment, excluding = matcherSegment)
+                    }
+                } else if (matcher.text.length == original.length && text.length == 1) {
+                    var newText = text.segments.first()
+                    matcher.text.segments.zip(original.segments).forEach { (matcherSegment, originalSegment) ->
+                        newText = newText.withFloatingDiacriticsFrom(originalSegment, excluding = matcherSegment)
+                    }
+                    listOf(newText)
+                } else if (matcher.text.length == 1 && original.length == 1) {
+                    val matcherSegment = matcher.text.segments.first()
+                    val originalSegment = original.segments.first()
+                    text.segments.map {
+                        it.withFloatingDiacriticsFrom(originalSegment, excluding = matcherSegment)
+                    }
+                } else text.segments
             }
             return { Phonetic.fromSegments(result) }
         } else {

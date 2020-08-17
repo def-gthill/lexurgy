@@ -316,11 +316,14 @@ class TestSoundChanger : StringSpec({
                     {ú, í} => {u̘, i̘}
                 j-front:
                     {a, u} => {e, i} / _ j
+                coalesce:
+                    ui => ú
             """.trimIndent()
         )
 
         ch("tˈewtáj") shouldBe "tˈuwtéj"
         ch("tˈájtaj") shouldBe "tˈu̘jtej"
+        ch("tˈuitui") shouldBe "tˈútú"
     }
 
     "Symbol literals with ! after them should force an exact match" {
@@ -852,6 +855,11 @@ class TestSoundChanger : StringSpec({
 
         ch("mtmkaasr") shouldBe "mətəməkaasər"
         ch("tmkipnralpt") shouldBe "təməkipnəralpət"
+    }
+
+    "The file format should be fairly robust to extra newlines and blank lines" {
+        // We're just testing that these don't throw exceptions
+        lsc("Deromanizer:\n    y => j\n")
     }
 
     "This sample list of Three Rivers words should evolve into Muipidan words how they did in the old sound changer" {

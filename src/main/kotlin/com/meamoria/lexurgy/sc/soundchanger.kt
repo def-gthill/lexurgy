@@ -199,7 +199,7 @@ class SoundChanger(
         if (stopBefore != null && !stopped) {
             console("WARNING: No rule called $stopBefore; all rules applied")
         }
-        if (!started) {
+        if (startAt != null && !started) {
             console("WARNING: No rule called $startAt; no rules applied")
         }
 
