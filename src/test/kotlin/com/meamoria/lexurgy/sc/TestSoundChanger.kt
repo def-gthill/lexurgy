@@ -861,6 +861,7 @@ class TestSoundChanger : StringSpec({
         // We're just testing that these don't throw exceptions
         lsc("Deromanizer:\n    y => j\n")
         lsc("Deromanizer:\n    y => j\nrule:\n    j => ʒ\n\n\n")
+        lsc("rule:\n    p => b\n# Pointless comment\n    t => d\n    # Indented pointless comment\n    k => g\n")
     }
 
     "This sample list of Three Rivers words should evolve into Muipidan words how they did in the old sound changer" {
