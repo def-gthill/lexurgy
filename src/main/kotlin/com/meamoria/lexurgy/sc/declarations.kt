@@ -65,7 +65,7 @@ class Declarations(
      * Returns true if the matrix matched, false otherwise. Binds variables.
      */
     fun PhoneticSegment.matches(matrix: Matrix, bindings: Bindings): Boolean {
-        val complexSymbolMatrix = toMatrix() ?: Matrix(emptyList())
+        val complexSymbolMatrix = (toMatrix() ?: Matrix(emptyList())).expandNulls()
         for (value in matrix.valueList) {
             val realValue = if (value.isNull())
                 AbsentFeature(valueToFeature.getValue(value as SimpleValue).name)
@@ -138,6 +138,12 @@ class Declarations(
     }
 
     private fun Matrix.removeExplicitNulls(): Matrix = Matrix(valueList.filterNot { it.isNull() })
+
+    private fun Matrix.expandNulls(): Matrix {
+        val explicitFeatures = valueList.mapNotNull { valueToFeature[it] }
+        val implicitNulls = features.filter { it !in explicitFeatures }.map { it.nullAlias ?: AbsentFeature(it.name) }
+        return Matrix(valueList + implicitNulls)
+    }
 
     private fun searchDiacritics(
         matrix: Matrix,

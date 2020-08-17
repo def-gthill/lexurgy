@@ -530,6 +530,29 @@ class TestSoundChanger : StringSpec({
         ch2("duomaitio") shouldBe "dometö"
     }
 
+    "Feature variables should capture a feature's default value" {
+        val ch = lsc(
+            """
+                Feature Type(*cons, vowel)
+                Feature Height(*low, high)
+                Feature Depth(*front, back)
+
+                Symbol a [vowel back]
+                Symbol e [vowel]
+                Symbol i [vowel high]
+                Symbol u [vowel high back]
+
+                harmony [vowel] propagate:
+                    [] => [${'$'}Height] / [${'$'}Height] _
+            """.trimIndent()
+        )
+
+        ch("kaki") shouldBe "kake"
+        ch("putatu") shouldBe "pututu"
+        ch("ichigaku") shouldBe "ichiguku"
+        ch("epistrefu") shouldBe "epestrefa"
+    }
+
     "We should be able to define reusable alternative lists as sound classes" {
         val ch = lsc(
             """
