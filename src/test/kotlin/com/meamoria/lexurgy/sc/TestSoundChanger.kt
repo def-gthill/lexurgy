@@ -860,6 +860,7 @@ class TestSoundChanger : StringSpec({
     "The file format should be fairly robust to extra newlines and blank lines" {
         // We're just testing that these don't throw exceptions
         lsc("Deromanizer:\n    y => j\n")
+        lsc("Deromanizer:\n    y => j\nrule:\n    j => ʒ\n\n\n")
     }
 
     "This sample list of Three Rivers words should evolve into Muipidan words how they did in the old sound changer" {

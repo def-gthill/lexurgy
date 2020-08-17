@@ -4,7 +4,7 @@ lscfile:
     (featuredecl NEWLINE+)* (diacritic NEWLINE+)* (symbol NEWLINE+)* (classdecl NEWLINE+)* (deromanizer NEWLINE+)?
     changerule? ((NEWLINE+ (changerule | interromanizer))* NEWLINE+ changerule)?
     (NEWLINE+ romanizer)?
-    NEWLINE? EOF;
+    NEWLINE* EOF;
 
 classdecl: CLASSDECL WHITESPACE value WHITESPACE LISTSTART text (SEP text)* LISTEND;
 featuredecl: FEATUREDECL WHITESPACE feature OPAREN (nullalias SEP)? value (SEP value)* CPAREN (CHANGE matrix)?;
