@@ -12,5 +12,7 @@ fun dumpList(path: Path, words: List<String>, suffix: String? = null): Unit =
 fun suffixPath(path: Path, suffix: String? = null): Path =
     if (suffix == null) path else
         with(path.toFile()) {
-            Paths.get(parent, nameWithoutExtension + "_" + suffix + "." + extension)
+            val fname = nameWithoutExtension + "_" + suffix + "." + extension
+            if (parent == null) Paths.get(fname)
+            else Paths.get(parent, fname)
         }
