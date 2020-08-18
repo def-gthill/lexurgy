@@ -14,14 +14,14 @@ class Declarations(
     private val valueToFeature = features.flatMap { feature ->
         feature.allValues.map { it to feature }
     }.toMap()
-    private val nulls = features.mapNotNull { it.nullAlias }
+    private val defaults = features.map { it.default }
 
     private val diacriticNameToDiacritic = diacritics.associateBy { it.name }
     private val floatingDiacritics = diacritics.filter { it.floating }
 
     private val symbolsAsComplexSymbols = symbols.map { complexSymbol(it) }
     private val symbolNameToSymbol = symbols.associateBy { it.name }
-    private val matrixToSimpleSymbol = symbols.associateBy { it.matrix.removeExplicitNulls() }
+    private val matrixToSimpleSymbol = symbols.associateBy { it.matrix.removeExplicitDefaults() }
 
     private val matrixToSymbolCache = ConcurrentHashMap<Matrix, PhoneticSegment>()
 
@@ -65,17 +65,14 @@ class Declarations(
      * Returns true if the matrix matched, false otherwise. Binds variables.
      */
     fun PhoneticSegment.matches(matrix: Matrix, bindings: Bindings): Boolean {
-        val complexSymbolMatrix = (toMatrix() ?: Matrix(emptyList())).expandNulls()
+        val complexSymbolMatrix = (toMatrix() ?: Matrix(emptyList()))
         for (value in matrix.valueList) {
-            val realValue = if (value.isNull())
-                AbsentFeature(valueToFeature.getValue(value as SimpleValue).name)
-            else value
-            if (!realValue.matches(complexSymbolMatrix, bindings)) return false
+            if (!value.matches(complexSymbolMatrix, bindings)) return false
         }
         return true
     }
 
-    private fun MatrixValue.isNull(): Boolean = this in nulls
+    private fun MatrixValue.isDefault(): Boolean = this in defaults
 
     fun PhoneticSegment.withFloatingDiacriticsFrom(
         other: PhoneticSegment, excluding: PhoneticSegment? = null
@@ -125,10 +122,26 @@ class Declarations(
 
     fun ComplexSymbol.toPhoneticSegment(): PhoneticSegment = PhoneticSegment(string)
 
+    val Matrix.fullValueList: List<MatrixValue>
+        get() {
+            val explicitFeatures = valueList.mapNotNull { valueToFeature[it] }.toSet()
+            val implicitDefaults = features.filter { it !in explicitFeatures }.map { it.default }
+            return valueList + implicitDefaults
+        }
+
+    val Matrix.fullValueSet: Set<MatrixValue>
+        get() = fullValueList.toSet()
+
+    val Matrix.simpleValues: Set<SimpleValue>
+        get() = fullValueList.filterIsInstanceTo(mutableSetOf())
+
+    val Matrix.simpleValueStrings: Set<String>
+        get() = simpleValues.mapTo(mutableSetOf()) { it.name }
+
     fun Matrix.toSymbol(): PhoneticSegment {
         matrixToSymbolCache[this]?.let { return it }
 
-        val matrix = removeExplicitNulls()
+        val matrix = removeExplicitDefaults()
 
         val result = matrixToSimpleSymbol[matrix]?.toPhoneticSegment()
             ?: searchDiacritics(matrix)?.toPhoneticSegment()
@@ -137,13 +150,7 @@ class Declarations(
         return result.also { matrixToSymbolCache[this] = it }
     }
 
-    private fun Matrix.removeExplicitNulls(): Matrix = Matrix(valueList.filterNot { it.isNull() })
-
-    private fun Matrix.expandNulls(): Matrix {
-        val explicitFeatures = valueList.mapNotNull { valueToFeature[it] }
-        val implicitNulls = features.filter { it !in explicitFeatures }.map { it.nullAlias ?: AbsentFeature(it.name) }
-        return Matrix(valueList + implicitNulls)
-    }
+    private fun Matrix.removeExplicitDefaults(): Matrix = Matrix(valueList.filterNot { it.isDefault() })
 
     private fun searchDiacritics(
         matrix: Matrix,
@@ -151,6 +158,7 @@ class Declarations(
         bestDistance: Int? = null,
         availableDiacritics: List<Diacritic> = diacritics
     ): ComplexSymbol? {
+        if (availableDiacritics.isEmpty()) return null
         val sortedCandidates = candidates.sortedBy { it.distanceTo(matrix) }
         sortedCandidates.first().takeIf { it.distanceTo(matrix) == 0 }?.let { return it }
 
@@ -175,14 +183,10 @@ class Declarations(
         val oldMatrixFeatures = simpleValues.associateBy { it.toFeature() }
         val newMatrixValues = valueList.toMutableList()
         for (value in updateMatrix.valueList) {
-            if (value is AbsentFeature) {
-                val updateFeature = value.featureName.toFeature()
-                oldMatrixFeatures[updateFeature]?.let { newMatrixValues.remove(it) }
-            } else {
-                val updateFeature = (value as SimpleValue).toFeature()
-                oldMatrixFeatures[updateFeature]?.let { newMatrixValues.remove(it) }
+            val updateFeature = (value as SimpleValue).toFeature()
+            oldMatrixFeatures[updateFeature]?.let { newMatrixValues.remove(it) }
+            if (!value.isDefault())
                 newMatrixValues += value
-            }
         }
         return Matrix(newMatrixValues)
     }
@@ -196,8 +200,9 @@ class Declarations(
 
 class SegmentClass(val name: String, val sounds: List<String>)
 
-class Feature(val name: String, val values: List<SimpleValue>, val nullAlias: SimpleValue? = null) {
-    val allValues: List<SimpleValue> = listOfNotNull(nullAlias) + values
+class Feature(val name: String, val values: List<SimpleValue>, explicitDefault: SimpleValue? = null) {
+    val default: SimpleValue = explicitDefault ?: SimpleValue.absent(name)
+    val allValues: List<SimpleValue> = listOf(default) + values
 
     override fun toString(): String = values.joinToString(prefix = "$name(", postfix = ")")
 }

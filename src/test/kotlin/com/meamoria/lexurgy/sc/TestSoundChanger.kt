@@ -377,6 +377,32 @@ class TestSoundChanger : StringSpec({
         ch("putsu") shouldBe "kukʰu"
     }
 
+    "Diacritic search should ignore expicit absent values" {
+        val ch = lsc(
+            """
+                Feature Type(*cons, vowel)
+                Feature Height(*low, high)
+                Feature Depth(*front, back)
+                Feature Stress(*unstr, str)
+        
+                Diacritic ́  [str]
+        
+                Symbol a [vowel low back]
+                Symbol e [vowel low front]
+                Symbol i [vowel high front]
+                Symbol u [vowel high back]
+        
+                stress [vowel]:
+                [] => [str] / $ _
+            """.trimIndent()
+        )
+
+        ch("kaki") shouldBe "káki"
+        ch("putatu") shouldBe "pútatu"
+        ch("ichigaku") shouldBe "íchigaku"
+        ch("epistrefu") shouldBe "épistrefu"
+    }
+
     "We should be able to mark the word boundary with a $" {
         val ch1 = lsc(
             """
