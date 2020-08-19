@@ -215,6 +215,12 @@ public interface LscVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitSimpleelement(LscParser.SimpleelementContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link LscParser#negelement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitNegelement(LscParser.NegelementContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link LscParser#classref}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

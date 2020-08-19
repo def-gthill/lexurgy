@@ -175,6 +175,8 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
 
     override fun visitSimpleelement(ctx: LscParser.SimpleelementContext): T = walkSimpleElement(visit(ctx.getChild(0)))
 
+    override fun visitNegelement(ctx: LscParser.NegelementContext): T = walkNegatedElement(visit(ctx.getChild(1)))
+
     override fun visitClassref(ctx: LscParser.ClassrefContext): T = walkClassReference(visit(ctx.value()))
 
     override fun visitCaptureref(ctx: LscParser.CapturerefContext): T = walkCaptureReference(ctx.NUMBER().text.toInt())
@@ -273,6 +275,8 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
     protected abstract fun walkRuleList(items: List<T>): T
 
     protected open fun walkSimpleElement(element: T): T = element
+
+    protected abstract fun walkNegatedElement(element: T): T
 
     protected abstract fun walkEmpty(): T
 

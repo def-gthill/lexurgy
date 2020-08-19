@@ -198,20 +198,21 @@ Negated features
 Diacritics
 **********
 
-Note that diacritics are added to a symbol in the order they're declared
-in the file. For example, suppose you declare::
+.. note::
+    Diacritics are added to a symbol in the order they're declared
+    in the file. For example, suppose you declare::
 
-    Diacritic ː [long]
-    Diacritic ́  [hightone]
+        Diacritic ː [long]
+        Diacritic ́  [hightone]
 
-Then a vowel that's both long and high-tone will have the high tone diacritic
-applied on top of the long symbol, which looks like ``aː́``. Probably not
-what you want! Switch the order of the diacritic declarations::
+    Then a vowel that's both long and high-tone will have the high tone diacritic
+    applied on top of the long symbol, which looks like ``aː́``. Probably not
+    what you want! Switch the order of the diacritic declarations::
 
-    Diacritic ́  [hightone]
-    Diacritic ː [long]
+        Diacritic ́  [hightone]
+        Diacritic ː [long]
 
-Now the long high-tone vowel will look the way it should: ``áː``.
+    Now the long high-tone vowel will look the way it should: ``áː``.
 
 Floating Diacritics
 *******************
@@ -221,6 +222,48 @@ Multiple-segment rules and empty segments
 
 Optional and repeated segments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. caution::
+    Optional and repeated segments are *greedy*; they match as much as they
+    can in the input word, even if doing so makes the rule fail. For
+    example, suppose we have this file::
+
+        Class sonorant {m, n, l}
+        Class consonant {p, t, k, f, s, @sonorant}
+        Class vowel {a, e, i, o, u}
+        Class stressed {á, é, í, ó, ú}
+
+        syncope-after-stress-and-sonorant:
+            @vowel => * / @stressed @consonant? @sonorant _
+
+    This rule is intended to drop vowels after sonorants in the syllable following
+    a stressed syllable; the ``@consonant?`` is supposed to mean that the
+    rule still applies even if there's another consonant before the sonorant.
+    And that works: this rule changes ``átla`` into ``átl``. Unfortunately,
+    it fails if there's no other consonant: ``ála`` should become ``ál``,
+    but this rule leaves it unchanged.
+
+    This happens because sonorants are also consonants, so ``@consonant?`` happily
+    matches the /l/ in ``ála``. Then it goes looking for the sonorant
+    and can't find one.
+
+    There are a few ways to work around this. You use an alternative list::
+
+        syncope-after-stress-and-sonorant:
+            @vowel => * / @stressed {@consonant @sonorant, @sonorant} _
+
+    With this rule, when ``@consonant @sonorant`` can't match the consonants in
+    ``ála``, Lexurgy goes to the second alternative in the list, looking for
+    just ``@sonorant`` and finding the /l/.
+
+    You can also use a "double negative"
+
+        syncope-after-stress-and-sonorant:
+            @vowel => * / @stressed @consonant @consonant? _ // !@sonorant _
+
+    Now the environment will match one or two consonants, and the exclusion
+    will throw away the matches where the last consonant isn't a sonorant,
+    ensuring that the last consonant *is* a sonorant.
 
 Gemination and metathesis
 ~~~~~~~~~~~~~~~~~~~~~~~~~

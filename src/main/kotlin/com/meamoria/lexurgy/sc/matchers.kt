@@ -10,11 +10,15 @@ interface Matcher<I : Segment<I>> {
 class WordStartMatcher<I : Segment<I>> : Matcher<I> {
     override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int? =
         start.takeIf { it == 0 }
+
+    override fun toString(): String = "$"
 }
 
 class WordEndMatcher<I : Segment<I>> : Matcher<I> {
     override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int? =
         start.takeIf { it == word.length }
+
+    override fun toString(): String = "$"
 }
 
 class SequenceMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : Matcher<I> {
@@ -59,6 +63,9 @@ class ListMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : Matcher<I> {
     override fun toString(): String = elements.joinToString(prefix = "{", postfix = "}")
 }
 
+/**
+ * A matcher that isn't a container for other matchers
+ */
 interface SimpleMatcher<I : Segment<I>> : Matcher<I>
 
 class CaptureMatcher(val element: Matcher<PhonS>, val number: Int) : SimpleMatcher<PhonS> {
@@ -112,6 +119,14 @@ class TextMatcher<I : Segment<I>>(text: Word<I>) : AbstractTextMatcher<I>(text) 
     }
 
     override fun toString(): String = text.string
+}
+
+class NegatedMatcher<I : Segment<I>>(val matcher: Matcher<I>) : SimpleMatcher<I> {
+    override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int? =
+        if (matcher.claim(declarations, word, start, bindings) == null) start + 1
+        else null
+
+    override fun toString(): String = "!$matcher"
 }
 
 class NullMatcher<I : Segment<I>> : SimpleMatcher<I> {

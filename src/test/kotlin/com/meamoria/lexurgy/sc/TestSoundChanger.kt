@@ -610,6 +610,21 @@ class TestSoundChanger : StringSpec({
         ch("bananal") shouldBe "bananal"
     }
 
+    "We should be able to match segments that don't belong to a particular class" {
+        val ch = lsc(
+            """
+                Class stop {p, t, k}
+                Class vowel {a, e, i, o, u}
+                final-vowel-loss:
+                    @vowel => * / !@stop _ $
+            """.trimIndent()
+        )
+
+        ch("buka") shouldBe "buka"
+        ch("suna") shouldBe "sun"
+        ch("puraa") shouldBe "pura"
+    }
+
     "We should be able to implement gemination and degemination with captures" {
         val ch = lsc(
             """

@@ -166,6 +166,8 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
         else -> element
     }
 
+    override fun walkNegatedElement(element: ParseNode): ParseNode = NegatedElement(element as RuleElement)
+
     override fun walkEmpty(): ParseNode = EmptyElement
 
     override fun walkClassReference(value: ParseNode): ParseNode =
@@ -440,6 +442,13 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
         override fun phoneticEmitter(declarations: Declarations): Emitter<PhonS, PhonS> = MatrixEmitter(matrix)
 
         override fun foundInPlain(): Nothing = throw LscMatrixInPlain(matrix)
+    }
+
+    private class NegatedElement(val element: RuleElement) : RuleElement {
+        override fun plain(): Matcher<PlainS> = NegatedMatcher(element.plain())
+
+        override fun phonetic(declarations: Declarations): Matcher<PhonS> =
+            NegatedMatcher(element.phonetic(declarations))
     }
 
     private object EmptyElement : ResultElement {

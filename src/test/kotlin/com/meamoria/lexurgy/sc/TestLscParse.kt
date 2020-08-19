@@ -284,6 +284,8 @@ class TestLscParse : StringSpec({
 
         override fun walkRuleList(items: List<String>): String = "list(${items.joinToString()})"
 
+        override fun walkNegatedElement(element: String): String = "!${element}"
+
         override fun walkEmpty(): String = "null"
 
         override fun walkClassReference(value: String): String = "c($value)"
