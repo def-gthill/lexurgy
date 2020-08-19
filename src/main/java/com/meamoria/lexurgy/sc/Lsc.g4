@@ -6,7 +6,8 @@ lscfile:
     (NEWLINE+ romanizer)?
     NEWLINE* EOF;
 
-classdecl: CLASSDECL WHITESPACE value WHITESPACE LISTSTART text (SEP text)* LISTEND;
+classdecl: CLASSDECL WHITESPACE value WHITESPACE LISTSTART classelement (SEP classelement)* LISTEND;
+classelement: classref | text;
 featuredecl: FEATUREDECL WHITESPACE feature OPAREN (nullalias SEP)? value (SEP value)* CPAREN (CHANGE matrix)?;
 nullalias: NULL value;
 diacritic: DIACRITIC WHITESPACE STR1 WHITESPACE (DIABEFORE WHITESPACE)? (DIAFLOATING WHITESPACE)? matrix;

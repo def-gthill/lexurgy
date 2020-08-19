@@ -218,8 +218,8 @@ class TestLscParse : StringSpec({
                         listOfNotNull(deromanizer) + changeRules + listOfNotNull(romanizer)
                 ).joinToString()
 
-        override fun walkClassDeclaration(className: String, sounds: List<String>): String =
-            "cdec($className, ${sounds.joinToString()})"
+        override fun walkClassDeclaration(className: String, elements: List<String>): String =
+            "cdec($className, ${elements.joinToString()})"
 
         override fun walkFeatureDeclaration(
             featureName: String,

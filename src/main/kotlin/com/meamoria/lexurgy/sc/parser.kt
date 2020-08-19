@@ -82,8 +82,10 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
 
     override fun visitClassdecl(ctx: LscParser.ClassdeclContext): T = walkClassDeclaration(
         visit(ctx.value()),
-        listVisit(ctx.text())
+        listVisit(ctx.classelement())
     )
+
+    override fun visitClasselement(ctx: LscParser.ClasselementContext): T = visit(ctx.getChild(0))
 
     override fun visitFeaturedecl(ctx: LscParser.FeaturedeclContext): T = walkFeatureDeclaration(
         visit(ctx.feature()),
@@ -218,7 +220,7 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
         intermediateRomanizers: List<RomanizerToFollowingRule<T>>
     ): T
 
-    protected abstract fun walkClassDeclaration(className: T, sounds: List<T>): T
+    protected abstract fun walkClassDeclaration(className: T, elements: List<T>): T
 
     protected abstract fun walkFeatureDeclaration(
         featureName: T,

@@ -594,6 +594,22 @@ class TestSoundChanger : StringSpec({
         ch("aptiko") shouldBe "aptigo"
     }
 
+    "We should be able to use previous class definitions in classes" {
+        val ch = lsc(
+            """
+                Class stop {p, t, k}
+                Class fricative {f, s}
+                Class obstruent {@stop, @fricative}
+                drop-final-obstruent:
+                    @obstruent => * / _ $
+            """.trimIndent()
+        )
+
+        ch("ararat") shouldBe "arara"
+        ch("ananas") shouldBe "anana"
+        ch("bananal") shouldBe "bananal"
+    }
+
     "We should be able to implement gemination and degemination with captures" {
         val ch = lsc(
             """

@@ -19,7 +19,7 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
             symbolDeclarations.flatMap { sublist ->
                 (sublist as TList).elements.map { (it as SymbolDeclarationNode).symbol }
             },
-            classDeclarations.map { (it as ClassDeclarationNode).segmentClass }
+            resolveClasses(classDeclarations)
         )
         val linkedRules = changeRules.map { (it as UnlinkedChangeRule).link(declarations) }
         val linkedDeromanizer =
@@ -33,12 +33,27 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
         return SoundChanger(declarations, linkedRules, linkedDeromanizer, linkedRomanizer, linkedIntermediateRomanizers)
     }
 
-    override fun walkClassDeclaration(className: ParseNode, sounds: List<ParseNode>): ParseNode = ClassDeclarationNode(
-        SegmentClass(
+    private fun resolveClasses(classDeclarations: List<ParseNode>): List<SegmentClass> {
+        val classes = mutableMapOf<String, SegmentClass>()
+        for (classDeclaration in classDeclarations) {
+            val classNode = classDeclaration as ClassDeclarationNode
+            val newClassSounds = classNode.elements.flatMap {
+                if (it is TextNode) listOf(it.text)
+                else {
+                    val nestedName = (it as ClassReferenceElement).name
+                    classes[nestedName]?.sounds ?: throw LscUndefinedName("class", nestedName)
+                }
+            }
+            classes[classNode.name] = SegmentClass(classNode.name, newClassSounds)
+        }
+        return classes.values.toList()
+    }
+
+    override fun walkClassDeclaration(className: ParseNode, elements: List<ParseNode>): ParseNode =
+        ClassDeclarationNode(
             (className as SimpleValueNode).simpleValue.name,
-            sounds.map { (it as TextNode).text }
+            elements
         )
-    )
 
     override fun walkFeatureDeclaration(
         featureName: ParseNode,
@@ -192,7 +207,7 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
 
     private class SymbolDeclarationNode(val symbol: Symbol) : ParseNode
 
-    private class ClassDeclarationNode(val segmentClass: SegmentClass) : ParseNode
+    private class ClassDeclarationNode(val name: String, val elements: List<ParseNode>) : ParseNode
 
     private class UnlinkedDeromanizer(val expressions: List<List<UnlinkedRuleExpression>>) : ParseNode {
         fun link(declarations: Declarations): Deromanizer =

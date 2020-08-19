@@ -23,6 +23,12 @@ public interface LscVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitClassdecl(LscParser.ClassdeclContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link LscParser#classelement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitClasselement(LscParser.ClasselementContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link LscParser#featuredecl}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

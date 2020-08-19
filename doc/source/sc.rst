@@ -81,7 +81,8 @@ will change into the corresponding sound in the new list::
 
 This will turn [p] into [b], [t] into [d], and [k] into [g].
 
-It's invalid to have a single sound turn into an alternative list.
+It's invalid to have a single sound turn into an alternative list, or to
+have a list of one length turn into a list of a different length.
 
 Alternative environments
 ************************
@@ -160,9 +161,21 @@ Lexurgy automatically expands this rule into::
 But if you use the same lists often, having short names for them saves
 a lot of typing and makes your intentions clearer.
 
-Lexurgy's sound classes should be familiar to users of Rosenfelder's SCA.
-But unlike in Rosenfelder's SCA, the sounds in a sound class can be multiple
-characters long, and work the way you would expect.
+You can use the names of previously defined classes in your
+class definitions::
+
+    Class stop {p, t, k}
+    Class fricative {f, s}
+    Class obstruent {@stop, @fricative}
+
+Now the ``obstruent`` class expands to ``{p, t, k, f, s}``. You can
+use this to build up larger and larger classes of sounds
+without repeating yourself.
+
+Lexurgy's sound classes should be familiar to users of Rosenfelder's SCA,
+but they're more powerful in Lexurgy --- they can have descriptive
+names, the symbols in them can be more than one character long, and
+you can define them in terms of other classes.
 
 Feature matrices
 ~~~~~~~~~~~~~~~~
@@ -184,6 +197,21 @@ Negated features
 
 Diacritics
 **********
+
+Note that diacritics are added to a symbol in the order they're declared
+in the file. For example, suppose you declare::
+
+    Diacritic ː [long]
+    Diacritic ́  [hightone]
+
+Then a vowel that's both long and high-tone will have the high tone diacritic
+applied on top of the long symbol, which looks like ``aː́``. Probably not
+what you want! Switch the order of the diacritic declarations::
+
+    Diacritic ́  [hightone]
+    Diacritic ː [long]
+
+Now the long high-tone vowel will look the way it should: ``áː``.
 
 Floating Diacritics
 *******************
