@@ -738,6 +738,24 @@ class TestSoundChanger : StringSpec({
         shouldNotThrowAny { lsc("Symbol ai\nharmony [vowel]:\n[low] ai => [high] a") }
     }
 
+    "Classes should be usable as filters" {
+        val ch = lsc(
+            """
+                Class low {a, e}
+                Class high {o, i}
+                Class front {e, i}
+                Class back {a, o}
+                harmony @front:
+                    @high => @low / @low _
+                    @low => @high / @high _
+            """.trimIndent()
+        )
+
+        ch("enni") shouldBe "enne"
+        ch("onna") shouldBe "onna"
+        ch("ibstveki") shouldBe "ibstvike"
+    }
+
     "Overlapping rules in a filter rule should be resolved in precedence order" {
         val ch = lsc(
             """

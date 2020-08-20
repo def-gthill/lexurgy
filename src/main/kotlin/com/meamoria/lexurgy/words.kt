@@ -38,6 +38,8 @@ interface SegmentType<S : Segment<S>> {
     val empty: Word<S>
         get() = fromSegments(emptyList())
 
+    fun single(segment: S): Word<S> = fromSegments(listOf(segment))
+
     fun fromSegments(segments: Iterable<S>): Word<S>
 
     fun join(words: Iterable<Word<S>>): Word<S> = fromSegments(words.flatMap { it.segments })

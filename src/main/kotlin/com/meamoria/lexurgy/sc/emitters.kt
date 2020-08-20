@@ -36,7 +36,7 @@ class MatrixEmitter(val matrix: Matrix) : SimpleEmitter<PhonS, PhonS> {
                 val boundMatrix = matrix.bindVariables(bindings)
                 val matchMatrix = original[0].toMatrix() ?: Matrix(emptyList())
                 val resultMatrix = matchMatrix.update(boundMatrix)
-                Phonetic.fromSegments(listOf(resultMatrix.toSymbol()))
+                Phonetic.single(resultMatrix.toSymbol())
             }
         }
 

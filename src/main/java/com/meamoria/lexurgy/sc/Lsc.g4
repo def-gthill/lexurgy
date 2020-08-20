@@ -18,7 +18,8 @@ deromanizer: DEROMANIZER RULESTART NEWLINE subrules;
 romanizer: ROMANIZER RULESTART NEWLINE subrules;
 interromanizer: ROMANIZER HYPHEN rulename RULESTART NEWLINE subrules;
 
-changerule: rulename (WHITESPACE matrix)? (WHITESPACE PROPAGATE)? RULESTART NEWLINE subrules;
+changerule: rulename (WHITESPACE filter)? (WHITESPACE PROPAGATE)? RULESTART NEWLINE subrules;
+filter: classref | matrix;
 subrules: subrule (NEWLINE SUBRULE RULESTART (WHITESPACE | NEWLINE) subrule)*;
 subrule: ruleexpression (NEWLINE ruleexpression)*;
 rulename: VALUE (HYPHEN VALUE)*;

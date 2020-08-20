@@ -95,7 +95,10 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
     ): ParseNode = UnlinkedChangeRule(
         ruleName,
         subrules.convert(),
-        ruleFilter as? MatrixNode,
+        when (ruleFilter) {
+            is MatrixNode -> MatrixElement(ruleFilter.matrix)
+            else -> ruleFilter as RuleElement?
+        },
         propagate
     )
 
@@ -241,7 +244,7 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
     private class UnlinkedChangeRule(
         val name: String,
         val expressions: List<List<UnlinkedRuleExpression>>,
-        val ruleFilter: MatrixNode?,
+        val ruleFilter: RuleElement?,
         val propagate: Boolean
     ) : ParseNode {
         fun link(declarations: Declarations): ChangeRule =
@@ -250,9 +253,9 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
                 expressions.nestedMap { it.phonetic(declarations, ruleFilter != null) },
                 ruleFilter?.let { filter ->
                     { segment: PhoneticSegment ->
-                        with(declarations) {
-                            segment.matches(filter.matrix, Bindings())
-                        }
+                        filter.phonetic(declarations).claim(
+                            declarations, Phonetic.single(segment), 0, Bindings()
+                        ) == 1
                     }
                 },
                 propagate

@@ -120,9 +120,11 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
     override fun visitChangerule(ctx: LscParser.ChangeruleContext): T = walkChangeRule(
         ctx.rulename().text!!,
         untlist(visit(ctx.subrules())),
-        optionalVisit(ctx.matrix()),
+        optionalVisit(ctx.filter()),
         ctx.PROPAGATE() != null
     )
+
+    override fun visitFilter(ctx: LscParser.FilterContext): T = visit(ctx.getChild(0))
 
     override fun visitSubrules(ctx: LscParser.SubrulesContext): T = tlist(listVisit(ctx.subrule()))
 
