@@ -5,11 +5,15 @@ import com.meamoria.lexurgy.Word
 
 interface Matcher<I : Segment<I>> {
     fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int?
+
+    fun reversed(): Matcher<I>
 }
 
 class WordStartMatcher<I : Segment<I>> : Matcher<I> {
     override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int? =
         start.takeIf { it == 0 }
+
+    override fun reversed(): Matcher<I> = WordEndMatcher()
 
     override fun toString(): String = "$"
 }
@@ -17,6 +21,8 @@ class WordStartMatcher<I : Segment<I>> : Matcher<I> {
 class WordEndMatcher<I : Segment<I>> : Matcher<I> {
     override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int? =
         start.takeIf { it == word.length }
+
+    override fun reversed(): Matcher<I> = WordStartMatcher()
 
     override fun toString(): String = "$"
 }
@@ -29,6 +35,8 @@ class SequenceMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : Matcher<
         }
         return elementStart
     }
+
+    override fun reversed(): Matcher<I> = SequenceMatcher(elements.asReversed().map { it.reversed() })
 
     override fun toString(): String = elements.joinToString(separator = " ", prefix = "(", postfix = ")")
 }
@@ -45,6 +53,8 @@ class RepeaterMatcher<I : Segment<I>>(val element: Matcher<I>, val type: Repeate
         return elementStart.takeIf { times >= type.minReps }
     }
 
+    override fun reversed(): Matcher<I> = RepeaterMatcher(element.reversed(), type)
+
     override fun toString(): String = "$element${type.string}"
 }
 
@@ -60,6 +70,8 @@ class ListMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : Matcher<I> {
         return null
     }
 
+    override fun reversed(): Matcher<I> = ListMatcher(elements.map { it.reversed() })
+
     override fun toString(): String = elements.joinToString(prefix = "{", postfix = "}")
 }
 
@@ -73,6 +85,8 @@ class CaptureMatcher(val element: Matcher<PhonS>, val number: Int) : SimpleMatch
         element.claim(declarations, word, start, bindings)?.also { end ->
             bindings.captures[number] = word.slice(start until end)
         }
+
+    override fun reversed(): Matcher<PhonS> = CaptureMatcher(element.reversed(), number)
 }
 
 class CaptureReferenceMatcher(val number: Int) : SimpleMatcher<PhonS> {
@@ -82,6 +96,8 @@ class CaptureReferenceMatcher(val number: Int) : SimpleMatcher<PhonS> {
                 word.drop(start).take(end - start) == capturedText
             }
         } ?: throw LscUnboundCapture(number)
+
+    override fun reversed(): Matcher<PhonS> = this
 }
 
 class MatrixMatcher(val matrix: Matrix) : SimpleMatcher<PhonS> {
@@ -91,6 +107,8 @@ class MatrixMatcher(val matrix: Matrix) : SimpleMatcher<PhonS> {
             if (start < word.length && word[start].matches(boundMatrix, bindings)) start + 1
             else null
         }
+
+    override fun reversed(): Matcher<PhonS> = this
 
     override fun toString(): String = matrix.toString()
 }
@@ -109,6 +127,8 @@ class SymbolMatcher(text: Word<PhonS>) : AbstractTextMatcher<PhonS>(text) {
         return if (matches) start + text.length else null
     }
 
+    override fun reversed(): Matcher<PhonS> = SymbolMatcher(text.reversed())
+
     override fun toString(): String = text.string.ifEmpty { "*" }
 }
 
@@ -118,6 +138,8 @@ class TextMatcher<I : Segment<I>>(text: Word<I>) : AbstractTextMatcher<I>(text) 
         return if (wordStart == text) start + text.length else null
     }
 
+    override fun reversed(): Matcher<I> = TextMatcher(text.reversed())
+
     override fun toString(): String = text.string
 }
 
@@ -126,12 +148,16 @@ class NegatedMatcher<I : Segment<I>>(val matcher: Matcher<I>) : SimpleMatcher<I>
         if (matcher.claim(declarations, word, start, bindings) == null) start + 1
         else null
 
+    override fun reversed(): Matcher<I> = NegatedMatcher(matcher.reversed())
+
     override fun toString(): String = "!$matcher"
 }
 
 class NullMatcher<I : Segment<I>> : SimpleMatcher<I> {
     override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int? =
         start
+
+    override fun reversed(): Matcher<I> = this
 
     override fun toString(): String = "*"
 }

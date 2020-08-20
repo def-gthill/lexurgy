@@ -461,9 +461,11 @@ class RuleExpression<I : Segment<I>, O : Segment<O>>(
 ) {
     val transformer = makeTransformer(match, result)
 
-    private val realEnvironment =
+    private val realCondition =
         if (condition.isEmpty()) listOf(Environment(NullMatcher(), NullMatcher()))
-        else condition
+        else condition.map { it.beforeReversed() }
+
+    private val realExclusion = exclusion.map { it.beforeReversed() }
 
     private fun makeTransformer(match: Matcher<I>, result: Emitter<I, O>): Transformer<I, O> {
         if (filtered) {
@@ -534,30 +536,29 @@ class RuleExpression<I : Segment<I>, O : Segment<O>>(
         val result = mutableListOf<Transformation<O>>()
 
         while (true) {
-            val claimResult = claimNext(expressionNumber, word, index) ?: break
-            val (transformation, matchStart) = claimResult
+            val transformation = claimNext(expressionNumber, word, index) ?: break
             if (transformation.start !in exclusions)
                 result += transformation
-            index = matchStart + 1
+            index = transformation.start + 1
         }
 
         return result
     }
 
-    private fun claimNext(expressionNumber: Int, word: Word<I>, start: Int): TransformationWithMatchStart<O>? {
+    private fun claimNext(expressionNumber: Int, word: Word<I>, start: Int): Transformation<O>? {
         for (matchStart in start..word.length) {
-            for (environment in realEnvironment) {
+            for (environment in realCondition) {
                 val bindings = Bindings()
-                val beforeMatchEnd = environment.before.claim(
-                    declarations, word, matchStart, bindings
+                environment.before.claim(
+                    declarations, word.reversed(), word.length - matchStart, bindings
                 ) ?: continue
                 val transformation = transformer.transform(
-                    expressionNumber, declarations, word, beforeMatchEnd, bindings
+                    expressionNumber, declarations, word, matchStart, bindings
                 ) ?: continue
                 environment.after.claim(
                     declarations, word, transformation.end, bindings
                 ) ?: continue
-                return TransformationWithMatchStart(transformation.bindVariables(bindings), matchStart)
+                return transformation.bindVariables(bindings)
             }
         }
         return null
@@ -565,18 +566,18 @@ class RuleExpression<I : Segment<I>, O : Segment<O>>(
 
     private fun claimNextExclusion(word: Word<I>, start: Int): Int? {
         for (matchStart in start until word.length) {
-            for (environment in exclusion) {
+            for (environment in realExclusion) {
                 val bindings = Bindings()
-                val beforeMatchEnd = environment.before.claim(
-                    declarations, word, matchStart, bindings
+                environment.before.claim(
+                    declarations, word.reversed(), word.length - matchStart, bindings
                 ) ?: continue
                 val matchEnd = match.claim(
-                    declarations, word, beforeMatchEnd, bindings
+                    declarations, word, matchStart, bindings
                 ) ?: continue
                 environment.after.claim(
                     declarations, word, matchEnd, bindings
                 ) ?: continue
-                return beforeMatchEnd
+                return matchStart
             }
         }
         return null
@@ -594,9 +595,9 @@ class RuleExpression<I : Segment<I>, O : Segment<O>>(
     }
 }
 
-data class TransformationWithMatchStart<O : Segment<O>>(val transformation: Transformation<O>, val matchStart: Int)
-
 class Environment<I : Segment<I>>(val before: Matcher<I>, val after: Matcher<I>) {
+    fun beforeReversed(): Environment<I> = Environment(before.reversed(), after)
+
     override fun toString(): String = "$before _ $after"
 }
 

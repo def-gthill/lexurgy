@@ -11,11 +11,13 @@ interface Word<S : Segment<S>> : Comparable<Word<S>> {
 
     val segments: List<S>
 
-    val segmentsAsWords: Iterable<Word<S>>
-        get() = segments.map { seg -> type.fromSegments(listOf(seg)) }
-
     val length: Int
         get() = segments.size
+
+    val segmentsAsWords: Iterable<Word<S>>
+        get() = segments.map { seg -> type.single(seg) }
+
+    fun reversed(): Word<S> = type.fromSegments(segments.asReversed())
 
     operator fun iterator(): Iterator<S> = segments.iterator()
 

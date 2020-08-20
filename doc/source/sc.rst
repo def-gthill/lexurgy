@@ -228,42 +228,38 @@ Optional and repeated segments
     can in the input word, even if doing so makes the rule fail. For
     example, suppose we have this file::
 
-        Class sonorant {m, n, l}
-        Class consonant {p, t, k, f, s, @sonorant}
-        Class vowel {a, e, i, o, u}
-        Class stressed {á, é, í, ó, ú}
+        Class glide {w, j}
+        Class consonant {p, t, k, f, s, m, n, l, @glide}
+        Class vowel {a, e, i, o, u, ø, y}
 
-        syncope-after-stress-and-sonorant:
-            @vowel => * / @stressed @consonant? @sonorant _
+        umlaut:
+            {a, e, o, u} => {e, i, ø, y} / _ @consonant* j
 
-    This rule is intended to drop vowels after sonorants in the syllable following
-    a stressed syllable; the ``@consonant?`` is supposed to mean that the
-    rule still applies even if there's another consonant before the sonorant.
-    And that works: this rule changes ``átla`` into ``átl``. Unfortunately,
-    it fails if there's no other consonant: ``ála`` should become ``ál``,
-    but this rule leaves it unchanged.
+    This rule is intended to apply umlaut to a vowel in the syllable before
+    a /j/ onglide; the ``@consonant*`` is supposed to mean that the
+    rule still applies even if there are consonants in between.
+    Unfortunately, the rule does nothing at all, no matter what word you give it.
 
-    This happens because sonorants are also consonants, so ``@consonant?`` happily
-    matches the /l/ in ``ála``. Then it goes looking for the sonorant
-    and can't find one.
+    This happens because /j/ is also included in the ``consonant`` class. Suppose
+    you feed the word ``altja`` to this rule, intending it to become ``eltja``.
+    Lexurgy sees ``@consonant*`` and goes looking for consonants. It finds
+    ``l``, then ``t``... but it keeps looking, finding ``j`` as well, since
+    ``j`` is also a consonant. Then it runs out of consonants, tries
+    to find the literal ``j`` from the rule, and fails, because it already
+    consumed the ``j``.
 
-    There are a few ways to work around this. You use an alternative list::
+    The way to work around this is to narrow
+    the repeated element so that it doesn't overlap with the next element::
 
-        syncope-after-stress-and-sonorant:
-            @vowel => * / @stressed {@consonant @sonorant, @sonorant} _
+        umlaut:
+            {a, e, o, u} => {e, i, ø, y} / _ {p, t, k, f, s, m, n, l, w}* j
 
-    With this rule, when ``@consonant @sonorant`` can't match the consonants in
-    ``ála``, Lexurgy goes to the second alternative in the list, looking for
-    just ``@sonorant`` and finding the /l/.
+    Now, the repeated element can't possibly consume the ``j``.
 
-    You can also use a "double negative"
-
-        syncope-after-stress-and-sonorant:
-            @vowel => * / @stressed @consonant @consonant? _ // !@sonorant _
-
-    Now the environment will match one or two consonants, and the exclusion
-    will throw away the matches where the last consonant isn't a sonorant,
-    ensuring that the last consonant *is* a sonorant.
+    For the part of the environment before the underscore, Lexurgy searches from
+    *right to left*, so the logic above is reversed. Lexurgy does this because
+    it results in more intuitive behaviour most of the time --- after all, sound changes
+    are most likely to be conditioned on the nearest sounds.
 
 Gemination and metathesis
 ~~~~~~~~~~~~~~~~~~~~~~~~~

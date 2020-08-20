@@ -519,14 +519,15 @@ class TestSoundChanger : StringSpec({
     "We should be able to copy feature variables from one matrix to another using feature variables" {
         val ch1 = lsc(
             """
+                Feature Type(*cons, vowel)
                 Feature Height(low, high)
                 Feature Depth(front, back)
-                Symbol a [low back]
-                Symbol e [low front]
-                Symbol o [high back]
-                Symbol i [high front]
+                Symbol a [vowel low back]
+                Symbol e [vowel low front]
+                Symbol o [vowel high back]
+                Symbol i [vowel high front]
                 short-harmony:
-                [] => [${'$'}Height] / [${'$'}Height] n+ _
+                [vowel] => [${'$'}Height] / [${'$'}Height] n+ _
                 [${'$'}Height ${'$'}Depth] => * / [${'$'}Height ${'$'}Depth] _
             """.trimIndent()
         )
@@ -939,7 +940,7 @@ class TestSoundChanger : StringSpec({
         )
     }
 
-    "!The Kharulian consonant separation rule should break apart consecutive consonants" {
+    "The Kharulian consonant separation rule should break apart consecutive consonants" {
         // My current position is "don't fix this". Put warnings in the documentation that different environment
         // lengths don't mix well in alternative environments.
         val ch = lsc(
@@ -953,6 +954,56 @@ class TestSoundChanger : StringSpec({
 
         ch("mtmkaasr") shouldBe "mətəməkaasər"
         ch("tmkipnralpt") shouldBe "təməkipnəralpət"
+    }
+
+    "The Caidorian syncope rule should work properly (i.e. before environments should match backwards from the anchor" {
+        val ch = lsc(
+            """
+                Feature Type(*cons, vowel)
+                Feature Height(low, lowmid, mid, high)
+                Feature Depth(front, central, back)
+                Feature Stress(*unstressed, stressed)
+                Feature Length(*short, long)
+
+                Diacritic ́  (floating) [stressed]
+                Diacritic ː (floating) [long]
+
+                Symbol pʰ, tʰ, cʰ, kʰ, bʱ, dʱ, ɟʱ, gʱ
+                Symbol ɛ [vowel lowmid front]
+                Symbol e [vowel mid front]
+                Symbol i [vowel high front]
+                Symbol a [vowel low central]
+                Symbol ɔ [vowel lowmid back]
+                Symbol o [vowel mid back]
+                Symbol u [vowel high back]
+                
+                Class aspir {pʰ, tʰ, cʰ, kʰ}
+                Class breathy {bʱ, dʱ, ɟʱ, gʱ}
+                Class unvcd {p, t, c, k}
+                Class vcd {b, d, ɟ, g}
+                Class stop {@aspir, @breathy, @unvcd, @vcd}
+                Class fricative {f, s, ç}
+                Class obstruent {@stop, @fricative}
+
+                Deromanizer:
+                    {ph, th, ch, kh} => {pʰ, tʰ, cʰ, kʰ}
+                    {bh, dh, jh, gh} => {bʱ, dʱ, ɟʱ, gʱ}
+                    j => ɟ
+                    sh => ç
+                    nh => ɲ
+                    Then:
+                    [vowel]${'$'}1 ${'$'}1 => [long] *
+                    Then:
+                    [vowel] => [stressed] / ${'$'} [cons]* _
+                syncope:
+                    [vowel short] => * / [vowel stressed] [cons]* _ @stop [cons]* [vowel]
+                    [vowel short] => * / [vowel stressed] [cons]* @obstruent _ @obstruent [cons]* [vowel]
+            """.trimIndent()
+        )
+
+        ch("migomausis") shouldBe "mígomausis"
+        ch("egidhi") shouldBe "égdʱi"
+        ch("eefase") shouldBe "éːfse"
     }
 
     "The file format should be fairly robust to extra newlines and blank lines" {
