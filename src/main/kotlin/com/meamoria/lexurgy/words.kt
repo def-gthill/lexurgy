@@ -17,7 +17,7 @@ interface Word<S : Segment<S>> : Comparable<Word<S>> {
     val segmentsAsWords: Iterable<Word<S>>
         get() = segments.map { seg -> type.single(seg) }
 
-    fun reversed(): Word<S> = type.fromSegments(segments.asReversed())
+    fun reversed(): Word<S> = ReversedWord(this)
 
     operator fun iterator(): Iterator<S> = segments.iterator()
 
@@ -30,6 +30,22 @@ interface Word<S : Segment<S>> : Comparable<Word<S>> {
     fun drop(n: Int): Word<S> = type.fromSegments(segments.drop(n))
 
     operator fun plus(other: Word<S>): Word<S> = type.fromSegments(segments + other.segments)
+}
+
+// A reversed view of a word
+private class ReversedWord<S : Segment<S>>(val inner: Word<S>) : Word<S> {
+    override val type: SegmentType<S> = inner.type
+
+    override val string: String
+        get() = force().string
+
+    override val segments: List<S> = inner.segments.asReversed()
+
+    override fun compareTo(other: Word<S>): Int = force().compareTo(other)
+
+    private fun force(): Word<S> = type.fromSegments(segments)
+
+    override fun reversed(): Word<S> = inner
 }
 
 interface Segment<S : Segment<S>> {
