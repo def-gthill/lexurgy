@@ -23,7 +23,9 @@ class Declarations(
     private val symbolNameToSymbol = symbols.associateBy { it.name }
     private val matrixToSimpleSymbol = symbols.associateBy { it.matrix.removeExplicitDefaults() }
 
+    private val matrixFullValueListCache = ConcurrentHashMap<Matrix, List<MatrixValue>>()
     private val matrixToSymbolCache = ConcurrentHashMap<Matrix, PhoneticSegment>()
+    private val phoneticSegmentMatchCache = ConcurrentHashMap<Pair<PhoneticSegment, PhoneticSegment>, Boolean>()
 
     private val classNameToClass = classes.associateBy { it.name }
 
@@ -49,15 +51,17 @@ class Declarations(
      * any number of floating diacritics.
      */
     fun PhoneticSegment.matches(pattern: PhoneticSegment): Boolean {
+        phoneticSegmentMatchCache[this to pattern]?.let { return it }
+
         if (floatingDiacritics.isEmpty()) return this == pattern
         val thisSymbol = this.toComplexSymbol() ?: return this == pattern
         if (!thisSymbol.diacritics.any { it.floating }) return this == pattern
         val patternSymbol = pattern.toComplexSymbol() ?: return this == pattern
-        return searchDiacritics(
+        return (searchDiacritics(
             thisSymbol.toMatrix(),
             listOf(patternSymbol),
             availableDiacritics = floatingDiacritics
-        ) == this.toComplexSymbol()
+        ) == this.toComplexSymbol()).also { phoneticSegmentMatchCache[this to pattern] = it }
     }
 
     /**
@@ -124,9 +128,11 @@ class Declarations(
 
     val Matrix.fullValueList: List<MatrixValue>
         get() {
+            matrixFullValueListCache[this]?.let { return it }
+
             val explicitFeatures = valueList.mapNotNull { valueToFeature[it] }.toSet()
             val implicitDefaults = features.filter { it !in explicitFeatures }.map { it.default }
-            return valueList + implicitDefaults
+            return (valueList + implicitDefaults).also { matrixFullValueListCache[this] = it }
         }
 
     val Matrix.fullValueSet: Set<MatrixValue>

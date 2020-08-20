@@ -1,0 +1,15 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="SpeedTestBig" type="JetRunConfigurationType">
+    <module name="lexurgy.main" />
+    <option name="VM_PARAMETERS" value="-XX:+UnlockCommercialFeatures -XX:+FlightRecorder" />
+    <option name="PROGRAM_PARAMETERS" value="sc test/kharulian.lsc test/pk_full_conjugated_verbs.wli" />
+    <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
+    <option name="ALTERNATIVE_JRE_PATH" />
+    <option name="PASS_PARENT_ENVS" value="true" />
+    <option name="MAIN_CLASS_NAME" value="com.meamoria.lexurgy.MainKt" />
+    <option name="WORKING_DIRECTORY" value="" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

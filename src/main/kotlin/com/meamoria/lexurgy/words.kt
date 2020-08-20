@@ -74,8 +74,8 @@ abstract class StringSegmentWord<S : StringSegment<S>>(private val stringSegment
 
     override val string: String = stringSegments.joinToString("")
 
-    override val segments: List<S>
-        get() = stringSegments.map(type::segmentFromString)
+    @Suppress("LeakingThis")
+    override val segments: List<S> = stringSegments.map(type::segmentFromString)
 
     final override fun toString(): String =
         stringSegments.joinToString(separator = "/", postfix = " (${type.javaClass.simpleName})")
@@ -109,6 +109,7 @@ data class PhoneticWord(val phoneticSegments: List<String>) :
 }
 
 data class PhoneticSegment(override val string: String) : StringSegment<PhoneticSegment> {
+    @Suppress("LeakingThis")
     override val type: StringSegmentType<PhoneticSegment>
         get() = Phonetic
 }
@@ -204,7 +205,8 @@ class PhoneticParser(
 }
 
 data class DiacriticBreakdown(
-    val core: String, val before: List<String> = emptyList(), val after: List<String> = emptyList())
+    val core: String, val before: List<String> = emptyList(), val after: List<String> = emptyList()
+)
 
 class DanglingDiacritic(word: String, position: Int, diacritic: String) :
-        UserError("The diacritic $diacritic at position $position in $word isn't attached to a symbol")
+    UserError("The diacritic $diacritic at position $position in $word isn't attached to a symbol")
