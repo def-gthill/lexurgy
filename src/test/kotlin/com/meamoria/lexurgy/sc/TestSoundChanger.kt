@@ -580,6 +580,27 @@ class TestSoundChanger : StringSpec({
         ch("epistrefu") shouldBe "epestrefa"
     }
 
+    "We should be able to use feature variables to conjure a matrix out of nothing" {
+        val ch = lsc(
+            """
+                Feature Place(labial, alveolar, velar)
+                Feature Manner(stop, nasal)
+                Symbol p [labial stop]
+                Symbol t [alveolar stop]
+                Symbol k [velar stop]
+                Symbol m [labial nasal]
+                Symbol n [alveolar nasal]
+                Symbol ŋ [velar nasal]
+                interpolate:
+                    * => [${'$'}Place stop] / [${'$'}Place nasal] _ [stop]
+            """.trimIndent()
+        )
+
+        ch("klomter") shouldBe "klompter"
+        ch("sfiŋter") shouldBe "sfiŋkter"
+        ch("bumkin") shouldBe "bumpkin"
+    }
+
     "We should be able to define reusable alternative lists as sound classes" {
         val ch = lsc(
             """

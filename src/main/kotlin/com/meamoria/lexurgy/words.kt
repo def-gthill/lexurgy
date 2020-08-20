@@ -23,6 +23,8 @@ interface Word<S : Segment<S>> : Comparable<Word<S>> {
 
     operator fun get(index: Int): S = segments[index]
 
+    fun softGet(index: Int): S? = if (index in 0 until length) this[index] else null
+
     fun slice(indices: IntRange): Word<S> = type.fromSegments(segments.slice(indices))
 
     fun take(n: Int): Word<S> = type.fromSegments(segments.take(n))
