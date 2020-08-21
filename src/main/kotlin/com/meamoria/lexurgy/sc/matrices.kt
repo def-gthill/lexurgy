@@ -40,7 +40,7 @@ interface MatrixValue {
 data class NegatedValue(val value: String) : MatrixValue {
     override fun matches(declarations: Declarations, matrix: Matrix, bindings: Bindings): Boolean =
         with (declarations) {
-            value !in matrix.simpleValueStrings
+            value.toSimpleValue() !in matrix.simpleValues
         }
 }
 
@@ -63,7 +63,7 @@ data class FeatureVariable(val featureName: String) : MatrixValue {
 data class SimpleValue(val name: String) : MatrixValue {
     override fun matches(declarations: Declarations, matrix: Matrix, bindings: Bindings): Boolean =
         with (declarations) {
-            name in matrix.simpleValueStrings
+            name.toSimpleValue() in matrix.simpleValues
         }
 
     override fun toString(): String = name

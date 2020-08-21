@@ -11,6 +11,7 @@ class Declarations(
 ) {
 
     private val featureNameToFeatureMap = features.associateBy { it.name }
+    private val valueNameToSimpleValue = features.flatMap { it.allValues }.associateBy { it.name }
     private val valueToFeature = features.flatMap { feature ->
         feature.allValues.map { it to feature }
     }.toMap()
@@ -24,6 +25,7 @@ class Declarations(
     private val matrixToSimpleSymbol = symbols.associateBy { it.matrix.removeExplicitDefaults() }
 
     private val matrixFullValueListCache = ConcurrentHashMap<Matrix, List<MatrixValue>>()
+    private val matrixSimpleValueCache = ConcurrentHashMap<Matrix, Set<SimpleValue>>()
     private val matrixToSymbolCache = ConcurrentHashMap<Matrix, PhoneticSegment>()
     private val phoneticSegmentMatchCache = ConcurrentHashMap<Pair<PhoneticSegment, PhoneticSegment>, Boolean>()
 
@@ -42,6 +44,9 @@ class Declarations(
 
     fun String.toFeature(): Feature =
         featureNameToFeatureMap[this] ?: throw LscUndefinedName("feature", this)
+
+    fun String.toSimpleValue(): SimpleValue =
+        valueNameToSimpleValue[this] ?: throw LscUndefinedName("value", this)
 
     fun String.toClass(): SegmentClass =
         classNameToClass[this] ?: throw LscUndefinedName("sound class", this)
@@ -139,10 +144,13 @@ class Declarations(
         get() = fullValueList.toSet()
 
     val Matrix.simpleValues: Set<SimpleValue>
-        get() = fullValueList.filterIsInstanceTo(mutableSetOf())
+        get() {
+            matrixSimpleValueCache[this]?.let { return it }
 
-    val Matrix.simpleValueStrings: Set<String>
-        get() = simpleValues.mapTo(mutableSetOf()) { it.name }
+            return fullValueList.filterIsInstanceTo(mutableSetOf<SimpleValue>()).also {
+                matrixSimpleValueCache[this] = it
+            }
+        }
 
     fun Matrix.toSymbol(): PhoneticSegment {
         matrixToSymbolCache[this]?.let { return it }
