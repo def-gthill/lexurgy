@@ -27,6 +27,16 @@ interface Word<S : Segment<S>> : Comparable<Word<S>> {
 
     fun slice(indices: IntRange): Word<S> = type.fromSegments(segments.slice(indices))
 
+    fun sliceSegments(indices: IntRange): Iterable<S> = object : Iterable<S> {
+        override fun iterator(): Iterator<S> = object : Iterator<S> {
+            private var cursor = indices.first
+
+            override fun hasNext(): Boolean = cursor <= indices.last
+
+            override fun next(): S = get(cursor).also { cursor++ }
+        }
+    }
+
     fun take(n: Int): Word<S> = type.fromSegments(segments.take(n))
 
     fun drop(n: Int): Word<S> = type.fromSegments(segments.drop(n))

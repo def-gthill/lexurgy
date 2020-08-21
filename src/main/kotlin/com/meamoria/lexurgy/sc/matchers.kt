@@ -117,14 +117,14 @@ abstract class AbstractTextMatcher<I : Segment<I>>(val text: Word<I>) : SimpleMa
 
 class SymbolMatcher(text: Word<PhonS>) : AbstractTextMatcher<PhonS>(text) {
     override fun claim(declarations: Declarations, word: Word<PhonS>, start: Int, bindings: Bindings): Int? {
-        val wordStart = word.drop(start).take(text.length)
-        val matches = wordStart.length == text.length &&
-                with(declarations) {
-                    wordStart.segments.zip(text.segments) { wordSegment, textSegment ->
-                        wordSegment.matches(textSegment)
-                    }.all { it }
-                }
-        return if (matches) start + text.length else null
+        val end = start + text.length
+        if (end > word.length) return null
+        val matches = with(declarations) {
+            word.sliceSegments(start until end).zip(text.segments) { wordSegment, textSegment ->
+                wordSegment.matches(textSegment)
+            }.all { it }
+        }
+        return if (matches) end else null
     }
 
     override fun reversed(): Matcher<PhonS> = SymbolMatcher(text.reversed())
