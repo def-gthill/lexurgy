@@ -27,6 +27,7 @@ class Declarations(
     private val matrixFullValueListCache = ConcurrentHashMap<Matrix, List<MatrixValue>>()
     private val matrixSimpleValueCache = ConcurrentHashMap<Matrix, Set<SimpleValue>>()
     private val matrixToSymbolCache = ConcurrentHashMap<Matrix, PhoneticSegment>()
+    private val phoneticSegmentToComplexSymbolCache = ConcurrentHashMap<PhoneticSegment, ComplexSymbol>()
     private val phoneticSegmentMatchCache = ConcurrentHashMap<Pair<PhoneticSegment, PhoneticSegment>, Boolean>()
 
     private val classNameToClass = classes.associateBy { it.name }
@@ -102,10 +103,14 @@ class Declarations(
     }
 
     fun PhoneticSegment.toComplexSymbol(): ComplexSymbol? {
+        phoneticSegmentToComplexSymbolCache[this]?.let { return it }
+
         val (core, before, after) = phoneticParser.breakDiacritics(string)
         val coreSymbol = symbolNameToSymbol[core] ?: return null
         val diacritics = (before + after).map { diacriticNameToDiacritic.getValue(it) }
-        return complexSymbol(coreSymbol, diacritics)
+        return complexSymbol(coreSymbol, diacritics).also {
+            phoneticSegmentToComplexSymbolCache[this] = it
+        }
     }
 
     fun PhoneticSegment.toMatrix(): Matrix? = toComplexSymbol()?.toMatrix()

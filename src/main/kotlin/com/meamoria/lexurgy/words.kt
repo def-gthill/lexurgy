@@ -137,7 +137,6 @@ data class PhoneticWord(val phoneticSegments: List<String>) :
 }
 
 data class PhoneticSegment(override val string: String) : StringSegment<PhoneticSegment> {
-    @Suppress("LeakingThis")
     override val type: StringSegmentType<PhoneticSegment>
         get() = Phonetic
 }
