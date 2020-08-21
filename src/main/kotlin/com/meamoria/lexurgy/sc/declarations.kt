@@ -232,10 +232,16 @@ class Symbol(val name: String, val matrix: Matrix) {
  * Use the ``complexSymbol`` function in ``Declarations`` to create instances.
  */
 data class ComplexSymbol internal constructor(val symbol: Symbol, val diacritics: List<Diacritic>) {
-    val string = (diacritics.filter { it.before }.map { it.name } +
-            listOf(symbol.name) +
-            diacritics.filterNot { it.before }.map { it.name }
-            ).joinToString("")
+
+    // Most ComplexSymbol instances never have toString called (they're intermediate results).
+    // Most of the rest have it called only once, when the ComplexSymbol needs to be converted
+    // into something else, usually a PhoneticSegment.
+    // So compute only as needed.
+    val string
+        get() = (diacritics.filter { it.before }.map { it.name } +
+                listOf(symbol.name) +
+                diacritics.filterNot { it.before }.map { it.name }
+                ).joinToString("")
 
     override fun toString(): String = string
 }
