@@ -1,12 +1,12 @@
 package com.meamoria.lexurgy.sc
 
 import com.meamoria.lexurgy.loadList
+import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.beOfType
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
-import java.nio.file.Path
 import java.nio.file.Paths
 
 class TestSoundChanger : StringSpec({
@@ -124,6 +124,25 @@ class TestSoundChanger : StringSpec({
         ch2("baaacaaa") shouldBe "bzcz"
         ch2("baaaacaa") shouldBe "bzacx"
         ch2("baaaaaaabaaaaa") shouldBe "bzaqzx"
+    }
+
+    "We should be able to implement deletion and epenthesis with * rules" {
+        val ch = lsc(
+            """
+                deletion:
+                    a => * / $ _
+                    i => * / _ $
+                    u => * / s _ s
+                epenthesis:
+                    * => i / $ _ d
+                    * => a / _ $
+                    * => u / d _ d
+            """.trimIndent()
+        )
+
+        ch("afoobi") shouldBe "fooba"
+        ch("dasusad") shouldBe "idassada"
+        ch("muddud") shouldBe "mudududa"
     }
 
     "We should be able to match sounds against a simple feature matrix" {
@@ -274,25 +293,114 @@ class TestSoundChanger : StringSpec({
         ch("petetsa") shouldBe "pecetʰa"
     }
 
+    "Symbol literals should match symbols with floating diacritics" {
+        val ch = lsc(
+            """
+                Feature Height(low, high)
+                Feature Depth(front, back)
+                Feature Stress(*unstressed, stressed)
+                Feature Tone(*lowtone, hightone)
+                Feature Atr(*natr, atr)
+                Diacritic ˈ (before) (floating) [stressed]
+                Diacritic ́  (floating) [hightone]
+                Diacritic ̘  [atr]
+                Symbol a [low back]
+                Symbol e [low front]
+                Symbol u [high back]
+                Symbol i [high front]
+                w-back:
+                    {e, i} => {a, u} / _ w
+                stress-raise:
+                    {ˈa, ˈe} => {ˈu, ˈi}
+                tone-atr:
+                    {ú, í} => {u̘, i̘}
+                j-front:
+                    {a, u} => {e, i} / _ j
+                coalesce:
+                    ui => ú
+            """.trimIndent()
+        )
+
+        ch("tˈewtáj") shouldBe "tˈuwtéj"
+        ch("tˈájtaj") shouldBe "tˈu̘jtej"
+        ch("tˈuitui") shouldBe "tˈútú"
+    }
+
+    "Symbol literals with ! after them should force an exact match" {
+        val ch = lsc(
+            """
+                Feature Height(low, high)
+                Feature Depth(front, back)
+                Feature Stress(*unstressed, stressed)
+                Feature Tone(*lowtone, hightone)
+                Diacritic ˈ (before) (floating) [stressed]
+                Diacritic ́  (floating) [hightone]
+                Symbol a [low back]
+                Symbol e [low front]
+                Symbol u [high back]
+                Symbol i [high front]
+                w-back:
+                    {e!, i!} => {a, u} / _ w
+                stress-raise:
+                    {ˈa!, ˈe!} => {ˈu, ˈi}
+                j-front:
+                    {a!, u!} => {e, i} / _ j
+            """.trimIndent()
+        )
+
+        ch("tˈewtew") shouldBe "tˈiwtaw"
+        ch("tájtaj") shouldBe "tájtej"
+    }
+
     "We should be able to rename the \"absent\" value of a feature" {
         val ch = lsc(
             """
                |Feature Manner(stop)
-               |Feature Place(lab, apic)
+               |Feature Place(lab, apic, vel)
                |Feature Breath(*plain, aspir)
                |Diacritic ʰ [aspir]
                |Symbol p [stop lab]
                |Symbol t [stop apic]
+               |Symbol k [stop vel plain]
                |aspiration:
                |    [stop plain] s => [aspir] *
                |lenition:
                |    [stop aspir] => [plain] / a _ a
                |    [stop plain] => * / a _ a
+               |velar-shift:
+               |    [stop] => [vel] / _ u
             """.trimMargin()
         )
 
         ch("psataba") shouldBe "pʰaaba"
         ch("patsaba") shouldBe "pataba"
+        ch("putsu") shouldBe "kukʰu"
+    }
+
+    "Diacritic search should ignore expicit absent values" {
+        val ch = lsc(
+            """
+                Feature Type(*cons, vowel)
+                Feature Height(*low, high)
+                Feature Depth(*front, back)
+                Feature Stress(*unstr, str)
+        
+                Diacritic ́  [str]
+        
+                Symbol a [vowel low back]
+                Symbol e [vowel low front]
+                Symbol i [vowel high front]
+                Symbol u [vowel high back]
+        
+                stress [vowel]:
+                [] => [str] / $ _
+            """.trimIndent()
+        )
+
+        ch("kaki") shouldBe "káki"
+        ch("putatu") shouldBe "pútatu"
+        ch("ichigaku") shouldBe "íchigaku"
+        ch("epistrefu") shouldBe "épistrefu"
     }
 
     "We should be able to mark the word boundary with a $" {
@@ -411,14 +519,15 @@ class TestSoundChanger : StringSpec({
     "We should be able to copy feature variables from one matrix to another using feature variables" {
         val ch1 = lsc(
             """
+                Feature Type(*cons, vowel)
                 Feature Height(low, high)
                 Feature Depth(front, back)
-                Symbol a [low back]
-                Symbol e [low front]
-                Symbol o [high back]
-                Symbol i [high front]
+                Symbol a [vowel low back]
+                Symbol e [vowel low front]
+                Symbol o [vowel high back]
+                Symbol i [vowel high front]
                 short-harmony:
-                [] => [${'$'}Height] / [${'$'}Height] n+ _
+                [vowel] => [${'$'}Height] / [${'$'}Height] n+ _
                 [${'$'}Height ${'$'}Depth] => * / [${'$'}Height ${'$'}Depth] _
             """.trimIndent()
         )
@@ -448,6 +557,50 @@ class TestSoundChanger : StringSpec({
         ch2("duomaitio") shouldBe "dometö"
     }
 
+    "Feature variables should capture a feature's default value" {
+        val ch = lsc(
+            """
+                Feature Type(*cons, vowel)
+                Feature Height(*low, high)
+                Feature Depth(*front, back)
+
+                Symbol a [vowel back]
+                Symbol e [vowel]
+                Symbol i [vowel high]
+                Symbol u [vowel high back]
+
+                harmony [vowel] propagate:
+                    [] => [${'$'}Height] / [${'$'}Height] _
+            """.trimIndent()
+        )
+
+        ch("kaki") shouldBe "kake"
+        ch("putatu") shouldBe "pututu"
+        ch("ichigaku") shouldBe "ichiguku"
+        ch("epistrefu") shouldBe "epestrefa"
+    }
+
+    "We should be able to use feature variables to conjure a matrix out of nothing" {
+        val ch = lsc(
+            """
+                Feature Place(labial, alveolar, velar)
+                Feature Manner(stop, nasal)
+                Symbol p [labial stop]
+                Symbol t [alveolar stop]
+                Symbol k [velar stop]
+                Symbol m [labial nasal]
+                Symbol n [alveolar nasal]
+                Symbol ŋ [velar nasal]
+                interpolate:
+                    * => [${'$'}Place stop] / [${'$'}Place nasal] _ [stop]
+            """.trimIndent()
+        )
+
+        ch("klomter") shouldBe "klompter"
+        ch("sfiŋter") shouldBe "sfiŋkter"
+        ch("bumkin") shouldBe "bumpkin"
+    }
+
     "We should be able to define reusable alternative lists as sound classes" {
         val ch = lsc(
             """
@@ -461,6 +614,37 @@ class TestSoundChanger : StringSpec({
 
         ch("apetiko") shouldBe "abedigo"
         ch("aptiko") shouldBe "aptigo"
+    }
+
+    "We should be able to use previous class definitions in classes" {
+        val ch = lsc(
+            """
+                Class stop {p, t, k}
+                Class fricative {f, s}
+                Class obstruent {@stop, @fricative}
+                drop-final-obstruent:
+                    @obstruent => * / _ $
+            """.trimIndent()
+        )
+
+        ch("ararat") shouldBe "arara"
+        ch("ananas") shouldBe "anana"
+        ch("bananal") shouldBe "bananal"
+    }
+
+    "We should be able to match segments that don't belong to a particular class" {
+        val ch = lsc(
+            """
+                Class stop {p, t, k}
+                Class vowel {a, e, i, o, u}
+                final-vowel-loss:
+                    @vowel => * / !@stop _ $
+            """.trimIndent()
+        )
+
+        ch("buka") shouldBe "buka"
+        ch("suna") shouldBe "sun"
+        ch("puraa") shouldBe "pura"
     }
 
     "We should be able to implement gemination and degemination with captures" {
@@ -477,6 +661,30 @@ class TestSoundChanger : StringSpec({
 
         ch("ahpessi") shouldBe "appesi"
         ch("ifsehkasxo") shouldBe "ifsekkasxo"
+    }
+
+    "We should be able to implement gemination and degemination with matrix captures" {
+        val ch = lsc(
+            """
+                Feature Manner(stop, fricative)
+                Feature Place(labial, alveolar, velar)
+                Symbol p [labial stop]
+                Symbol t [alveolar stop]
+                Symbol k [velar stop]
+                Symbol f [labial fricative]
+                Symbol s [alveolar fricative]
+                Symbol x [velar fricative]
+                stop-gemination:
+                h [stop]$1 => $1 $1
+                fricative-degemination:
+                [fricative]$1 => * / _ $1
+            """.trimIndent()
+        )
+
+        ch("ahpessi") shouldBe "appesi"
+        ch("ifsehkasxo") shouldBe "ifsekkasxo"
+        // Tests that we don't get crashes if the rule is looking for a geminate off the end of the word.
+        ch("affes") shouldBe "afes"
     }
 
     "We should be able to implement metathesis with captures" {
@@ -549,6 +757,25 @@ class TestSoundChanger : StringSpec({
 
         shouldThrow<LscInvalidRuleExpression> { lsc("harmony [vowel]:\n[low] * => [high] a") }
         shouldThrow<LscInvalidRuleExpression> { lsc("harmony [vowel]:\n[low] ai => [high] a") }
+        shouldNotThrowAny { lsc("Symbol ai\nharmony [vowel]:\n[low] ai => [high] a") }
+    }
+
+    "Classes should be usable as filters" {
+        val ch = lsc(
+            """
+                Class low {a, e}
+                Class high {o, i}
+                Class front {e, i}
+                Class back {a, o}
+                harmony @front:
+                    @high => @low / @low _
+                    @low => @high / @high _
+            """.trimIndent()
+        )
+
+        ch("enni") shouldBe "enne"
+        ch("onna") shouldBe "onna"
+        ch("ibstveki") shouldBe "ibstvike"
     }
 
     "Overlapping rules in a filter rule should be resolved in precedence order" {
@@ -630,6 +857,50 @@ class TestSoundChanger : StringSpec({
         ch("kafash") shouldBe "cavas"
     }
 
+    "Deromanizers and romanizers should be able to have additional phonetic rules that apply on the phonetic side" {
+        val ch = lsc(
+            """
+                Feature Type(vowel, cons)
+                Feature Height(low, high)
+                Feature Depth(front, back)
+                Feature Stress(*unstressed, stressed)
+                Feature Length(*short, long)
+                Diacritic ˈ (before) [stressed]
+                Diacritic ː [long]
+                Symbol a [vowel low back]
+                Symbol e [vowel low front]
+                Symbol u [vowel high back]
+                Symbol i [vowel high front]
+                Symbol tʃ
+                Deromanizer:
+                    sh => ʃ
+                    ch => tʃ
+                    Then:
+                    [vowel] => [stressed] / $ [!vowel]? _
+                palatal-shift:
+                    tʃ => ʃ
+                    ʃ => s
+                stress-lengthen:
+                    [vowel stressed] => [long]
+                stress-shift:
+                    [stressed] => [unstressed]
+                    Then: [vowel] => [stressed] / _ [!vowel]? $
+                Romanizer:
+                    [long]${"$"}1 * => ${"$"}1 ${"$"}1
+                    Then:
+                    [long] => [short]
+                    Then:
+                    ʃ => sh
+                    {ˈa, ˈe, ˈu, ˈi} => {á, é, ú, í}
+                    
+            """.trimIndent()
+        )
+
+        ch("shamu") shouldBe "saamú"
+        ch("arima") shouldBe "aarimá"
+        ch("chamek") shouldBe "shaamék"
+    }
+
     "The matrix to symbol converter should still work if some symbols don't have features" {
         val ch = lsc(
             """
@@ -660,6 +931,107 @@ class TestSoundChanger : StringSpec({
         )
 
         ch("sohko") shouldBe "soko"
+    }
+
+    "Running with intermediate romanizers should produce multiple result lists" {
+        val ch = lsc(
+            """
+                Deromanizer:
+                ch => tʃ
+                change-a:
+                tʃ => ʃ
+                Romanizer-a:
+                ʃ => sh
+                change-b:
+                a => æ
+                Romanizer-b:
+                ʃ => x
+                æ => aa
+                change-final:
+                ʃ => s
+                Romanizer:
+                æ => ä
+            """.trimIndent()
+        )
+
+        ch.changeWithIntermediates(listOf("chachi", "vanechak")) shouldBe mapOf(
+            "a" to listOf("shashi", "vaneshak"),
+            "b" to listOf("xaaxi", "vaanexaak"),
+            null to listOf("säsi", "vänesäk")
+        )
+    }
+
+    "The Kharulian consonant separation rule should break apart consecutive consonants" {
+        // My current position is "don't fix this". Put warnings in the documentation that different environment
+        // lengths don't mix well in alternative environments.
+        val ch = lsc(
+            """
+                Class vowel {a, i, ə}
+                Class cons {p, t, k, s, m, n, l, r}
+                break-up-clusters:
+                    * => ə / {$ @cons _ @cons, @cons @cons _ @cons, @vowel @cons _ @cons $}
+            """.trimIndent()
+        )
+
+        ch("mtmkaasr") shouldBe "mətəməkaasər"
+        ch("tmkipnralpt") shouldBe "təməkipnəralpət"
+    }
+
+    "The Caidorian syncope rule should work properly (i.e. before environments should match backwards from the anchor" {
+        val ch = lsc(
+            """
+                Feature Type(*cons, vowel)
+                Feature Height(low, lowmid, mid, high)
+                Feature Depth(front, central, back)
+                Feature Stress(*unstressed, stressed)
+                Feature Length(*short, long)
+
+                Diacritic ́  (floating) [stressed]
+                Diacritic ː (floating) [long]
+
+                Symbol pʰ, tʰ, cʰ, kʰ, bʱ, dʱ, ɟʱ, gʱ
+                Symbol ɛ [vowel lowmid front]
+                Symbol e [vowel mid front]
+                Symbol i [vowel high front]
+                Symbol a [vowel low central]
+                Symbol ɔ [vowel lowmid back]
+                Symbol o [vowel mid back]
+                Symbol u [vowel high back]
+                
+                Class aspir {pʰ, tʰ, cʰ, kʰ}
+                Class breathy {bʱ, dʱ, ɟʱ, gʱ}
+                Class unvcd {p, t, c, k}
+                Class vcd {b, d, ɟ, g}
+                Class stop {@aspir, @breathy, @unvcd, @vcd}
+                Class fricative {f, s, ç}
+                Class obstruent {@stop, @fricative}
+
+                Deromanizer:
+                    {ph, th, ch, kh} => {pʰ, tʰ, cʰ, kʰ}
+                    {bh, dh, jh, gh} => {bʱ, dʱ, ɟʱ, gʱ}
+                    j => ɟ
+                    sh => ç
+                    nh => ɲ
+                    Then:
+                    [vowel]${'$'}1 ${'$'}1 => [long] *
+                    Then:
+                    [vowel] => [stressed] / ${'$'} [cons]* _
+                syncope:
+                    [vowel short] => * / [vowel stressed] [cons]* _ @stop [cons]* [vowel]
+                    [vowel short] => * / [vowel stressed] [cons]* @obstruent _ @obstruent [cons]* [vowel]
+            """.trimIndent()
+        )
+
+        ch("migomausis") shouldBe "mígomausis"
+        ch("egidhi") shouldBe "égdʱi"
+        ch("eefase") shouldBe "éːfse"
+    }
+
+    "The file format should be fairly robust to extra newlines and blank lines" {
+        // We're just testing that these don't throw exceptions
+        lsc("Deromanizer:\n    y => j\n")
+        lsc("Deromanizer:\n    y => j\nrule:\n    j => ʒ\n\n\n")
+        lsc("rule:\n    p => b\n# Pointless comment\n    t => d\n    # Indented pointless comment\n    k => g\n")
     }
 
     "This sample list of Three Rivers words should evolve into Muipidan words how they did in the old sound changer" {

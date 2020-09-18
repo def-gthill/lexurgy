@@ -1,5 +1,6 @@
 package com.meamoria.lexurgy.sc
 
+import com.meamoria.lexurgy.LscUserError
 import com.meamoria.lexurgy.Word
 
 class Bindings {
@@ -20,4 +21,4 @@ class Bindings {
     }
 }
 
-class LscUnboundCapture(number: Int) : Exception("Capture variable $number referenced before being bound")
+class LscUnboundCapture(number: Int) : LscUserError("Capture variable $number referenced before being bound")

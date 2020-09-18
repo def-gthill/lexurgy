@@ -23,6 +23,12 @@ public interface LscVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitClassdecl(LscParser.ClassdeclContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link LscParser#classelement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitClasselement(LscParser.ClasselementContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link LscParser#featuredecl}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -65,11 +71,29 @@ public interface LscVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitRomanizer(LscParser.RomanizerContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link LscParser#interromanizer}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitInterromanizer(LscParser.InterromanizerContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link LscParser#changerule}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitChangerule(LscParser.ChangeruleContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link LscParser#filter}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFilter(LscParser.FilterContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link LscParser#subrules}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitSubrules(LscParser.SubrulesContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link LscParser#subrule}.
 	 * @param ctx the parse tree
@@ -196,6 +220,12 @@ public interface LscVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitSimpleelement(LscParser.SimpleelementContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link LscParser#negelement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitNegelement(LscParser.NegelementContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link LscParser#classref}.
 	 * @param ctx the parse tree

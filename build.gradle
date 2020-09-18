@@ -4,7 +4,7 @@ plugins {
 }
 
 group 'com.meamoria'
-version '0.2.0'
+version '0.7.2'
 
 repositories {
     mavenCentral()
@@ -18,6 +18,8 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
     implementation "org.antlr:antlr4-runtime:4.7.2"
     implementation "com.github.ajalt:clikt:2.7.0"
+    implementation "net.java.dev.jna:jna:5.5.0"
+    implementation "net.java.dev.jna:jna-platform:5.5.0"
     testImplementation "io.kotest:kotest-runner-junit5-jvm:4.0.0-BETA3"
     testImplementation "io.kotest:kotest-assertions-core-jvm:4.0.0-BETA3"
 }

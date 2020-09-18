@@ -1,6 +1,7 @@
 package com.meamoria.lexurgy.sc
 
 import com.meamoria.lexurgy.BoringErrorListener
+import com.meamoria.lexurgy.LscUserError
 import org.antlr.v4.runtime.*
 import org.antlr.v4.runtime.tree.ParseTree
 
@@ -42,20 +43,49 @@ class LscInterpreter<T>(val walker: LscWalker<T>) {
 }
 
 abstract class LscWalker<T> : LscBaseVisitor<T>() {
-    override fun visitLscfile(ctx: LscParser.LscfileContext): T = walkFile(
-        listVisit(ctx.featuredecl()),
-        listVisit(ctx.diacritic()),
-        listVisit(ctx.symbol()),
-        listVisit(ctx.classdecl()),
-        optionalVisit(ctx.deromanizer()),
-        listVisit(ctx.changerule()),
-        optionalVisit(ctx.romanizer())
-    )
+    override fun visitLscfile(ctx: LscParser.LscfileContext): T {
+        val (changerules, intermediateRomanizers) = visitRulesAndIntermediateRomanizers(ctx)
+        return walkFile(
+            listVisit(ctx.featuredecl()),
+            listVisit(ctx.diacritic()),
+            listVisit(ctx.symbol()),
+            listVisit(ctx.classdecl()),
+            optionalVisit(ctx.deromanizer()),
+            changerules,
+            optionalVisit(ctx.romanizer()),
+            intermediateRomanizers
+        )
+    }
+
+    private fun visitRulesAndIntermediateRomanizers(
+        ctx: LscParser.LscfileContext): Pair<List<T>, List<RomanizerToFollowingRule<T>>> {
+        val changeRules = mutableListOf<T>()
+        val romanizers = mutableListOf<RomanizerToFollowingRule<T>>()
+        var curRomanizer: T? = null
+        for (child: ParseTree in ctx.children) {
+            when(child) {
+                is LscParser.InterromanizerContext -> curRomanizer = visit(child)
+                is LscParser.ChangeruleContext -> {
+                    val rule = visit(child)
+                    changeRules += rule
+                    if (curRomanizer != null) {
+                        romanizers += RomanizerToFollowingRule(curRomanizer, rule)
+                        curRomanizer = null
+                    }
+                }
+            }
+        }
+        return changeRules to romanizers
+    }
+
+    protected data class RomanizerToFollowingRule<T>(val romanizer: T, val rule: T)
 
     override fun visitClassdecl(ctx: LscParser.ClassdeclContext): T = walkClassDeclaration(
         visit(ctx.value()),
-        listVisit(ctx.text())
+        listVisit(ctx.classelement())
     )
+
+    override fun visitClasselement(ctx: LscParser.ClasselementContext): T = visit(ctx.getChild(0))
 
     override fun visitFeaturedecl(ctx: LscParser.FeaturedeclContext): T = walkFeatureDeclaration(
         visit(ctx.feature()),
@@ -67,7 +97,8 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
     override fun visitDiacritic(ctx: LscParser.DiacriticContext): T = walkDiacriticDeclaration(
         ctx.STR1().text!!,
         visit(ctx.matrix()),
-        ctx.DIABEFORE() != null
+        ctx.DIABEFORE() != null,
+        ctx.DIAFLOATING() != null
     )
 
     override fun visitSymbol(ctx: LscParser.SymbolContext): T {
@@ -78,16 +109,24 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
     }
 
     override fun visitDeromanizer(ctx: LscParser.DeromanizerContext): T =
-        walkDeromanizer(listVisit(ctx.ruleexpression()))
+        walkDeromanizer(untlist(visit(ctx.subrules())))
 
-    override fun visitRomanizer(ctx: LscParser.RomanizerContext): T = walkRomanizer(listVisit(ctx.ruleexpression()))
+    override fun visitRomanizer(ctx: LscParser.RomanizerContext): T =
+        walkRomanizer(untlist(visit(ctx.subrules())))
+
+    override fun visitInterromanizer(ctx: LscParser.InterromanizerContext): T =
+        walkIntermediateRomanizer(ctx.rulename().text!!, untlist(visit(ctx.subrules())))
 
     override fun visitChangerule(ctx: LscParser.ChangeruleContext): T = walkChangeRule(
         ctx.rulename().text!!,
-        listVisit(ctx.subrule()),
-        optionalVisit(ctx.matrix()),
+        untlist(visit(ctx.subrules())),
+        optionalVisit(ctx.filter()),
         ctx.PROPAGATE() != null
     )
+
+    override fun visitFilter(ctx: LscParser.FilterContext): T = visit(ctx.getChild(0))
+
+    override fun visitSubrules(ctx: LscParser.SubrulesContext): T = tlist(listVisit(ctx.subrule()))
 
     override fun visitSubrule(ctx: LscParser.SubruleContext): T = walkSubrule(listVisit(ctx.ruleexpression()))
 
@@ -138,6 +177,8 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
 
     override fun visitSimpleelement(ctx: LscParser.SimpleelementContext): T = walkSimpleElement(visit(ctx.getChild(0)))
 
+    override fun visitNegelement(ctx: LscParser.NegelementContext): T = walkNegatedElement(visit(ctx.getChild(1)))
+
     override fun visitClassref(ctx: LscParser.ClassrefContext): T = walkClassReference(visit(ctx.value()))
 
     override fun visitCaptureref(ctx: LscParser.CapturerefContext): T = walkCaptureReference(ctx.NUMBER().text.toInt())
@@ -170,94 +211,106 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
 
     override fun visitValue(ctx: LscParser.ValueContext): T = walkValue(ctx.VALUE().text)
 
-    override fun visitText(ctx: LscParser.TextContext): T = walkText(ctx.text)
+    override fun visitText(ctx: LscParser.TextContext): T = walkText(ctx.getChild(0).text, ctx.NEGATION() != null)
 
-    abstract fun walkFile(
+    protected abstract fun walkFile(
         featureDeclarations: List<T>,
         diacriticDeclarations: List<T>,
         symbolDeclarations: List<T>,
         classDeclarations: List<T>,
         deromanizer: T?,
         changeRules: List<T>,
-        romanizer: T?
+        romanizer: T?,
+        intermediateRomanizers: List<RomanizerToFollowingRule<T>>
     ): T
 
-    abstract fun walkClassDeclaration(className: T, sounds: List<T>): T
+    protected abstract fun walkClassDeclaration(className: T, elements: List<T>): T
 
-    abstract fun walkFeatureDeclaration(
+    protected abstract fun walkFeatureDeclaration(
         featureName: T,
         nullAlias: T?,
         values: List<T>,
         implication: T?
     ): T
 
-    abstract fun walkDiacriticDeclaration(diacritic: String, matrix: T, before: Boolean): T
+    protected abstract fun walkDiacriticDeclaration(
+        diacritic: String, matrix: T, before: Boolean, floating: Boolean
+    ): T
 
-    abstract fun walkSymbolDeclaration(symbol: String, matrix: T? = null): T
+    protected abstract fun walkSymbolDeclaration(symbol: String, matrix: T? = null): T
 
-    abstract fun walkDeromanizer(expressions: List<T>): T
+    protected abstract fun walkDeromanizer(subrules: List<T>): T
 
-    abstract fun walkRomanizer(expressions: List<T>): T
+    protected abstract fun walkRomanizer(subrules: List<T>): T
 
-    abstract fun walkChangeRule(
+    protected abstract fun walkIntermediateRomanizer(ruleName: String, subrules: List<T>): T
+
+    protected abstract fun walkChangeRule(
         ruleName: String,
         subrules: List<T>,
         ruleFilter: T?,
         propagate: Boolean
     ): T
 
-    abstract fun walkSubrule(expressions: List<T>): T
+    protected abstract fun walkSubrule(expressions: List<T>): T
 
-    abstract fun walkRuleExpression(
+    protected abstract fun walkRuleExpression(
         ruleFrom: T,
         ruleTo: T,
         condition: T?,
         exclusion: T?
     ): T
 
-    abstract fun walkRuleEnvironment(
+    protected abstract fun walkRuleEnvironment(
         before: T?,
         after: T?,
         boundaryBefore: Boolean,
         boundaryAfter: Boolean
     ): T
 
-    abstract fun walkRuleSequence(items: List<T>): T
+    protected abstract fun walkRuleSequence(items: List<T>): T
 
-    open fun walkRuleCapture(item: T, capture: T): T = item
+    protected open fun walkRuleCapture(item: T, capture: T): T = item
 
-    open fun walkRuleRepeater(item: T, repeaterType: T): T = item
+    protected open fun walkRuleRepeater(item: T, repeaterType: T): T = item
 
-    abstract fun walkRuleList(items: List<T>): T
+    protected abstract fun walkRuleList(items: List<T>): T
 
-    open fun walkSimpleElement(element: T): T = element
+    protected open fun walkSimpleElement(element: T): T = element
 
-    abstract fun walkEmpty(): T
+    protected abstract fun walkNegatedElement(element: T): T
 
-    abstract fun walkClassReference(value: T): T
+    protected abstract fun walkEmpty(): T
 
-    abstract fun walkCaptureReference(number: Int): T
+    protected abstract fun walkClassReference(value: T): T
 
-    open fun walkRepeaterType(type: RepeaterType): T = throw NotImplementedError()
+    protected abstract fun walkCaptureReference(number: Int): T
 
-    abstract fun walkMatrix(values: List<T>): T
+    protected open fun walkRepeaterType(type: RepeaterType): T = throw NotImplementedError()
 
-    open fun walkNegatedValue(value: T): T = value
+    protected abstract fun walkMatrix(values: List<T>): T
 
-    open fun walkAbsentFeature(feature: T): T = feature
+    protected open fun walkNegatedValue(value: T): T = value
 
-    open fun walkFeatureVariable(feature: T): T = feature
+    protected open fun walkAbsentFeature(feature: T): T = feature
 
-    abstract fun walkFeature(name: String): T
+    protected open fun walkFeatureVariable(feature: T): T = feature
 
-    abstract fun walkValue(name: String): T
+    protected abstract fun walkFeature(name: String): T
 
-    abstract fun walkText(text: String): T
+    protected abstract fun walkValue(name: String): T
+
+    protected abstract fun walkText(text: String, exact: Boolean): T
 
     /**
      * Packages a list of T's into an object that is also a T, so that visit functions can return lists
      */
-    abstract fun tlist(items: List<T>): T
+    protected abstract fun tlist(items: List<T>): T
+
+    /**
+     * Unpackages items from a tlist.
+     */
+    protected abstract fun untlist(list: T): List<T>
 
     private fun listVisit(node: List<ParseTree>): List<T> = node.map { visit(it) }
 
@@ -277,5 +330,6 @@ private class LscErrorListener : BoringErrorListener() {
     }
 }
 
+@Suppress("unused")
 class LscNotParsable(val line: Int, val column: Int, val offendingSymbol: String, message: String) :
-    Exception("$message (Line $line, column $column")
+    LscUserError("$message (Line $line, column $column)")

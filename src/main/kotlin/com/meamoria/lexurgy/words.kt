@@ -11,23 +11,53 @@ interface Word<S : Segment<S>> : Comparable<Word<S>> {
 
     val segments: List<S>
 
-    val segmentsAsWords: Iterable<Word<S>>
-        get() = segments.map { seg -> type.fromSegments(listOf(seg)) }
-
     val length: Int
         get() = segments.size
+
+    val segmentsAsWords: Iterable<Word<S>>
+        get() = segments.map { seg -> type.single(seg) }
+
+    fun reversed(): Word<S> = ReversedWord(this)
 
     operator fun iterator(): Iterator<S> = segments.iterator()
 
     operator fun get(index: Int): S = segments[index]
 
+    fun softGet(index: Int): S? = if (index in 0 until length) this[index] else null
+
     fun slice(indices: IntRange): Word<S> = type.fromSegments(segments.slice(indices))
+
+    fun sliceSegments(indices: IntRange): Iterable<S> = object : Iterable<S> {
+        override fun iterator(): Iterator<S> = object : Iterator<S> {
+            private var cursor = indices.first
+
+            override fun hasNext(): Boolean = cursor <= indices.last
+
+            override fun next(): S = get(cursor).also { cursor++ }
+        }
+    }
 
     fun take(n: Int): Word<S> = type.fromSegments(segments.take(n))
 
     fun drop(n: Int): Word<S> = type.fromSegments(segments.drop(n))
 
     operator fun plus(other: Word<S>): Word<S> = type.fromSegments(segments + other.segments)
+}
+
+// A reversed view of a word
+private class ReversedWord<S : Segment<S>>(val inner: Word<S>) : Word<S> {
+    override val type: SegmentType<S> = inner.type
+
+    override val string: String
+        get() = force().string
+
+    override val segments: List<S> = inner.segments.asReversed()
+
+    override fun compareTo(other: Word<S>): Int = force().compareTo(other)
+
+    private fun force(): Word<S> = type.fromSegments(segments)
+
+    override fun reversed(): Word<S> = inner
 }
 
 interface Segment<S : Segment<S>> {
@@ -37,6 +67,8 @@ interface Segment<S : Segment<S>> {
 interface SegmentType<S : Segment<S>> {
     val empty: Word<S>
         get() = fromSegments(emptyList())
+
+    fun single(segment: S): Word<S> = fromSegments(listOf(segment))
 
     fun fromSegments(segments: Iterable<S>): Word<S>
 
@@ -70,8 +102,8 @@ abstract class StringSegmentWord<S : StringSegment<S>>(private val stringSegment
 
     override val string: String = stringSegments.joinToString("")
 
-    override val segments: List<S>
-        get() = stringSegments.map(type::segmentFromString)
+    @Suppress("LeakingThis")
+    override val segments: List<S> = stringSegments.map(type::segmentFromString)
 
     final override fun toString(): String =
         stringSegments.joinToString(separator = "/", postfix = " (${type.javaClass.simpleName})")
@@ -147,6 +179,7 @@ class PhoneticParser(
                 if (matchType == -1) {
                     // Before diacritic
                     if (coreFound) doneSegment()
+                    coreFound = false
                     cursor += matchString.length
                     if (cursor >= word.length)
                         throw DanglingDiacritic(word, cursor - matchString.length, matchString)
@@ -199,7 +232,8 @@ class PhoneticParser(
 }
 
 data class DiacriticBreakdown(
-    val core: String, val before: List<String> = emptyList(), val after: List<String> = emptyList())
+    val core: String, val before: List<String> = emptyList(), val after: List<String> = emptyList()
+)
 
 class DanglingDiacritic(word: String, position: Int, diacritic: String) :
-        Exception("The diacritic $diacritic at position $position in $word isn't attached to a symbol")
+    UserError("The diacritic $diacritic at position $position in $word isn't attached to a symbol")

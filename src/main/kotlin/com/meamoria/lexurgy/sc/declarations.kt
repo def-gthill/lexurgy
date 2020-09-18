@@ -1,8 +1,6 @@
 package com.meamoria.lexurgy.sc
 
-import com.meamoria.lexurgy.PhoneticParser
-import com.meamoria.lexurgy.PhoneticSegment
-import com.meamoria.lexurgy.Word
+import com.meamoria.lexurgy.*
 import java.util.concurrent.ConcurrentHashMap
 
 class Declarations(
@@ -13,18 +11,24 @@ class Declarations(
 ) {
 
     private val featureNameToFeatureMap = features.associateBy { it.name }
+    private val valueNameToSimpleValue = features.flatMap { it.allValues }.associateBy { it.name }
     private val valueToFeature = features.flatMap { feature ->
         feature.allValues.map { it to feature }
     }.toMap()
-    private val nulls = features.mapNotNull { it.nullAlias }
+    private val defaults = features.map { it.default }
 
     private val diacriticNameToDiacritic = diacritics.associateBy { it.name }
+    private val floatingDiacritics = diacritics.filter { it.floating }
 
-    private val symbolsAsComplexSymbols = symbols.map { ComplexSymbol(it) }
+    private val symbolsAsComplexSymbols = symbols.map { complexSymbol(it) }
     private val symbolNameToSymbol = symbols.associateBy { it.name }
-    private val matrixToSimpleSymbol = symbols.associateBy { it.matrix }
+    private val matrixToSimpleSymbol = symbols.associateBy { it.matrix.removeExplicitDefaults() }
 
+    private val matrixFullValueListCache = ConcurrentHashMap<Matrix, List<MatrixValue>>()
+    private val matrixSimpleValueCache = ConcurrentHashMap<Matrix, Set<SimpleValue>>()
     private val matrixToSymbolCache = ConcurrentHashMap<Matrix, PhoneticSegment>()
+    private val phoneticSegmentToComplexSymbolCache = ConcurrentHashMap<PhoneticSegment, ComplexSymbol>()
+    private val phoneticSegmentMatchCache = ConcurrentHashMap<Pair<PhoneticSegment, PhoneticSegment>, Boolean>()
 
     private val classNameToClass = classes.associateBy { it.name }
 
@@ -42,69 +46,146 @@ class Declarations(
     fun String.toFeature(): Feature =
         featureNameToFeatureMap[this] ?: throw LscUndefinedName("feature", this)
 
+    fun String.toSimpleValue(): SimpleValue =
+        valueNameToSimpleValue[this] ?: throw LscUndefinedName("value", this)
+
     fun String.toClass(): SegmentClass =
         classNameToClass[this] ?: throw LscUndefinedName("sound class", this)
 
     /**
-     * Tries to match the specified matrix to the specified phonetic symbol.
+     * Checks if this segment is the same as the specified pattern plus
+     * any number of floating diacritics.
+     */
+    fun PhoneticSegment.matches(pattern: PhoneticSegment): Boolean {
+        phoneticSegmentMatchCache[this to pattern]?.let { return it }
+
+        if (floatingDiacritics.isEmpty()) return this == pattern
+        val thisSymbol = this.toComplexSymbol() ?: return this == pattern
+        if (!thisSymbol.diacritics.any { it.floating }) return this == pattern
+        val patternSymbol = pattern.toComplexSymbol() ?: return this == pattern
+        return (searchDiacritics(
+            thisSymbol.toMatrix(),
+            listOf(patternSymbol),
+            availableDiacritics = floatingDiacritics
+        ) == this.toComplexSymbol()).also { phoneticSegmentMatchCache[this to pattern] = it }
+    }
+
+    /**
+     * Tries to match the specified matrix to the this phonetic symbol.
      * Returns true if the matrix matched, false otherwise. Binds variables.
      */
     fun PhoneticSegment.matches(matrix: Matrix, bindings: Bindings): Boolean {
-        val complexSymbolMatrix = toMatrix() ?: Matrix(emptyList())
+        val complexSymbolMatrix = (toMatrix() ?: Matrix(emptyList()))
         for (value in matrix.valueList) {
-            val realValue = if (value.isNull())
-                AbsentFeature(valueToFeature.getValue(value as SimpleValue).name)
-            else value
-            if (!realValue.matches(complexSymbolMatrix, bindings)) return false
+            if (!value.matches(complexSymbolMatrix, bindings)) return false
         }
         return true
     }
 
-    private fun MatrixValue.isNull(): Boolean = this in nulls
+    private fun MatrixValue.isDefault(): Boolean = this in defaults
 
-    fun PhoneticSegment.toMatrix(): Matrix? {
+    fun PhoneticSegment.withFloatingDiacriticsFrom(
+        other: PhoneticSegment, excluding: PhoneticSegment? = null
+    ): PhoneticSegment {
+        if (floatingDiacritics.isEmpty()) return this
+        val excludingDiacritics = excluding?.toComplexSymbol()?.diacritics ?: listOf()
+        val otherSymbol = other.toComplexSymbol() ?: return this
+        val otherFloating = otherSymbol.diacritics.filter {
+            it.floating && it !in excludingDiacritics
+        }
+        if (otherFloating.isEmpty()) return this
+        val thisSymbol = this.toComplexSymbol() ?: return this
+        var result = thisSymbol
+        for (diacritic in otherFloating) {
+            if (diacritic !in result.diacritics) result = result.withDiacritic(diacritic)
+        }
+        return result.toPhoneticSegment()
+    }
+
+    fun PhoneticSegment.toComplexSymbol(): ComplexSymbol? {
+        phoneticSegmentToComplexSymbolCache[this]?.let { return it }
+
         val (core, before, after) = phoneticParser.breakDiacritics(string)
         val coreSymbol = symbolNameToSymbol[core] ?: return null
         val diacritics = (before + after).map { diacriticNameToDiacritic.getValue(it) }
-        val complexSymbol = ComplexSymbol(coreSymbol, diacritics)
-        return complexSymbol.toMatrix()
+        return complexSymbol(coreSymbol, diacritics).also {
+            phoneticSegmentToComplexSymbolCache[this] = it
+        }
     }
 
-    private fun ComplexSymbol.toMatrix(): Matrix {
+    fun PhoneticSegment.toMatrix(): Matrix? = toComplexSymbol()?.toMatrix()
+
+    fun Symbol.toPhoneticSegment(): PhoneticSegment = PhoneticSegment(name)
+
+    /**
+     * Creates a ``ComplexSymbol`` with the specified core and diacritics. This
+     * is a member of ``Declarations`` (and the ``ComplexSymbol`` constructor is
+     * marked ``internal``) because it enforces declaration order on the diacritics.
+     */
+    fun complexSymbol(coreSymbol: Symbol, diacritics: Iterable<Diacritic> = emptyList()): ComplexSymbol =
+        ComplexSymbol(coreSymbol, this.diacritics.filter { it in diacritics })
+
+    fun ComplexSymbol.withDiacritic(diacritic: Diacritic): ComplexSymbol =
+        complexSymbol(symbol, diacritics + diacritic)
+
+    fun ComplexSymbol.toMatrix(): Matrix {
         var result = symbol.matrix
         for (diacritic in diacritics) result = result.update(diacritic.matrix)
         return result
     }
 
+    fun ComplexSymbol.toPhoneticSegment(): PhoneticSegment = PhoneticSegment(string)
+
+    val Matrix.fullValueList: List<MatrixValue>
+        get() {
+            matrixFullValueListCache[this]?.let { return it }
+
+            val explicitFeatures = valueList.mapNotNull { valueToFeature[it] }.toSet()
+            val implicitDefaults = features.filter { it !in explicitFeatures }.map { it.default }
+            return (valueList + implicitDefaults).also { matrixFullValueListCache[this] = it }
+        }
+
+    val Matrix.fullValueSet: Set<MatrixValue>
+        get() = fullValueList.toSet()
+
+    val Matrix.simpleValues: Set<SimpleValue>
+        get() {
+            matrixSimpleValueCache[this]?.let { return it }
+
+            return fullValueList.filterIsInstanceTo(mutableSetOf<SimpleValue>()).also {
+                matrixSimpleValueCache[this] = it
+            }
+        }
+
     fun Matrix.toSymbol(): PhoneticSegment {
         matrixToSymbolCache[this]?.let { return it }
 
-        val matrix = removeExplicitNulls()
+        val matrix = removeExplicitDefaults()
 
-        val result = matrixToSimpleSymbol[matrix]?.let {
-            PhoneticSegment(it.name)
-        } ?: searchDiacritics(matrix)?.let {
-            PhoneticSegment(it.string)
-        } ?: throw LscInvalidMatrix(matrix)
+        val result = matrixToSimpleSymbol[matrix]?.toPhoneticSegment()
+            ?: searchDiacritics(matrix)?.toPhoneticSegment()
+            ?: throw LscInvalidMatrix(matrix)
 
         return result.also { matrixToSymbolCache[this] = it }
     }
 
-    private fun Matrix.removeExplicitNulls(): Matrix = Matrix(valueList.filterNot { it.isNull() })
+    private fun Matrix.removeExplicitDefaults(): Matrix = Matrix(valueList.filterNot { it.isDefault() })
 
     private fun searchDiacritics(
         matrix: Matrix,
         candidates: List<ComplexSymbol> = symbolsAsComplexSymbols,
-        bestDistance: Int? = null
+        bestDistance: Int? = null,
+        availableDiacritics: List<Diacritic> = diacritics
     ): ComplexSymbol? {
+        if (availableDiacritics.isEmpty()) return null
         val sortedCandidates = candidates.sortedBy { it.distanceTo(matrix) }
         sortedCandidates.first().takeIf { it.distanceTo(matrix) == 0 }?.let { return it }
 
         for (candidate in sortedCandidates) {
             val candidateDistance = candidate.distanceTo(matrix)
             if (bestDistance != null && candidateDistance >= bestDistance) return null
-            val withDiacritics = diacritics.map(candidate::withDiacritic)
-            searchDiacritics(matrix, withDiacritics, candidateDistance)?.let { return it }
+            val withDiacritics = availableDiacritics.map { candidate.withDiacritic(it) }
+            searchDiacritics(matrix, withDiacritics, candidateDistance, availableDiacritics)?.let { return it }
         }
         return null
     }
@@ -121,15 +202,10 @@ class Declarations(
         val oldMatrixFeatures = simpleValues.associateBy { it.toFeature() }
         val newMatrixValues = valueList.toMutableList()
         for (value in updateMatrix.valueList) {
-            if (value is AbsentFeature) {
-                val updateFeature = value.featureName.toFeature()
-                oldMatrixFeatures[updateFeature]?.let { newMatrixValues.remove(it) }
-            }
-            else {
-                val updateFeature = (value as SimpleValue).toFeature()
-                oldMatrixFeatures[updateFeature]?.let { newMatrixValues.remove(it) }
+            val updateFeature = (value as SimpleValue).toFeature()
+            oldMatrixFeatures[updateFeature]?.let { newMatrixValues.remove(it) }
+            if (!value.isDefault())
                 newMatrixValues += value
-            }
         }
         return Matrix(newMatrixValues)
     }
@@ -143,8 +219,9 @@ class Declarations(
 
 class SegmentClass(val name: String, val sounds: List<String>)
 
-class Feature(val name: String, val values: List<SimpleValue>, val nullAlias: SimpleValue? = null) {
-    val allValues: List<SimpleValue> = listOfNotNull(nullAlias) + values
+class Feature(val name: String, val values: List<SimpleValue>, explicitDefault: SimpleValue? = null) {
+    val default: SimpleValue = explicitDefault ?: SimpleValue.absent(name)
+    val allValues: List<SimpleValue> = listOf(default) + values
 
     override fun toString(): String = values.joinToString(prefix = "$name(", postfix = ")")
 }
@@ -153,19 +230,28 @@ class Symbol(val name: String, val matrix: Matrix) {
     override fun toString(): String = name + if (matrix.valueList.isEmpty()) "" else " $matrix"
 }
 
-class ComplexSymbol(val symbol: Symbol, val diacritics: List<Diacritic> = emptyList()) {
-    val string = (diacritics.filter { it.before }.map { it.name } +
-            listOf(symbol.name) +
-            diacritics.filterNot { it.before }.map { it.name }
-            ).joinToString("")
+/**
+ * A symbol with diacritics.
+ *
+ * The constructor is marked ``internal`` because validation depends on the declarations.
+ * Use the ``complexSymbol`` function in ``Declarations`` to create instances.
+ */
+data class ComplexSymbol internal constructor(val symbol: Symbol, val diacritics: List<Diacritic>) {
 
-    fun withDiacritic(diacritic: Diacritic): ComplexSymbol =
-        ComplexSymbol(symbol, diacritics + diacritic)
+    // Most ComplexSymbol instances never have toString called (they're intermediate results).
+    // Most of the rest have it called only once, when the ComplexSymbol needs to be converted
+    // into something else, usually a PhoneticSegment.
+    // So compute only as needed.
+    val string
+        get() = (diacritics.filter { it.before }.map { it.name } +
+                listOf(symbol.name) +
+                diacritics.filterNot { it.before }.map { it.name }
+                ).joinToString("")
 
     override fun toString(): String = string
 }
 
-data class Diacritic(val name: String, val matrix: Matrix, val before: Boolean)
+data class Diacritic(val name: String, val matrix: Matrix, val before: Boolean, val floating: Boolean)
 
 class LscUndefinedName(val nameType: String, val undefinedName: String) :
-    Exception("The $nameType name $undefinedName is not defined")
+    LscUserError("The $nameType name $undefinedName is not defined")

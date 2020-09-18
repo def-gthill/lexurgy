@@ -211,14 +211,15 @@ class TestLscParse : StringSpec({
             classDeclarations: List<String>,
             deromanizer: String?,
             changeRules: List<String>,
-            romanizer: String?
+            romanizer: String?,
+            intermediateRomanizers: List<RomanizerToFollowingRule<String>>
         ): String = (
                 featureDeclarations + diacriticDeclarations + symbolDeclarations + classDeclarations +
                         listOfNotNull(deromanizer) + changeRules + listOfNotNull(romanizer)
                 ).joinToString()
 
-        override fun walkClassDeclaration(className: String, sounds: List<String>): String =
-            "cdec($className, ${sounds.joinToString()})"
+        override fun walkClassDeclaration(className: String, elements: List<String>): String =
+            "cdec($className, ${elements.joinToString()})"
 
         override fun walkFeatureDeclaration(
             featureName: String,
@@ -231,15 +232,20 @@ class TestLscParse : StringSpec({
             return "fdec($featureName, ${(nullAliasList + values + implicationList).joinToString()})"
         }
 
-        override fun walkDiacriticDeclaration(diacritic: String, matrix: String, before: Boolean): String =
-            "dia($diacritic, $matrix${if (before) ", bf" else ""})"
+        override fun walkDiacriticDeclaration(
+            diacritic: String, matrix: String, before: Boolean, floating: Boolean
+        ): String =
+            "dia($diacritic, $matrix${if (before) ", bf" else ""}${if (floating) ", fl" else ""})"
 
         override fun walkSymbolDeclaration(symbol: String, matrix: String?): String =
             "sym($symbol${optionalArg(matrix)})"
 
-        override fun walkDeromanizer(expressions: List<String>): String = "drom(${expressions.joinToString()})"
+        override fun walkDeromanizer(subrules: List<String>): String = "drom(${subrules.joinToString()})"
 
-        override fun walkRomanizer(expressions: List<String>): String = "rom(${expressions.joinToString()})"
+        override fun walkRomanizer(subrules: List<String>): String = "rom(${subrules.joinToString()})"
+
+        override fun walkIntermediateRomanizer(ruleName: String, subrules: List<String>): String =
+            "introm($ruleName, ${subrules.joinToString()})"
 
         override fun walkChangeRule(
             ruleName: String,
@@ -278,6 +284,8 @@ class TestLscParse : StringSpec({
 
         override fun walkRuleList(items: List<String>): String = "list(${items.joinToString()})"
 
+        override fun walkNegatedElement(element: String): String = "!${element}"
+
         override fun walkEmpty(): String = "null"
 
         override fun walkClassReference(value: String): String = "c($value)"
@@ -290,9 +298,11 @@ class TestLscParse : StringSpec({
 
         override fun walkFeature(name: String): String = "f($name)"
 
-        override fun walkText(text: String): String = text
+        override fun walkText(text: String, exact: Boolean): String = text + if (exact) "!" else ""
 
-        override fun tlist(items: List<String>): String = items.joinToString()
+        override fun tlist(items: List<String>): String = items.joinToString("|")
+
+        override fun untlist(list: String): List<String> = list.split("|")
 
         private fun optionalArg(inText: String?, outText: String? = null): String =
             if (inText == null) "" else (outText ?: ", $inText")

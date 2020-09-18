@@ -2,21 +2,25 @@ grammar Lsc;
 
 lscfile:
     (featuredecl NEWLINE+)* (diacritic NEWLINE+)* (symbol NEWLINE+)* (classdecl NEWLINE+)* (deromanizer NEWLINE+)?
-    changerule? (NEWLINE+ changerule)*
+    changerule? ((NEWLINE+ (changerule | interromanizer))* NEWLINE+ changerule)?
     (NEWLINE+ romanizer)?
-    NEWLINE? EOF;
+    NEWLINE* EOF;
 
-classdecl: CLASSDECL WHITESPACE value WHITESPACE LISTSTART text (SEP text)* LISTEND;
+classdecl: CLASSDECL WHITESPACE value WHITESPACE LISTSTART classelement (SEP classelement)* LISTEND;
+classelement: classref | text;
 featuredecl: FEATUREDECL WHITESPACE feature OPAREN (nullalias SEP)? value (SEP value)* CPAREN (CHANGE matrix)?;
 nullalias: NULL value;
-diacritic: DIACRITIC WHITESPACE STR1 WHITESPACE (DIABEFORE WHITESPACE)? matrix;
+diacritic: DIACRITIC WHITESPACE STR1 WHITESPACE (DIABEFORE WHITESPACE)? (DIAFLOATING WHITESPACE)? matrix;
 symbol: SYMBOL WHITESPACE symbolname ((SEP symbolname)* | WHITESPACE matrix);
 symbolname: text;
 
-deromanizer: DEROMANIZER RULESTART (NEWLINE+ ruleexpression)+;
-romanizer: ROMANIZER RULESTART (NEWLINE+ ruleexpression)+;
+deromanizer: DEROMANIZER RULESTART NEWLINE subrules;
+romanizer: ROMANIZER RULESTART NEWLINE subrules;
+interromanizer: ROMANIZER HYPHEN rulename RULESTART NEWLINE subrules;
 
-changerule: rulename (WHITESPACE matrix)? (WHITESPACE PROPAGATE)? RULESTART NEWLINE subrule (NEWLINE SUBRULE RULESTART (WHITESPACE | NEWLINE) subrule)*;
+changerule: rulename (WHITESPACE filter)? (WHITESPACE PROPAGATE)? RULESTART NEWLINE subrules;
+filter: classref | matrix;
+subrules: subrule (NEWLINE SUBRULE RULESTART (WHITESPACE | NEWLINE) subrule)*;
 subrule: ruleexpression (NEWLINE ruleexpression)*;
 rulename: VALUE (HYPHEN VALUE)*;
 ruleexpression: rulefrom CHANGE ruleto (CONDITION condition)? (EXCLUSION exclusion)?;
@@ -33,11 +37,12 @@ ruleafter: ruleelement;
 ruleelement: rulecapture | rulerepeater | rulegroup | rulelist | simpleelement | rulesequence;
 rulesequence: sequenceelement (WHITESPACE sequenceelement)+;
 sequenceelement: rulecapture | rulerepeater | rulegroup | rulelist | simpleelement;
-rulecapture: (rulegroup | rulelist | classref | fancymatrix) captureref;
+rulecapture: (rulegroup | rulelist | negelement | classref | fancymatrix) captureref;
 rulerepeater: (rulegroup | rulelist | simpleelement) repeatertype;
 rulegroup: OPAREN ruleelement CPAREN;
 rulelist: LISTSTART ruleelement (SEP ruleelement)* LISTEND;
-simpleelement: classref | captureref | fancymatrix | empty | text;
+simpleelement: negelement | classref | captureref | fancymatrix | empty | text;
+negelement: NEGATION classref;
 classref: CLASSREF value;
 captureref: WORDBOUNDARY NUMBER;
 fancymatrix: MATSTART fancyvalue? (WHITESPACE fancyvalue)* MATEND;
@@ -51,9 +56,9 @@ repeatertype: ATLEASTONE | NULL | OPTIONAL;
 matrix: MATSTART value? (WHITESPACE value)* MATEND;
 feature: FEATURE;
 value: VALUE;
-text: FEATURE | VALUE | STR1 | STR;
+text: (FEATURE | VALUE | STR1 | STR) NEGATION?;
 
-COMMENT: (WHITESPACE? COMMENTSTART ~[\n\r]*) -> skip;
+COMMENT: (WHITESPACE? COMMENTSTART ~[\n\r]* NEWLINE*) -> skip;
 SEP: ',' WHITESPACE?;
 CHANGE: WHITESPACE? '=>' WHITESPACE?;
 CONDITION: WHITESPACE? '/' WHITESPACE?;
@@ -79,6 +84,7 @@ CLASSDECL: 'Class';
 FEATUREDECL: 'Feature';
 DIACRITIC: 'Diacritic';
 DIABEFORE: '(before)';
+DIAFLOATING: '(floating)';
 SYMBOL: 'Symbol';
 DEROMANIZER: 'Deromanizer';
 ROMANIZER: 'Romanizer';
