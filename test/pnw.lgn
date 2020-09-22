@@ -1,0 +1,16 @@
+Class final {p, t, c, k, f, s, sh, m, n}
+Class cons {ph, th, ch, kh, bh, dh, jh, gh, b, d, j, g, nh, @final}
+Class vowel {i, e, a, u, o}
+
+Pattern maybelong:
+    @vowel ː?
+
+Syllables:
+    Only: @cons? @maybelong @final?
+    First: @cons? @maybelong
+    Middle: @cons @maybelong
+    Last: @cons @vowel @final?
+
+Max-Syllables 2
+
+Generate 3

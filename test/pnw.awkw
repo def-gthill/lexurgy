@@ -1,0 +1,6 @@
+#awkwords version 1.2
+C:ph/th/ch/kh/bh/dh/jh/gh/p/t/c/k/b/d/j/g/f/s/sh/m/n/nh
+F:p/t/c/k/f/s/sh/m/n
+V:i/e/a/u/o
+r:(C)V(:)(CV(:))(F)
+n:3
