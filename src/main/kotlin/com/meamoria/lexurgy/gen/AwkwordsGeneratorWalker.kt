@@ -14,10 +14,10 @@ class AwkwordsGeneratorWalker : AwkwordsWalker<AwkwordsGeneratorWalker.Generator
 
     override fun walkAtom(text: String): GeneratorNode = GeneratorNode { text }
 
-    class GeneratorNode(val generator: AwkwordsGenerator, val name: String? = null, val weight: Int = 0) {
-        constructor(generatorRule: AwkwordsGenerator.(AwkwordsGenerator.Request) -> String) :
-                this(AwkwordsGenerator(generatorRule))
+    class GeneratorNode(val generator: Generator, val name: String? = null, val weight: Int = 0) {
+        constructor(generatorRule: Generator.(Generator.Request) -> String) :
+                this(Generator(generatorRule))
 
-        fun runRule(request: AwkwordsGenerator.Request): String = generator.runRule(request)
+        fun runRule(request: Generator.Request): String = generator.runRule(request)
     }
 }

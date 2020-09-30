@@ -9,7 +9,7 @@ Syllables:
     Only: @cons? @maybelong @final?
     First: @cons? @maybelong
     Middle: @cons @maybelong
-    Last: @cons @vowel @final?
+    Last: @cons @maybelong @final?
 
 Max-Syllables 2
 

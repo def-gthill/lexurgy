@@ -1,8 +1,8 @@
 package com.meamoria.lexurgy.gen
 
-class AwkwordsGenerator(
-    val rule: AwkwordsGenerator.(Request) -> String,
-    val subpatterns: Map<String, AwkwordsGenerator> = emptyMap()
+class Generator(
+    val rule: Generator.(Request) -> String,
+    val subpatterns: Map<String, Generator> = emptyMap()
 ) {
     fun runRule(request: Request): String = rule(request)
 

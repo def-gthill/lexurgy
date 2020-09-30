@@ -1,11 +1,13 @@
 package com.meamoria.lexurgy.sc
 
 import com.meamoria.lexurgy.BoringErrorListener
+import com.meamoria.lexurgy.Interpreter
 import com.meamoria.lexurgy.LscUserError
+import com.meamoria.lexurgy.Walker
 import org.antlr.v4.runtime.*
 import org.antlr.v4.runtime.tree.ParseTree
 
-class LscInterpreter<T>(val walker: LscWalker<T>) {
+class LscInterpreter<T>(val walker: LscWalker<T>) : Interpreter<T, LscParser>(walker) {
     fun parseFile(text: String): T = parseAndWalk(text) { it.lscfile() }
 
     fun parseFeatureDeclaration(text: String): T = parseAndWalk(text) { it.featuredecl() }
@@ -26,23 +28,16 @@ class LscInterpreter<T>(val walker: LscWalker<T>) {
 
     fun parseValue(text: String): T = parseAndWalk(text) { it.value() }
 
-    private fun parseAndWalk(text: String, parser: (LscParser) -> ParseTree): T {
-        val inputStream = CharStreams.fromString(text)
-        val lexer = LscLexer(inputStream)
-        val tokenStream = CommonTokenStream(lexer)
-        val tree = parser(makeLscParser(tokenStream))
-        return walker.visit(tree)!!
-    }
+    override fun lexerFor(inputStream: CharStream): Lexer = LscLexer(inputStream)
 
-    private fun makeLscParser(stream: TokenStream): LscParser {
-        val parser = LscParser(stream)
-        parser.removeErrorListeners()
-        parser.addErrorListener(LscErrorListener())
-        return parser
-    }
+    override fun parserFor(tokenStream: TokenStream): LscParser =
+        LscParser(tokenStream).apply {
+            removeErrorListeners()
+            addErrorListener(LscErrorListener())
+        }
 }
 
-abstract class LscWalker<T> : LscBaseVisitor<T>() {
+abstract class LscWalker<T> : LscBaseVisitor<T>(), Walker<T> {
     override fun visitLscfile(ctx: LscParser.LscfileContext): T {
         val (changerules, intermediateRomanizers) = visitRulesAndIntermediateRomanizers(ctx)
         return walkFile(
@@ -311,10 +306,6 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
      * Unpackages items from a tlist.
      */
     protected abstract fun untlist(list: T): List<T>
-
-    private fun listVisit(node: List<ParseTree>): List<T> = node.map { visit(it) }
-
-    private fun optionalVisit(node: ParseTree?): T? = node?.let { visit(it) }
 }
 
 private class LscErrorListener : BoringErrorListener() {

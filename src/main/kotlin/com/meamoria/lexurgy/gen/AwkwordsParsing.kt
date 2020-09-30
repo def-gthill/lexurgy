@@ -1,10 +1,12 @@
 package com.meamoria.lexurgy.gen
 
 import com.meamoria.lexurgy.BoringErrorListener
+import com.meamoria.lexurgy.Interpreter
+import com.meamoria.lexurgy.Walker
 import org.antlr.v4.runtime.*
 import org.antlr.v4.runtime.tree.ParseTree
 
-class AwkwordsInterpreter<T>(val walker: AwkwordsWalker<T>) {
+class AwkwordsInterpreter<T>(val walker: AwkwordsWalker<T>) : Interpreter<T, AwkwordsParser>(walker) {
 
     fun parsePattern(text: String): T = parseAndWalk(text) { it.pattern() }
 
@@ -16,23 +18,16 @@ class AwkwordsInterpreter<T>(val walker: AwkwordsWalker<T>) {
 
     fun parseSubreference(text: String): T = parseAndWalk(text) { it.subref() }
 
-    private fun parseAndWalk(text: String, parser: (AwkwordsParser) -> ParseTree): T {
-        val inputStream = CharStreams.fromString(text)
-        val lexer = AwkwordsLexer(inputStream)
-        val tokenStream = CommonTokenStream(lexer)
-        val tree = parser(makeAwkwordsParser(tokenStream))
-        return walker.visit(tree)!!
-    }
+    override fun lexerFor(inputStream: CharStream): Lexer = AwkwordsLexer(inputStream)
 
-    private fun makeAwkwordsParser(stream: TokenStream): AwkwordsParser {
-        val parser = AwkwordsParser(stream)
-        parser.removeErrorListeners()
-        parser.addErrorListener(AwkwordsErrorListener())
-        return parser
-    }
+    override fun parserFor(tokenStream: TokenStream): AwkwordsParser =
+        AwkwordsParser(tokenStream).apply {
+            removeErrorListeners()
+            addErrorListener(AwkwordsErrorListener())
+        }
 }
 
-abstract class AwkwordsWalker<T> : AwkwordsBaseVisitor<T>() {
+abstract class AwkwordsWalker<T> : AwkwordsBaseVisitor<T>(), Walker<T> {
     override fun visitAlternative(ctx: AwkwordsParser.AlternativeContext): T =
         walkAlternative(listVisit(ctx.weightedchoice()))
 
@@ -53,8 +48,6 @@ abstract class AwkwordsWalker<T> : AwkwordsBaseVisitor<T>() {
     abstract fun walkSubref(name: String): T
 
     abstract fun walkAtom(text: String): T
-
-    private fun listVisit(node: List<ParseTree>): List<T> = node.map { visit(it) }
 }
 
 private class AwkwordsErrorListener : BoringErrorListener() {
