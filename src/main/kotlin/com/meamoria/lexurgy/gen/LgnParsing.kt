@@ -15,6 +15,8 @@ class LgnInterpreter<T>(val walker: LgnWalker<T>) : Interpreter<T, LgnParser>(wa
 
     fun parseOptional(text: String): T = parseAndWalk(text) { it.optional() }
 
+    fun parseList(text: String): T = parseAndWalk(text) { it.list() }
+
     override fun lexerFor(inputStream: CharStream): Lexer = LgnLexer(inputStream)
 
     override fun parserFor(tokenStream: TokenStream): LgnParser =
@@ -39,6 +41,12 @@ abstract class LgnWalker<T> : LgnBaseVisitor<T>(), Walker<T> {
 
     override fun visitSequenceelement(ctx: LgnParser.SequenceelementContext): T = visit(ctx.getChild(0))
 
+    override fun visitList(ctx: LgnParser.ListContext): T = walkList(listVisit(ctx.pattern()))
+
+    override fun visitOptional(ctx: LgnParser.OptionalContext): T = walkOptional(visit(ctx.getChild(0)))
+
+    override fun visitSimple(ctx: LgnParser.SimpleContext): T = visit(ctx.getChild(0))
+
     override fun visitClassref(ctx: LgnParser.ClassrefContext): T = walkClassReference(visit(ctx.name()))
 
     override fun visitName(ctx: LgnParser.NameContext): T = walkText(ctx.text)
@@ -50,6 +58,10 @@ abstract class LgnWalker<T> : LgnBaseVisitor<T>(), Walker<T> {
     protected abstract fun walkClassReference(className: T): T
 
     protected abstract fun walkSequence(items: List<T>): T
+
+    protected abstract fun walkOptional(item: T): T
+
+    protected abstract fun walkList(items: List<T>): T
 
     protected abstract fun walkText(text: String): T
 }

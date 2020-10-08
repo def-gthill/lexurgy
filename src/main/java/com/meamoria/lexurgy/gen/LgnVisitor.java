@@ -47,6 +47,18 @@ public interface LgnVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitOptional(LgnParser.OptionalContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link LgnParser#list}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitList(LgnParser.ListContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link LgnParser#simple}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitSimple(LgnParser.SimpleContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link LgnParser#classref}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

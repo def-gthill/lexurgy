@@ -1,13 +1,15 @@
 grammar Lgn;
 
 classdecl: CLASSDECL WHITESPACE name WHITESPACE LISTSTART classelement (SEP classelement)* LISTEND;
-classelement: optional | classref | text;
+classelement: classref | text;
 
-pattern: sequence;
+pattern: simple | sequence;
 sequence: sequenceelement (WHITESPACE sequenceelement)+;
-sequenceelement: classref | text;
-optional: (classref | text) OPTIONAL;
+sequenceelement: optional | list | simple;
+optional: (list | simple) OPTIONAL;
+list: LISTSTART pattern (SEP pattern)* LISTEND;
 
+simple: classref | text;
 classref: CLASSREF name;
 
 name: NAME;
