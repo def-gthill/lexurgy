@@ -5,17 +5,17 @@ import com.meamoria.lexurgy.Interpreter
 import com.meamoria.lexurgy.Walker
 import org.antlr.v4.runtime.*
 
-class LgnInterpreter<T>(val walker: LgnWalker<T>) : Interpreter<T, LgnParser>(walker) {
+object LgnInterpreter : Interpreter<GeneratorNode, LgnParser>(LgnWalker) {
 
-    fun parseClassDeclaration(text: String): T = parseAndWalk(text) { it.classdecl() }
+    fun parseClassDeclaration(text: String): GeneratorNode = parseAndWalk(text) { it.classdecl() }
 
-    fun parsePattern(text: String): T = parseAndWalk(text) { it.pattern() }
+    fun parsePattern(text: String): GeneratorNode = parseAndWalk(text) { it.pattern() }
 
-    fun parseSequence(text: String): T = parseAndWalk(text) { it.sequence() }
+    fun parseSequence(text: String): GeneratorNode = parseAndWalk(text) { it.sequence() }
 
-    fun parseOptional(text: String): T = parseAndWalk(text) { it.optional() }
+    fun parseOptional(text: String): GeneratorNode = parseAndWalk(text) { it.optional() }
 
-    fun parseList(text: String): T = parseAndWalk(text) { it.list() }
+    fun parseList(text: String): GeneratorNode = parseAndWalk(text) { it.list() }
 
     override fun lexerFor(inputStream: CharStream): Lexer = LgnLexer(inputStream)
 
@@ -26,44 +26,70 @@ class LgnInterpreter<T>(val walker: LgnWalker<T>) : Interpreter<T, LgnParser>(wa
         }
 }
 
-abstract class LgnWalker<T> : LgnBaseVisitor<T>(), Walker<T> {
-    override fun visitClassdecl(ctx: LgnParser.ClassdeclContext): T = walkClassDeclaration(
-        visit(ctx.name()),
-        listVisit(ctx.classelement())
-    )
+object LgnWalker : LgnBaseVisitor<GeneratorNode>(), Walker<GeneratorNode> {
+    override fun visitClassdecl(ctx: LgnParser.ClassdeclContext): GeneratorNode =
+        walkClassDeclaration(
+            visit(ctx.name()),
+            listVisit(ctx.classelement())
+        )
 
-    override fun visitClasselement(ctx: LgnParser.ClasselementContext): T = visit(ctx.getChild(0))
+    override fun visitClasselement(ctx: LgnParser.ClasselementContext): GeneratorNode =
+        visit(ctx.getChild(0))
 
-    override fun visitPattern(ctx: LgnParser.PatternContext): T = visit(ctx.getChild(0))
+    override fun visitPattern(ctx: LgnParser.PatternContext): GeneratorNode =
+        visit(ctx.getChild(0))
 
-    override fun visitSequence(ctx: LgnParser.SequenceContext): T =
+    override fun visitSequence(ctx: LgnParser.SequenceContext): GeneratorNode =
         walkSequence(listVisit(ctx.sequenceelement()))
 
-    override fun visitSequenceelement(ctx: LgnParser.SequenceelementContext): T = visit(ctx.getChild(0))
+    override fun visitSequenceelement(ctx: LgnParser.SequenceelementContext): GeneratorNode =
+        visit(ctx.getChild(0))
 
-    override fun visitList(ctx: LgnParser.ListContext): T = walkList(listVisit(ctx.pattern()))
+    override fun visitList(ctx: LgnParser.ListContext): GeneratorNode =
+        walkList(listVisit(ctx.pattern()))
 
-    override fun visitOptional(ctx: LgnParser.OptionalContext): T = walkOptional(visit(ctx.getChild(0)))
+    override fun visitOptional(ctx: LgnParser.OptionalContext): GeneratorNode =
+        walkOptional(visit(ctx.getChild(0)))
 
-    override fun visitSimple(ctx: LgnParser.SimpleContext): T = visit(ctx.getChild(0))
+    override fun visitSimple(ctx: LgnParser.SimpleContext): GeneratorNode =
+        visit(ctx.getChild(0))
 
-    override fun visitClassref(ctx: LgnParser.ClassrefContext): T = walkClassReference(visit(ctx.name()))
+    override fun visitClassref(ctx: LgnParser.ClassrefContext): GeneratorNode =
+        walkClassReference(visit(ctx.name()))
 
-    override fun visitName(ctx: LgnParser.NameContext): T = walkText(ctx.text)
+    override fun visitName(ctx: LgnParser.NameContext): GeneratorNode =
+        walkText(ctx.text)
 
-    override fun visitText(ctx: LgnParser.TextContext): T = walkText(ctx.text)
+    override fun visitText(ctx: LgnParser.TextContext): GeneratorNode =
+        walkText(ctx.text)
 
-    protected abstract fun walkClassDeclaration(className: T, elements: List<T>): T
+    private fun walkClassDeclaration(className: GeneratorNode, elements: List<GeneratorNode>): GeneratorNode =
+        TODO()
 
-    protected abstract fun walkClassReference(className: T): T
+    private fun walkClassReference(className: GeneratorNode): GeneratorNode =
+        TODO()
 
-    protected abstract fun walkSequence(items: List<T>): T
+    private fun walkSequence(items: List<GeneratorNode>): GeneratorNode =
+        TODO()
 
-    protected abstract fun walkOptional(item: T): T
+    private fun walkOptional(item: GeneratorNode): GeneratorNode =
+        TODO()
 
-    protected abstract fun walkList(items: List<T>): T
+    private fun walkList(items: List<GeneratorNode>): GeneratorNode =
+        TODO()
 
-    protected abstract fun walkText(text: String): T
+    private fun walkText(text: String): GeneratorNode =
+        TODO()
+}
+
+interface GeneratorNode {
+    /**
+     * Retrieves the generator represented by this parse tree node
+     */
+    fun generator(): Generator
+
+    // Then override toString() to get the string representations we
+    // use when testing the parser.
 }
 
 private class LgnErrorListener : BoringErrorListener() {
