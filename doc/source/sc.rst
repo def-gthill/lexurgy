@@ -90,7 +90,8 @@ Alternative environments
 ************************
 
 The alternative list mechanism can be used not just for sounds, but for entire environments.
-For example, this rule
+
+.. TODO examples
 
 Word boundaries
 ***************
@@ -133,14 +134,34 @@ specify exceptions to a rule using a double slash::
 Compound Rules
 ~~~~~~~~~~~~~~
 
+You can put several rules under one rule name. This helps keep the file organized, grouping
+related changes together.
+
 Simultaneous Subrules
 *********************
 
-You can put several rules under a single rule name. This tells Lexurgy to apply all of these
-rules simultaneously.
+By default, compound rules are executed simultaneously.
+This is useful for "chain shifts". For example::
+
+    chain-shift:
+        {pʰ, tʰ, kʰ} => {p, t, k}
+        {p, t, k} => {b, d, g}
+        {b, d, g} => {v, ð, ɣ}
+
+If these were separate rules, then a proto-language ``pʰ`` would pass through each
+rule in turn, becoming first ``p``, then ``b``, then ``v``. But since they're
+written as subrules, the second subrule can't apply to the output of the first,
+so the result is a ``p``.
+
+.. TODO examples
 
 Sequential Subrules
 *******************
+
+If you put ``Then:`` between two subrules, then Lexurgy will apply them sequentially instead of
+simultaneously, as if they were separate rules.
+
+.. TODO examples
 
 Sound classes
 ~~~~~~~~~~~~~
