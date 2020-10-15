@@ -220,14 +220,16 @@ can take.
 
 In terms of distinctive feature theory, the ``voiced`` value is +voiced, the ``unvoiced``
 value is -voiced, and an absence of the ``Voicing`` feature (written ``*Voicing``) is
-\*voiced. Feature names must start with an uppercase letter, while feature values
-must be all lowercase.
+\*voiced.
 
 But features can have any number of values. It might be more convenient to
 just recreate the IPA chart::
 
     Feature Place(labial, alveolar, velar, glottal)
     Feature Manner(stop, fricative, nasal, approximant)
+
+Feature names must start with an uppercase letter, while feature values
+must be all lowercase.
 
 Once you've defined features, you can define *symbols* in terms of *matrices* of features::
 
