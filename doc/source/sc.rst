@@ -396,10 +396,10 @@ use intermediate romanizers.
 
 .. TODO more
 
-You need to specify the :option:`-m` command-line argument in order for
-intermediate romanizers to activate.
-
 .. only:: not public
+
+    You need to specify the :option:`-m` command-line argument in order for
+    intermediate romanizers to activate.
 
     Command-line arguments
     ----------------------
