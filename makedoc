@@ -1,1 +1,1 @@
-cd ./doc && make html
+cd ./doc && make BUILDDIR=build-public SPHINXOPTS="-a -E -t public"  html
