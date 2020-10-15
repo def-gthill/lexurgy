@@ -204,10 +204,86 @@ Feature matrices
 ~~~~~~~~~~~~~~~~
 
 Another, more flexible way of generalizing rules is to define each sound as a
-matrix of features. This is inspired by distinctive feature theory (via Bangs's Phonix),
+matrix of feature values. This is inspired by distinctive feature theory (via Bangs's Phonix),
 but the syntax is designed for practical conlanging rather than theoretical soundness.
 In addition, not every sound needs to be defined with features, so you can freely
 mix feature matrices with sound classes and plain text in your rules.
+
+You can define features like this::
+
+    Feature Voicing(unvoiced, voiced)
+    Feature Nasality(nonnasal, nasal)
+
+In this example, ``Voicing`` and ``Nasality`` are *features*, while
+``unvoiced`` and ``voiced`` are the *values* that the ``Voicing`` feature
+can take.
+
+In terms of distinctive feature theory, the ``voiced`` value is +voiced, the ``unvoiced``
+value is -voiced, and an absence of the ``Voicing`` feature (written ``*Voicing``) is
+\*voiced. Feature names must start with an uppercase letter, while feature values
+must be all lowercase.
+
+But features can have any number of values. It might be more convenient to
+just recreate the IPA chart::
+
+    Feature Place(labial, alveolar, velar, glottal)
+    Feature Manner(stop, fricative, nasal, approximant)
+
+Once you've defined features, you can define *symbols* in terms of *matrices* of features::
+
+    Symbol p [unvoiced labial stop]
+    Symbol b [voiced labial stop]
+    Symbol t [unvoiced alveolar stop]
+    ...
+    Symbol l [alveolar approximant]
+
+Note that we didn't specify a voicing for ``l``, so it automatically has the value
+``*Voicing``, i.e. it lacks the voicing feature entirely.
+
+Usually it's best to use IPA for symbols, but you can define whatever symbols
+you like if it suits your language.
+
+Now you can use feature values in your rules::
+
+    intervocalic-lenition:
+        [stop] => [voiced] / @vowel _ @vowel
+        [voiced stop] => [fricative] / @vowel _ @vowel
+        [unvoiced fricative] => h / @vowel _ @vowel
+
+The matrices to the left match any symbol with that feature, even if it has other
+features too; so ``[stop]`` matches the ``[unvoiced labial stop]`` of a /p/,
+the ``[voiced alveolar stop]`` of a /d/, etc. If you only want to accept
+symbols that lack a given feature, you have to explicitly specify the absent
+feature; e.g. ``[alveolar *Voicing]`` only matches alveolar sounds that lack
+the voicing feature.
+
+The matrices to the right indicate how the feature matrix should be modified.
+Features not mentioned in the matrix are left unchanged. For example,
+the second rule turns /d/ ``[voiced alveolar stop]`` into /ð/
+``[voiced alveolar fricative]``, changing the ``Manner`` feature from
+``[stop]`` to ``[fricative]`` while leaving ``[voiced alveolar]`` unchanged.
+If you want to delete a feature, you have to specify the absent feature
+explicitly (e.g. ``[*Voicing]`` to delete ``voiced`` or ``unvoiced``
+from the matrix).
+
+.. note::
+    Any characters in an input word that don't match symbols are considered to
+    lack all features, so they'll only match matrices consisting entirely
+    of absent features, like ``[*Voicing *Nasality]``, or the empty matrix ``[]``.
+
+.. caution::
+    It's possible for a rule to create a matrix that has no matching symbol;
+    for example, if all nasals in your language are voiced, the rule
+    ``[nasal] => [unvoiced]`` will create matrices like ``[unvoiced alveolar nasal]``
+    that you haven't defined a symbol for. In such cases, Lexurgy will stop
+    and report an error, telling you what matrix it couldn't interpret and
+    which rule produced the ill-formed matrix. Fix the problem either by
+    defining a symbol to go with the matrix (or a :ref:`diacritic <sc-diacritics>`),
+    or by rewriting the rule so it produces valid sounds.
+
+    Rules that delete all features from a sound are always invalid, and
+    will lead to errors.
+
 
 Feature variables
 *****************
@@ -217,6 +293,8 @@ Absent features and null aliases
 
 Negated features
 ****************
+
+.. _sc-diacritics:
 
 Diacritics
 **********
