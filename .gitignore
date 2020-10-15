@@ -116,3 +116,4 @@ hs_err_pid*
 /test/*.wlm
 /test/*trace.wli
 /doc/build/*
+/doc/build-public/*

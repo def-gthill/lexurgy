@@ -41,6 +41,9 @@ templates_path = ['_templates']
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = []
 
+# noinspection PyUnresolvedReferences
+if tags.has("public"):
+    exclude_patterns += ["gen.rst"]
 
 # -- Options for HTML output -------------------------------------------------
 

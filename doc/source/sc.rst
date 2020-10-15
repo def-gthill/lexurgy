@@ -2,18 +2,20 @@
 Lexurgy SC
 ===========
 
-Run SC using the command line::
+.. only:: not public
 
-    lexurgy sc changes words
+    Run SC using the command line::
 
-The ``changes`` file needs to use the Lexurgy SC format; by convention these have a
-.lsc extension.
+        lexurgy sc changes words
 
-The ``words`` argument should be a text file with each old-language word on a separate line.
-By convention, this file should have a .wli extension.
+    The ``changes`` file needs to use the Lexurgy SC format; by convention these have a
+    .lsc extension.
 
-The Lexurgy SC file format
----------------------------
+    The ``words`` argument should be a text file with each old-language word on a separate line.
+    By convention, this file should have a .wli extension.
+
+    The Lexurgy SC file format
+    ---------------------------
 
 Basics
 ~~~~~~
@@ -298,23 +300,25 @@ use intermediate romanizers.
 You need to specify the :option:`-m` command-line argument in order for
 intermediate romanizers to activate.
 
-Command-line arguments
-----------------------
+.. only:: not public
 
-Lexurgy offers a variety of command-line arguments to customize its behaviour.
+    Command-line arguments
+    ----------------------
 
-.. option:: -a <rule>, --start-at <rule>
+    Lexurgy offers a variety of command-line arguments to customize its behaviour.
 
-    If this is specified, Lexurgy will ignore every rule before the specified rule
-    (including the deromanizer). This is useful if you want to introduce loanwords
-    or affixes partway through the language's history.
+    .. option:: -a <rule>, --start-at <rule>
 
-.. option:: -b <rule>, --stop-before <rule>
+        If this is specified, Lexurgy will ignore every rule before the specified rule
+        (including the deromanizer). This is useful if you want to introduce loanwords
+        or affixes partway through the language's history.
 
-    If this is specified, Lexurgy will ignore the specified rule and every rule
-    after it. This is useful if you want to evolve some forms partway, then
-    modify them and resume (using :option:`-a`).
+    .. option:: -b <rule>, --stop-before <rule>
 
-.. option:: -m, --intermediates
+        If this is specified, Lexurgy will ignore the specified rule and every rule
+        after it. This is useful if you want to evolve some forms partway, then
+        modify them and resume (using :option:`-a`).
 
-    This activates :ref:`intermediate romanizers <sc-intermediate-romanizers>`.
+    .. option:: -m, --intermediates
+
+        This activates :ref:`intermediate romanizers <sc-intermediate-romanizers>`.
