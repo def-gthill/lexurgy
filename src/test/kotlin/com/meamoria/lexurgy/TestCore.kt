@@ -1,9 +1,8 @@
 package com.meamoria.lexurgy
 
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
-import com.meamoria.lexurgy.SegmentTree
-import io.kotest.assertions.throwables.shouldThrow
 
 class TestCore : StringSpec({
     "We should be able to create a SegmentTree from a Map" {
