@@ -1,34 +1,117 @@
 plugins {
-    id 'org.jetbrains.kotlin.jvm' version '1.3.72'
+    id 'java'
+    id 'org.jetbrains.kotlin.multiplatform' version '1.4.10'
     id 'application'
 }
 
 group 'com.meamoria'
-version '0.7.2'
+version '0.8.0'
 
 repositories {
     mavenCentral()
 }
 
-test {
-    useJUnitPlatform()
-}
+def jsCompiledFilename = "build/js/packages/lexurgy/kotlin/lexurgy.js"
+def jsRequires = """
+var LscLexer = require('./LscLexer').LscLexer;
+var LscParser = require('./LscParser').LscParser;
+var LscVisitor = require('./LscVisitor').LscVisitor;
+"""
 
-dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
-    implementation "org.antlr:antlr4-runtime:4.7.2"
-    implementation "com.github.ajalt:clikt:2.7.0"
-    implementation "net.java.dev.jna:jna:5.5.0"
-    implementation "net.java.dev.jna:jna-platform:5.5.0"
-    testImplementation "io.kotest:kotest-runner-junit5-jvm:4.0.0-BETA3"
-    testImplementation "io.kotest:kotest-assertions-core-jvm:4.0.0-BETA3"
-}
+kotlin {
+    jvm {
+        withJava()
+    }
+    js {
+        browser {
+            binaries.executable()
+        }
+    }
 
-compileKotlin {
-    kotlinOptions.jvmTarget = "1.8"
-}
-compileTestKotlin {
-    kotlinOptions.jvmTarget = "1.8"
+    jvmTest {
+        useJUnitPlatform()
+    }
+
+    task copyJS(type: Copy) {
+        dependsOn compileKotlinJs
+        from "src/jsMain/js/sc"
+        include "*.js"
+        into "build/js/packages/lexurgy/kotlin"
+    }
+
+    task insertJSRequire {
+        dependsOn copyJS
+        doLast {
+            (new File(jsCompiledFilename)).text =
+                    jsRequires + file(jsCompiledFilename).getText()
+        }
+    }
+
+    processDceJsKotlinJs {
+        dependsOn insertJSRequire
+    }
+
+    task copyJSDce(type: Copy) {
+        dependsOn processDceJsKotlinJs
+        from "build/js/packages/lexurgy/kotlin"
+        include "Lsc*.js"
+        into "build/js/packages/lexurgy/kotlin-dce"
+    }
+
+    jsBrowserProductionWebpack {
+        dependsOn copyJSDce
+    }
+
+    jsTest {
+        dependsOn insertJSRequire
+    }
+
+    sourceSets {
+        commonMain {
+            dependencies {
+                implementation kotlin('stdlib-common')
+            }
+        }
+        commonTest {
+        }
+        jvmMain {
+            dependencies {
+                implementation "org.antlr:antlr4-runtime:4.7.2"
+                implementation "com.github.ajalt:clikt:2.7.0"
+                implementation "net.java.dev.jna:jna:5.5.0"
+                implementation "net.java.dev.jna:jna-platform:5.5.0"
+            }
+        }
+        jvmTest {
+            dependencies {
+                implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+                implementation "io.kotest:kotest-runner-junit5-jvm:4.2.5"
+                implementation "io.kotest:kotest-assertions-core-jvm:4.2.5"
+            }
+        }
+        jsMain {
+            dependencies {
+                implementation npm("antlr4", "4.7.2")
+            }
+        }
+        jsTest {
+            dependencies {
+                implementation "io.kotest:kotest-framework-engine:4.2.5"
+                implementation "io.kotest:kotest-framework-api-js:4.2.5"
+                implementation "io.kotest:kotest-assertions-core-js:4.2.5"
+            }
+        }
+    }
+
+    tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+        kotlinOptions {
+            jvmTarget = "1.8"
+        }
+    }
+
+    jvmJar {
+        archiveAppendix = ""
+    }
 }
 
 application {
