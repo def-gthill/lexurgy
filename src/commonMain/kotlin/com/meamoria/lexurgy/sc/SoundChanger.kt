@@ -143,6 +143,24 @@ class SoundChanger(
     data class IntermediateRomanizer(val name: String, val romanizer: Romanizer)
 }
 
+internal fun makeStageComparisons(wordListSequence: List<List<String>>): List<String> {
+    val result = mutableListOf<String>()
+    val maxLengths = wordListSequence.map { it.maxLength() }
+    val iterators = wordListSequence.map { it.iterator() }
+    while (iterators.all { it.hasNext() }) {
+        val stages = iterators.map { it.next() }
+        val resultLine =
+            if (stages.all { it == stages.first() }) stages.first()
+            else stages.zip(maxLengths) { stage, length ->
+                stage.padEndCombining(length)
+            }.joinToString(" => ").trim()
+        result += resultLine
+    }
+    return result
+}
+
+internal fun Iterable<String>.maxLength(): Int = map { it.length }.maxOrNull() ?: 0
+
 expect fun <T, U, R> Iterable<T>.fastZipMap(other: Iterable<U>, function: (T, U) -> R): List<R>
 
 interface NamedRule<I : Segment<I>, O : Segment<O>> {

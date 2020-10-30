@@ -125,22 +125,6 @@ fun SoundChanger.changeFiles(
     }
 }
 
-private fun makeStageComparisons(wordListSequence: List<List<String>>): List<String> {
-    val result = mutableListOf<String>()
-    val maxLengths = wordListSequence.map { it.maxLength() }
-    val iterators = wordListSequence.map { it.iterator() }
-    while (iterators.all { it.hasNext() }) {
-        val stages = iterators.map { it.next() }
-        val resultLine =
-            if (stages.all { it == stages.first() }) stages.first()
-            else stages.zip(maxLengths) { stage, length ->
-                stage.padEndCombining(length)
-            }.joinToString(" => ").trim()
-        result += resultLine
-    }
-    return result
-}
-
 private fun makeVersionComparisons(
     newWords: List<String>, previousWords: List<String>, stageCompare: List<String>
 ): List<String> {
@@ -158,8 +142,6 @@ private fun makeVersionComparisons(
         else compare.padEndCombining(maxLength + 1) + "XX " + previousWord
     }
 }
-
-private fun Iterable<String>.maxLength(): Int = map { it.length }.maxOrNull() ?: 0
 
 actual fun <T, U, R> Iterable<T>.fastZipMap(other: Iterable<U>, function: (T, U) -> R): List<R> =
     zip(other).parallelStream().map { function(it.first, it.second) }.toList()
