@@ -1,4 +1,4 @@
-# lexurgy
+# Welcome to Lexurgy!
 Lexurgy is a conlanger's toolkit, currently just a sound change applier.
 
 It's available as a [command-line tool](https://github.com/def-gthill/lexurgy/releases/latest) and as a [web app](https://www.meamoria.com/lexurgy/app/sc).
