@@ -291,7 +291,7 @@ applied to it and become an /m/, a nasal before a /d/ would have the matrix [alv
 applied and become an /n/, etc.
 
 Absent features and absent aliases
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 As mentioned previously, every feature automatically has an extra value indicating that
 the feature is *absent* from a sound, and every sound has the absent feature unless
@@ -470,9 +470,5 @@ Intermediate romanizers
 If you want to preserve the history of a language at several stages, you can
 use intermediate romanizers.
 
-.. TODO more
-
-.. only:: not public
-
-    You need to specify the :option:`-m` command-line argument in order for
-    intermediate romanizers to activate.
+For the command-line tool, you need to specify the :option:`-m` command-line argument
+in order for intermediate romanizers to activate.

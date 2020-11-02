@@ -106,7 +106,8 @@ class SC : CliktCommand(
                 if (e is UserError) console(e.message.toString())
                 else console(
                     "Lexurgy couldn't apply the changes because of an unexpected error. " +
-                            "Rerun with developer mode turned on (-d) and submit a bug report with the output attached."
+                            "Rerun with developer mode turned on (-d) and submit a bug report " +
+                            "at https://github.com/def-gthill/lexurgy/issues with the output attached."
                 )
             }
             exitProcess(1)

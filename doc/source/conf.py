@@ -43,7 +43,7 @@ exclude_patterns = []
 
 # noinspection PyUnresolvedReferences
 if tags.has("public"):
-    exclude_patterns += ["gen.rst", "sc-cli.rst"]
+    exclude_patterns += ["gen.rst"]
 
 # -- Options for HTML output -------------------------------------------------
 
