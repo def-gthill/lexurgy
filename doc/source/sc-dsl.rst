@@ -26,6 +26,8 @@ Any of these positions can contain multiple characters::
 
 Rule names must use only lowercase letters and hyphens.
 
+.. _sc-three-stage-palatalization:
+
 Any line that starts with # is a comment, and Lexurgy will ignore it::
 
     # These rules palatalize k to s in three steps.
@@ -36,6 +38,17 @@ Any line that starts with # is a comment, and Lexurgy will ignore it::
         tʃ => ʃ
     palatalization-3:
         ʃ => s
+
+.. note::
+
+    Indentation is insignificant; these examples are indented purely for readability.
+    This works equally well::
+
+        k-before-a:
+        k => ʃ / _ a
+
+    Lexurgy knows where one rule ends and another begins because the rule name must end
+    with a colon and the rule expressions must contain an arrow ``=>``.
 
 Alternative lists
 ~~~~~~~~~~~~~~~~~
@@ -74,8 +87,11 @@ Alternative environments
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 The alternative list mechanism can be used not just for sounds, but for entire environments.
+For example, this rule converts stops into fricatives both between vowels and before other
+stops::
 
-.. TODO examples
+    frication:
+        {p, t, k} => {f, θ, x} / {{a, e, i, o, u} _ {a, e, i, o, u}, _ {p, t, k}}
 
 Word boundaries
 ~~~~~~~~~~~~~~~
@@ -103,6 +119,8 @@ and specifying the environment where the sound should appear::
 
     spanish-e:
         * => e / _ s {p, t, k}
+
+.. _sc-exclusions:
 
 Exclusions
 ~~~~~~~~~~
@@ -137,15 +155,19 @@ rule in turn, becoming first ``p``, then ``b``, then ``v``. But since they're
 written as subrules, the second subrule can't apply to the output of the first,
 so the result is a ``p``.
 
-.. TODO examples
-
 Sequential Subrules
 ~~~~~~~~~~~~~~~~~~~
 
 If you put ``Then:`` between two subrules, then Lexurgy will apply them sequentially instead of
-simultaneously, as if they were separate rules.
+simultaneously, as if they were separate rules. For example, the palatalization rule from
+:ref:`above <sc-three-stage-palatalization>` could be rewritten as::
 
-.. TODO examples
+    palatalization:
+        k => tʃ / _ i
+        Then: tʃ => ʃ
+        Then: ʃ => s
+
+This makes it clear that the three stages are really part of the same sound change.
 
 Sound classes
 -------------
@@ -179,10 +201,7 @@ Now the ``obstruent`` class expands to ``{p, t, k, f, s}``. You can
 use this to build up larger and larger classes of sounds
 without repeating yourself.
 
-Lexurgy's sound classes should be familiar to users of Rosenfelder's SCA,
-but they're more powerful in Lexurgy --- they can have descriptive
-names, the symbols in them can be more than one character long, and
-you can define them in terms of other classes.
+Lexurgy's sound classes should be familiar to users of Rosenfelder's SCA.
 
 Feature matrices
 ----------------
@@ -318,7 +337,7 @@ Diacritics
 ~~~~~~~~~~
 
 The IPA indicates some features explicitly using diacritics: /ʰ/ always
-indicates aspiration, /ː/ makes a vowel long, and /̥ / makes a sound voiceless.
+indicates aspiration, /ː/ makes a vowel long, and / ̥ / makes a sound voiceless.
 
 You can declare these in Lexurgy like this::
 
@@ -394,11 +413,48 @@ put ``!`` after the sound::
 
 This will turn ``kepo`` into ``kipu``, but leave ``keˈpó`` unaltered.
 
-Multiple-segment rules and empty segments
------------------------------------------
+Multiple-segment rules
+------------------------
+
+A rule can affect a sequence of consecutive sounds at the same time. For example, this rule
+applies nasal assimilation and voicing of the following sound at the same time::
+
+    nasal-assimilation-and-voicing:
+        [nasal] [cons $Place] => [$Place] [voiced]
+
+The number of segments must be the same on each side of the ``=>``. If a change
+adds or deletes sounds, fill in the missing spaces with the empty sound ``*``.
+This is useful when dealing with :ref:`gemination <sc-gemination>`.
 
 Optional and repeated segments
 ------------------------------
+
+You can mark part of the environment *optional* by putting a question mark after it::
+
+    stress-closed-last-syllable:
+        [vowel] => [stressed] / _ [glide]? [consonant] $
+
+This rule will stress the vowel in a final closed syllable, even if there's an
+offglide like /j/ or /w/ after the vowel.
+
+If the language has a more complex syllable structure though, this won't be enough;
+it won't match a word like /krajsk/. To deal with that case, you can use a *repeated*
+segment::
+
+    stress-closed-last-syllable:
+        [vowel] => [stressed] / _ [glide]? [consonant]+ $
+
+The ``+`` indicates that we want *at least one* consonant at the end of the word.
+
+If the repeated segment is also optional (i.e. the rule should accept zero or more
+copies of the segment), you can use ``*`` instead of ``+``. For example, this
+rule will stress the vowel in the last syllable regardless of whether there are
+any consonants at the end::
+
+    stress-last-syllable:
+        [vowel] => [stressed] / _ [glide]? [consonant]* $
+
+Optional and repeated segments can also be used in :ref:`exclusions <sc-exclusions>`.
 
 .. caution::
     Optional and repeated segments are *greedy*; they match as much as they
@@ -438,14 +494,90 @@ Optional and repeated segments
     it results in more intuitive behaviour most of the time --- after all, sound changes
     are most likely to be conditioned on the nearest sounds.
 
+.. _sc-gemination:
+
 Gemination and metathesis
 -------------------------
+
+Sometimes it's useful to copy an entire sound from one place to another, rather than
+just a feature. Common cases where copying sounds is useful include *gemination*
+(duplication of a sound) and *metathesis* (switching of sounds).
+
+To capture a sound, put a *capture variable* immediately after the pattern that matches it.
+A capture variable looks like a dollar sign followed by a number: ``$1``, ``$2``, etc.
+Once a sound has been captured, you can use the capture variable alone to produce or
+recognize a copy of the sound.
+
+This rule applies gemination in stop-stop clusters, turning the first stop into
+a copy of the second::
+
+    @stop @stop$1 => $1 $1
+
+This rule applies metathesis to stop-fricative sequences::
+
+    @fricative$1 @stop$2 => $2 $1
+
+This rule uses a capture variable in the environment to *recognize* a geminate::
+
+    * => e / _ [cons]$1 $1
+
+This rule uses a bare capture variable on the old side of the rule to remove gemination
+(*degemination*)::
+
+    [cons]$1 $1 => $1 *
 
 Rule filters
 ------------
 
+Some rules only care about certain kinds of sounds, ignoring any intervening sounds.
+This is most common with rules affecting vowels, such as stress, vowel harmony, and
+tone.
+
+You can make such rules more concise by defining a *filter* on the rule. A rule with
+a filter will treat sounds that don't match the filter as if they didn't exist.
+
+For example, a rule that assigns stress to the vowel in the first symbol could be
+written like this::
+
+    stress-first-syllable:
+        [vowel] => [stressed] / $ [cons]* _
+
+But any consonants before the vowel are actually irrelevant to this rule, so the
+``[cons]*`` in the environment is a distraction. Instead, you can write it like this::
+
+    stress-first-syllable [vowel]:
+        [] => [stressed] / $ _
+
+Note that we can use ``[]`` on the old side instead of ``[vowel]`` because anything
+that passes the filter will already be a vowel, so we don't need to test for vowelhood
+again.
+
+Similarly, a short-distance vowel harmony rule could be written like this::
+
+    vowel-harmony [vowel]:
+        [!central] => [$Frontness] / [!central $Frontness] _
+
 Propagation
 -----------
+
+Notice the word "short-distance" in the description of the previous example.
+As written, it would only apply vowel harmony one vowel at a time, turning
+e.g. /sinotehu/ into /sinøtɤhy/, which isn't harmonious at all.
+
+When faced with a change that acts over arbitrarily long distances, such as
+vowel harmony and stress rules, you can use *propagating* rules. A propagating
+rule is marked by ``propagate`` after the rule name (and after any filter).
+Lexurgy will apply propagating rules *repeatedly* until the word stops changing.
+
+Propagation is all that's needed to turn the vowel harmony rule into a long-distance
+rule::
+
+    vowel-harmony [vowel] propagate:
+        [!central] => [$Frontness] / [!central $Frontness] _
+
+Note that it's impossible to tell in general whether a propagating rule will ever
+terminate. So Lexurgy is conservative and stops with an error message if a
+rule runs a hundred times without settling on a result.
 
 Romanization
 ------------
@@ -453,14 +585,28 @@ Romanization
 It's a good idea to do all the sound changes in phonetic notation (e.g. IPA).
 But you probably do most of the work for your languages in their romanization systems.
 You can define romanization rules at the beginning and end of any sound change applier,
-but Lexurgy SC supports specific notation for it so your intention is clear.
-Just define a special rule at the beginning with the name "Deromanizer"
-and another rule at the end with the name "Romanizer". Like any rule, the expressions
-within the romanization rules are applied simultaneously, and earlier rules
-take precedence over later ones.
+but Lexurgy supports specific notation for it so your intention is clear.
 
-Some features, like matrices, aren't allowed in the input to the deromanizer
-or the output of the romanizer, since they operate on sounds, not letters.
+Just define a special rule at the beginning with the name "Deromanizer"
+and another rule at the end with the name "Romanizer". Like any rule, romanizers
+and deromanizers can have both sequential subrules (separated by ``Then:``) and
+simultaneous subrules.
+
+The first sequential subrule of a deromanizer takes
+in *romanized* words, rather than phonetic representations. Romanized words
+are just plain text, and have no sense of any symbol, feature, or diacritic
+declarations you've defined. That way, you don't have to worry about your
+romanization system being compatible with your symbol declarations. You can
+use structural rules like alternative lists on the old side of the rule, but
+not classes or features. The remaining sequential subrules, however, are
+just ordinary rules, and can use all the normal Lexurgy features (except
+propagation and rule filters, which can't be applied to subrules).
+
+The reverse is true of romanizers; the *last* sequential subrule *produces*
+romanized words, so the above restrictions apply to the *new* side. Again,
+the remaining sequential subrules are just ordinary rules.
+
+.. TODO examples
 
 .. _sc-intermediate-romanizers:
 
@@ -468,7 +614,14 @@ Intermediate romanizers
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 If you want to preserve the history of a language at several stages, you can
-use intermediate romanizers.
+use intermediate romanizers. In intermediate romanizer is declared the same
+way as the final romanizer, except they can go anywhere within the rule
+portion of the file, and they must have a name like "Romanizer-middle" or
+"Romanizer-post-classical" rather than just "Romanizer". An intermediate
+romanizer will only see the changes declared before it, not those declared
+after it (which haven't happened yet).
+
+.. TODO examples
 
 For the command-line tool, you need to specify the :option:`-m` command-line argument
 in order for intermediate romanizers to activate.
