@@ -956,8 +956,6 @@ class TestSoundChanger : StringSpec({
     }
 
     "The Kharulian consonant separation rule should break apart consecutive consonants" {
-        // My current position is "don't fix this". Put warnings in the documentation that different environment
-        // lengths don't mix well in alternative environments.
         val ch = lsc(
             """
                 Class vowel {a, i, ə}
@@ -971,7 +969,7 @@ class TestSoundChanger : StringSpec({
         ch("tmkipnralpt") shouldBe "təməkipnəralpət"
     }
 
-    "The Caidorian syncope rule should work properly (i.e. before environments should match backwards from the anchor" {
+    "The Caidorian syncope rule should work properly (i.e. before environments should match backwards from the anchor)" {
         val ch = lsc(
             """
                 Feature Type(*cons, vowel)

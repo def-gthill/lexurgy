@@ -210,7 +210,7 @@ class SimpleChangeRule<I : Segment<I>, O : Segment<O>>(
         return inType.fromSegments(resultBits) to filterMap.toIntArray()
     }
 
-    // Strips out transformatinos that would try to change something that's already being changed.
+    // Strips out transformations that would try to change something that's already being changed.
     // Assumes the transformations argument is already sorted in precedence order.
     private fun filterOverlappingClaims(transformations: List<Transformation<O>>): List<Transformation<O>> {
         val claimed = mutableSetOf<Int>()
