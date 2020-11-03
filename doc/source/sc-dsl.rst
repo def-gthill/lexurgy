@@ -256,15 +256,15 @@ Now you can use feature values in your rules::
         [unvoiced fricative] => h / @vowel _ @vowel
 
 The matrices to the left match any symbol with that feature, even if it has other
-features too; so ``[stop]`` matches the ``[unvoiced labial stop]`` of a /p/,
-the ``[voiced alveolar stop]`` of a /d/, etc. If you only want to accept
+features too; so ``[stop]`` matches the ``[unvoiced labial stop]`` of a [p],
+the ``[voiced alveolar stop]`` of a [d], etc. If you only want to accept
 symbols that lack a given feature, you have to explicitly specify the absent
 feature; e.g. ``[alveolar *Voicing]`` only matches alveolar sounds that lack
 the voicing feature.
 
 The matrices to the right indicate how the feature matrix should be modified.
 Features not mentioned in the matrix are left unchanged. For example,
-the second rule turns /d/ ``[voiced alveolar stop]`` into /ð/
+the second rule turns [d] ``[voiced alveolar stop]`` into [ð]
 ``[voiced alveolar fricative]``, changing the ``Manner`` feature from
 ``[stop]`` to ``[fricative]`` while leaving ``[voiced alveolar]`` unchanged.
 If you want to delete a feature, you have to specify the absent feature
@@ -305,9 +305,9 @@ can be written like this::
 
 The ``[cons $Place]`` matrix in the environment matches any consonant, but captures the
 value of that consonant's ``Place`` feature. This feature value is copied into the matching
-``$Place`` in the output matrix. So a nasal before a /p/ would have the matrix [labial]
-applied to it and become an /m/, a nasal before a /d/ would have the matrix [alveolar]
-applied and become an /n/, etc.
+``$Place`` in the output matrix. So a nasal before a [p] would have the matrix [labial]
+applied to it and become an [m], a nasal before a [d] would have the matrix [alveolar]
+applied and become an [n], etc.
 
 Absent features and absent aliases
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -336,8 +336,8 @@ non-high back vowels.
 Diacritics
 ~~~~~~~~~~
 
-The IPA indicates some features explicitly using diacritics: /ʰ/ always
-indicates aspiration, /ː/ makes a vowel long, and / ̥ / makes a sound voiceless.
+The IPA indicates some features explicitly using diacritics: [ʰ]
+indicates aspiration, [ː] makes a vowel long, and [ ̥ ] makes a sound voiceless.
 
 You can declare these in Lexurgy like this::
 
@@ -348,13 +348,13 @@ You can declare these in Lexurgy like this::
 If these diacritics appear in the old-language words or in rules, Lexurgy will
 consider them to add the specified feature value to the previous sound, replacing
 the existing value of that feature. For example, if
-/p/ is ``[unvoiced bilabial stop]``, then /pʰ/ is ``[aspirated unvoiced bilabial stop]``;
-if /n/ is ``[voiced alveolar nasal]``, then /n̥/ is ``[unvoiced alveolar nasal]``.
+[p] is ``[unvoiced bilabial stop]``, then [pʰ] is ``[aspirated unvoiced bilabial stop]``;
+if [n] is ``[voiced alveolar nasal]``, then [n̥] is ``[unvoiced alveolar nasal]``.
 
 Diacritics also work when translating matrices back into symbols: if a rule produces
 ``[unvoiced alveolar nasal]``, and there's no symbol explicitly defined with that matrix,
 Lexurgy will search through possible combinations of symbols and diacritics to find
-one that fits the matrix, namely /n̥/.
+one that fits the matrix, namely [n̥].
 
 Diacritic declarations go after feature declarations but before symbol declarations.
 
@@ -378,7 +378,7 @@ Floating Diacritics
 ~~~~~~~~~~~~~~~~~~~
 
 Some diacritics indicate suprasegmentals or other features that aren't integral to the
-sound. While most languages would treat /p/ and /pʰ/ as entirely different
+sound. While most languages would treat [p] and [pʰ] as entirely different
 sounds (if they're distinguished at all), a feature like stress or tone is added on
 top of a vowel sound without affecting its nature much. As a result, most sound changes
 should ignore the feature.
@@ -435,10 +435,10 @@ You can mark part of the environment *optional* by putting a question mark after
         [vowel] => [stressed] / _ [glide]? [consonant] $
 
 This rule will stress the vowel in a final closed syllable, even if there's an
-offglide like /j/ or /w/ after the vowel.
+offglide like [j] or [w] after the vowel.
 
 If the language has a more complex syllable structure though, this won't be enough;
-it won't match a word like /krajsk/. To deal with that case, you can use a *repeated*
+it won't match a word like [krajsk]. To deal with that case, you can use a *repeated*
 segment::
 
     stress-closed-last-syllable:
@@ -469,11 +469,11 @@ Optional and repeated segments can also be used in :ref:`exclusions <sc-exclusio
             {a, e, o, u} => {e, i, ø, y} / _ @consonant* j
 
     This rule is intended to apply umlaut to a vowel in the syllable before
-    a /j/ onglide; the ``@consonant*`` is supposed to mean that the
+    a [j] onglide; the ``@consonant*`` is supposed to mean that the
     rule still applies even if there are consonants in between.
     Unfortunately, the rule does nothing at all, no matter what word you give it.
 
-    This happens because /j/ is also included in the ``consonant`` class. Suppose
+    This happens because [j] is also included in the ``consonant`` class. Suppose
     you feed the word ``altja`` to this rule, intending it to become ``eltja``.
     Lexurgy sees ``@consonant*`` and goes looking for consonants. It finds
     ``l``, then ``t``... but it keeps looking, finding ``j`` as well, since
@@ -562,7 +562,7 @@ Propagation
 
 Notice the word "short-distance" in the description of the previous example.
 As written, it would only apply vowel harmony one vowel at a time, turning
-e.g. /sinotehu/ into /sinøtɤhy/, which isn't harmonious at all.
+e.g. [sinotehu] into [sinøtɤhy], which isn't harmonious at all.
 
 When faced with a change that acts over arbitrarily long distances, such as
 vowel harmony and stress rules, you can use *propagating* rules. A propagating
