@@ -136,4 +136,5 @@ actual typealias ValueContext = LscParser.ValueContext
 
 actual typealias TextContext = LscParser.TextContext
 
-actual val LSC_FEATURE = LscParser.FEATURE
+actual val LSC_NEWLINE: Int = LscParser.NEWLINE
+actual val LSC_FEATURE: Int = LscParser.FEATURE

@@ -62,3 +62,5 @@ actual abstract class CommonAntlrErrorListener {
         exception: RecognitionException?,
     )
 }
+
+actual val EOF: Int = TokenClass.EOF

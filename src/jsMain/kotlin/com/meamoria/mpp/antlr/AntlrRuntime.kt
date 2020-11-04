@@ -51,6 +51,14 @@ actual open external class BufferedTokenStream : TokenStream
 
 actual external interface Token {
     actual fun getText(): String
+    actual fun getType(): Int
+}
+
+@JsName("Token")
+external class TokenClass {
+    companion object {
+        val EOF: Int
+    }
 }
 
 actual external class IntervalSet {

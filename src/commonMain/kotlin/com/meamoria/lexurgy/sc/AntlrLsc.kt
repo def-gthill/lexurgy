@@ -272,4 +272,5 @@ expect class TextContext : ParserRuleContext {
     fun NEGATION(): TerminalNode?
 }
 
+expect val LSC_NEWLINE: Int
 expect val LSC_FEATURE: Int

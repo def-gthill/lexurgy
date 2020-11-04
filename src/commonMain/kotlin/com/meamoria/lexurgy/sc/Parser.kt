@@ -339,7 +339,7 @@ private class LscErrorListener : CommonAntlrErrorListener() {
 
     private fun getUserFriendlyMessageFromInputMismatch(exception: InputMismatchException): String? =
         exception.getCtx().upToType<EnvironmentContext> { environmentContext ->
-            if (exception.getOffendingToken().getText().let { it == "\n" || it == "<EOF>" }) {
+            if (exception.getOffendingToken().getType().let { it == LSC_NEWLINE || it == EOF }) {
                 environmentContext.upToType<ChangeRuleContext>().downToType<RuleNameContext> { ruleContext ->
                     "The environment \"${environmentContext.getText()}\" in rule ${ruleContext.getText()} needs an underscore"
                 }

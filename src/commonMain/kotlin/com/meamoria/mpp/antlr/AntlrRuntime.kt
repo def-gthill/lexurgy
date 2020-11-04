@@ -47,6 +47,7 @@ expect open class BufferedTokenStream : TokenStream
 
 expect interface Token {
     fun getText(): String
+    fun getType(): Int
 }
 
 expect class IntervalSet {
@@ -72,3 +73,5 @@ expect open class RecognitionException {
 }
 
 expect class InputMismatchException : RecognitionException
+
+expect val EOF: Int

@@ -116,3 +116,5 @@ actual abstract class CommonAntlrErrorListener : ANTLRErrorListener {
 actual typealias RecognitionException = RecognitionException
 
 actual typealias InputMismatchException = InputMismatchException
+
+actual val EOF: Int = Recognizer.EOF
