@@ -12,7 +12,9 @@ expect fun Parser.addCommonAntlrErrorListener(listener: CommonAntlrErrorListener
 
 expect open class ParserRuleContext : RuleContext
 
-expect open class RuleContext : RuleNode
+expect open class RuleContext : RuleNode {
+    override fun getParent(): RuleContext
+}
 
 expect interface RuleNode : ParseTree
 
@@ -24,6 +26,8 @@ expect interface ParseTree {
     fun getChild(i: Int): ParseTree
 
     fun getChildCount(): Int
+
+    fun getParent(): ParseTree
 }
 
 val ParseTree.children
@@ -41,12 +45,24 @@ expect class CommonTokenStream(tokenSource: TokenSource) : BufferedTokenStream
 
 expect open class BufferedTokenStream : TokenStream
 
+expect interface Token {
+    fun getText(): String
+}
+
 expect abstract class CommonAntlrErrorListener() {
     abstract fun handleSyntaxError(
         offendingSymbol: Any?,
         line: Int,
         charPositionInLine: Int,
         msg: String,
+        exception: RecognitionException?,
     )
 }
 
+expect open class RecognitionException {
+    fun getCtx(): RuleContext?
+
+    fun getOffendingToken(): Token
+}
+
+expect class InputMismatchException : RecognitionException

@@ -6,10 +6,13 @@ import org.antlr.v4.runtime.BufferedTokenStream
 import org.antlr.v4.runtime.CharStream
 import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
+import org.antlr.v4.runtime.InputMismatchException
 import org.antlr.v4.runtime.Lexer
 import org.antlr.v4.runtime.Parser
 import org.antlr.v4.runtime.ParserRuleContext
+import org.antlr.v4.runtime.RecognitionException
 import org.antlr.v4.runtime.RuleContext
+import org.antlr.v4.runtime.Token
 import org.antlr.v4.runtime.TokenSource
 import org.antlr.v4.runtime.TokenStream
 import org.antlr.v4.runtime.atn.ATNConfigSet
@@ -50,6 +53,8 @@ actual typealias CommonTokenStream = CommonTokenStream
 
 actual typealias BufferedTokenStream = BufferedTokenStream
 
+actual typealias Token = Token
+
 actual abstract class CommonAntlrErrorListener : ANTLRErrorListener {
     override fun syntaxError(
         recognizer: Recognizer<*, *>?,
@@ -58,7 +63,7 @@ actual abstract class CommonAntlrErrorListener : ANTLRErrorListener {
         charPositionInLine: Int,
         msg: String,
         e: RecognitionException?
-    ) = handleSyntaxError(offendingSymbol, line, charPositionInLine, msg)
+    ) = handleSyntaxError(offendingSymbol, line, charPositionInLine, msg, e)
 
     override fun reportAttemptingFullContext(
         recognizer: Parser?,
@@ -96,5 +101,14 @@ actual abstract class CommonAntlrErrorListener : ANTLRErrorListener {
         line: Int,
         charPositionInLine: Int,
         msg: String,
+        exception: RecognitionException?,
     )
+
+    private fun foo(e: RecognitionException) {
+        e.offendingToken.type
+    }
 }
+
+actual typealias RecognitionException = RecognitionException
+
+actual typealias InputMismatchException = InputMismatchException

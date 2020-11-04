@@ -17,8 +17,8 @@ actual abstract class CommonAntlrErrorListener {
         line: Int,
         charPositionInLine: Int,
         msg: String,
-        e: Any?
-    ) = handleSyntaxError(offendingSymbol, line, charPositionInLine, msg)
+        e: RecognitionException?
+    ) = handleSyntaxError(offendingSymbol, line, charPositionInLine, msg, e)
 
     @JsName("reportAttemptingFullContext")
     fun reportAttemptingFullContext(
@@ -58,6 +58,7 @@ actual abstract class CommonAntlrErrorListener {
         offendingSymbol: Any?,
         line: Int,
         charPositionInLine: Int,
-        msg: String
+        msg: String,
+        exception: RecognitionException?,
     )
 }

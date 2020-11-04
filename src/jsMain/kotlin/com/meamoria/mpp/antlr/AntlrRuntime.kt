@@ -21,6 +21,8 @@ actual open external class RuleContext : RuleNode {
     override fun getChild(i: Int): ParseTree
 
     override fun getChildCount(): Int
+
+    actual override fun getParent(): RuleContext
 }
 
 actual external interface RuleNode : ParseTree
@@ -33,6 +35,8 @@ actual external interface ParseTree {
     actual fun getChild(i: Int): ParseTree
 
     actual fun getChildCount(): Int
+
+    actual fun getParent(): ParseTree
 }
 
 actual external interface CharStream
@@ -44,3 +48,15 @@ actual external interface TokenStream
 actual external class CommonTokenStream actual constructor(tokenSource: TokenSource) : BufferedTokenStream
 
 actual open external class BufferedTokenStream : TokenStream
+
+actual external interface Token {
+    actual fun getText(): String
+}
+
+actual open external class RecognitionException {
+    actual fun getCtx(): RuleContext?
+
+    actual fun getOffendingToken(): Token
+}
+
+actual external class InputMismatchException : RecognitionException

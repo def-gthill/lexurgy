@@ -7,6 +7,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.throwables.shouldNotThrowAny
+import io.kotest.matchers.string.startWith
 
 actual typealias StringSpec = StringSpec
 
@@ -21,3 +22,5 @@ actual inline fun <reified T : Any> Any?.shouldBeInstanceOf() = shouldBeInstance
 actual inline fun <reified T : Throwable> shouldThrow(block: () -> Any?): T = shouldThrow(block)
 
 actual inline fun <T> shouldNotThrowAny(block: () -> T): T = shouldNotThrowAny(block)
+
+actual fun startWith(prefix: String): (String?) -> Unit = { startWith(prefix) }

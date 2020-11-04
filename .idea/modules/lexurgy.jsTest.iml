@@ -5,9 +5,9 @@
       <configuration version="3" platform="JavaScript " allPlatforms="JS []" useProjectSettings="false" isTestModule="true" externalProjectId="lexurgy">
         <dependsOnModuleNames>lexurgy:commonTest</dependsOnModuleNames>
         <sourceSets>
+          <sourceSet>lexurgy.commonTest</sourceSet>
           <sourceSet>lexurgy.jsMain</sourceSet>
           <sourceSet>lexurgy.commonMain</sourceSet>
-          <sourceSet>lexurgy.commonTest</sourceSet>
         </sourceSets>
         <newMppModelJpsModuleKind>COMPILATION_AND_SOURCE_SET_HOLDER</newMppModelJpsModuleKind>
         <externalSystemTestTasks>

@@ -15,3 +15,5 @@ expect inline fun <reified T : Any> Any?.shouldBeInstanceOf()
 expect inline fun <reified T : Throwable> shouldThrow(block: () -> Any?): T
 
 expect inline fun <T> shouldNotThrowAny(block: () -> T): T
+
+expect fun startWith(prefix: String): (String?) -> Unit

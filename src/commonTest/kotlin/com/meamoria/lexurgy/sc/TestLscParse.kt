@@ -1,8 +1,6 @@
 package com.meamoria.lexurgy.sc
 
-import com.meamoria.mpp.kotest.StringSpec
-import com.meamoria.mpp.kotest.shouldBe
-import com.meamoria.mpp.kotest.shouldThrow
+import com.meamoria.mpp.kotest.*
 
 @Suppress("unused")
 class TestLscParse : StringSpec({
@@ -136,6 +134,21 @@ class TestLscParse : StringSpec({
                |    h => *
             """.trimMargin()
         ) shouldBe "rule(delete-h, (from(h), to(null)))"
+    }
+
+    "A change rule with no '_' anchor should throw an error with a helpful message" {
+        shouldThrow<LscNotParsable> {
+            parser.parseChangeRule(
+                """
+                    foobar:
+                        a => b / c
+                    barfoo:
+                        a => b / c _
+                """.trimIndent()
+            )
+        }.also {
+            it.message should startWith("The environment \"c\" in rule foobar needs an underscore")
+        }
     }
 
     "A romanizer should be parsable as a string" {

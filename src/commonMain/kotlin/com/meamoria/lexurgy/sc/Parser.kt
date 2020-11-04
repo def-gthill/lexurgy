@@ -2,6 +2,8 @@ package com.meamoria.lexurgy.sc
 
 import com.meamoria.lexurgy.LscUserError
 import com.meamoria.mpp.antlr.*
+import kotlin.reflect.KClass
+import kotlin.reflect.safeCast
 
 class LscInterpreter<T>(val walker: LscWalker<T>) {
     fun parseFile(text: String): T = parseAndWalk(text) { it.lscFile() }
@@ -323,11 +325,59 @@ private class LscErrorListener : CommonAntlrErrorListener() {
         line: Int,
         charPositionInLine: Int,
         msg: String,
+        exception: RecognitionException?,
     ): Nothing {
-        throw LscNotParsable(line, charPositionInLine, offendingSymbol.toString(), msg)
+        val userFriendlyMessage = exception?.let { getUserFriendlyMessage(it) }
+        throw LscNotParsable(line, charPositionInLine, offendingSymbol.toString(), userFriendlyMessage ?: msg)
     }
+
+    private fun getUserFriendlyMessage(exception: RecognitionException): String? =
+        when(exception) {
+            is InputMismatchException -> getUserFriendlyMessageFromInputMismatch(exception)
+            else -> null
+        }
+
+    private fun getUserFriendlyMessageFromInputMismatch(exception: InputMismatchException): String? =
+        exception.getCtx().upToType<EnvironmentContext> { environmentContext ->
+            if (exception.getOffendingToken().getText().let { it == "\n" || it == "<EOF>" }) {
+                environmentContext.upToType<ChangeRuleContext>().downToType<RuleNameContext> { ruleContext ->
+                    "The environment \"${environmentContext.getText()}\" in rule ${ruleContext.getText()} needs an underscore"
+                }
+            } else null
+        }
+
+
+    private inline fun <reified T : RuleContext> RuleContext?.upToType(): T? =
+        this?.upToType(T::class)
+
+    private fun <T : RuleContext> RuleContext.upToType(cls: KClass<T>): T? {
+        var context: RuleContext? = this
+        while (context != null) {
+            cls.safeCast(context)?.let { return it }
+            context = context.getParent()
+        }
+        return null
+    }
+
+    private inline fun <reified T : RuleContext> RuleContext?.upToType(fn: (T) -> String?): String? =
+        upToType<T>()?.let(fn)
+
+    private inline fun <reified T : RuleContext> RuleContext?.downToType(): T? =
+        this?.downToType(T::class)
+
+    private fun <T : RuleContext> RuleContext.downToType(cls: KClass<T>): T? {
+        cls.safeCast(this)?.let { return it }
+        for (child in this.children) {
+            if (child is RuleContext) {
+                child.downToType(cls)?.let { return it }
+            }
+        }
+        return null
+    }
+
+    private inline fun <reified T : RuleContext> RuleContext?.downToType(fn: (T) -> String?): String? =
+        downToType<T>()?.let(fn)
 }
 
-@Suppress("unused")
 class LscNotParsable(val line: Int, val column: Int, val offendingSymbol: String, message: String) :
     LscUserError("$message (Line $line, column $column)")
