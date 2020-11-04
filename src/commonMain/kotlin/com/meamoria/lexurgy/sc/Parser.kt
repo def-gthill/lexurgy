@@ -337,25 +337,53 @@ private class LscErrorListener : CommonAntlrErrorListener() {
             else -> null
         }
 
-    private fun getUserFriendlyMessageFromInputMismatch(exception: InputMismatchException): String? =
+    private fun getUserFriendlyMessageFromInputMismatch(exception: InputMismatchException): String? {
+        for (messageMaker in userFriendlyMessageMakers) {
+            messageMaker(exception)?.let { return it }
+        }
+        return null
+    }
+
+    private val userFriendlyMessageMakers: List<(InputMismatchException) -> String?> = listOf(
+        this::ifFeatureNameIsInvalid,
+        this::ifFeatureValueNameIsInvalid,
+        this::ifEnvironmentHasNoUnderscore,
+    )
+
+    private fun ifFeatureNameIsInvalid(exception: InputMismatchException): String? =
+        exception.getCtx().upToType<FeatureDeclContext> {
+            if (exception.getExpectedTokens().contains(LSC_FEATURE)) {
+                val attemptedFeatureName = exception.getOffendingToken().getText()
+                val reason = when {
+                    attemptedFeatureName[0].toUpperCase() != attemptedFeatureName[0] ->
+                        "feature names must start with an uppercase letter"
+                    else -> "feature names must consist of letters and numbers only and start with an uppercase letter"
+                }
+                "A feature can't be called \"$attemptedFeatureName\"; $reason"
+            } else null
+        }
+
+    private fun ifFeatureValueNameIsInvalid(exception: InputMismatchException): String? =
+        exception.getCtx().upToType<FeatureDeclContext> {
+            if (exception.getExpectedTokens().contains(LSC_VALUE)) {
+                val attemptedValueName = exception.getOffendingToken().getText()
+                val reason = when {
+                    attemptedValueName[0].toLowerCase() != attemptedValueName[0] ->
+                        "value names must start with a lowercase letter"
+                    else -> "value names must consist of letters and numbers only and start with a lowercase letter"
+                }
+                "A feature value can't be called \"$attemptedValueName\"; $reason"
+            } else null
+        }
+
+    private fun ifEnvironmentHasNoUnderscore(exception: InputMismatchException): String? =
         exception.getCtx().upToType<EnvironmentContext> { environmentContext ->
             if (exception.getOffendingToken().getType().let { it == LSC_NEWLINE || it == EOF }) {
                 environmentContext.upToType<ChangeRuleContext>().downToType<RuleNameContext> { ruleContext ->
                     "The environment \"${environmentContext.getText()}\" in rule ${ruleContext.getText()} needs an underscore"
                 }
             } else null
-        } ?: exception.getCtx().upToType<FeatureDeclContext> {
-            if (exception.getExpectedTokens().contains(LSC_FEATURE)) {
-                val attemptedFeatureName = exception.getOffendingToken().getText()
-                val reason = when {
-                    attemptedFeatureName[0].toUpperCase() != attemptedFeatureName[0] ->
-                        "feature names must start with an uppercase letter"
-                    else -> "feature names must consist of letters only and start with an uppercase letter"
-                }
-                "A feature can't be called \"$attemptedFeatureName\"; $reason"
-            } else null
         }
-
 
     private inline fun <reified T : RuleContext> RuleContext?.upToType(): T? =
         this?.upToType(T::class)

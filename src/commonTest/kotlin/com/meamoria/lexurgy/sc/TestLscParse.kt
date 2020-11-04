@@ -36,7 +36,9 @@ class TestLscParse : StringSpec({
         shouldThrow<LscNotParsable> { parser.parseFeatureDeclaration("Feature type(cons, vowel)") }.also {
             it.message should startWith("A feature can't be called \"type\"; feature names must start with an uppercase letter")
         }
-        shouldThrow<LscNotParsable> { parser.parseFeatureDeclaration("Feature Type(Cons, Vowel)") }
+        shouldThrow<LscNotParsable> { parser.parseFeatureDeclaration("Feature Type(Cons, Vowel)") }.also {
+            it.message should startWith("A feature value can't be called \"Cons\"; value names must start with a lowercase letter")
+        }
         shouldThrow<LscNotParsable> { parser.parseFeatureDeclaration("Type(cons, vowel)") }
         shouldThrow<LscNotParsable> { parser.parseFeatureDeclaration("=>") }
     }

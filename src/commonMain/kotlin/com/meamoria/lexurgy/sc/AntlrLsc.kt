@@ -274,3 +274,4 @@ expect class TextContext : ParserRuleContext {
 
 expect val LSC_NEWLINE: Int
 expect val LSC_FEATURE: Int
+expect val LSC_VALUE: Int

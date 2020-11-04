@@ -455,3 +455,4 @@ actual typealias TextContext = LscParser.TextContext
 
 actual val LSC_NEWLINE: Int = js("LscParser.NEWLINE") as Int
 actual val LSC_FEATURE: Int = js("LscParser.FEATURE") as Int
+actual val LSC_VALUE: Int = js("LscParser.VALUE") as Int
