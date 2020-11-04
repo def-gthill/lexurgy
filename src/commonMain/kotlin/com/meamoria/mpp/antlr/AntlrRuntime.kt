@@ -49,6 +49,10 @@ expect interface Token {
     fun getText(): String
 }
 
+expect class IntervalSet {
+    fun contains(el: Int): Boolean
+}
+
 expect abstract class CommonAntlrErrorListener() {
     abstract fun handleSyntaxError(
         offendingSymbol: Any?,
@@ -63,6 +67,8 @@ expect open class RecognitionException {
     fun getCtx(): RuleContext?
 
     fun getOffendingToken(): Token
+
+    fun getExpectedTokens(): IntervalSet
 }
 
 expect class InputMismatchException : RecognitionException

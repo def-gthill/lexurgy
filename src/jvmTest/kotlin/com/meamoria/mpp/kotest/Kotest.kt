@@ -23,4 +23,4 @@ actual inline fun <reified T : Throwable> shouldThrow(block: () -> Any?): T = sh
 
 actual inline fun <T> shouldNotThrowAny(block: () -> T): T = shouldNotThrowAny(block)
 
-actual fun startWith(prefix: String): (String?) -> Unit = { startWith(prefix) }
+actual fun startWith(prefix: String): (String?) -> Unit = { it should startWith(prefix) }

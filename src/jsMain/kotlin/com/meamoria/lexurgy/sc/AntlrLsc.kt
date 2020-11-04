@@ -1,4 +1,4 @@
-@file:Suppress("FunctionName", "unused")
+@file:Suppress("FunctionName", "unused", "PropertyName")
 
 package com.meamoria.lexurgy.sc
 
@@ -452,3 +452,5 @@ actual typealias FeatureContext = LscParser.FeatureContext
 actual typealias ValueContext = LscParser.ValueContext
 
 actual typealias TextContext = LscParser.TextContext
+
+actual val LSC_FEATURE: Int = js("LscParser.FEATURE") as Int

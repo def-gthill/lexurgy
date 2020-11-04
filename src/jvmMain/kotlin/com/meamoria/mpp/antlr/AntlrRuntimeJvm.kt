@@ -17,6 +17,7 @@ import org.antlr.v4.runtime.TokenSource
 import org.antlr.v4.runtime.TokenStream
 import org.antlr.v4.runtime.atn.ATNConfigSet
 import org.antlr.v4.runtime.dfa.DFA
+import org.antlr.v4.runtime.misc.IntervalSet
 import org.antlr.v4.runtime.tree.ParseTree
 import org.antlr.v4.runtime.tree.RuleNode
 import org.antlr.v4.runtime.tree.TerminalNode
@@ -54,6 +55,8 @@ actual typealias CommonTokenStream = CommonTokenStream
 actual typealias BufferedTokenStream = BufferedTokenStream
 
 actual typealias Token = Token
+
+actual typealias IntervalSet = IntervalSet
 
 actual abstract class CommonAntlrErrorListener : ANTLRErrorListener {
     override fun syntaxError(
@@ -105,7 +108,8 @@ actual abstract class CommonAntlrErrorListener : ANTLRErrorListener {
     )
 
     private fun foo(e: RecognitionException) {
-        e.offendingToken.type
+        e.expectedTokens
+        com.meamoria.lexurgy.sc.java.LscParser.FEATURE
     }
 }
 

@@ -344,6 +344,16 @@ private class LscErrorListener : CommonAntlrErrorListener() {
                     "The environment \"${environmentContext.getText()}\" in rule ${ruleContext.getText()} needs an underscore"
                 }
             } else null
+        } ?: exception.getCtx().upToType<FeatureDeclContext> {
+            if (exception.getExpectedTokens().contains(LSC_FEATURE)) {
+                val attemptedFeatureName = exception.getOffendingToken().getText()
+                val reason = when {
+                    attemptedFeatureName[0].toUpperCase() != attemptedFeatureName[0] ->
+                        "feature names must start with an uppercase letter"
+                    else -> "feature names must consist of letters only and start with an uppercase letter"
+                }
+                "A feature can't be called \"$attemptedFeatureName\"; $reason"
+            } else null
         }
 
 
