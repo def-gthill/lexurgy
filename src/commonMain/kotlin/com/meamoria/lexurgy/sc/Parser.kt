@@ -331,29 +331,23 @@ private class LscErrorListener : CommonAntlrErrorListener() {
         throw LscNotParsable(line, charPositionInLine, offendingSymbol.toString(), userFriendlyMessage ?: msg)
     }
 
-    private fun getUserFriendlyMessage(exception: RecognitionException): String? =
-        when(exception) {
-            is InputMismatchException -> getUserFriendlyMessageFromInputMismatch(exception)
-            else -> null
-        }
-
-    private fun getUserFriendlyMessageFromInputMismatch(exception: InputMismatchException): String? {
+    private fun getUserFriendlyMessage(exception: RecognitionException): String? {
         for (messageMaker in userFriendlyMessageMakers) {
             messageMaker(exception)?.let { return it }
         }
         return null
     }
 
-    private val userFriendlyMessageMakers: List<(InputMismatchException) -> String?> = listOf(
+    private val userFriendlyMessageMakers: List<(RecognitionException) -> String?> = listOf(
         this::ifFeatureNameIsInvalid,
         this::ifFeatureValueNameIsInvalid,
         this::ifEnvironmentHasNoUnderscore,
     )
 
-    private fun ifFeatureNameIsInvalid(exception: InputMismatchException): String? =
-        exception.getCtx().upToType<FeatureDeclContext> {
+    private fun ifFeatureNameIsInvalid(exception: RecognitionException): String? =
+        exception.getContext().upToType<FeatureDeclContext> {
             if (exception.getExpectedTokens().contains(LSC_FEATURE)) {
-                val attemptedFeatureName = exception.getOffendingToken().getText()
+                val attemptedFeatureName = exception.getMismatchedToken().getTokenText()
                 val reason = when {
                     attemptedFeatureName[0].toUpperCase() != attemptedFeatureName[0] ->
                         "feature names must start with an uppercase letter"
@@ -363,10 +357,10 @@ private class LscErrorListener : CommonAntlrErrorListener() {
             } else null
         }
 
-    private fun ifFeatureValueNameIsInvalid(exception: InputMismatchException): String? =
-        exception.getCtx().upToType<FeatureDeclContext> {
+    private fun ifFeatureValueNameIsInvalid(exception: RecognitionException): String? =
+        exception.getContext().upToType<FeatureDeclContext> {
             if (exception.getExpectedTokens().contains(LSC_VALUE)) {
-                val attemptedValueName = exception.getOffendingToken().getText()
+                val attemptedValueName = exception.getMismatchedToken().getTokenText()
                 val reason = when {
                     attemptedValueName[0].toLowerCase() != attemptedValueName[0] ->
                         "value names must start with a lowercase letter"
@@ -376,9 +370,9 @@ private class LscErrorListener : CommonAntlrErrorListener() {
             } else null
         }
 
-    private fun ifEnvironmentHasNoUnderscore(exception: InputMismatchException): String? =
-        exception.getCtx().upToType<EnvironmentContext> { environmentContext ->
-            if (exception.getOffendingToken().getType().let { it == LSC_NEWLINE || it == EOF }) {
+    private fun ifEnvironmentHasNoUnderscore(exception: RecognitionException): String? =
+        exception.getContext().upToType<EnvironmentContext> { environmentContext ->
+            if (exception.getMismatchedToken().getTokenType().let { it == LSC_NEWLINE || it == EOF }) {
                 environmentContext.upToType<ChangeRuleContext>().downToType<RuleNameContext> { ruleContext ->
                     "The environment \"${environmentContext.getText()}\" in rule ${ruleContext.getText()} needs an underscore"
                 }
@@ -392,7 +386,7 @@ private class LscErrorListener : CommonAntlrErrorListener() {
         var context: RuleContext? = this
         while (context != null) {
             cls.safeCast(context)?.let { return it }
-            context = context.getParent()
+            context = context.getParentContext()
         }
         return null
     }
@@ -406,7 +400,8 @@ private class LscErrorListener : CommonAntlrErrorListener() {
     private fun <T : RuleContext> RuleContext.downToType(cls: KClass<T>): T? {
         cls.safeCast(this)?.let { return it }
         for (child in this.children) {
-            if (child is RuleContext) {
+            // For some reason the check "child is RuleContext" is always false on JS
+            if (child is ParserRuleContext) {
                 child.downToType(cls)?.let { return it }
             }
         }

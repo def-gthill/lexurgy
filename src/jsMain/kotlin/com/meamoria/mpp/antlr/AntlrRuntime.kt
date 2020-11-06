@@ -16,13 +16,13 @@ actual abstract external class Parser {
 actual open external class ParserRuleContext : RuleContext
 
 actual open external class RuleContext : RuleNode {
+    val parentCtx: RuleContext?
+
     override fun getText(): String
 
     override fun getChild(i: Int): ParseTree
 
     override fun getChildCount(): Int
-
-    actual override fun getParent(): RuleContext
 }
 
 actual external interface RuleNode : ParseTree
@@ -35,8 +35,6 @@ actual external interface ParseTree {
     actual fun getChild(i: Int): ParseTree
 
     actual fun getChildCount(): Int
-
-    actual fun getParent(): ParseTree
 }
 
 actual external interface CharStream
@@ -50,8 +48,8 @@ actual external class CommonTokenStream actual constructor(tokenSource: TokenSou
 actual open external class BufferedTokenStream : TokenStream
 
 actual external interface Token {
-    actual fun getText(): String
-    actual fun getType(): Int
+    val text: String
+    val type: Int
 }
 
 @JsName("Token")
@@ -66,10 +64,8 @@ actual external class IntervalSet {
 }
 
 actual open external class RecognitionException {
-    actual fun getCtx(): RuleContext?
-
-    actual fun getOffendingToken(): Token
-
+    val ctx: RuleContext?
+    val offendingToken: Token
     actual fun getExpectedTokens(): IntervalSet
 }
 

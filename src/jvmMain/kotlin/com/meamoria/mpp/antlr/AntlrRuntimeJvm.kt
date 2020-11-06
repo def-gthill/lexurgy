@@ -36,6 +36,8 @@ actual typealias ParserRuleContext = ParserRuleContext
 
 actual typealias RuleContext = RuleContext
 
+actual fun RuleContext.getParentContext(): RuleContext? = getParent()
+
 actual typealias RuleNode = RuleNode
 
 actual typealias TerminalNode = TerminalNode
@@ -55,6 +57,10 @@ actual typealias CommonTokenStream = CommonTokenStream
 actual typealias BufferedTokenStream = BufferedTokenStream
 
 actual typealias Token = Token
+
+actual fun Token.getTokenText(): String = text
+
+actual fun Token.getTokenType(): Int = type
 
 actual typealias IntervalSet = IntervalSet
 
@@ -114,6 +120,10 @@ actual abstract class CommonAntlrErrorListener : ANTLRErrorListener {
 }
 
 actual typealias RecognitionException = RecognitionException
+
+actual fun RecognitionException.getContext(): RuleContext? = ctx
+
+actual fun RecognitionException.getMismatchedToken(): Token = offendingToken
 
 actual typealias InputMismatchException = InputMismatchException
 

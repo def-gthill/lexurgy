@@ -2,9 +2,15 @@
 
 package com.meamoria.mpp.antlr
 
+actual fun RuleContext.getParentContext(): RuleContext? = parentCtx
+
 actual object CharStreams {
     actual fun fromString(s: String): CharStream = InputStream(s)
 }
+
+actual fun Token.getTokenText(): String = text
+
+actual fun Token.getTokenType(): Int = type
 
 actual fun Parser.addCommonAntlrErrorListener(listener: CommonAntlrErrorListener)=
     addErrorListener(listener)
@@ -18,7 +24,7 @@ actual abstract class CommonAntlrErrorListener {
         charPositionInLine: Int,
         msg: String,
         e: RecognitionException?
-    ) = handleSyntaxError(offendingSymbol, line, charPositionInLine, msg, e)
+    )= handleSyntaxError(offendingSymbol, line, charPositionInLine, msg, e)
 
     @JsName("reportAttemptingFullContext")
     fun reportAttemptingFullContext(
@@ -62,5 +68,9 @@ actual abstract class CommonAntlrErrorListener {
         exception: RecognitionException?,
     )
 }
+
+actual fun RecognitionException.getContext(): RuleContext? = ctx
+
+actual fun RecognitionException.getMismatchedToken(): Token = offendingToken
 
 actual val EOF: Int = TokenClass.EOF
