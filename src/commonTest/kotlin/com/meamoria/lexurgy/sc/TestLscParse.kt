@@ -152,7 +152,7 @@ class TestLscParse : StringSpec({
             it.message should startWith("The environment \"c\" in rule foobar needs an underscore")
         }
         shouldThrow<LscNotParsable> {
-            parser.parseChangeRule(
+            parser.parseFile(
                 """
                     foobar:
                         a => b / c
@@ -162,6 +162,20 @@ class TestLscParse : StringSpec({
             )
         }.also {
             it.message should startWith("The environment \"c\" in rule foobar needs an underscore")
+        }
+        shouldThrow<LscNotParsable> {
+            parser.parseFile(
+                """
+                    foobar:
+                        a => b / c _
+                    barfoo:
+                        a => b / c
+                    farboo:
+                        a => b / c _
+                """.trimIndent()
+            )
+        }.also {
+            it.message should startWith("The environment \"c\" in rule barfoo needs an underscore")
         }
     }
 

@@ -3,6 +3,8 @@
 package com.meamoria.lexurgy.sc
 
 import com.meamoria.mpp.antlr.*
+import kotlin.reflect.KClass
+import kotlin.reflect.safeCast
 
 expect class LscLexer(input: CharStream) : Lexer
 
@@ -178,6 +180,7 @@ expect fun EnvironmentListContext.allEnvironments(): List<EnvironmentContext>
 expect class EnvironmentContext : ParserRuleContext {
     fun environmentBefore(): EnvironmentBeforeContext?
     fun environmentAfter(): EnvironmentAfterContext?
+    fun ANCHOR(): TerminalNode?
     fun boundaryBefore(): BoundaryBeforeContext?
     fun boundaryAfter(): BoundaryAfterContext?
 }

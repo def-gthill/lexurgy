@@ -128,6 +128,7 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     class EnvironmentContext : ParserRuleContext {
         fun environmentBefore(): EnvironmentBeforeContext?
         fun environmentAfter(): EnvironmentAfterContext?
+        fun ANCHOR(): TerminalNode?
         fun boundaryBefore(): BoundaryBeforeContext?
         fun boundaryAfter(): BoundaryAfterContext?
     }

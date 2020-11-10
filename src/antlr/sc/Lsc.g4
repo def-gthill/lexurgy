@@ -30,7 +30,9 @@ exclusion: environment | environmentList;
 from: ruleElement;
 to: ruleElement;
 environmentList: LIST_START environment (SEP environment)* LIST_END;
-environment: (boundaryBefore WHITESPACE)? (environmentBefore WHITESPACE)? ANCHOR (WHITESPACE environmentAfter)? (WHITESPACE boundaryAfter)?;
+environment:
+    (boundaryBefore WHITESPACE)? (environmentBefore WHITESPACE)? ANCHOR (WHITESPACE environmentAfter)? (WHITESPACE boundaryAfter)?
+    | (boundaryBefore WHITESPACE)? environmentBefore? (WHITESPACE boundaryAfter)?;
 boundaryBefore: WORD_BOUNDARY;
 boundaryAfter: WORD_BOUNDARY;
 environmentBefore: ruleElement;

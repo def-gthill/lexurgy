@@ -1,9 +1,9 @@
 package com.meamoria.lexurgy.sc
 
 import com.meamoria.lexurgy.LscUserError
+import com.meamoria.lexurgy.downToType
+import com.meamoria.lexurgy.upToType
 import com.meamoria.mpp.antlr.*
-import kotlin.reflect.KClass
-import kotlin.reflect.safeCast
 
 class LscInterpreter<T>(val walker: LscWalker<T>) {
     fun parseFile(text: String): T = parseAndWalk(text) { it.lscFile() }
@@ -149,12 +149,18 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
 
     override fun visitEnvironmentList(ctx: EnvironmentListContext): T = tlist(listVisit(ctx.allEnvironments()))
 
-    override fun visitEnvironment(ctx: EnvironmentContext): T = walkRuleEnvironment(
-        optionalVisit(ctx.environmentBefore()),
-        optionalVisit(ctx.environmentAfter()),
-        ctx.boundaryBefore() != null,
-        ctx.boundaryAfter() != null,
-    )
+    override fun visitEnvironment(ctx: EnvironmentContext): T {
+        if (ctx.ANCHOR() == null) {
+            val ruleName = ctx.upToType<ChangeRuleContext>().downToType<RuleNameContext>()?.getText()
+            throw LscNotParsable(0, 0, "", "The environment \"${ctx.getText()}\" in rule $ruleName needs an underscore")
+        }
+        return walkRuleEnvironment(
+            optionalVisit(ctx.environmentBefore()),
+            optionalVisit(ctx.environmentAfter()),
+            ctx.boundaryBefore() != null,
+            ctx.boundaryAfter() != null,
+        )
+    }
 
     override fun visitEnvironmentBefore(ctx: EnvironmentBeforeContext): T = visit(ctx.ruleElement())
 
@@ -345,7 +351,7 @@ private class LscErrorListener : CommonAntlrErrorListener() {
     )
 
     private fun ifFeatureNameIsInvalid(exception: RecognitionException): String? =
-        exception.getContext().upToType<FeatureDeclContext> {
+        (exception.getContext() as ParserRuleContext?).upToType<FeatureDeclContext> {
             if (exception.getExpectedTokens().contains(LSC_FEATURE)) {
                 val attemptedFeatureName = exception.getMismatchedToken().getTokenText()
                 val reason = when {
@@ -358,7 +364,7 @@ private class LscErrorListener : CommonAntlrErrorListener() {
         }
 
     private fun ifFeatureValueNameIsInvalid(exception: RecognitionException): String? =
-        exception.getContext().upToType<FeatureDeclContext> {
+        (exception.getContext() as ParserRuleContext?).upToType<FeatureDeclContext> {
             if (exception.getExpectedTokens().contains(LSC_VALUE)) {
                 val attemptedValueName = exception.getMismatchedToken().getTokenText()
                 val reason = when {
@@ -371,45 +377,13 @@ private class LscErrorListener : CommonAntlrErrorListener() {
         }
 
     private fun ifEnvironmentHasNoUnderscore(exception: RecognitionException): String? =
-        exception.getContext().upToType<EnvironmentContext> { environmentContext ->
+        (exception.getContext() as ParserRuleContext?).upToType<EnvironmentContext> { environmentContext ->
             if (exception.getMismatchedToken().getTokenType().let { it == LSC_NEWLINE || it == EOF }) {
                 environmentContext.upToType<ChangeRuleContext>().downToType<RuleNameContext> { ruleContext ->
                     "The environment \"${environmentContext.getText()}\" in rule ${ruleContext.getText()} needs an underscore"
                 }
             } else null
         }
-
-    private inline fun <reified T : RuleContext> RuleContext?.upToType(): T? =
-        this?.upToType(T::class)
-
-    private fun <T : RuleContext> RuleContext.upToType(cls: KClass<T>): T? {
-        var context: RuleContext? = this
-        while (context != null) {
-            cls.safeCast(context)?.let { return it }
-            context = context.getParentContext()
-        }
-        return null
-    }
-
-    private inline fun <reified T : RuleContext> RuleContext?.upToType(fn: (T) -> String?): String? =
-        upToType<T>()?.let(fn)
-
-    private inline fun <reified T : RuleContext> RuleContext?.downToType(): T? =
-        this?.downToType(T::class)
-
-    private fun <T : RuleContext> RuleContext.downToType(cls: KClass<T>): T? {
-        cls.safeCast(this)?.let { return it }
-        for (child in this.children) {
-            // For some reason the check "child is RuleContext" is always false on JS
-            if (child is ParserRuleContext) {
-                child.downToType(cls)?.let { return it }
-            }
-        }
-        return null
-    }
-
-    private inline fun <reified T : RuleContext> RuleContext?.downToType(fn: (T) -> String?): String? =
-        downToType<T>()?.let(fn)
 }
 
 class LscNotParsable(val line: Int, val column: Int, val offendingSymbol: String, message: String) :
