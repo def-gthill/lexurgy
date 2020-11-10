@@ -347,7 +347,6 @@ private class LscErrorListener : CommonAntlrErrorListener() {
     private val userFriendlyMessageMakers: List<(RecognitionException) -> String?> = listOf(
         this::ifFeatureNameIsInvalid,
         this::ifFeatureValueNameIsInvalid,
-        this::ifEnvironmentHasNoUnderscore,
     )
 
     private fun ifFeatureNameIsInvalid(exception: RecognitionException): String? =
@@ -373,15 +372,6 @@ private class LscErrorListener : CommonAntlrErrorListener() {
                     else -> "value names must consist of letters and numbers only and start with a lowercase letter"
                 }
                 "A feature value can't be called \"$attemptedValueName\"; $reason"
-            } else null
-        }
-
-    private fun ifEnvironmentHasNoUnderscore(exception: RecognitionException): String? =
-        (exception.getContext() as ParserRuleContext?).upToType<EnvironmentContext> { environmentContext ->
-            if (exception.getMismatchedToken().getTokenType().let { it == LSC_NEWLINE || it == EOF }) {
-                environmentContext.upToType<ChangeRuleContext>().downToType<RuleNameContext> { ruleContext ->
-                    "The environment \"${environmentContext.getText()}\" in rule ${ruleContext.getText()} needs an underscore"
-                }
             } else null
         }
 }
