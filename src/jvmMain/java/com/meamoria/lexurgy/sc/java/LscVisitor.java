@@ -17,6 +17,12 @@ public interface LscVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitLscFile(LscParser.LscFileContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link LscParser#statement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitStatement(LscParser.StatementContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link LscParser#classDecl}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

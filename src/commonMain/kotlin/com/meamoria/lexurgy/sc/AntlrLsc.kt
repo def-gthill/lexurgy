@@ -75,17 +75,11 @@ expect open class LscBaseVisitor<T>() {
     open fun visitText(ctx: TextContext): T
 }
 
-expect class LscFileContext : ParserRuleContext {
-    fun deromanizer(): DeromanizerContext?
-    fun romanizer(): RomanizerContext?
-}
+expect class LscFileContext : ParserRuleContext
 
-expect fun LscFileContext.allFeatureDecls(): List<FeatureDeclContext>
-expect fun LscFileContext.allDiacriticDecls(): List<DiacriticDeclContext>
-expect fun LscFileContext.allSymbolDecls(): List<SymbolDeclContext>
-expect fun LscFileContext.allClassDecls(): List<ClassDeclContext>
-expect fun LscFileContext.allChangeRules(): List<ChangeRuleContext>
-expect fun LscFileContext.allInterRomanizers(): List<InterRomanizerContext>
+expect fun LscFileContext.allStatements(): List<StatementContext>
+
+expect class StatementContext : ParserRuleContext
 
 expect class ClassDeclContext : ParserRuleContext {
     fun value(): ValueContext

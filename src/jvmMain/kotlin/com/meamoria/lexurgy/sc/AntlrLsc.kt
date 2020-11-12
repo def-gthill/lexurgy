@@ -13,12 +13,9 @@ actual typealias LscBaseVisitor<T> = LscBaseVisitor<T>
 
 actual typealias LscFileContext = LscParser.LscFileContext
 
-actual fun LscFileContext.allFeatureDecls(): List<FeatureDeclContext> = featureDecl()
-actual fun LscFileContext.allDiacriticDecls(): List<DiacriticDeclContext> = diacriticDecl()
-actual fun LscFileContext.allSymbolDecls(): List<SymbolDeclContext> = symbolDecl()
-actual fun LscFileContext.allClassDecls(): List<ClassDeclContext> = classDecl()
-actual fun LscFileContext.allChangeRules(): List<ChangeRuleContext> = changeRule()
-actual fun LscFileContext.allInterRomanizers(): List<InterRomanizerContext> = interRomanizer()
+actual fun LscFileContext.allStatements(): List<StatementContext> = statement()
+
+actual typealias StatementContext = LscParser.StatementContext
 
 actual typealias ClassDeclContext = LscParser.ClassDeclContext
 

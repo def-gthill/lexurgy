@@ -1,5 +1,6 @@
 package com.meamoria.lexurgy.sc
 
+import com.meamoria.lexurgy.subsets
 import com.meamoria.mpp.kotest.*
 
 @Suppress("unused")
@@ -23,6 +24,35 @@ class TestLscParse : StringSpec({
                |    h => '
             """.trimMargin()
         ) shouldBe "drom((from(c), to(x))), rule(a-rule, (from(x), to(h))), rom((from(h), to(')))"
+    }
+
+    fun tryParsing(text: String) {
+        try {
+            parser.parseFile(text)
+        } catch (e: LscNotParsable) {
+            println("Failing example:")
+            println("------")
+            println(text)
+            println("------")
+            throw e
+        }
+    }
+
+    "Lsc file parsing should allow any of the statement types to be present or absent, with or without extra newlines" {
+        val elements = listOf(
+            "Feature Foo(foo, bar)",
+            "Diacritic ́  [stressed]",
+            "Symbol r̼ [silly]",
+            "Class bar {b, a, r}",
+            "Deromanizer:\n{o, e} => {ɔ, ɛ}",
+            "foobar:\no=>a",
+            "Romanizer:\n{ɔ, ɛ} => {o, e}",
+        )
+        for (subset in elements.subsets()) {
+            tryParsing(subset.joinToString(separator = "\n", prefix = "\n"))
+            tryParsing(subset.joinToString(separator = "\n", postfix = "\n"))
+            tryParsing(subset.joinToString(separator = "\n\n"))
+        }
     }
 
     "A feature declaration should be parsable as a string" {

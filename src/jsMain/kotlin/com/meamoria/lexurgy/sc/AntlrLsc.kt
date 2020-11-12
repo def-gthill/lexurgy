@@ -28,15 +28,10 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     actual fun value(): ValueContext
 
     class LscFileContext : ParserRuleContext {
-        fun deromanizer(): DeromanizerContext?
-        fun romanizer(): RomanizerContext?
-        fun featureDecl(): Array<FeatureDeclContext>
-        fun diacriticDecl(): Array<DiacriticDeclContext>
-        fun symbolDecl(): Array<SymbolDeclContext>
-        fun classDecl(): Array<ClassDeclContext>
-        fun changeRule(): Array<ChangeRuleContext>
-        fun interRomanizer(): Array<InterRomanizerContext>
+        fun statement(): Array<StatementContext>
     }
+
+    class StatementContext : ParserRuleContext
 
     class ClassDeclContext : ParserRuleContext {
         fun value(): ValueContext
@@ -331,12 +326,9 @@ actual typealias LscBaseVisitor<T> = LscVisitor<T>
 
 actual typealias LscFileContext = LscParser.LscFileContext
 
-actual fun LscFileContext.allFeatureDecls(): List<FeatureDeclContext> = featureDecl().toList()
-actual fun LscFileContext.allDiacriticDecls(): List<DiacriticDeclContext> = diacriticDecl().toList()
-actual fun LscFileContext.allSymbolDecls(): List<SymbolDeclContext> = symbolDecl().toList()
-actual fun LscFileContext.allClassDecls(): List<ClassDeclContext> = classDecl().toList()
-actual fun LscFileContext.allChangeRules(): List<ChangeRuleContext> = changeRule().toList()
-actual fun LscFileContext.allInterRomanizers(): List<InterRomanizerContext> = interRomanizer().toList()
+actual fun LscFileContext.allStatements(): List<StatementContext> = statement().toList()
+
+actual typealias StatementContext = LscParser.StatementContext
 
 actual typealias ClassDeclContext = LscParser.ClassDeclContext
 

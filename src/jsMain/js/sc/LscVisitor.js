@@ -18,6 +18,12 @@ LscVisitor.prototype.visitLscFile = function(ctx) {
 };
 
 
+// Visit a parse tree produced by LscParser#statement.
+LscVisitor.prototype.visitStatement = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
 // Visit a parse tree produced by LscParser#classDecl.
 LscVisitor.prototype.visitClassDecl = function(ctx) {
   return this.visitChildren(ctx);

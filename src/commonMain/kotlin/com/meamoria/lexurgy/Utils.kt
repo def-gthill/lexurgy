@@ -10,6 +10,12 @@ fun <T, R, S, V> Iterable<T>.zip3(
 fun <T, R> Iterable<Iterable<T>>.nestedMap(transform: (T) -> R): List<List<R>> =
     map { it.map(transform) }
 
+fun <T> List<T>.subsets(): Sequence<List<T>> = generateSequence(emptyList()) { prev ->
+    this.withIndex().find { it.index >= prev.size || it.value != prev[it.index] }?.let {
+        listOf(this[it.index]) + prev.drop(it.index)
+    }
+}
+
 /**
  * Adds spaces to pad this string to the specified length, but adding extra
  * spaces to compensate for combining characters that don't take up horizontal

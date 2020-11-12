@@ -1,10 +1,9 @@
 grammar Lsc;
 
-lscFile:
-    (featureDecl NEWLINE+)* (diacriticDecl NEWLINE+)* (symbolDecl NEWLINE+)* (classDecl NEWLINE+)* (deromanizer NEWLINE+)?
-    changeRule? ((NEWLINE+ (changeRule | interRomanizer))* NEWLINE+ changeRule)?
-    (NEWLINE+ romanizer)?
-    NEWLINE* EOF;
+lscFile: NEWLINE* statement? (NEWLINE+ statement)* NEWLINE* EOF;
+statement:
+    featureDecl | diacriticDecl | symbolDecl | classDecl |
+    deromanizer | changeRule | interRomanizer | romanizer;
 
 classDecl: CLASS_DECL WHITESPACE value WHITESPACE LIST_START classElement (SEP classElement)* LIST_END;
 classElement: classRef | text;

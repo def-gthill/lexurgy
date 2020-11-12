@@ -44,29 +44,32 @@ class LscInterpreter<T>(val walker: LscWalker<T>) {
 
 abstract class LscWalker<T> : LscBaseVisitor<T>() {
     override fun visitLscFile(ctx: LscFileContext): T {
-        val (changerules, intermediateRomanizers) = visitRulesAndIntermediateRomanizers(ctx)
+        val statementContexts = ctx.allStatements().map { it.getChild(0) as ParserRuleContext }
+        validateOrder(statementContexts)
+        val (changeRules, intermediateRomanizers) = visitRulesAndIntermediateRomanizers(statementContexts)
         return walkFile(
-            listVisit(ctx.allFeatureDecls()),
-            listVisit(ctx.allDiacriticDecls()),
-            listVisit(ctx.allSymbolDecls()),
-            listVisit(ctx.allClassDecls()),
-            optionalVisit(ctx.deromanizer()),
-            changerules,
-            optionalVisit(ctx.romanizer()),
-            intermediateRomanizers,
+            featureDeclarations = listVisit(statementContexts.filterIsInstance<FeatureDeclContext>()),
+            diacriticDeclarations = listVisit(statementContexts.filterIsInstance<DiacriticDeclContext>()),
+            symbolDeclarations = listVisit(statementContexts.filterIsInstance<SymbolDeclContext>()),
+            classDeclarations = listVisit(statementContexts.filterIsInstance<ClassDeclContext>()),
+            deromanizer = optionalVisit(statementContexts.filterIsInstance<DeromanizerContext>().singleOrNull()),
+            changeRules = changeRules,
+            romanizer = optionalVisit(statementContexts.filterIsInstance<RomanizerContext>().singleOrNull()),
+            intermediateRomanizers = intermediateRomanizers,
         )
     }
 
     private fun visitRulesAndIntermediateRomanizers(
-        ctx: LscFileContext): Pair<List<T>, List<RomanizerToFollowingRule<T>>> {
+        contexts: List<ParserRuleContext>
+    ): Pair<List<T>, List<RomanizerToFollowingRule<T>>> {
         val changeRules = mutableListOf<T>()
         val romanizers = mutableListOf<RomanizerToFollowingRule<T>>()
         var curRomanizer: T? = null
-        for (child: ParseTree in ctx.children) {
-            when(child) {
-                is InterRomanizerContext -> curRomanizer = visit(child)
+        for (context in contexts) {
+            when(context) {
+                is InterRomanizerContext -> curRomanizer = visit(context)
                 is ChangeRuleContext -> {
-                    val rule = visit(child)
+                    val rule = visit(context)
                     changeRules += rule
                     if (curRomanizer != null) {
                         romanizers += RomanizerToFollowingRule(curRomanizer, rule)
@@ -76,6 +79,10 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
             }
         }
         return changeRules to romanizers
+    }
+
+    private fun validateOrder(statements: List<ParserRuleContext>) {
+        // Don't validate anything yet
     }
 
     protected data class RomanizerToFollowingRule<T>(val romanizer: T, val rule: T)
