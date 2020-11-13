@@ -4,6 +4,7 @@ import com.meamoria.lexurgy.LscUserError
 import com.meamoria.lexurgy.downToType
 import com.meamoria.lexurgy.upToType
 import com.meamoria.mpp.antlr.*
+import kotlin.reflect.KClass
 
 class LscInterpreter<T>(val walker: LscWalker<T>) {
     fun parseFile(text: String): T = parseAndWalk(text) { it.lscFile() }
@@ -82,8 +83,38 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
     }
 
     private fun validateOrder(statements: List<ParserRuleContext>) {
-        // Don't validate anything yet
+        for ((prev, next) in statements.zipWithNext()) {
+            if (allowedStatementPositions.getValue(prev::class) > allowedStatementPositions.getValue(next::class)) {
+                throw LscNotParsable(
+                    0, 0, "",
+                    "The ${statementNames.getValue(prev::class)} must come after " +
+                            "the ${statementNames.getValue(next::class)}"
+                )
+            }
+        }
     }
+
+    private val allowedStatementPositions: Map<KClass<*>, Int> = mapOf(
+        FeatureDeclContext::class to 0,
+        DiacriticDeclContext::class to 10,
+        SymbolDeclContext::class to 20,
+        ClassDeclContext::class to 30,
+        DeromanizerContext::class to 40,
+        ChangeRuleContext::class to 50,
+        InterRomanizerContext::class to 50,
+        RomanizerContext::class to 60,
+    )
+
+    private val statementNames: Map<KClass<*>, String> = mapOf(
+        FeatureDeclContext::class to "feature declarations",
+        DiacriticDeclContext::class to "diacritic declarations",
+        SymbolDeclContext::class to "symbol declarations",
+        ClassDeclContext::class to "class declarations",
+        DeromanizerContext::class to "deromanizer",
+        ChangeRuleContext::class to "change rules",
+        InterRomanizerContext::class to "intermediate romanizers",
+        RomanizerContext::class to "final romanizer",
+    )
 
     protected data class RomanizerToFollowingRule<T>(val romanizer: T, val rule: T)
 

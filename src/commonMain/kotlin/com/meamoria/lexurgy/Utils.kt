@@ -10,11 +10,16 @@ fun <T, R, S, V> Iterable<T>.zip3(
 fun <T, R> Iterable<Iterable<T>>.nestedMap(transform: (T) -> R): List<List<R>> =
     map { it.map(transform) }
 
-fun <T> List<T>.subsets(): Sequence<List<T>> = generateSequence(emptyList()) { prev ->
-    this.withIndex().find { it.index >= prev.size || it.value != prev[it.index] }?.let {
-        listOf(this[it.index]) + prev.drop(it.index)
+fun <T> Iterable<T>.subsets(): Sequence<List<T>> {
+    val list = toList()
+    return generateSequence(emptyList()) { prev ->
+        this.withIndex().find { it.index >= prev.size || it.value != prev[it.index] }?.let {
+            listOf(list[it.index]) + prev.drop(it.index)
+        }
     }
 }
+
+fun <T> Iterable<T>.pairs(): Sequence<Pair<T, T>> = subsets().filter { it.size == 2 }.map { it[0] to it[1] }
 
 /**
  * Adds spaces to pad this string to the specified length, but adding extra

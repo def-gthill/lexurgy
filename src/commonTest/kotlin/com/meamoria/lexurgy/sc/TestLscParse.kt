@@ -1,5 +1,6 @@
 package com.meamoria.lexurgy.sc
 
+import com.meamoria.lexurgy.pairs
 import com.meamoria.lexurgy.subsets
 import com.meamoria.mpp.kotest.*
 
@@ -26,6 +27,16 @@ class TestLscParse : StringSpec({
         ) shouldBe "drom((from(c), to(x))), rule(a-rule, (from(x), to(h))), rom((from(h), to(')))"
     }
 
+    val statements = listOf(
+        "Feature Foo(foo, bar)",
+        "Diacritic ́  [stressed]",
+        "Symbol r̼ [silly]",
+        "Class bar {b, a, r}",
+        "Deromanizer:\n{o, e} => {ɔ, ɛ}",
+        "foobar:\no=>a",
+        "Romanizer:\n{ɔ, ɛ} => {o, e}",
+    )
+
     fun tryParsing(text: String) {
         try {
             parser.parseFile(text)
@@ -39,19 +50,41 @@ class TestLscParse : StringSpec({
     }
 
     "Lsc file parsing should allow any of the statement types to be present or absent, with or without extra newlines" {
-        val elements = listOf(
-            "Feature Foo(foo, bar)",
-            "Diacritic ́  [stressed]",
-            "Symbol r̼ [silly]",
-            "Class bar {b, a, r}",
-            "Deromanizer:\n{o, e} => {ɔ, ɛ}",
-            "foobar:\no=>a",
-            "Romanizer:\n{ɔ, ɛ} => {o, e}",
-        )
-        for (subset in elements.subsets()) {
+        for (subset in statements.subsets()) {
             tryParsing(subset.joinToString(separator = "\n", prefix = "\n"))
             tryParsing(subset.joinToString(separator = "\n", postfix = "\n"))
             tryParsing(subset.joinToString(separator = "\n\n"))
+        }
+    }
+
+    "Lsc file parsing should reject confusing orderings of statements" {
+        val statementNames = listOf(
+            "feature declarations",
+            "diacritic declarations",
+            "symbol declarations",
+            "class declarations",
+            "deromanizer",
+            "change rules",
+            "final romanizer",
+        )
+        for (pair in statements.indices.pairs()) {
+            val (x, y) = pair
+            @Suppress("UnnecessaryVariable") val first = x // These variables work around a weird corner-case bug
+            @Suppress("UnnecessaryVariable") val second = y
+            val swapped = statements.withIndex().map {
+                when (it.index) {
+                    first -> statements[second]
+                    second -> statements[first]
+                    else -> it.value
+                }
+            }
+            shouldThrow<LscNotParsable> {
+                parser.parseFile(swapped.joinToString("\n"))
+            }.also {
+                it.message should startWith(
+                    "The ${statementNames[second]} must come after"
+                )
+            }
         }
     }
 
