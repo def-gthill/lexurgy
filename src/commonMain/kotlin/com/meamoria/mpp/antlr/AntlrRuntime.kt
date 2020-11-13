@@ -12,6 +12,10 @@ expect fun Parser.addCommonAntlrErrorListener(listener: CommonAntlrErrorListener
 
 expect open class ParserRuleContext : RuleContext
 
+expect fun ParserRuleContext.getStartLine(): Int
+
+expect fun ParserRuleContext.getStartColumn(): Int
+
 expect open class RuleContext : RuleNode
 
 expect fun RuleContext.getParentContext(): RuleContext?

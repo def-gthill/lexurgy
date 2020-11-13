@@ -86,7 +86,7 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
         for ((prev, next) in statements.zipWithNext()) {
             if (allowedStatementPositions.getValue(prev::class) > allowedStatementPositions.getValue(next::class)) {
                 throw LscNotParsable(
-                    0, 0, "",
+                    prev.getStartLine(), 0, prev.getText(),
                     "The ${statementNames.getValue(prev::class)} must come after " +
                             "the ${statementNames.getValue(next::class)}"
                 )
@@ -190,7 +190,10 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
     override fun visitEnvironment(ctx: EnvironmentContext): T {
         if (ctx.ANCHOR() == null) {
             val ruleName = ctx.upToType<ChangeRuleContext>().downToType<RuleNameContext>()?.getText()
-            throw LscNotParsable(0, 0, "", "The environment \"${ctx.getText()}\" in rule $ruleName needs an underscore")
+            throw LscNotParsable(
+                ctx.getStartLine(), ctx.getStartColumn() + 1, ctx.getText(),
+                "The environment \"${ctx.getText()}\" in rule $ruleName needs an underscore"
+            )
         }
         return walkRuleEnvironment(
             optionalVisit(ctx.environmentBefore()),

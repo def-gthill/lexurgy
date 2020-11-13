@@ -78,12 +78,17 @@ class TestLscParse : StringSpec({
                     else -> it.value
                 }
             }
+            val lineNumbers = statements.scan(1) { acc, statement -> acc + statement.split("\n").size }
+            println(lineNumbers)
             shouldThrow<LscNotParsable> {
                 parser.parseFile(swapped.joinToString("\n"))
             }.also {
                 it.message should startWith(
                     "The ${statementNames[second]} must come after"
                 )
+                it.line shouldBe lineNumbers[first]
+                it.column shouldBe 0
+                it.offendingSymbol shouldBe statements[second]
             }
         }
     }
@@ -225,6 +230,9 @@ class TestLscParse : StringSpec({
             )
         }.also {
             it.message should startWith("The environment \"c\" in rule foobar needs an underscore")
+            it.line shouldBe 2
+            it.column shouldBe 14
+            it.offendingSymbol shouldBe "c"
         }
         shouldThrow<LscNotParsable> {
             parser.parseFile(
@@ -239,6 +247,7 @@ class TestLscParse : StringSpec({
             )
         }.also {
             it.message should startWith("The environment \"c\" in rule barfoo needs an underscore")
+            it.line shouldBe 4
         }
     }
 

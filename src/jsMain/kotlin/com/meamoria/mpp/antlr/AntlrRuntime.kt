@@ -13,7 +13,9 @@ actual abstract external class Parser {
     actual fun removeErrorListeners()
 }
 
-actual open external class ParserRuleContext : RuleContext
+actual open external class ParserRuleContext : RuleContext {
+    val start: Token
+}
 
 actual open external class RuleContext : RuleNode {
     val parentCtx: RuleContext?
@@ -50,6 +52,8 @@ actual open external class BufferedTokenStream : TokenStream
 actual external interface Token {
     val text: String
     val type: Int
+    val line: Int
+    val column: Int
 }
 
 @JsName("Token")

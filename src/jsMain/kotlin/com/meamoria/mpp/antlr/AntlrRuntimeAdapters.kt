@@ -2,6 +2,10 @@
 
 package com.meamoria.mpp.antlr
 
+actual fun ParserRuleContext.getStartLine(): Int = start.line
+
+actual fun ParserRuleContext.getStartColumn(): Int = start.column
+
 actual fun RuleContext.getParentContext(): RuleContext? = parentCtx
 
 actual object CharStreams {

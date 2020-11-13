@@ -34,6 +34,10 @@ actual fun Parser.addCommonAntlrErrorListener(listener: CommonAntlrErrorListener
 
 actual typealias ParserRuleContext = ParserRuleContext
 
+actual fun ParserRuleContext.getStartLine(): Int = start.line
+
+actual fun ParserRuleContext.getStartColumn(): Int = start.charPositionInLine
+
 actual typealias RuleContext = RuleContext
 
 actual fun RuleContext.getParentContext(): RuleContext? = getParent()
@@ -113,9 +117,8 @@ actual abstract class CommonAntlrErrorListener : ANTLRErrorListener {
         exception: RecognitionException?,
     )
 
-    private fun foo(e: RecognitionException) {
-        e.expectedTokens
-        com.meamoria.lexurgy.sc.java.LscParser.FEATURE
+    private fun foo(ctx: ParserRuleContext) {
+        ctx.stop
     }
 }
 
