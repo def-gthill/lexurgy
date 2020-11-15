@@ -242,6 +242,7 @@ Once you've defined features, you can define *symbols* in terms of *matrices* of
     ...
     Symbol l [alveolar approximant]
 
+Each symbol must have a distinct matrix --- you can't define both [p] and [b] as just ``[labial stop]``.
 Note that we didn't specify a voicing for ``l``, so it automatically has the value
 ``*Voicing``, i.e. it lacks the voicing feature entirely.
 
