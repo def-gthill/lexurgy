@@ -30,6 +30,10 @@ class Matrix(val valueList: List<MatrixValue>) {
     override fun hashCode(): Int {
         return valueSet.hashCode()
     }
+
+    companion object {
+        val EMPTY: Matrix = Matrix(emptyList())
+    }
 }
 
 interface MatrixValue {

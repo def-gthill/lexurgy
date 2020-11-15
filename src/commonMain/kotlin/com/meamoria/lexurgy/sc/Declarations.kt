@@ -11,7 +11,6 @@ class Declarations(
     val symbols: List<Symbol>,
     val classes: List<SegmentClass>
 ) {
-
     private val featureNameToFeatureMap = features.associateBy { it.name }
     private val valueNameToSimpleValue = features.flatMap { it.allValues }.associateBy { it.name }
     private val valueToFeature = features.flatMap { feature ->
@@ -24,7 +23,10 @@ class Declarations(
 
     private val symbolsAsComplexSymbols = symbols.map { complexSymbol(it) }
     private val symbolNameToSymbol = symbols.associateBy { it.name }
-    private val matrixToSimpleSymbol = symbols.associateBy { it.matrix.removeExplicitDefaults() }
+    private val matrixToSimpleSymbol = symbols.associateByCheckingDuplicates(
+        { it.declaredMatrix?.removeExplicitDefaults() },
+        { new, existing -> throw LscDuplicateMatrices(new.matrix, "symbols", new.name, existing.name) },
+    )
 
     private val matrixFullValueListCache = Cache<Matrix, List<MatrixValue>>()
     private val matrixSimpleValueCache = Cache<Matrix, Set<SimpleValue>>()
@@ -33,6 +35,23 @@ class Declarations(
     private val phoneticSegmentMatchCache = Cache<Pair<PhoneticSegment, PhoneticSegment>, Boolean>()
 
     private val classNameToClass = classes.associateBy { it.name }
+
+    private fun <T> Iterable<T>.associateByCheckingDuplicates(
+        keySelector: (T) -> Matrix?,
+        onDuplicate: (T, T) -> Nothing,
+    ): Map<Matrix, T> {
+        val result = mutableMapOf<Matrix, T>()
+        for (element in this) {
+            val matrix = keySelector(element)
+            if (matrix != null) {
+                if (matrix in result) {
+                    onDuplicate(element, result.getValue(matrix))
+                }
+                result[matrix] = element
+            }
+        }
+        return result
+    }
 
     private val phoneticParser = PhoneticParser(
         symbols.map { it.name },
@@ -77,7 +96,7 @@ class Declarations(
      * Returns true if the matrix matched, false otherwise. Binds variables.
      */
     fun PhoneticSegment.matches(matrix: Matrix, bindings: Bindings): Boolean {
-        val complexSymbolMatrix = (toMatrix() ?: Matrix(emptyList()))
+        val complexSymbolMatrix = (toMatrix() ?: Matrix.EMPTY)
         for (value in matrix.valueList) {
             if (!value.matches(complexSymbolMatrix, bindings)) return false
         }
@@ -230,8 +249,9 @@ class Feature(val name: String, val values: List<SimpleValue>, explicitDefault: 
     override fun toString(): String = values.joinToString(prefix = "$name(", postfix = ")")
 }
 
-class Symbol(val name: String, val matrix: Matrix) {
-    override fun toString(): String = name + if (matrix.valueList.isEmpty()) "" else " $matrix"
+class Symbol(val name: String, val declaredMatrix: Matrix?) {
+    val matrix = declaredMatrix ?: Matrix.EMPTY
+    override fun toString(): String = name + if (declaredMatrix == null) "" else " $matrix"
 }
 
 /**
@@ -259,3 +279,9 @@ data class Diacritic(val name: String, val matrix: Matrix, val before: Boolean, 
 
 class LscUndefinedName(val nameType: String, val undefinedName: String) :
     LscUserError("The $nameType name $undefinedName is not defined")
+
+class LscDuplicateMatrices(
+    matrix: Matrix, declarationType: String, newDeclaration: String, existingDeclaration: String
+) : LscUserError(
+    "The $declarationType $existingDeclaration and $newDeclaration both have " +
+            "the matrix $matrix; add features to make them distinct.")

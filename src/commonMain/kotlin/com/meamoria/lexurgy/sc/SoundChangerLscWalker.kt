@@ -76,7 +76,7 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
         )
 
     override fun walkSymbolDeclaration(symbol: String, matrix: ParseNode?): ParseNode =
-        SymbolDeclarationNode(Symbol(symbol, (matrix as? MatrixNode)?.matrix ?: Matrix(emptyList())))
+        SymbolDeclarationNode(Symbol(symbol, (matrix as? MatrixNode)?.matrix))
 
     override fun walkDeromanizer(subrules: List<ParseNode>): ParseNode =
         UnlinkedDeromanizer(subrules.convert())

@@ -143,9 +143,10 @@ class TestSoundChanger : StringSpec({
         val ch = lsc(
             """
                |Feature Manner(stop, nonstop)
-               |Symbol p [stop]
-               |Symbol t [stop]
-               |Symbol k [stop]
+               |Feature Place(labial, alveolar, velar)
+               |Symbol p [labial stop]
+               |Symbol t [alveolar stop]
+               |Symbol k [velar stop]
                |Symbol f [nonstop]
                |drop-stop:
                |    [stop] => *
@@ -154,6 +155,20 @@ class TestSoundChanger : StringSpec({
 
         ch("klaptrap") shouldBe "lara"
         ch("fniftikuf") shouldBe "fnifiuf"
+    }
+
+    "Multiple symbols with the same feature matrix should produce an LscDuplicateDeclaration" {
+        shouldThrow<LscDuplicateMatrices> {
+            lsc(
+                """
+                    Feature Type(*cons, vowel)
+                    Symbol æ [vowel]
+                    Symbol ɛ [vowel]
+                """.trimIndent()
+            )
+        }.also {
+            it.message shouldBe "The symbols æ and ɛ both have the matrix [vowel]; add features to make them distinct."
+        }
     }
 
     "We should be able to alter matrix features with a rule" {
