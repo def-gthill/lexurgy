@@ -11,11 +11,15 @@ class Declarations(
     val symbols: List<Symbol>,
     val classes: List<SegmentClass>
 ) {
-    private val featureNameToFeatureMap = features.associateBy { it.name }
+    private val featureNameToFeatureMap = features.associateByCheckingDuplicates(
+        { listOf(it.name) },
+        { name, _, _ -> throw LscDuplicateName("feature", name) }
+    )
     private val valueNameToSimpleValue = features.flatMap { it.allValues }.associateBy { it.name }
-    private val valueToFeature = features.flatMap { feature ->
-        feature.allValues.map { it to feature }
-    }.toMap()
+    private val valueToFeature = features.associateByCheckingDuplicates(
+        { it.allValues },
+        { value, _, _ -> throw LscDuplicateName("feature value", value.name) },
+    )
     private val defaults = features.map { it.default }
 
     private val diacriticNameToDiacritic = diacritics.associateBy { it.name }
@@ -24,8 +28,8 @@ class Declarations(
     private val symbolsAsComplexSymbols = symbols.map { complexSymbol(it) }
     private val symbolNameToSymbol = symbols.associateBy { it.name }
     private val matrixToSimpleSymbol = symbols.associateByCheckingDuplicates(
-        { it.declaredMatrix?.removeExplicitDefaults() },
-        { new, existing -> throw LscDuplicateMatrices(new.matrix, "symbols", new.name, existing.name) },
+        { listOfNotNull(it.declaredMatrix?.removeExplicitDefaults()) },
+        { matrix, new, existing -> throw LscDuplicateMatrices(matrix, "symbols", new.name, existing.name) },
     )
 
     private val matrixFullValueListCache = Cache<Matrix, List<MatrixValue>>()
@@ -36,18 +40,17 @@ class Declarations(
 
     private val classNameToClass = classes.associateBy { it.name }
 
-    private fun <T> Iterable<T>.associateByCheckingDuplicates(
-        keySelector: (T) -> Matrix?,
-        onDuplicate: (T, T) -> Nothing,
-    ): Map<Matrix, T> {
-        val result = mutableMapOf<Matrix, T>()
+    private fun <T, K> Iterable<T>.associateByCheckingDuplicates(
+        keySelector: (T) -> List<K>,
+        onDuplicate: (K, T, T) -> Nothing,
+    ): Map<K, T> {
+        val result = mutableMapOf<K, T>()
         for (element in this) {
-            val matrix = keySelector(element)
-            if (matrix != null) {
-                if (matrix in result) {
-                    onDuplicate(element, result.getValue(matrix))
+            for (key in keySelector(element)) {
+                if (key in result) {
+                    onDuplicate(key, element, result.getValue(key))
                 }
-                result[matrix] = element
+                result[key] = element
             }
         }
         return result
@@ -238,7 +241,7 @@ class Declarations(
         matches(this@Declarations, matrix, bindings)
 }
 
-expect class Cache<K, V>(): MutableMap<K, V>
+expect class Cache<K, V>() : MutableMap<K, V>
 
 class SegmentClass(val name: String, val sounds: List<String>)
 
@@ -278,10 +281,14 @@ data class ComplexSymbol internal constructor(val symbol: Symbol, val diacritics
 data class Diacritic(val name: String, val matrix: Matrix, val before: Boolean, val floating: Boolean)
 
 class LscUndefinedName(val nameType: String, val undefinedName: String) :
-    LscUserError("The $nameType name $undefinedName is not defined")
+    LscUserError("The $nameType \"$undefinedName\" is not defined")
+
+class LscDuplicateName(val nameType: String, val duplicateName: String) :
+    LscUserError("The $nameType \"$duplicateName\" is defined more than once")
 
 class LscDuplicateMatrices(
     matrix: Matrix, declarationType: String, newDeclaration: String, existingDeclaration: String
 ) : LscUserError(
     "The $declarationType $existingDeclaration and $newDeclaration both have " +
-            "the matrix $matrix; add features to make them distinct.")
+            "the matrix $matrix; add features to make them distinct."
+)

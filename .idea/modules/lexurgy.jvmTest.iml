@@ -27,7 +27,7 @@
             <array>
               <option value="$MODULE_DIR$/../../build/classes/kotlin/jvm/main" />
               <option value="$MODULE_DIR$/../../build/classes/java/main" />
-              <option value="$MODULE_DIR$/../../build/libs/lexurgy-0.8.2.jar" />
+              <option value="$MODULE_DIR$/../../build/libs/lexurgy-0.8.4.jar" />
             </array>
           </option>
           <option name="languageVersion" value="1.4" />

@@ -142,22 +142,57 @@ class TestSoundChanger : StringSpec({
     "We should be able to match sounds against a simple feature matrix" {
         val ch = lsc(
             """
-               |Feature Manner(stop, nonstop)
-               |Feature Place(labial, alveolar, velar)
-               |Symbol p [labial stop]
-               |Symbol t [alveolar stop]
-               |Symbol k [velar stop]
-               |Symbol f [nonstop]
-               |drop-stop:
-               |    [stop] => *
-            """.trimMargin()
+                Feature Manner(stop, nonstop)
+                Feature Place(labial, alveolar, velar)
+                Symbol p [labial stop]
+                Symbol t [alveolar stop]
+                Symbol k [velar stop]
+                Symbol f [nonstop]
+                drop-stop:
+                    [stop] => *
+            """.trimIndent()
         )
 
         ch("klaptrap") shouldBe "lara"
         ch("fniftikuf") shouldBe "fnifiuf"
     }
 
-    "Multiple symbols with the same feature matrix should produce an LscDuplicateDeclaration" {
+    "Duplicate feature declarations should produce an LscDuplicateName" {
+        shouldThrow<LscDuplicateName> {
+            lsc(
+                """
+                    Feature Manner(stop, nonstop)
+                    Feature Manner(labial, alveolar, velar)
+                """.trimIndent()
+            )
+        }.also {
+            it.message shouldBe "The feature \"Manner\" is defined more than once"
+        }
+    }
+
+    "Duplicate feature value declarations should produce an LscDuplicateName" {
+        shouldThrow<LscDuplicateName> {
+            lsc(
+                """
+                    Feature Manner(stop, stop)
+                """.trimIndent()
+            )
+        }.also {
+            it.message shouldBe "The feature value \"stop\" is defined more than once"
+        }
+        shouldThrow<LscDuplicateName> {
+            lsc(
+                """
+                    Feature Manner(stop, nonstop)
+                    Feature Place(nonstop, alveolar, velar)
+                """.trimIndent()
+            )
+        }.also {
+            it.message shouldBe "The feature value \"nonstop\" is defined more than once"
+        }
+    }
+
+    "Multiple symbols with the same feature matrix should produce an LscDuplicateMatrices" {
         shouldThrow<LscDuplicateMatrices> {
             lsc(
                 """
