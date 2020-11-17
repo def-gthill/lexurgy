@@ -13,14 +13,14 @@ diacriticDecl: DIACRITIC WHITESPACE STR1 WHITESPACE (DIA_BEFORE WHITESPACE)? (DI
 symbolDecl: SYMBOL WHITESPACE symbolName ((SEP symbolName)* | WHITESPACE matrix);
 symbolName: text;
 
-deromanizer: DEROMANIZER RULE_START NEWLINE subrules;
-romanizer: ROMANIZER RULE_START NEWLINE subrules;
-interRomanizer: ROMANIZER HYPHEN ruleName RULE_START NEWLINE subrules;
+deromanizer: DEROMANIZER RULE_START NEWLINE+ subrules;
+romanizer: ROMANIZER RULE_START NEWLINE+ subrules;
+interRomanizer: ROMANIZER HYPHEN ruleName RULE_START NEWLINE+ subrules;
 
-changeRule: ruleName (WHITESPACE filter)? (WHITESPACE PROPAGATE)? RULE_START NEWLINE subrules;
+changeRule: ruleName (WHITESPACE filter)? (WHITESPACE PROPAGATE)? RULE_START NEWLINE+ subrules;
 filter: classRef | matrix;
-subrules: subrule (NEWLINE SUBRULE RULE_START (WHITESPACE | NEWLINE) subrule)*;
-subrule: expression (NEWLINE expression)*;
+subrules: subrule (NEWLINE+ SUBRULE RULE_START (WHITESPACE | NEWLINE+) subrule)*;
+subrule: expression (NEWLINE+ expression)*;
 ruleName: VALUE (HYPHEN VALUE)*;
 
 expression: from CHANGE to (CONDITION condition)? (EXCLUSION exclusion)?;
@@ -62,7 +62,7 @@ feature: FEATURE;
 value: VALUE;
 text: (FEATURE | VALUE | STR1 | STR) NEGATION?;
 
-COMMENT: (WHITESPACE? COMMENT_START ~[\n\r]* NEWLINE*) -> skip;
+COMMENT: (WHITESPACE? COMMENT_START ~[\n\r]*) -> skip;
 SEP: ',' WHITESPACE?;
 CHANGE: WHITESPACE? '=>' WHITESPACE?;
 CONDITION: WHITESPACE? '/' WHITESPACE?;

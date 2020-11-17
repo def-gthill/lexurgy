@@ -27,13 +27,15 @@ class TestSoundChanger : StringSpec({
     }
 
     "A file with syntax errors should fail to parse even if the start is valid" {
-        shouldThrow<LscNotParsable> { lsc(
-            """
+        shouldThrow<LscNotParsable> {
+            lsc(
+                """
                 a-rule:
                 x=>h
                 ]]]]]
             """.trimIndent()
-        ) }
+            )
+        }
     }
 
     "We should be able to declare multiple rules in a file, executed sequentially" {
@@ -1073,6 +1075,15 @@ class TestSoundChanger : StringSpec({
         // We're just testing that these don't throw exceptions
         lsc("Deromanizer:\n    y => j\n")
         lsc("Deromanizer:\n    y => j\nrule:\n    j => ʒ\n\n\n")
-        lsc("rule:\n    p => b\n# Pointless comment\n    t => d\n    # Indented pointless comment\n    k => g\n")
+        lsc(
+            """
+            rule:
+                p => b
+            # Pointless comment
+                t => d # End of line pointless comment
+                # Indented pointless comment
+                k => g
+            """.trimIndent()
+        )
     }
 })

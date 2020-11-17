@@ -18,6 +18,11 @@ var LscParser = require('./LscParser').LscParser;
 var LscVisitor = require('./LscVisitor').LscVisitor;
 """
 
+compileJava {
+    sourceCompatibility = "1.8"
+    targetCompatibility = "1.8"
+}
+
 kotlin {
     jvm {
         withJava()
@@ -115,5 +120,5 @@ kotlin {
 }
 
 application {
-    mainClassName = "com.meamoria.lexurgy.MainKt"
+    mainClassName = "com.meamoria.lexurgy.MainJvmKt"
 }
