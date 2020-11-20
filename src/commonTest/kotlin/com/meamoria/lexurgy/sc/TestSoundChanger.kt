@@ -194,6 +194,31 @@ class TestSoundChanger : StringSpec({
         }
     }
 
+    "Duplicate symbol declarations should produce an LscDuplicateName" {
+        shouldThrow<LscDuplicateName> {
+            lsc(
+                """
+                    Feature Manner(stop, nonstop)
+                    Symbol p [stop]
+                    Symbol p [nonstop]
+                """.trimIndent()
+            )
+        }.also {
+            it.message shouldBe "The symbol \"p\" is defined more than once"
+        }
+        shouldThrow<LscDuplicateName> {
+            lsc(
+                """
+                    Feature Manner(stop, affricate)
+                    Symbol ts [affricate]
+                    Symbol ts, dz
+                """.trimIndent()
+            )
+        }.also {
+            it.message shouldBe "The symbol \"ts\" is defined more than once"
+        }
+    }
+
     "Multiple symbols with the same feature matrix should produce an LscDuplicateMatrices" {
         shouldThrow<LscDuplicateMatrices> {
             lsc(
@@ -337,6 +362,35 @@ class TestSoundChanger : StringSpec({
         ch("psataba") shouldBe "pʰadaba"
         ch("patsaba") shouldBe "pataba"
         ch("petetsa") shouldBe "pecetʰa"
+    }
+
+    "Duplicate diacritic declarations should produce an LscDuplicateName" {
+        shouldThrow<LscDuplicateName> {
+            lsc(
+                """
+                    Feature Breath(vcd, plain, aspir)
+                    Diacritic ʰ [aspir]
+                    Diacritic ʰ [plain]
+                """.trimIndent()
+            )
+        }.also {
+            it.message shouldBe "The diacritic \"ʰ\" is defined more than once"
+        }
+    }
+
+    "Multiple diacritics with the same feature matrix should produce an LscDuplicateMatrices" {
+        shouldThrow<LscDuplicateMatrices> {
+            lsc(
+                """
+                    Feature Breath(vcd, plain, aspir)
+                    Diacritic ʰ [aspir]
+                    Diacritic ʼ [aspir]
+                """.trimIndent()
+            )
+        }.also {
+            it.message shouldBe
+                    "The diacritics ʰ and ʼ both have the matrix [aspir]; add features to make them distinct."
+        }
     }
 
     "Symbol literals should match symbols with floating diacritics" {
@@ -662,6 +716,19 @@ class TestSoundChanger : StringSpec({
         ch("aptiko") shouldBe "aptigo"
     }
 
+    "Duplicate class declarations should produce an LscDuplicateName" {
+        shouldThrow<LscDuplicateName> {
+            lsc(
+                """
+                    Class foo {a, b, c}
+                    Class foo {d, e, f}
+                """.trimIndent()
+            )
+        }.also {
+            it.message shouldBe "The class \"foo\" is defined more than once"
+        }
+    }
+
     "We should be able to use previous class definitions in classes" {
         val ch = lsc(
             """
@@ -746,6 +813,25 @@ class TestSoundChanger : StringSpec({
 
         ch("taksidepsi") shouldBe "taskidespi"
         ch("fnitficuts") shouldBe "fnifticuts"
+    }
+
+    "Capturing multiple things with the same capture number should result in a LscReboundCapture" {
+        shouldThrow<LscRuleNotApplicable> {
+            val ch = lsc(
+                """
+                Class stop {p, t, k}
+                double-stop-epenthesis:
+                    * => i / _ @stop$1 @stop$1
+                """.trimIndent()
+            )
+            ch("ppa")
+        }.also {
+            it.cause.shouldBeInstanceOf<LscReboundCapture>()
+            it.message shouldBe
+                    "Rule double-stop-epenthesis could not be applied to word ppa (originally ppa)\n" +
+                    "Reason: Capture variable 1 is bound more than once; " +
+                    "replace the second with a capture reference (\"${'$'}1\")"
+        }
     }
 
     "We should be able to sequence rule expressions rather than having them all happen at once" {

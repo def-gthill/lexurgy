@@ -22,11 +22,23 @@ class Declarations(
     )
     private val defaults = features.map { it.default }
 
-    private val diacriticNameToDiacritic = diacritics.associateBy { it.name }
+    private val diacriticNameToDiacritic = diacritics.associateByCheckingDuplicates(
+        { listOf(it.name) },
+        { name, _, _ -> throw LscDuplicateName("diacritic", name) }
+    )
     private val floatingDiacritics = diacritics.filter { it.floating }
+    init {
+        diacritics.associateByCheckingDuplicates(
+            { listOf(it.matrix.removeExplicitDefaults()) },
+            { matrix, new, existing -> throw LscDuplicateMatrices(matrix, "diacritics", new.name, existing.name) },
+        )
+    }
 
     private val symbolsAsComplexSymbols = symbols.map { complexSymbol(it) }
-    private val symbolNameToSymbol = symbols.associateBy { it.name }
+    private val symbolNameToSymbol = symbols.associateByCheckingDuplicates(
+        { listOf(it.name) },
+        { name, _, _ -> throw LscDuplicateName("symbol", name) },
+    )
     private val matrixToSimpleSymbol = symbols.associateByCheckingDuplicates(
         { listOfNotNull(it.declaredMatrix?.removeExplicitDefaults()) },
         { matrix, new, existing -> throw LscDuplicateMatrices(matrix, "symbols", new.name, existing.name) },
@@ -243,7 +255,7 @@ class Declarations(
 
 expect class Cache<K, V>() : MutableMap<K, V>
 
-class SegmentClass(val name: String, val sounds: List<String>)
+data class SegmentClass(val name: String, val sounds: List<String>)
 
 class Feature(val name: String, val values: List<SimpleValue>, explicitDefault: SimpleValue? = null) {
     val default: SimpleValue = explicitDefault ?: SimpleValue.absent(name)

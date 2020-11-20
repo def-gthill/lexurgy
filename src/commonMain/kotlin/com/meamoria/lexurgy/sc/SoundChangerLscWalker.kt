@@ -44,6 +44,7 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
                     classes[nestedName]?.sounds ?: throw LscUndefinedName("class", nestedName)
                 }
             }
+            if (classNode.name in classes) throw LscDuplicateName("class", classNode.name)
             classes[classNode.name] = SegmentClass(classNode.name, newClassSounds)
         }
         return classes.values.toList()

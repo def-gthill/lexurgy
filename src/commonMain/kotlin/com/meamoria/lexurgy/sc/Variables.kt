@@ -22,3 +22,7 @@ class Bindings {
 }
 
 class LscUnboundCapture(number: Int) : LscUserError("Capture variable $number referenced before being bound")
+
+class LscReboundCapture(number: Int) : LscUserError(
+    "Capture variable $number is bound more than once; replace the second with a capture reference (\"${'$'}$number\")"
+)

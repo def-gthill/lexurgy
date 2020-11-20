@@ -82,8 +82,12 @@ interface SimpleMatcher<I : Segment<I>> : Matcher<I>
 
 class CaptureMatcher(val element: Matcher<PhonS>, val number: Int) : SimpleMatcher<PhonS> {
     override fun claim(declarations: Declarations, word: Word<PhonS>, start: Int, bindings: Bindings): Int? =
-        element.claim(declarations, word, start, bindings)?.also { end ->
-            bindings.captures[number] = word.slice(start until end)
+        if (number in bindings.captures) {
+            throw LscReboundCapture(number)
+        } else {
+            element.claim(declarations, word, start, bindings)?.also { end ->
+                bindings.captures[number] = word.slice(start until end)
+            }
         }
 
     override fun reversed(): Matcher<PhonS> = CaptureMatcher(element.reversed(), number)
