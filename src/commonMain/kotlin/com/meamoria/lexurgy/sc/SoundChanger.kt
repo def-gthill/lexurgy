@@ -7,7 +7,7 @@ class SoundChanger(
     val rules: List<ChangeRule>,
     val deromanizer: Deromanizer,
     val romanizer: Romanizer,
-    val intermediateRomanizers: Map<String, IntermediateRomanizer> = emptyMap()
+    val intermediateRomanizers: Map<String?, List<IntermediateRomanizer>> = emptyMap()
 ) : SoundChangerLscWalker.ParseNode {
     operator fun invoke(word: String): String = change(listOf(word)).single()
 
@@ -57,16 +57,20 @@ class SoundChanger(
         fun maybeReplace(realRomanizer: Romanizer): Romanizer =
             if (romanize) realRomanizer else Romanizer.empty()
 
+        fun runIntermediateRomanizers(ruleName: String?) {
+            intermediateRomanizers[ruleName]?.forEach { rom ->
+                result[rom.name] = applyRule(
+                    maybeReplace(rom.romanizer), words, curWords, debugIndices, debug
+                ).map { it.string }
+            }
+        }
+
         for (rule in rules) {
             if (rule.name == stopBefore) {
                 stopped = true
                 break
             }
-            intermediateRomanizers[rule.name]?.let { rom ->
-                result[rom.name] = applyRule(
-                    maybeReplace(rom.romanizer), words, curWords, debugIndices, debug
-                ).map { it.string }
-            }
+            runIntermediateRomanizers(rule.name)
             if (!started && (startAt == null || rule.name == startAt)) {
                 started = true
             }
@@ -74,6 +78,7 @@ class SoundChanger(
                 curWords = applyRule(rule, words, curWords, debugIndices, debug)
             }
         }
+        runIntermediateRomanizers(null)
 
         if (stopBefore != null && !stopped) {
             console("WARNING: No rule called $stopBefore; all rules applied")

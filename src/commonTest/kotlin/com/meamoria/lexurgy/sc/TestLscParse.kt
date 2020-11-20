@@ -79,7 +79,6 @@ class TestLscParse : StringSpec({
                 }
             }
             val lineNumbers = statements.scan(1) { acc, statement -> acc + statement.split("\n").size }
-            println(lineNumbers)
             shouldThrow<LscNotParsable> {
                 parser.parseFile(swapped.joinToString("\n"))
             }.also {

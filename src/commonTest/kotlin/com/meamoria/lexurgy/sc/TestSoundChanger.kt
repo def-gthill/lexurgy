@@ -1089,7 +1089,54 @@ class TestSoundChanger : StringSpec({
         ch.changeWithIntermediates(listOf("chachi", "vanechak")) shouldBe mapOf(
             "a" to listOf("shashi", "vaneshak"),
             "b" to listOf("xaaxi", "vaanexaak"),
-            null to listOf("säsi", "vänesäk")
+            null to listOf("säsi", "vänesäk"),
+        )
+    }
+
+    "We should be able to have several romanizers with no rules between them" {
+        val ch = lsc(
+            """
+                Deromanizer:
+                ch => tʃ
+                change:
+                tʃ => ʃ
+                Romanizer-a:
+                ʃ => sh
+                Romanizer-b:
+                ʃ => x
+                Romanizer:
+                ʃ => si
+            """.trimIndent()
+        )
+
+        ch.changeWithIntermediates(listOf("chachi", "vanechak")) shouldBe mapOf(
+            "a" to listOf("shashi", "vaneshak"),
+            "b" to listOf("xaxi", "vanexak"),
+            null to listOf("siasii", "vanesiak"),
+        )
+
+        val ch2 = lsc(
+            """
+                Deromanizer:
+                ch => tʃ
+                change:
+                tʃ => ʃ
+                Romanizer-a:
+                ʃ => sh
+                Romanizer-b:
+                ʃ => x
+                change-final:
+                a => æ
+                Romanizer:
+                ʃ => si
+                æ => ä
+            """.trimIndent()
+        )
+
+        ch2.changeWithIntermediates(listOf("chachi", "vanechak")) shouldBe mapOf(
+            "a" to listOf("shashi", "vaneshak"),
+            "b" to listOf("xaxi", "vanexak"),
+            null to listOf("siäsii", "vänesiäk"),
         )
     }
 

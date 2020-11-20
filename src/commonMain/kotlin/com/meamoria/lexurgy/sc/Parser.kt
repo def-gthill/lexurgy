@@ -65,20 +65,19 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
     ): Pair<List<T>, List<RomanizerToFollowingRule<T>>> {
         val changeRules = mutableListOf<T>()
         val romanizers = mutableListOf<RomanizerToFollowingRule<T>>()
-        var curRomanizer: T? = null
+        val curRomanizers = mutableListOf<T>()
         for (context in contexts) {
             when(context) {
-                is InterRomanizerContext -> curRomanizer = visit(context)
+                is InterRomanizerContext -> curRomanizers += visit(context)
                 is ChangeRuleContext -> {
                     val rule = visit(context)
                     changeRules += rule
-                    if (curRomanizer != null) {
-                        romanizers += RomanizerToFollowingRule(curRomanizer, rule)
-                        curRomanizer = null
-                    }
+                    romanizers.addAll(curRomanizers.map { RomanizerToFollowingRule(it, rule) })
+                    curRomanizers.clear()
                 }
             }
         }
+        romanizers.addAll(curRomanizers.map { RomanizerToFollowingRule(it, null) })
         return changeRules to romanizers
     }
 
@@ -116,7 +115,11 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
         RomanizerContext::class to "final romanizer",
     )
 
-    protected data class RomanizerToFollowingRule<T>(val romanizer: T, val rule: T)
+    /**
+     * A romanizer anchored before a particular rule.
+     * If ``rule`` is null, this romanizer is after all the rules.
+     */
+    protected data class RomanizerToFollowingRule<T>(val romanizer: T, val rule: T?)
 
     override fun visitClassDecl(ctx: ClassDeclContext): T = walkClassDeclaration(
         visit(ctx.value()),

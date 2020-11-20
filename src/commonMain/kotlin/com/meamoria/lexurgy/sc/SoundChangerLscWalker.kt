@@ -26,10 +26,11 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
             (deromanizer as UnlinkedDeromanizer?)?.link(declarations) ?: Deromanizer.empty(declarations)
         val linkedRomanizer =
             (romanizer as UnlinkedRomanizer?)?.link(declarations) ?: Romanizer.empty()
-        val linkedIntermediateRomanizers = intermediateRomanizers.map {
-            (it.rule as UnlinkedChangeRule).name to
-                    (it.romanizer as UnlinkedIntermediateRomanizer).link(declarations)
-        }.toMap()
+        val linkedIntermediateRomanizers = intermediateRomanizers.groupBy {
+            (it.rule as UnlinkedChangeRule?)?.name
+        }.mapValues { (_, value) ->
+            value.map { (it.romanizer as UnlinkedIntermediateRomanizer).link(declarations) }
+        }
         return SoundChanger(declarations, linkedRules, linkedDeromanizer, linkedRomanizer, linkedIntermediateRomanizers)
     }
 
