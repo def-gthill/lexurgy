@@ -54,6 +54,9 @@ lifting, like managing stress systems and assimiliation,
 while sticking with the simpler alternative lists and sound
 classes for easier rules.
 
+User Guide
+-----------
+
 .. toctree::
     :maxdepth: 2
     :caption: Contents:
