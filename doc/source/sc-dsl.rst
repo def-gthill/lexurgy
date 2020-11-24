@@ -624,5 +624,17 @@ after it (which haven't happened yet).
 
 .. TODO examples
 
+If the intermediate "romanizer" should just dump the phonetic form of each word,
+you can use the special rule "unchanged"::
+
+    Romanizer-phonetic:
+        unchanged
+
+    Romanizer:
+        {tʃ, ʃ} => {ch, sh}
+
+This will make Lexurgy produce both the phonetic form and the romanized form
+of the final words.
+
 For the command-line tool, you need to specify the :option:`-m` command-line argument
 in order for intermediate romanizers to activate.

@@ -149,8 +149,9 @@ expect fun SubruleContext.allExpressions(): List<ExpressionContext>
 expect class RuleNameContext : ParserRuleContext
 
 expect class ExpressionContext : ParserRuleContext {
-    fun from(): FromContext
-    fun to(): ToContext
+    fun UNCHANGED(): TerminalNode?
+    fun from(): FromContext?
+    fun to(): ToContext?
     fun condition(): ConditionContext?
     fun exclusion(): ExclusionContext?
 }

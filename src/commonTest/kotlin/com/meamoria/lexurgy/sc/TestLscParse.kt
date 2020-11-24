@@ -398,6 +398,8 @@ class TestLscParse : StringSpec({
             exclusion: String?
         ): String = "(from($ruleFrom), to($ruleTo)${optionalArg(condition)}${optionalArg(exclusion)})"
 
+        override fun walkDoNothingExpression(): String = "unchanged"
+
         override fun walkRuleEnvironment(
             before: String?,
             after: String?,

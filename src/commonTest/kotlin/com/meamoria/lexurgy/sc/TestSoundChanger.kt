@@ -1140,6 +1140,34 @@ class TestSoundChanger : StringSpec({
         )
     }
 
+    "The special rule 'unchanged' should do nothing" {
+        val ch = lsc(
+            """
+                Deromanizer:
+                    unchanged
+                    Then:
+                    ch => tʃ
+                nothing:
+                    unchanged
+                nothing-and-something:
+                    unchanged
+                    tʃ => ʃ
+                Romanizer-phonetic:
+                    unchanged
+                something:
+                    a => æ
+                Romanizer:
+                    ʃ => sh
+                    æ => ä
+            """.trimIndent()
+        )
+
+        ch.changeWithIntermediates(listOf("chachi", "vanechak")) shouldBe mapOf(
+            "phonetic" to listOf("ʃaʃi", "vaneʃak"),
+            null to listOf("shäshi", "väneshäk"),
+        )
+    }
+
     "The Kharulian consonant separation rule should break apart consecutive consonants" {
         val ch = lsc(
             """

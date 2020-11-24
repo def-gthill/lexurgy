@@ -173,12 +173,17 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
 
     override fun visitSubrule(ctx: SubruleContext): T = walkSubrule(listVisit(ctx.allExpressions()))
 
-    override fun visitExpression(ctx: ExpressionContext): T = walkRuleExpression(
-        visit(ctx.from()),
-        visit(ctx.to()),
-        optionalVisit(ctx.condition()),
-        optionalVisit(ctx.exclusion()),
-    )
+    override fun visitExpression(ctx: ExpressionContext): T =
+        if (ctx.UNCHANGED() == null) {
+            walkRuleExpression(
+                visit(ctx.from()!!),
+                visit(ctx.to()!!),
+                optionalVisit(ctx.condition()),
+                optionalVisit(ctx.exclusion()),
+            )
+        } else {
+            walkDoNothingExpression()
+        }
 
     override fun visitCondition(ctx: ConditionContext): T = visit(ctx.getChild(0))
 
@@ -312,6 +317,8 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
         condition: T?,
         exclusion: T?
     ): T
+
+    protected abstract fun walkDoNothingExpression(): T
 
     protected abstract fun walkRuleEnvironment(
         before: T?,

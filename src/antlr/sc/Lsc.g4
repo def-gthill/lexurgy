@@ -23,7 +23,7 @@ subrules: subrule (NEWLINE+ SUBRULE RULE_START (WHITESPACE | NEWLINE+) subrule)*
 subrule: expression (NEWLINE+ expression)*;
 ruleName: VALUE (HYPHEN VALUE)*;
 
-expression: from CHANGE to (CONDITION condition)? (EXCLUSION exclusion)?;
+expression: UNCHANGED | (from CHANGE to (CONDITION condition)? (EXCLUSION exclusion)?);
 condition: environment | environmentList;
 exclusion: environment | environmentList;
 from: ruleElement;
@@ -94,6 +94,7 @@ DEROMANIZER: 'Deromanizer' | 'deromanizer';
 ROMANIZER: 'Romanizer' | 'romanizer';
 SUBRULE: 'Then' | 'then';
 PROPAGATE: 'Propagate' | 'propagate';
+UNCHANGED: 'Unchanged' | 'unchanged';
 FEATURE: UPPER CHAR*;
 VALUE: LOWER CHAR*;
 NUMBER: DIGIT+;

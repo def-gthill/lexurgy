@@ -106,7 +106,7 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
 
     private fun List<ParseNode>.convert(): List<List<UnlinkedRuleExpression>> =
         map { subrule ->
-            (subrule as TList).elements.map { it as UnlinkedRuleExpression }
+            (subrule as TList).elements.filterIsInstance<UnlinkedRuleExpression>()
         }
 
     override fun walkSubrule(expressions: List<ParseNode>): ParseNode = tlist(expressions)
@@ -130,6 +130,8 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
             else -> emptyList()
         }
     )
+
+    override fun walkDoNothingExpression(): ParseNode = DoNothingExpression
 
     override fun walkRuleEnvironment(
         before: ParseNode?,
@@ -295,6 +297,8 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
             filtered
         )
     }
+
+    private object DoNothingExpression : ParseNode
 
     private class UnlinkedEnvironment(val before: RuleElement?, val after: RuleElement?) : ParseNode {
         fun plain(): Environment<PlainS> = Environment(

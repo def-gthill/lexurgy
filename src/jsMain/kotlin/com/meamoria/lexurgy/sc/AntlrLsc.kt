@@ -98,8 +98,9 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     class RuleNameContext : ParserRuleContext
 
     class ExpressionContext : ParserRuleContext {
-        fun from(): FromContext
-        fun to(): ToContext
+        fun UNCHANGED(): TerminalNode?
+        fun from(): FromContext?
+        fun to(): ToContext?
         fun condition(): ConditionContext?
         fun exclusion(): ExclusionContext?
     }
