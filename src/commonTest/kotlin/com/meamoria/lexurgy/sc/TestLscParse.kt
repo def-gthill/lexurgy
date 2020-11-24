@@ -92,6 +92,23 @@ class TestLscParse : StringSpec({
         }
     }
 
+    "All keywords should be case-insensitive" {
+        parser.parseFile(
+            """
+            feature Foo(foo, bar)
+            diacritic ́  (Before) (Floating) [stressed]
+            symbol r̼ [silly]
+            class bar {b, a, r}
+            deromanizer:
+                {o, e} => {ɔ, ɛ}
+            foobar Propagate:
+                o=>a
+            romanizer:
+                {ɔ, ɛ} => {o, e}
+            """.trimIndent()
+        )
+    }
+
     "A feature declaration should be parsable as a string" {
         parser.parseFeatureDeclaration("Feature Type(cons, vowel)") shouldBe "fdec(f(Type), v(cons), v(vowel))"
         parser.parseFeatureDeclaration(
@@ -124,7 +141,6 @@ class TestLscParse : StringSpec({
         parser.parseSymbolDeclaration("Symbol p [stop unvcd lab]") shouldBe "sym(p, mat(v(stop), v(unvcd), v(lab)))"
         parser.parseSymbolDeclaration("Symbol ᵑg [stop nas vcd vel]") shouldBe "sym(ᵑg, mat(v(stop), v(nas), v(vcd), v(vel)))"
         parser.parseSymbolDeclaration("Symbol stoopid [dumb idiotic]") shouldBe "sym(stoopid, mat(v(dumb), v(idiotic)))"
-        shouldThrow<LscNotParsable> { parser.parseSymbolDeclaration("symbol blah [blah]") }
         shouldThrow<LscNotParsable> { parser.parseSymbolDeclaration("Symbol blah blah [blah]") }
         shouldThrow<LscNotParsable> { parser.parseSymbolDeclaration("=>") }
     }

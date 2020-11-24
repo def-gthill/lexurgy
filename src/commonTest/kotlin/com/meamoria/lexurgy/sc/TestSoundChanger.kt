@@ -1019,9 +1019,9 @@ class TestSoundChanger : StringSpec({
                     Then: [vowel] => [stressed] / _ [!vowel]? $
                 Romanizer:
                     [long]${"$"}1 * => ${"$"}1 ${"$"}1
-                    Then:
+                    then:
                     [long] => [short]
-                    Then:
+                    then:
                     ʃ => sh
                     {ˈa, ˈe, ˈu, ˈi} => {á, é, ú, í}
                     
