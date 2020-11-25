@@ -1,5 +1,6 @@
 package com.meamoria.lexurgy.sc
 
+import com.meamoria.lexurgy.DanglingDiacritic
 import com.meamoria.mpp.kotest.*
 
 @Suppress("unused")
@@ -1033,6 +1034,50 @@ class TestSoundChanger : StringSpec({
         ch("chamek") shouldBe "shaamék"
     }
 
+    "Deromanizers and romanizers should default to all-phonetic" {
+        shouldThrow<DanglingDiacritic> {
+            lsc(
+                """
+                    Diacritic ' [ejective]
+                    Deromanizer:
+                        ' => ʔ
+                """.trimIndent()
+            )
+        }
+        shouldThrow<DanglingDiacritic> {
+            lsc(
+                """
+                    Diacritic ' [ejective]
+                    Romanizer:
+                        ʔ => '
+                """.trimIndent()
+            )
+        }
+        shouldThrow<DanglingDiacritic> {
+            lsc(
+                """
+                    Diacritic ' [ejective]
+                    Romanizer-foo:
+                        ʔ => '
+                """.trimIndent()
+            )
+        }
+    }
+
+    "Deromanizers and romanizers marked 'literal' should ignore declarations" {
+        val ch = lsc(
+            """
+                Diacritic ' [ejective]
+                Deromanizer literal:
+                    ' => ʔ
+                Romanizer literal:
+                    ʔ => '
+            """.trimIndent()
+        )
+
+        ch("ma'a") shouldBe "ma'a"
+    }
+
     "The matrix to symbol converter should still work if some symbols don't have features" {
         val ch = lsc(
             """
@@ -1166,70 +1211,6 @@ class TestSoundChanger : StringSpec({
             "phonetic" to listOf("ʃaʃi", "vaneʃak"),
             null to listOf("shäshi", "väneshäk"),
         )
-    }
-
-    "The Kharulian consonant separation rule should break apart consecutive consonants" {
-        val ch = lsc(
-            """
-                Class vowel {a, i, ə}
-                Class cons {p, t, k, s, m, n, l, r}
-                break-up-clusters:
-                    * => ə / {$ @cons _ @cons, @cons @cons _ @cons, @vowel @cons _ @cons $}
-            """.trimIndent()
-        )
-
-        ch("mtmkaasr") shouldBe "mətəməkaasər"
-        ch("tmkipnralpt") shouldBe "təməkipnəralpət"
-    }
-
-    "The Caidorian syncope rule should work properly (i.e. before environments should match backwards from the anchor)" {
-        val ch = lsc(
-            """
-                Feature Type(*cons, vowel)
-                Feature Height(low, lowmid, mid, high)
-                Feature Depth(front, central, back)
-                Feature Stress(*unstressed, stressed)
-                Feature Length(*short, long)
-
-                Diacritic ́  (floating) [stressed]
-                Diacritic ː (floating) [long]
-
-                Symbol pʰ, tʰ, cʰ, kʰ, bʱ, dʱ, ɟʱ, gʱ
-                Symbol ɛ [vowel lowmid front]
-                Symbol e [vowel mid front]
-                Symbol i [vowel high front]
-                Symbol a [vowel low central]
-                Symbol ɔ [vowel lowmid back]
-                Symbol o [vowel mid back]
-                Symbol u [vowel high back]
-                
-                Class aspir {pʰ, tʰ, cʰ, kʰ}
-                Class breathy {bʱ, dʱ, ɟʱ, gʱ}
-                Class unvcd {p, t, c, k}
-                Class vcd {b, d, ɟ, g}
-                Class stop {@aspir, @breathy, @unvcd, @vcd}
-                Class fricative {f, s, ç}
-                Class obstruent {@stop, @fricative}
-
-                Deromanizer:
-                    {ph, th, ch, kh} => {pʰ, tʰ, cʰ, kʰ}
-                    {bh, dh, jh, gh} => {bʱ, dʱ, ɟʱ, gʱ}
-                    j => ɟ
-                    sh => ç
-                    nh => ɲ
-                    Then:
-                    [vowel]${'$'}1 ${'$'}1 => [long] *
-                    Then:
-                    [vowel] => [stressed] / ${'$'} [cons]* _
-                syncope:
-                    [vowel short] => * / [vowel stressed] [cons]* _ @stop [cons]* [vowel]
-                    [vowel short] => * / [vowel stressed] [cons]* @obstruent _ @obstruent [cons]* [vowel]
-            """.trimIndent()
-        )
-
-        ch("migomausis") shouldBe "mígomausis"
-        ch("egidhi") shouldBe "égdʱi"
-        ch("eefase") shouldBe "éːfse"
     }
 
     "The file format should be fairly robust to extra newlines and blank lines" {

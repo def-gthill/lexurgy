@@ -66,14 +66,17 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     class SymbolNameContext : ParserRuleContext
 
     class DeromanizerContext : ParserRuleContext {
+        fun LITERAL(): TerminalNode?
         fun subrules(): SubrulesContext
     }
 
     class RomanizerContext : ParserRuleContext {
+        fun LITERAL(): TerminalNode?
         fun subrules(): SubrulesContext
     }
 
     class InterRomanizerContext : ParserRuleContext {
+        fun LITERAL(): TerminalNode?
         fun ruleName(): RuleNameContext
         fun subrules(): SubrulesContext
     }

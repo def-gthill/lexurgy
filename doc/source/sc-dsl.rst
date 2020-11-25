@@ -593,19 +593,8 @@ and another rule at the end with the name "Romanizer". Like any rule, romanizers
 and deromanizers can have both sequential subrules (separated by ``Then:``) and
 simultaneous subrules.
 
-The first sequential subrule of a deromanizer takes
-in *romanized* words, rather than phonetic representations. Romanized words
-are just plain text, and have no sense of any symbol, feature, or diacritic
-declarations you've defined. That way, you don't have to worry about your
-romanization system being compatible with your symbol declarations. You can
-use structural rules like alternative lists on the old side of the rule, but
-not classes or features. The remaining sequential subrules, however, are
-just ordinary rules, and can use all the normal Lexurgy features (except
-propagation and rule filters, which can't be applied to subrules).
-
-The reverse is true of romanizers; the *last* sequential subrule *produces*
-romanized words, so the above restrictions apply to the *new* side. Again,
-the remaining sequential subrules are just ordinary rules.
+Deromanizers and romanizers work just like ordinary rules, except that they don't support
+filters or propagation.
 
 .. TODO examples
 

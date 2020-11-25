@@ -22,7 +22,7 @@ copyright = '2020, Graham Hill'
 author = 'Graham Hill'
 
 # The full version, including alpha/beta/rc tags
-release = '0.8.4'
+release = '0.9.0'
 
 
 # -- General configuration ---------------------------------------------------
@@ -56,5 +56,9 @@ html_theme = 'bizstyle'
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+
+html_copy_source = False
+
+html_show_sourcelink = False
 
 highlight_language = 'none'

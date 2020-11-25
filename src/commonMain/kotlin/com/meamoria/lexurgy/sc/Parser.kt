@@ -152,13 +152,13 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
     }
 
     override fun visitDeromanizer(ctx: DeromanizerContext): T =
-        walkDeromanizer(untlist(visit(ctx.subrules())))
+        walkDeromanizer(untlist(visit(ctx.subrules())), ctx.LITERAL() != null)
 
     override fun visitRomanizer(ctx: RomanizerContext): T =
-        walkRomanizer(untlist(visit(ctx.subrules())))
+        walkRomanizer(untlist(visit(ctx.subrules())), ctx.LITERAL() != null)
 
     override fun visitInterRomanizer(ctx: InterRomanizerContext): T =
-        walkIntermediateRomanizer(ctx.ruleName().getText(), untlist(visit(ctx.subrules())))
+        walkIntermediateRomanizer(ctx.ruleName().getText(), untlist(visit(ctx.subrules())), ctx.LITERAL() != null)
 
     override fun visitChangeRule(ctx: ChangeRuleContext): T = walkChangeRule(
         ctx.ruleName().getText(),
@@ -296,11 +296,11 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
 
     protected abstract fun walkSymbolDeclaration(symbol: String, matrix: T? = null): T
 
-    protected abstract fun walkDeromanizer(subrules: List<T>): T
+    protected abstract fun walkDeromanizer(subrules: List<T>, literal: Boolean): T
 
-    protected abstract fun walkRomanizer(subrules: List<T>): T
+    protected abstract fun walkRomanizer(subrules: List<T>, literal: Boolean): T
 
-    protected abstract fun walkIntermediateRomanizer(ruleName: String, subrules: List<T>): T
+    protected abstract fun walkIntermediateRomanizer(ruleName: String, subrules: List<T>, literal: Boolean): T
 
     protected abstract fun walkChangeRule(
         ruleName: String,

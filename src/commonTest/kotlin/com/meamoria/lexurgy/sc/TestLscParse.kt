@@ -369,12 +369,14 @@ class TestLscParse : StringSpec({
         override fun walkSymbolDeclaration(symbol: String, matrix: String?): String =
             "sym($symbol${optionalArg(matrix)})"
 
-        override fun walkDeromanizer(subrules: List<String>): String = "drom(${subrules.joinToString()})"
+        override fun walkDeromanizer(subrules: List<String>, literal: Boolean): String =
+            "drom(${subrules.joinToString()}${if (literal) ", literal" else ""})"
 
-        override fun walkRomanizer(subrules: List<String>): String = "rom(${subrules.joinToString()})"
+        override fun walkRomanizer(subrules: List<String>, literal: Boolean): String =
+            "rom(${subrules.joinToString()}${if (literal) ", literal" else ""})"
 
-        override fun walkIntermediateRomanizer(ruleName: String, subrules: List<String>): String =
-            "introm($ruleName, ${subrules.joinToString()})"
+        override fun walkIntermediateRomanizer(ruleName: String, subrules: List<String>, literal: Boolean): String =
+            "introm($ruleName, ${subrules.joinToString()}${if (literal) ", literal" else ""})"
 
         override fun walkChangeRule(
             ruleName: String,

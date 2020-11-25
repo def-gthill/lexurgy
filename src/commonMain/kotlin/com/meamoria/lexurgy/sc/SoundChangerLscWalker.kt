@@ -80,14 +80,14 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
     override fun walkSymbolDeclaration(symbol: String, matrix: ParseNode?): ParseNode =
         SymbolDeclarationNode(Symbol(symbol, (matrix as? MatrixNode)?.matrix))
 
-    override fun walkDeromanizer(subrules: List<ParseNode>): ParseNode =
-        UnlinkedDeromanizer(subrules.convert())
+    override fun walkDeromanizer(subrules: List<ParseNode>, literal: Boolean): ParseNode =
+        UnlinkedDeromanizer(subrules.convert(), literal)
 
-    override fun walkRomanizer(subrules: List<ParseNode>): ParseNode =
-        UnlinkedRomanizer(subrules.convert())
+    override fun walkRomanizer(subrules: List<ParseNode>, literal: Boolean): ParseNode =
+        UnlinkedRomanizer(subrules.convert(), literal)
 
-    override fun walkIntermediateRomanizer(ruleName: String, subrules: List<ParseNode>): ParseNode =
-        UnlinkedIntermediateRomanizer(ruleName, subrules.convert())
+    override fun walkIntermediateRomanizer(ruleName: String, subrules: List<ParseNode>, literal: Boolean): ParseNode =
+        UnlinkedIntermediateRomanizer(ruleName, subrules.convert(), literal)
 
     override fun walkChangeRule(
         ruleName: String,
@@ -218,31 +218,49 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
 
     private class ClassDeclarationNode(val name: String, val elements: List<ParseNode>) : ParseNode
 
-    private class UnlinkedDeromanizer(val expressions: List<List<UnlinkedRuleExpression>>) : ParseNode {
+    private class UnlinkedDeromanizer(
+        val expressions: List<List<UnlinkedRuleExpression>>, val literal: Boolean
+    ) : ParseNode {
         fun link(declarations: Declarations): Deromanizer =
-            Deromanizer(
-                expressions.first().map { it.outPhonetic(declarations) },
-                expressions.drop(1).nestedMap { it.phonetic(declarations, false) },
-                declarations
-            )
+            if (literal) {
+                Deromanizer(
+                    expressions.first().map { it.outPhonetic(declarations) },
+                    expressions.drop(1).nestedMap { it.phonetic(declarations, false) },
+                    declarations,
+                )
+            } else {
+                Deromanizer(
+                    emptyList(),
+                    expressions.nestedMap { it.phonetic(declarations, false) },
+                    declarations,
+                )
+            }
     }
 
-    private class UnlinkedRomanizer(val expressions: List<List<UnlinkedRuleExpression>>) : ParseNode {
+    private class UnlinkedRomanizer(
+        val expressions: List<List<UnlinkedRuleExpression>>, val literal: Boolean
+    ) : ParseNode {
         fun link(declarations: Declarations): Romanizer =
-            Romanizer(
-                expressions.dropLast(1).nestedMap { it.phonetic(declarations, false) },
-                expressions.last().map { it.inPhonetic(declarations) }
-            )
+            if (literal) {
+                Romanizer(
+                    expressions.dropLast(1).nestedMap { it.phonetic(declarations, false) },
+                    expressions.last().map { it.inPhonetic(declarations) },
+                )
+            } else {
+                Romanizer(
+                    expressions.nestedMap { it.phonetic(declarations, false) },
+                    emptyList(),
+                )
+            }
     }
 
     private class UnlinkedIntermediateRomanizer(
-        val name: String, val expressions: List<List<UnlinkedRuleExpression>>
+        val name: String, val expressions: List<List<UnlinkedRuleExpression>>, val literal: Boolean
     ) : ParseNode {
         fun link(declarations: Declarations): SoundChanger.IntermediateRomanizer =
-            SoundChanger.IntermediateRomanizer(name, Romanizer(
-                expressions.dropLast(1).nestedMap { it.phonetic(declarations, false) },
-                expressions.last().map { it.inPhonetic(declarations) }
-            ))
+            SoundChanger.IntermediateRomanizer(
+                name, UnlinkedRomanizer(expressions, literal).link(declarations)
+            )
     }
 
     private class UnlinkedChangeRule(

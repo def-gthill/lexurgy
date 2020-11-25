@@ -13,9 +13,9 @@ diacriticDecl: DIACRITIC WHITESPACE STR1 WHITESPACE (DIA_BEFORE WHITESPACE)? (DI
 symbolDecl: SYMBOL WHITESPACE symbolName ((SEP symbolName)* | WHITESPACE matrix);
 symbolName: text;
 
-deromanizer: DEROMANIZER RULE_START NEWLINE+ subrules;
-romanizer: ROMANIZER RULE_START NEWLINE+ subrules;
-interRomanizer: ROMANIZER HYPHEN ruleName RULE_START NEWLINE+ subrules;
+deromanizer: DEROMANIZER (WHITESPACE LITERAL)? RULE_START NEWLINE+ subrules;
+romanizer: ROMANIZER (WHITESPACE LITERAL)? RULE_START NEWLINE+ subrules;
+interRomanizer: ROMANIZER HYPHEN ruleName (WHITESPACE LITERAL)? RULE_START NEWLINE+ subrules;
 
 changeRule: ruleName (WHITESPACE filter)? (WHITESPACE PROPAGATE)? RULE_START NEWLINE+ subrules;
 filter: classRef | matrix;
@@ -94,6 +94,7 @@ DEROMANIZER: 'Deromanizer' | 'deromanizer';
 ROMANIZER: 'Romanizer' | 'romanizer';
 SUBRULE: 'Then' | 'then';
 PROPAGATE: 'Propagate' | 'propagate';
+LITERAL: 'Literal' | 'literal';
 UNCHANGED: 'Unchanged' | 'unchanged';
 FEATURE: UPPER CHAR*;
 VALUE: LOWER CHAR*;

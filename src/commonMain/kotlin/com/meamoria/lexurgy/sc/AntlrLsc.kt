@@ -117,14 +117,17 @@ expect fun SymbolDeclContext.allSymbolNames(): List<SymbolNameContext>
 expect class SymbolNameContext : ParserRuleContext
 
 expect class DeromanizerContext : ParserRuleContext {
+    fun LITERAL(): TerminalNode?
     fun subrules(): SubrulesContext
 }
 
 expect class RomanizerContext : ParserRuleContext {
+    fun LITERAL(): TerminalNode?
     fun subrules(): SubrulesContext
 }
 
 expect class InterRomanizerContext : ParserRuleContext {
+    fun LITERAL(): TerminalNode?
     fun ruleName(): RuleNameContext
     fun subrules(): SubrulesContext
 }
