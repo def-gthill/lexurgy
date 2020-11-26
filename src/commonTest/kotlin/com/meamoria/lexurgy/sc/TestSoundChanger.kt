@@ -1216,15 +1216,17 @@ class TestSoundChanger : StringSpec({
     "The file format should be fairly robust to extra newlines and blank lines" {
         // We're just testing that these don't throw exceptions
         lsc("Deromanizer:\n    y => j\n")
-        lsc("Deromanizer:\n    y => j\nrule:\n    j => ʒ\n\n\n")
+        lsc("Deromanizer:\n\ty => j\nrule:\n    j => ʒ\n\n\n")("yay") shouldBe "ʒaʒ"
+        lsc("   ")
+        lsc("\n\n  \nDeromanizer:\n\t\n y => j\nrule:\n  \n   j => ʒ\n\n          ")
         lsc(
             """
-            rule:
-                p => b
-            # Pointless comment
-                t => d # End of line pointless comment
-                # Indented pointless comment
-                k => g
+                rule:
+                    p => b
+                # Pointless comment
+                    t => d # End of line pointless comment
+                    # Indented pointless comment
+                    k => g
             """.trimIndent()
         )
     }
