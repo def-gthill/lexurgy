@@ -6,6 +6,8 @@ expect abstract class StringSpec(body: StringSpec.() -> Unit) {
 
 expect interface TestContext
 
+expect fun fail(message: String): Nothing
+
 expect infix fun <T> T.should(matcher: (T) -> Unit)
 
 expect infix fun <T, U : T> T.shouldBe(expected: U?)

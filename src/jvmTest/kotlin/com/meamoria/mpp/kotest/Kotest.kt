@@ -5,6 +5,7 @@ import io.kotest.core.test.TestContext
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
+import io.kotest.assertions.fail
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.matchers.string.startWith
@@ -12,6 +13,8 @@ import io.kotest.matchers.string.startWith
 actual typealias StringSpec = StringSpec
 
 actual typealias TestContext = TestContext
+
+actual fun fail(message: String): Nothing = fail(message)
 
 actual infix fun <T> T.should(matcher: (T) -> Unit) = should(matcher)
 

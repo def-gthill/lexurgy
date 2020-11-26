@@ -30,10 +30,8 @@ from: ruleElement;
 to: ruleElement;
 environmentList: LIST_START environment (SEP environment)* LIST_END;
 environment:
-    (boundaryBefore WHITESPACE)? (environmentBefore WHITESPACE)? ANCHOR (WHITESPACE environmentAfter)? (WHITESPACE boundaryAfter)?
-    | (boundaryBefore WHITESPACE)? environmentBefore? (WHITESPACE boundaryAfter)?;
-boundaryBefore: WORD_BOUNDARY;
-boundaryAfter: WORD_BOUNDARY;
+    (environmentBefore WHITESPACE)? ANCHOR (WHITESPACE environmentAfter)?
+    | environmentBefore?;
 environmentBefore: ruleElement;
 environmentAfter: ruleElement;
 
@@ -44,7 +42,7 @@ capture: (group | list | negated | classRef | fancyMatrix) captureRef;
 repeater: (group | list | simple) repeaterType;
 group: O_PAREN ruleElement C_PAREN;
 list: LIST_START ruleElement (SEP ruleElement)* LIST_END;
-simple: negated | classRef | captureRef | fancyMatrix | empty | text;
+simple: negated | classRef | captureRef | fancyMatrix | empty | boundary | text;
 negated: NEGATION classRef;
 classRef: CLASSREF value;
 captureRef: WORD_BOUNDARY NUMBER;
@@ -56,6 +54,7 @@ absentFeature: NULL feature;
 featureVariable: WORD_BOUNDARY feature;
 
 empty: NULL;
+boundary: WORD_BOUNDARY;
 repeaterType: AT_LEAST_ONE | NULL | OPTIONAL;
 matrix: MATRIX_START value? (WHITESPACE value)* MATRIX_END;
 feature: FEATURE;

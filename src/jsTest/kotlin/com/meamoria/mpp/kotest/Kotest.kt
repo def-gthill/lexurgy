@@ -13,6 +13,8 @@ actual typealias StringSpec = StringSpec
 
 actual typealias TestContext = TestContext
 
+actual fun fail(message: String): Nothing = io.kotest.assertions.fail(message)
+
 actual infix fun <T> T.should(matcher: (T) -> Unit) = should(matcher)
 
 actual infix fun <T, U : T> T.shouldBe(expected: U?) = shouldBe(expected)

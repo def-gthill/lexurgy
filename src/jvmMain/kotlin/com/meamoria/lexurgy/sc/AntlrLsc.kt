@@ -73,10 +73,6 @@ actual fun EnvironmentListContext.allEnvironments(): List<EnvironmentContext> = 
 
 actual typealias EnvironmentContext = LscParser.EnvironmentContext
 
-actual typealias BoundaryBeforeContext = LscParser.BoundaryBeforeContext
-
-actual typealias BoundaryAfterContext = LscParser.BoundaryAfterContext
-
 actual typealias EnvironmentBeforeContext = LscParser.EnvironmentBeforeContext
 
 actual typealias EnvironmentAfterContext = LscParser.EnvironmentAfterContext
@@ -120,6 +116,8 @@ actual typealias AbsentFeatureContext = LscParser.AbsentFeatureContext
 actual typealias FeatureVariableContext = LscParser.FeatureVariableContext
 
 actual typealias EmptyContext = LscParser.EmptyContext
+
+actual typealias BoundaryContext = LscParser.BoundaryContext
 
 actual typealias RepeaterTypeContext = LscParser.RepeaterTypeContext
 

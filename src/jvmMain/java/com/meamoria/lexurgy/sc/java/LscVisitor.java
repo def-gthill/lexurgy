@@ -155,18 +155,6 @@ public interface LscVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitEnvironment(LscParser.EnvironmentContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link LscParser#boundaryBefore}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitBoundaryBefore(LscParser.BoundaryBeforeContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link LscParser#boundaryAfter}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitBoundaryAfter(LscParser.BoundaryAfterContext ctx);
-	/**
 	 * Visit a parse tree produced by {@link LscParser#environmentBefore}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -280,6 +268,12 @@ public interface LscVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitEmpty(LscParser.EmptyContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link LscParser#boundary}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitBoundary(LscParser.BoundaryContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link LscParser#repeaterType}.
 	 * @param ctx the parse tree

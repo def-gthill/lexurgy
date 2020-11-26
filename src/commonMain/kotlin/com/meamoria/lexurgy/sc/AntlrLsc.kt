@@ -47,8 +47,6 @@ expect open class LscBaseVisitor<T>() {
     open fun visitTo(ctx: ToContext): T
     open fun visitEnvironmentList(ctx: EnvironmentListContext): T
     open fun visitEnvironment(ctx: EnvironmentContext): T
-    open fun visitBoundaryBefore(ctx: BoundaryBeforeContext): T
-    open fun visitBoundaryAfter(ctx: BoundaryAfterContext): T
     open fun visitEnvironmentBefore(ctx: EnvironmentBeforeContext): T
     open fun visitEnvironmentAfter(ctx: EnvironmentAfterContext): T
     open fun visitRuleElement(ctx: RuleElementContext): T
@@ -68,6 +66,7 @@ expect open class LscBaseVisitor<T>() {
     open fun visitAbsentFeature(ctx: AbsentFeatureContext): T
     open fun visitFeatureVariable(ctx: FeatureVariableContext): T
     open fun visitEmpty(ctx: EmptyContext): T
+    open fun visitBoundary(ctx: BoundaryContext): T
     open fun visitRepeaterType(ctx: RepeaterTypeContext): T
     open fun visitMatrix(ctx: MatrixContext): T
     open fun visitFeature(ctx: FeatureContext): T
@@ -179,13 +178,7 @@ expect class EnvironmentContext : ParserRuleContext {
     fun environmentBefore(): EnvironmentBeforeContext?
     fun environmentAfter(): EnvironmentAfterContext?
     fun ANCHOR(): TerminalNode?
-    fun boundaryBefore(): BoundaryBeforeContext?
-    fun boundaryAfter(): BoundaryAfterContext?
 }
-
-expect class BoundaryBeforeContext : ParserRuleContext
-
-expect class BoundaryAfterContext : ParserRuleContext
 
 expect class EnvironmentBeforeContext : ParserRuleContext {
     fun ruleElement(): RuleElementContext
@@ -250,6 +243,8 @@ expect class FeatureVariableContext : ParserRuleContext {
 }
 
 expect class EmptyContext : ParserRuleContext
+
+expect class BoundaryContext : ParserRuleContext
 
 expect class RepeaterTypeContext : ParserRuleContext {
     fun AT_LEAST_ONE(): TerminalNode?

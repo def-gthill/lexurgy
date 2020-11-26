@@ -543,6 +543,26 @@ class TestSoundChanger : StringSpec({
         ch("mitochondrion") shouldBe "mituchundriun"
     }
 
+    "Word boundaries should work inside alternative lists" {
+        val ch = lsc(
+            """
+                Class cons {p, t, k, s, m, n, l}
+                nasalization:
+                    {an, en, on} => {ã, ẽ, õ} / _ {$, @cons}
+            """.trimIndent()
+        )
+
+        ch("pant") shouldBe "pãt"
+        ch("sen") shouldBe "sẽ"
+        ch("senon") shouldBe "senõ"
+        ch("senont") shouldBe "senõt"
+        ch("senonet") shouldBe "senonet"
+    }
+
+    "Misplaced word boundaries should result in an LscFruitlessWordBoundary" {
+        fail("Not yet!")
+    }
+
     "We should be able to match repeated segments" {
         val ch = lsc(
             """

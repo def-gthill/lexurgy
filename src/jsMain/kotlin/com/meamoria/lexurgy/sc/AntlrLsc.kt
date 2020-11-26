@@ -200,6 +200,8 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
 
     class EmptyContext : ParserRuleContext
 
+    class BoundaryContext : ParserRuleContext
+
     class RepeaterTypeContext : ParserRuleContext {
         fun AT_LEAST_ONE(): TerminalNode?
         fun NULL(): TerminalNode?
@@ -273,10 +275,6 @@ open external class LscVisitor<T> {
 
     open fun visitEnvironment(ctx: EnvironmentContext): T
 
-    open fun visitBoundaryBefore(ctx: BoundaryBeforeContext): T
-
-    open fun visitBoundaryAfter(ctx: BoundaryAfterContext): T
-
     open fun visitEnvironmentBefore(ctx: EnvironmentBeforeContext): T
 
     open fun visitEnvironmentAfter(ctx: EnvironmentAfterContext): T
@@ -314,6 +312,8 @@ open external class LscVisitor<T> {
     open fun visitFeatureVariable(ctx: FeatureVariableContext): T
 
     open fun visitEmpty(ctx: EmptyContext): T
+
+    open fun visitBoundary(ctx: BoundaryContext): T
 
     open fun visitRepeaterType(ctx: RepeaterTypeContext): T
 
@@ -390,10 +390,6 @@ actual fun EnvironmentListContext.allEnvironments(): List<EnvironmentContext> = 
 
 actual typealias EnvironmentContext = LscParser.EnvironmentContext
 
-actual typealias BoundaryBeforeContext = LscParser.BoundaryBeforeContext
-
-actual typealias BoundaryAfterContext = LscParser.BoundaryAfterContext
-
 actual typealias EnvironmentBeforeContext = LscParser.EnvironmentBeforeContext
 
 actual typealias EnvironmentAfterContext = LscParser.EnvironmentAfterContext
@@ -437,6 +433,8 @@ actual typealias AbsentFeatureContext = LscParser.AbsentFeatureContext
 actual typealias FeatureVariableContext = LscParser.FeatureVariableContext
 
 actual typealias EmptyContext = LscParser.EmptyContext
+
+actual typealias BoundaryContext = LscParser.BoundaryContext
 
 actual typealias RepeaterTypeContext = LscParser.RepeaterTypeContext
 
