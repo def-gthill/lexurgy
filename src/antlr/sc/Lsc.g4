@@ -1,6 +1,6 @@
 grammar Lsc;
 
-lscFile: NEWLINE* statement? (NEWLINE+ statement)* NEWLINE* EOF;
+lscFile: WHITESPACE | NEWLINE* statement? (NEWLINE+ statement)* NEWLINE* EOF;
 statement:
     featureDecl | diacriticDecl | symbolDecl | classDecl |
     deromanizer | changeRule | interRomanizer | romanizer;
@@ -69,7 +69,7 @@ CONDITION: WHITESPACE? '/' WHITESPACE?;
 EXCLUSION: WHITESPACE? '//' WHITESPACE?;
 ANCHOR: '_';
 NEWLINE: WHITESPACE? ('\r\n' | '\n') WHITESPACE?;
-WHITESPACE: ' '+;
+WHITESPACE: [\p{White_Space}]+;
 O_PAREN: '(';
 C_PAREN: ')';
 NULL: '*';
