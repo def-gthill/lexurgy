@@ -106,5 +106,5 @@ fragment UPPER: [A-Z];
 fragment LOWER: [a-z];
 fragment CHAR: [A-Za-z0-9];
 fragment DIGIT: [0-9];
-fragment ANY: ~[ ,=>()*[\]{}+?/\-_:!$@#\n\r];
+fragment ANY: ('\\' .) | ~[ \\,=>()*[\]{}+?/\-_:!$@#\n\r];
 fragment COMMENT_START: '#';

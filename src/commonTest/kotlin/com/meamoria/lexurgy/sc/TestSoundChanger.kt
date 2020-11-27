@@ -1230,4 +1230,29 @@ class TestSoundChanger : StringSpec({
             """.trimIndent()
         )
     }
+
+    "We should be able to use reserved characters in literal text by escaping them with a backslash" {
+        val ch = lsc(
+            """
+                Feature Type(cons, vowel)
+                Feature Voicing(unvoiced, voiced)
+                Symbol t [cons unvoiced]
+                Symbol d [cons voiced]
+                Symbol \@ [vowel]
+                Class swirly {\@}
+                Deromanizer:
+                    \+ => t
+                    a => \@
+                intervocalic-lenition:
+                    [unvoiced] => [voiced] / [vowel] _ [vowel]
+                no-swirly:
+                    @swirly => i
+                Romanizer:
+                    d => \\
+                    i => \_
+            """.trimIndent()
+        )
+
+        ch("a+a+a") shouldBe "_\\_\\_"
+    }
 })

@@ -145,7 +145,7 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
     )
 
     override fun visitSymbolDecl(ctx: SymbolDeclContext): T {
-        val symbolNames = ctx.allSymbolNames().map { it.getText() }
+        val symbolNames = ctx.allSymbolNames().map { removeEscapes(it.getText()) }
         val matrix = ctx.matrix()
         return if (matrix == null) tlist(symbolNames.map { walkSymbolDeclaration(it) })
         else tlist(listOf(walkSymbolDeclaration(symbolNames.single(), visit(matrix))))
@@ -268,7 +268,11 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
 
     override fun visitValue(ctx: ValueContext): T = walkValue(ctx.VALUE().getText())
 
-    override fun visitText(ctx: TextContext): T = walkText(ctx.getChild(0).getText(), ctx.NEGATION() != null)
+    override fun visitText(ctx: TextContext): T =
+        walkText(removeEscapes(ctx.getChild(0).getText()), ctx.NEGATION() != null)
+
+    private fun removeEscapes(text: String): String =
+        text.split("\\\\").joinToString("\\") { it.replace("\\", "") }
 
     protected abstract fun walkFile(
         featureDeclarations: List<T>,
