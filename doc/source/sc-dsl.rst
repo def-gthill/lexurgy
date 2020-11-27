@@ -41,6 +41,22 @@ Any line that starts with # is a comment, and Lexurgy will ignore it::
 
 .. note::
 
+    The following characters mean something special to Lexurgy::
+
+        \ , = > ( ) [ ] { } * + ? / - _ : ! $ @ #
+
+    If you need to use one of these characters as part of a rule
+    (e.g. you're working with a click language and want to use ``!``),
+    you have to put a backslash (``\``) in front of it. For example::
+
+        click-loss:
+            \! => t
+
+    This works anywhere you could use IPA: in rules, in symbol definitions,
+    in class definitions, etc.
+
+.. note::
+
     Indentation is insignificant; these examples are indented purely for readability.
     This works equally well::
 
