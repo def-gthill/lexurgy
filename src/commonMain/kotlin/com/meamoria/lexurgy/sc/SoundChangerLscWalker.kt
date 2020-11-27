@@ -136,21 +136,9 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
     override fun walkRuleEnvironment(
         before: ParseNode?,
         after: ParseNode?,
-        boundaryBefore: Boolean,
-        boundaryAfter: Boolean
     ): ParseNode = UnlinkedEnvironment(
-        (before as? RuleElement).let {
-            if (boundaryBefore) {
-                if (it == null) WordStartElement
-                else SequenceElement(listOf(WordStartElement, it))
-            } else it
-        },
-        (after as? RuleElement).let {
-            if (boundaryAfter) {
-                if (it == null) WordEndElement
-                else SequenceElement(listOf(it, WordEndElement))
-            } else it
-        }
+        (before as? RuleElement),
+        (after as? RuleElement),
     )
 
     override fun walkRuleSequence(items: List<ParseNode>): ParseNode =
@@ -176,6 +164,8 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
     override fun walkNegatedElement(element: ParseNode): ParseNode = NegatedElement(element as RuleElement)
 
     override fun walkEmpty(): ParseNode = EmptyElement
+
+    override fun walkBoundary(): ParseNode = WordBoundaryElement
 
     override fun walkClassReference(value: ParseNode): ParseNode =
         ClassReferenceElement((value as SimpleValueNode).simpleValue.name)
@@ -275,7 +265,7 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
                 expressions.nestedMap { it.phonetic(declarations, ruleFilter != null) },
                 ruleFilter?.let { filter ->
                     { segment: PhoneticSegment ->
-                        filter.phonetic(declarations).claim(
+                        filter.phonetic(RulePos.MAIN, declarations).claim(
                             declarations, Phonetic.single(segment), 0, Bindings()
                         ) == 1
                     }
@@ -292,7 +282,7 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
     ) : ParseNode {
         fun inPhonetic(declarations: Declarations): RuleExpression<PhonS, PlainS> = RuleExpression(
             Phonetic, Plain, declarations,
-            match.phonetic(declarations),
+            match.phonetic(RulePos.MAIN, declarations),
             result.inPhoneticEmitter(declarations),
             condition.map { it.phonetic(declarations) },
             exclusion.map { it.phonetic(declarations) }
@@ -300,7 +290,7 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
 
         fun outPhonetic(declarations: Declarations): RuleExpression<PlainS, PhonS> = RuleExpression(
             Plain, Phonetic, declarations,
-            match.plain(),
+            match.plain(RulePos.MAIN),
             result.outPhoneticEmitter(declarations),
             condition.map { it.plain() },
             exclusion.map { it.plain() }
@@ -308,7 +298,7 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
 
         fun phonetic(declarations: Declarations, filtered: Boolean): RuleExpression<PhonS, PhonS> = RuleExpression(
             Phonetic, Phonetic, declarations,
-            match.phonetic(declarations),
+            match.phonetic(RulePos.MAIN, declarations),
             result.phoneticEmitter(declarations),
             condition.map { it.phonetic(declarations) },
             exclusion.map { it.phonetic(declarations) },
@@ -320,37 +310,45 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
 
     private class UnlinkedEnvironment(val before: RuleElement?, val after: RuleElement?) : ParseNode {
         fun plain(): Environment<PlainS> = Environment(
-            before?.plain() ?: NullMatcher(),
-            after?.plain() ?: NullMatcher()
+            before?.plain(RulePos.ENV_START) ?: NullMatcher(),
+            after?.plain(RulePos.ENV_END) ?: NullMatcher()
         )
 
         fun phonetic(declarations: Declarations): Environment<PhonS> = Environment(
-            before?.phonetic(declarations) ?: NullMatcher(),
-            after?.phonetic(declarations) ?: NullMatcher()
+            before?.phonetic(RulePos.ENV_START, declarations) ?: NullMatcher(),
+            after?.phonetic(RulePos.ENV_END, declarations) ?: NullMatcher()
         )
     }
 
     private interface RuleElement : ParseNode {
-        fun plain(): Matcher<PlainS>
+        fun plain(pos: RulePos): Matcher<PlainS>
 
-        fun phonetic(declarations: Declarations): Matcher<PhonS>
+        fun phonetic(pos: RulePos, declarations: Declarations): Matcher<PhonS>
+    }
+
+    private enum class RulePos {
+        MAIN,
+        ENV_START,
+        ENV_MIDDLE,
+        ENV_END,
     }
 
     // Base class for elements that don't need to use different logic depending on the word type
     private interface ChameleonRuleElement : RuleElement {
-        override fun plain(): Matcher<PlainS> = link()
+        override fun plain(pos: RulePos): Matcher<PlainS> = link(pos)
 
-        override fun phonetic(declarations: Declarations): Matcher<PhonS> = link()
+        override fun phonetic(pos: RulePos, declarations: Declarations): Matcher<PhonS> = link(pos)
 
-        fun <T : Segment<T>> link(): Matcher<T>
+        fun <T : Segment<T>> link(pos: RulePos): Matcher<T>
     }
 
     // Base class for elements whose only word type dependency is forwarding to sub-elements
     private interface ContainerRuleElement : RuleElement {
-        override fun plain(): Matcher<PlainS> = matcher(elements.map { it.plain() })
+        override fun plain(pos: RulePos): Matcher<PlainS> =
+            matcher(elements.map { it.plain(pos) })
 
-        override fun phonetic(declarations: Declarations): Matcher<PhonS> =
-            matcher(elements.map { it.phonetic(declarations) })
+        override fun phonetic(pos: RulePos, declarations: Declarations): Matcher<PhonS> =
+            matcher(elements.map { it.phonetic(pos, declarations) })
 
         val elements: List<RuleElement>
 
@@ -358,7 +356,7 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
     }
 
     private abstract class PhoneticOnlyRuleElement : RuleElement {
-        override fun plain(): Matcher<PlainS> = foundInPlain()
+        override fun plain(pos: RulePos): Matcher<PlainS> = foundInPlain()
 
         // Throw the desired exception
         abstract fun foundInPlain(): Nothing
@@ -373,7 +371,6 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
     }
 
     private abstract class ContainerResultElement : ContainerRuleElement, ResultElement {
-
         override fun inPhoneticEmitter(declarations: Declarations): Emitter<PhonS, PlainS> =
             emitter(resultElements.map { it.inPhoneticEmitter(declarations) })
 
@@ -397,16 +394,43 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
             foundInPlain()
     }
 
-    private object WordStartElement : ChameleonRuleElement {
-        override fun <T : Segment<T>> link(): Matcher<T> = WordStartMatcher()
-    }
-
-    private object WordEndElement : ChameleonRuleElement {
-        override fun <T : Segment<T>> link(): Matcher<T> = WordEndMatcher()
+    private object WordBoundaryElement : ChameleonRuleElement {
+        override fun <T : Segment<T>> link(pos: RulePos): Matcher<T> =
+            when (pos) {
+                RulePos.ENV_START -> WordStartMatcher()
+                RulePos.ENV_END -> WordEndMatcher()
+                else -> throw IllegalArgumentException()
+            }
     }
 
     private class SequenceElement(override val elements: List<RuleElement>) :
         ContainerResultElement() {
+
+        override fun plain(pos: RulePos): Matcher<PlainS> =
+            when (pos) {
+                RulePos.ENV_START -> SequenceMatcher(
+                    listOf(elements.first().plain(RulePos.ENV_START)) +
+                            elements.drop(1).map { it.plain(RulePos.ENV_MIDDLE) }
+                )
+                RulePos.ENV_END -> SequenceMatcher(
+                    elements.dropLast(1).map { it.plain(RulePos.ENV_MIDDLE) } +
+                            listOf(elements.last().plain(RulePos.ENV_END))
+                )
+                else -> super.plain(pos)
+            }
+
+        override fun phonetic(pos: RulePos, declarations: Declarations): Matcher<PhonS> =
+            when (pos) {
+                RulePos.ENV_START -> SequenceMatcher(
+                    listOf(elements.first().phonetic(RulePos.ENV_START, declarations)) +
+                            elements.drop(1).map { it.phonetic(RulePos.ENV_MIDDLE, declarations) }
+                )
+                RulePos.ENV_END -> SequenceMatcher(
+                    elements.dropLast(1).map { it.phonetic(RulePos.ENV_MIDDLE, declarations) } +
+                            listOf(elements.last().phonetic(RulePos.ENV_END, declarations))
+                )
+                else -> super.phonetic(pos, declarations)
+            }
 
         override fun <T : Segment<T>> matcher(elements: List<Matcher<T>>): Matcher<T> = SequenceMatcher(elements)
 
@@ -417,8 +441,8 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
     private class CaptureElement(val element: RuleElement, val capture: CaptureReferenceElement) :
         PhoneticOnlyRuleElement() {
 
-        override fun phonetic(declarations: Declarations): Matcher<PhonS> =
-            CaptureMatcher(element.phonetic(declarations), capture.number)
+        override fun phonetic(pos: RulePos, declarations: Declarations): Matcher<PhonS> =
+            CaptureMatcher(element.phonetic(pos, declarations), capture.number)
 
         override fun foundInPlain(): Nothing = throw LscCaptureInPlain(capture.number)
     }
@@ -426,10 +450,21 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
     private class RepeaterElement(val element: RuleElement, val repeaterType: RepeaterTypeNode) :
         RuleElement {
 
-        override fun plain(): Matcher<PlainS> = RepeaterMatcher(element.plain(), repeaterType.type)
+        override fun plain(pos: RulePos): Matcher<PlainS> {
+            checkPos(pos)
+            return RepeaterMatcher(element.plain(pos), repeaterType.type)
+        }
 
-        override fun phonetic(declarations: Declarations): Matcher<PhonS> =
-            RepeaterMatcher(element.phonetic(declarations), repeaterType.type)
+        override fun phonetic(pos: RulePos, declarations: Declarations): Matcher<PhonS> {
+            checkPos(pos)
+            return RepeaterMatcher(element.phonetic(pos, declarations), repeaterType.type)
+        }
+
+        private fun checkPos(pos: RulePos) {
+            if (pos == RulePos.ENV_START || pos == RulePos.ENV_END) {
+                // TODO throw LscPeripheralRepeater(pos, this)
+            }
+        }
     }
 
     private class ListElement(override val elements: List<RuleElement>) :
@@ -442,9 +477,9 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
     }
 
     private class TextElement(val text: String, val exact: Boolean = false) : ResultElement {
-        override fun plain(): Matcher<PlainS> = TextMatcher(PlainWord(text))
+        override fun plain(pos: RulePos): Matcher<PlainS> = TextMatcher(PlainWord(text))
 
-        override fun phonetic(declarations: Declarations): Matcher<PhonS> =
+        override fun phonetic(pos: RulePos, declarations: Declarations): Matcher<PhonS> =
             declarations.parsePhonetic(text).let {
                 if (exact) TextMatcher(it) else SymbolMatcher(it)
             }
@@ -464,7 +499,8 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
     }
 
     private class MatrixElement(val matrix: Matrix) : PhoneticOnlyResultElement() {
-        override fun phonetic(declarations: Declarations): Matcher<PhonS> = MatrixMatcher(matrix)
+        override fun phonetic(pos: RulePos, declarations: Declarations): Matcher<PhonS> =
+            MatrixMatcher(matrix)
 
         override fun phoneticEmitter(declarations: Declarations): Emitter<PhonS, PhonS> = MatrixEmitter(matrix)
 
@@ -472,16 +508,16 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
     }
 
     private class NegatedElement(val element: RuleElement) : RuleElement {
-        override fun plain(): Matcher<PlainS> = NegatedMatcher(element.plain())
+        override fun plain(pos: RulePos): Matcher<PlainS> = NegatedMatcher(element.plain(pos))
 
-        override fun phonetic(declarations: Declarations): Matcher<PhonS> =
-            NegatedMatcher(element.phonetic(declarations))
+        override fun phonetic(pos: RulePos, declarations: Declarations): Matcher<PhonS> =
+            NegatedMatcher(element.phonetic(pos, declarations))
     }
 
     private object EmptyElement : ResultElement {
-        override fun plain(): Matcher<PlainS> = NullMatcher()
+        override fun plain(pos: RulePos): Matcher<PlainS> = NullMatcher()
 
-        override fun phonetic(declarations: Declarations): Matcher<PhonS> = NullMatcher()
+        override fun phonetic(pos: RulePos, declarations: Declarations): Matcher<PhonS> = NullMatcher()
 
         override fun inPhoneticEmitter(declarations: Declarations): Emitter<PhonS, PlainS> = NullEmitter(Plain)
 
@@ -491,9 +527,9 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
     }
 
     private class ClassReferenceElement(val name: String) : PhoneticOnlyResultElement() {
-        override fun phonetic(declarations: Declarations): Matcher<PhonS> =
+        override fun phonetic(pos: RulePos, declarations: Declarations): Matcher<PhonS> =
             with(declarations) {
-                ListMatcher(name.toClass().sounds.map { TextElement(it).phonetic(this) })
+                ListMatcher(name.toClass().sounds.map { TextElement(it).phonetic(pos, this) })
             }
 
         override fun phoneticEmitter(declarations: Declarations): Emitter<PhonS, PhonS> =
@@ -505,7 +541,7 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
     }
 
     private class CaptureReferenceElement(val number: Int) : PhoneticOnlyResultElement() {
-        override fun phonetic(declarations: Declarations): Matcher<PhonS> =
+        override fun phonetic(pos: RulePos, declarations: Declarations): Matcher<PhonS> =
             CaptureReferenceMatcher(number)
 
         override fun phoneticEmitter(declarations: Declarations): Emitter<PhonS, PhonS> =

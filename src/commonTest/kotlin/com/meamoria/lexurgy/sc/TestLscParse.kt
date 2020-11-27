@@ -405,11 +405,9 @@ class TestLscParse : StringSpec({
         override fun walkRuleEnvironment(
             before: String?,
             after: String?,
-            boundaryBefore: Boolean,
-            boundaryAfter: Boolean
         ): String {
-            val beforeText = optionalArg(before, ((if (boundaryBefore) "$ " else "") + "$before, "))
-            val afterText = optionalArg(after, ", $after" + if (boundaryAfter) "$" else "")
+            val beforeText = optionalArg(before, "$before, ")
+            val afterText = optionalArg(after, ", $after")
             return "env(${beforeText}_${afterText})"
         }
 
@@ -420,6 +418,8 @@ class TestLscParse : StringSpec({
         override fun walkNegatedElement(element: String): String = "!${element}"
 
         override fun walkEmpty(): String = "null"
+
+        override fun walkBoundary(): String = "$"
 
         override fun walkClassReference(value: String): String = "c($value)"
 

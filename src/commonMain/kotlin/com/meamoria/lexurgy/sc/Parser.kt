@@ -206,8 +206,6 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
         return walkRuleEnvironment(
             optionalVisit(ctx.environmentBefore()),
             optionalVisit(ctx.environmentAfter()),
-            ctx.boundaryBefore() != null,
-            ctx.boundaryAfter() != null,
         )
     }
 
@@ -252,6 +250,8 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
         walkFeatureVariable(visit(ctx.feature()))
 
     override fun visitEmpty(ctx: EmptyContext): T = walkEmpty()
+
+    override fun visitBoundary(ctx: BoundaryContext): T = walkBoundary()
 
     override fun visitRepeaterType(ctx: RepeaterTypeContext): T = walkRepeaterType(
         when {
@@ -323,8 +323,6 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
     protected abstract fun walkRuleEnvironment(
         before: T?,
         after: T?,
-        boundaryBefore: Boolean,
-        boundaryAfter: Boolean
     ): T
 
     protected abstract fun walkRuleSequence(items: List<T>): T
@@ -340,6 +338,8 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
     protected abstract fun walkNegatedElement(element: T): T
 
     protected abstract fun walkEmpty(): T
+
+    protected abstract fun walkBoundary(): T
 
     protected abstract fun walkClassReference(value: T): T
 
