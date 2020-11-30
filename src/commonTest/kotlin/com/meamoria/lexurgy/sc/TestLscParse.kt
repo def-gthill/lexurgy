@@ -403,23 +403,24 @@ class TestLscParse : StringSpec({
         override fun walkDoNothingExpression(): String = "unchanged"
 
         override fun walkRuleEnvironment(
+            text: String,
             before: String?,
             after: String?,
-            boundaryBefore: Boolean,
-            boundaryAfter: Boolean
         ): String {
-            val beforeText = optionalArg(before, ((if (boundaryBefore) "$ " else "") + "$before, "))
-            val afterText = optionalArg(after, ", $after" + if (boundaryAfter) "$" else "")
+            val beforeText = optionalArg(before, "$before, ")
+            val afterText = optionalArg(after, ", $after")
             return "env(${beforeText}_${afterText})"
         }
 
-        override fun walkRuleSequence(items: List<String>): String = "seq(${items.joinToString()})"
+        override fun walkRuleSequence(text: String, items: List<String>): String = "seq(${items.joinToString()})"
 
         override fun walkRuleList(items: List<String>): String = "list(${items.joinToString()})"
 
         override fun walkNegatedElement(element: String): String = "!${element}"
 
         override fun walkEmpty(): String = "null"
+
+        override fun walkBoundary(): String = "$"
 
         override fun walkClassReference(value: String): String = "c($value)"
 

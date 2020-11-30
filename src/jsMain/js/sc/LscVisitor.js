@@ -156,18 +156,6 @@ LscVisitor.prototype.visitEnvironment = function(ctx) {
 };
 
 
-// Visit a parse tree produced by LscParser#boundaryBefore.
-LscVisitor.prototype.visitBoundaryBefore = function(ctx) {
-  return this.visitChildren(ctx);
-};
-
-
-// Visit a parse tree produced by LscParser#boundaryAfter.
-LscVisitor.prototype.visitBoundaryAfter = function(ctx) {
-  return this.visitChildren(ctx);
-};
-
-
 // Visit a parse tree produced by LscParser#environmentBefore.
 LscVisitor.prototype.visitEnvironmentBefore = function(ctx) {
   return this.visitChildren(ctx);
@@ -278,6 +266,12 @@ LscVisitor.prototype.visitFeatureVariable = function(ctx) {
 
 // Visit a parse tree produced by LscParser#empty.
 LscVisitor.prototype.visitEmpty = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
+// Visit a parse tree produced by LscParser#boundary.
+LscVisitor.prototype.visitBoundary = function(ctx) {
   return this.visitChildren(ctx);
 };
 

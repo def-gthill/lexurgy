@@ -493,6 +493,89 @@ class LscInvalidRuleExpression(
     val matcher: Matcher<*>, val emitter: Emitter<*, *>, message: String
 ) : LscUserError(message)
 
+class LscInteriorWordBoundary(
+    override val cause: LscInteriorWordBoundary?,
+    sequence: String?,
+    environment: String?
+) :
+    LscBadSequence(
+        cause,
+        "A word boundary",
+        sequence,
+        environment,
+        "needs to be at the beginning or end"
+    ) {
+
+    constructor() : this(null, null, null)
+
+    override fun initEnvironment(newEnvironment: String): LscInteriorWordBoundary =
+        LscInteriorWordBoundary(cause, sequence, environment ?: newEnvironment)
+
+    override fun initSequence(newSequence: String): LscBadSequence =
+        LscInteriorWordBoundary(cause, sequence ?: newSequence, environment)
+}
+
+class LscPeripheralRepeater(
+    override val cause: LscPeripheralRepeater?,
+    val repeater: String,
+    sequence: String?,
+    environment: String?
+) :
+    LscBadSequence(
+        cause,
+        "The repeater \"$repeater\"",
+        sequence,
+        environment,
+        "is meaningless because it's at the edge of the environment; " +
+                peripheralRepeaterInstruction(repeater),
+    ) {
+
+    constructor(repeater: String) : this(null, repeater, null, null)
+
+    override fun initEnvironment(newEnvironment: String): LscPeripheralRepeater =
+        LscPeripheralRepeater(cause, repeater, sequence, environment ?: newEnvironment)
+
+    override fun initSequence(newSequence: String): LscPeripheralRepeater =
+        LscPeripheralRepeater(cause, repeater, sequence ?: newSequence, environment)
+}
+
+private fun peripheralRepeaterInstruction(repeater: String) =
+    if (repeater.endsWith("+")) "just use \"${repeater.dropLast(1)}\"" else "remove it"
+
+abstract class LscBadSequence(
+    cause: LscBadSequence?,
+    prefix: String,
+    val sequence: String?,
+    val environment: String?,
+    postfix: String
+) :
+    LscUserError(
+        interiorWordBoundaryMessage(
+            prefix,
+            sequence,
+            environment,
+            postfix,
+        ), cause
+    ) {
+
+    abstract fun initEnvironment(newEnvironment: String): LscBadSequence
+
+    abstract fun initSequence(newSequence: String): LscBadSequence
+}
+
+private fun interiorWordBoundaryMessage(
+    prefix: String,
+    sequence: String?,
+    environment: String?,
+    postfix: String,
+): String {
+    val sequenceText = if (sequence == null || sequence == environment) null else "in \"$sequence\""
+    val environmentText = environment?.let { "in the environment \"$environment\"" }
+    return listOfNotNull(
+        prefix, sequenceText, environmentText, postfix
+    ).joinToString(" ")
+}
+
 class LscMatrixInPlain(val matrix: Matrix) :
     LscUserError("Feature matrix $matrix isn't allowed in a romanized context")
 

@@ -543,6 +543,51 @@ class TestSoundChanger : StringSpec({
         ch("mitochondrion") shouldBe "mituchundriun"
     }
 
+    "Word boundaries should work inside alternative lists" {
+        val ch = lsc(
+            """
+                Class cons {p, t, k, s, m, n, l}
+                nasalization:
+                    {an, en, on} => {ã, ẽ, õ} / _ {$, @cons}
+            """.trimIndent()
+        )
+
+        ch("pant") shouldBe "pãt"
+        ch("sen") shouldBe "sẽ"
+        ch("senon") shouldBe "senõ"
+        ch("senont") shouldBe "senõt"
+        ch("senonet") shouldBe "senonet"
+
+        val ch2 = lsc(
+            """
+                Feature Type(cons, vowel)
+                Symbol t [cons]
+                Symbol a [vowel]
+                crazy:
+                    a => e / {[cons] [vowel], $ [cons]} [vowel] [cons] _
+            """.trimIndent()
+        )
+
+        ch2("tata") shouldBe "tate"
+        ch2("ataatata") shouldBe "ataateta"
+    }
+
+    "Misplaced word boundaries should result in an LscInteriorWordBoundary" {
+        shouldThrow<LscInteriorWordBoundary> {
+            lsc("foo:\no => a / _ $ o")
+        }.also {
+            it.message shouldBe
+                    "A word boundary in \"$ o\" in the environment \"_ $ o\" needs to be at the beginning or end"
+        }
+        shouldThrow<LscInteriorWordBoundary> {
+            lsc("foo:\no => a / $ e _ {a, i {$ o, o $}, e $}")
+        }.also {
+            it.message shouldBe
+                    "A word boundary in \"$ o\" in the environment \"$ e _ {a, i {$ o, o $}, e $}\" " +
+                    "needs to be at the beginning or end"
+        }
+    }
+
     "We should be able to match repeated segments" {
         val ch = lsc(
             """
@@ -555,6 +600,23 @@ class TestSoundChanger : StringSpec({
         ch("uim") shouldBe "uim"
         ch("unim") shouldBe "ynim"
         ch("enmnenmni") shouldBe "enmninmni"
+    }
+
+    "Repeated segments on the edge of a rule should result in an LscPeripheralRepeater" {
+        shouldThrow<LscPeripheralRepeater> {
+            lsc("foo:\no => a / _ a*")
+        }.also {
+            it.message shouldBe
+                    "The repeater \"a*\" in the environment \"_ a*\" is meaningless because it's at " +
+                    "the edge of the environment; remove it"
+        }
+        shouldThrow<LscPeripheralRepeater> {
+            lsc("foo:\no => a / f+ _")
+        }.also {
+            it.message shouldBe
+                    "The repeater \"f+\" in the environment \"f+ _\" is meaningless because it's at " +
+                    "the edge of the environment; just use \"f\""
+        }
     }
 
     "We should be able to specify multiple possible environments for a change" {

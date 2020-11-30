@@ -66,6 +66,18 @@ Any line that starts with # is a comment, and Lexurgy will ignore it::
     Lexurgy knows where one rule ends and another begins because the rule name must end
     with a colon and the rule expressions must contain an arrow ``=>``.
 
+.. _sc-symbols:
+
+Symbols
+~~~~~~~~
+
+If you want to use digraphs in your rules, you can declare *symbols*::
+
+    Symbol ts, dz
+
+Then rules that affect *t* or *s* will ignore them if they're part of a *ts*,
+and similarly with *dz*.
+
 Alternative lists
 ~~~~~~~~~~~~~~~~~
 
@@ -121,6 +133,22 @@ word boundary with a $::
         {a, e, i, o, u} => ə / _ $
 
 The first applies only at the beginning of a word, the second at the end of a word.
+
+.. note::
+
+    Word boundaries have to be on the edge of the environment (either the beginning or
+    the end), otherwise they could never match anything. For example, this is invalid::
+
+        bad:
+            a => o / o $ _
+
+    Lexurgy will give you an error message if you write a rule like this.
+
+    However, word boundaries in alternative lists are fine, as long as the word boundary
+    is at the edge of that alternative::
+
+        okay:
+            a => o / {o, $} _
 
 Empty sounds
 ~~~~~~~~~~~~
@@ -250,7 +278,8 @@ just recreate the IPA chart::
 Feature names must start with an uppercase letter, while feature values
 must be all lowercase.
 
-Once you've defined features, you can define *symbols* in terms of *matrices* of features::
+Once you've defined features, you can define :ref:`symbols <sc-symbols>`
+in terms of *matrices* of features::
 
     Symbol p [unvoiced labial stop]
     Symbol b [voiced labial stop]
@@ -472,6 +501,22 @@ any consonants at the end::
         [vowel] => [stressed] / _ [glide]? [consonant]* $
 
 Optional and repeated segments can also be used in :ref:`exclusions <sc-exclusions>`.
+
+.. note::
+
+    Lexurgy won't let you put optional and repeated segments on the edge of an
+    environment. To see why, notice that these two rules would be exactly the same::
+
+        stress-before-one-or-more-consonants:
+            [vowel] => [stressed] / _ [cons]+
+        stress-before-a-consonant:
+            [vowel] => [stressed] / _ [cons]
+
+    The second rule would match vowels before multiple consonants too, because
+    rules never care about what's beyond their environment.
+
+    Similarly, an optional (?) or optional repeater (*) on the edge of an
+    environment would match anything, so it would just be noise.
 
 .. caution::
     Optional and repeated segments are *greedy*; they match as much as they
