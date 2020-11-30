@@ -489,14 +489,14 @@ Optional and repeated segments can also be used in :ref:`exclusions <sc-exclusio
 .. note::
 
     Lexurgy won't let you put optional and repeated segments on the edge of an
-    environment. Think about it; these two rules would be exactly the same::
+    environment. To see why, notice that these two rules would be exactly the same::
 
         stress-before-one-or-more-consonants:
             [vowel] => [stressed] / _ [cons]+
         stress-before-a-consonant:
             [vowel] => [stressed] / _ [cons]
 
-    The second rule will match vowels before multiple consonants too, because
+    The second rule would match vowels before multiple consonants too, because
     rules never care about what's beyond their environment.
 
     Similarly, an optional (?) or optional repeater (*) on the edge of an
