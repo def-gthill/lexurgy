@@ -59,7 +59,8 @@ If you want to use digraphs in your rules, you can declare *symbols*::
 
     Symbol ts, dz
 
-Then rules that affect *t* or *s* will ignore them if they're part of a *ts*.
+Then rules that affect *t* or *s* will ignore them if they're part of a *ts*,
+and similarly with *dz*.
 
 Alternative lists
 ~~~~~~~~~~~~~~~~~
@@ -488,7 +489,7 @@ Optional and repeated segments can also be used in :ref:`exclusions <sc-exclusio
 .. note::
 
     Lexurgy won't let you put optional and repeated segments on the edge of an
-    environment. Think about it; these two rules would be exactly the same:
+    environment. Think about it; these two rules would be exactly the same::
 
         stress-before-one-or-more-consonants:
             [vowel] => [stressed] / _ [cons]+
