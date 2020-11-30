@@ -204,6 +204,7 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
             )
         }
         return walkRuleEnvironment(
+            ctx.getText(),
             optionalVisit(ctx.environmentBefore()),
             optionalVisit(ctx.environmentAfter()),
         )
@@ -216,7 +217,7 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
     override fun visitRuleElement(ctx: RuleElementContext): T = visit(ctx.getChild(0))
 
     override fun visitSequence(ctx: SequenceContext): T =
-        walkRuleSequence(listVisit(ctx.allSequenceElements()))
+        walkRuleSequence(ctx.getText(), listVisit(ctx.allSequenceElements()))
 
     override fun visitSequenceElement(ctx: SequenceElementContext): T = visit(ctx.getChild(0))
 
@@ -224,7 +225,7 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
         walkRuleCapture(visit(ctx.getChild(0)), visit(ctx.captureRef()))
 
     override fun visitRepeater(ctx: RepeaterContext): T =
-        walkRuleRepeater(visit(ctx.getChild(0)), visit(ctx.repeaterType()))
+        walkRuleRepeater(ctx.getText(), visit(ctx.getChild(0)), visit(ctx.repeaterType()))
 
     override fun visitGroup(ctx: GroupContext): T = visit(ctx.ruleElement())
 
@@ -321,15 +322,16 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
     protected abstract fun walkDoNothingExpression(): T
 
     protected abstract fun walkRuleEnvironment(
+        text: String,
         before: T?,
         after: T?,
     ): T
 
-    protected abstract fun walkRuleSequence(items: List<T>): T
+    protected abstract fun walkRuleSequence(text: String, items: List<T>): T
 
     protected open fun walkRuleCapture(item: T, capture: T): T = item
 
-    protected open fun walkRuleRepeater(item: T, repeaterType: T): T = item
+    protected open fun walkRuleRepeater(text: String, item: T, repeaterType: T): T = item
 
     protected abstract fun walkRuleList(items: List<T>): T
 

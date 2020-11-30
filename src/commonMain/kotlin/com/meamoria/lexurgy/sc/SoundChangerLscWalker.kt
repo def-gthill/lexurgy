@@ -134,23 +134,25 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
     override fun walkDoNothingExpression(): ParseNode = DoNothingExpression
 
     override fun walkRuleEnvironment(
+        text: String,
         before: ParseNode?,
         after: ParseNode?,
     ): ParseNode = UnlinkedEnvironment(
+        text,
         (before as? RuleElement),
         (after as? RuleElement),
     )
 
-    override fun walkRuleSequence(items: List<ParseNode>): ParseNode =
-        SequenceElement(items.map { it as RuleElement })
+    override fun walkRuleSequence(text: String, items: List<ParseNode>): ParseNode =
+        SequenceElement(text, items.map { it as RuleElement })
 
     override fun walkRuleCapture(item: ParseNode, capture: ParseNode): ParseNode = when (item) {
         is MatrixNode -> CaptureElement(MatrixElement(item.matrix), capture as CaptureReferenceElement)
         else -> CaptureElement(item as RuleElement, capture as CaptureReferenceElement)
     }
 
-    override fun walkRuleRepeater(item: ParseNode, repeaterType: ParseNode): ParseNode =
-        RepeaterElement(item as RuleElement, repeaterType as RepeaterTypeNode)
+    override fun walkRuleRepeater(text: String, item: ParseNode, repeaterType: ParseNode): ParseNode =
+        RepeaterElement(text, item as RuleElement, repeaterType as RepeaterTypeNode)
 
     override fun walkRuleList(items: List<ParseNode>): ParseNode =
         ListElement(items.map { it as RuleElement })
@@ -308,16 +310,26 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
 
     private object DoNothingExpression : ParseNode
 
-    private class UnlinkedEnvironment(val before: RuleElement?, val after: RuleElement?) : ParseNode {
-        fun plain(): Environment<PlainS> = Environment(
-            before?.plain(RulePos.ENV_START) ?: NullMatcher(),
-            after?.plain(RulePos.ENV_END) ?: NullMatcher()
-        )
+    private class UnlinkedEnvironment(
+        val environmentText: String,val before: RuleElement?, val after: RuleElement?
+    ) : ParseNode {
+        fun plain(): Environment<PlainS> = try {
+            Environment(
+                before?.plain(RulePos.ENV_START) ?: NullMatcher(),
+                after?.plain(RulePos.ENV_END) ?: NullMatcher()
+            )
+        } catch (e: LscBadSequence) {
+            throw e.initEnvironment(environmentText)
+        }
 
-        fun phonetic(declarations: Declarations): Environment<PhonS> = Environment(
-            before?.phonetic(RulePos.ENV_START, declarations) ?: NullMatcher(),
-            after?.phonetic(RulePos.ENV_END, declarations) ?: NullMatcher()
-        )
+        fun phonetic(declarations: Declarations): Environment<PhonS> = try {
+            Environment(
+                before?.phonetic(RulePos.ENV_START, declarations) ?: NullMatcher(),
+                after?.phonetic(RulePos.ENV_END, declarations) ?: NullMatcher()
+            )
+        } catch (e: LscBadSequence) {
+            throw e.initEnvironment(environmentText)
+        }
     }
 
     private interface RuleElement : ParseNode {
@@ -399,37 +411,46 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
             when (pos) {
                 RulePos.ENV_START -> WordStartMatcher()
                 RulePos.ENV_END -> WordEndMatcher()
-                else -> throw IllegalArgumentException()
+                else -> throw LscInteriorWordBoundary()
             }
     }
 
-    private class SequenceElement(override val elements: List<RuleElement>) :
+    private class SequenceElement(
+        val sequenceText: String, override val elements: List<RuleElement>
+    ) :
         ContainerResultElement() {
 
-        override fun plain(pos: RulePos): Matcher<PlainS> =
-            when (pos) {
-                RulePos.ENV_START -> SequenceMatcher(
-                    listOf(elements.first().plain(RulePos.ENV_START)) +
-                            elements.drop(1).map { it.plain(RulePos.ENV_MIDDLE) }
-                )
-                RulePos.ENV_END -> SequenceMatcher(
-                    elements.dropLast(1).map { it.plain(RulePos.ENV_MIDDLE) } +
-                            listOf(elements.last().plain(RulePos.ENV_END))
-                )
-                else -> super.plain(pos)
-            }
+        override fun plain(pos: RulePos): Matcher<PlainS> = link(
+            pos,
+            { plain(it) },
+            { super.plain(it) },
+        )
 
-        override fun phonetic(pos: RulePos, declarations: Declarations): Matcher<PhonS> =
-            when (pos) {
-                RulePos.ENV_START -> SequenceMatcher(
-                    listOf(elements.first().phonetic(RulePos.ENV_START, declarations)) +
-                            elements.drop(1).map { it.phonetic(RulePos.ENV_MIDDLE, declarations) }
-                )
-                RulePos.ENV_END -> SequenceMatcher(
-                    elements.dropLast(1).map { it.phonetic(RulePos.ENV_MIDDLE, declarations) } +
-                            listOf(elements.last().phonetic(RulePos.ENV_END, declarations))
-                )
-                else -> super.phonetic(pos, declarations)
+        override fun phonetic(pos: RulePos, declarations: Declarations): Matcher<PhonS> = link(
+            pos,
+            { phonetic(it, declarations) },
+            { super.phonetic(it, declarations) },
+        )
+
+        private fun <T : Segment<T>> link(
+            pos: RulePos,
+            linker: RuleElement.(RulePos) -> Matcher<T>,
+            superCall: (RulePos) -> Matcher<T>,
+        ): Matcher<T> =
+            try {
+                when (pos) {
+                    RulePos.ENV_START -> SequenceMatcher(
+                        listOf(elements.first().linker(RulePos.ENV_START)) +
+                                elements.drop(1).map { it.linker(RulePos.ENV_MIDDLE) }
+                    )
+                    RulePos.ENV_END -> SequenceMatcher(
+                        elements.dropLast(1).map { it.linker(RulePos.ENV_MIDDLE) } +
+                                listOf(elements.last().linker(RulePos.ENV_END))
+                    )
+                    else -> superCall(pos)
+                }
+            } catch (e: LscBadSequence) {
+                throw e.initSequence(sequenceText)
             }
 
         override fun <T : Segment<T>> matcher(elements: List<Matcher<T>>): Matcher<T> = SequenceMatcher(elements)
@@ -447,7 +468,11 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
         override fun foundInPlain(): Nothing = throw LscCaptureInPlain(capture.number)
     }
 
-    private class RepeaterElement(val element: RuleElement, val repeaterType: RepeaterTypeNode) :
+    private class RepeaterElement(
+        val repeaterText: String,
+        val element: RuleElement,
+        val repeaterType: RepeaterTypeNode,
+    ) :
         RuleElement {
 
         override fun plain(pos: RulePos): Matcher<PlainS> {
@@ -462,7 +487,7 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
 
         private fun checkPos(pos: RulePos) {
             if (pos == RulePos.ENV_START || pos == RulePos.ENV_END) {
-                // TODO throw LscPeripheralRepeater(pos, this)
+                throw LscPeripheralRepeater(repeaterText)
             }
         }
     }

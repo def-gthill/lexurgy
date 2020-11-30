@@ -403,6 +403,7 @@ class TestLscParse : StringSpec({
         override fun walkDoNothingExpression(): String = "unchanged"
 
         override fun walkRuleEnvironment(
+            text: String,
             before: String?,
             after: String?,
         ): String {
@@ -411,7 +412,7 @@ class TestLscParse : StringSpec({
             return "env(${beforeText}_${afterText})"
         }
 
-        override fun walkRuleSequence(items: List<String>): String = "seq(${items.joinToString()})"
+        override fun walkRuleSequence(text: String, items: List<String>): String = "seq(${items.joinToString()})"
 
         override fun walkRuleList(items: List<String>): String = "list(${items.joinToString()})"
 
