@@ -68,7 +68,6 @@ fun SoundChanger.changeFiles(
                     stopBefore = stopBefore,
                     debugWords = debugWords,
                     romanize = romanize,
-                    console = ::console,
                     debug = ::debug,
                 )
             }

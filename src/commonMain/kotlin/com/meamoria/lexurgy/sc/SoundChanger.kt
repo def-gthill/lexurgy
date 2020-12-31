@@ -17,7 +17,6 @@ class SoundChanger(
         stopBefore: String? = null,
         debugWords: List<String> = emptyList(),
         romanize: Boolean = true,
-        console: (String) -> Unit = ::println,
         debug: (String) -> Unit = ::println,
     ): List<String> = changeWithIntermediates(
         words,
@@ -25,7 +24,6 @@ class SoundChanger(
         stopBefore = stopBefore,
         debugWords = debugWords,
         romanize = romanize,
-        console = console,
         debug = debug,
     ).getValue(null)
 
@@ -40,7 +38,6 @@ class SoundChanger(
         stopBefore: String? = null,
         debugWords: List<String> = emptyList(),
         romanize: Boolean = true,
-        console: (String) -> Unit = ::println,
         debug: (String) -> Unit = ::println,
     ): Map<String?, List<String>> {
         val debugIndices = words.withIndex().filter { it.value in debugWords }.map { it.index }
@@ -81,10 +78,10 @@ class SoundChanger(
         runIntermediateRomanizers(null)
 
         if (stopBefore != null && !stopped) {
-            console("WARNING: No rule called $stopBefore; all rules applied")
+            throw LscRuleNotFound(stopBefore, "stop before")
         }
         if (startAt != null && !started) {
-            console("WARNING: No rule called $startAt; no rules applied")
+            throw LscRuleNotFound(startAt, "start at")
         }
 
         result[null] = if (stopBefore == null) applyRule(
@@ -575,6 +572,9 @@ private fun interiorWordBoundaryMessage(
         prefix, sequenceText, environmentText, postfix
     ).joinToString(" ")
 }
+
+class LscRuleNotFound(val ruleName: String, val attemptedAction: String) :
+    LscUserError("Can't $attemptedAction rule $ruleName; there is no rule with that name")
 
 class LscMatrixInPlain(val matrix: Matrix) :
     LscUserError("Feature matrix $matrix isn't allowed in a romanized context")

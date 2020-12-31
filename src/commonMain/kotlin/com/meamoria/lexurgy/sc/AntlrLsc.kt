@@ -3,8 +3,6 @@
 package com.meamoria.lexurgy.sc
 
 import com.meamoria.mpp.antlr.*
-import kotlin.reflect.KClass
-import kotlin.reflect.safeCast
 
 expect class LscLexer(input: CharStream) : Lexer
 
