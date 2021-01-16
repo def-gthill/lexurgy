@@ -96,7 +96,7 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
     private val allowedStatementPositions: Map<KClass<*>, Int> = mapOf(
         FeatureDeclContext::class to 0,
         DiacriticDeclContext::class to 10,
-        SymbolDeclContext::class to 20,
+        SymbolDeclContext::class to 10,
         ClassDeclContext::class to 30,
         DeromanizerContext::class to 40,
         ChangeRuleContext::class to 50,

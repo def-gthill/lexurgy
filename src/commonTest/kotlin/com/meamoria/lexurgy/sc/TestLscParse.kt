@@ -57,6 +57,8 @@ class TestLscParse : StringSpec({
         }
     }
 
+    data class SwapError(val mustComeBefore: Int, val mustComeAfter: Int, val errorAtStatement: Int)
+
     "Lsc file parsing should reject confusing orderings of statements" {
         val statementNames = listOf(
             "feature declarations",
@@ -67,7 +69,20 @@ class TestLscParse : StringSpec({
             "change rules",
             "final romanizer",
         )
+        val swapErrors = mapOf(
+            (0 to 1) to SwapError(0, 1, 0), (0 to 2) to SwapError(0, 1, 1), (0 to 3) to SwapError(1, 3, 0),
+            (0 to 4) to SwapError(1, 4, 0), (0 to 5) to SwapError(1, 5, 0), (0 to 6) to SwapError(1, 6, 0),
+            (1 to 3) to SwapError(2, 3, 1), (1 to 4) to SwapError(2, 4, 1),
+            (1 to 5) to SwapError(2, 5, 1), (1 to 6) to SwapError(2, 6, 1),
+            (2 to 3) to SwapError(2, 3, 2), (2 to 4) to SwapError(3, 4, 2),
+            (2 to 5) to SwapError(3, 5, 2), (2 to 6) to SwapError(3, 6, 2),
+            (3 to 4) to SwapError(3, 4, 3), (3 to 5) to SwapError(4, 5, 3),
+            (3 to 6) to SwapError(4, 6, 3),
+            (4 to 5) to SwapError(4, 5, 4), (4 to 6) to SwapError(5, 6, 4),
+            (5 to 6) to SwapError(5, 6, 5),
+        )
         for (pair in statements.indices.pairs()) {
+            println(pair)
             val (x, y) = pair
             @Suppress("UnnecessaryVariable") val first = x // These variables work around a weird corner-case bug
             @Suppress("UnnecessaryVariable") val second = y
@@ -79,17 +94,28 @@ class TestLscParse : StringSpec({
                 }
             }
             val lineNumbers = statements.scan(1) { acc, statement -> acc + statement.split("\n").size }
-            shouldThrow<LscNotParsable> {
-                parser.parseFile(swapped.joinToString("\n"))
-            }.also {
-                it.message should startWith(
-                    "The ${statementNames[second]} must come after"
-                )
-                it.line shouldBe lineNumbers[first]
-                it.column shouldBe 0
-                it.offendingSymbol shouldBe statements[second]
+            val swapError = swapErrors[pair]
+            if (swapError != null) {
+                val (mustComeBefore, mustComeAfter, errorAtStatement) = swapError
+                val line = lineNumbers[errorAtStatement]
+                val column = 0
+                shouldThrow<LscNotParsable> {
+                    parser.parseFile(swapped.joinToString("\n"))
+                }.also {
+                    it.message shouldBe
+                        "The ${statementNames[mustComeAfter]} must come after the " +
+                            "${statementNames[mustComeBefore]} (Line $line, column $column)"
+                    it.line shouldBe line
+                    it.column shouldBe column
+                    it.offendingSymbol shouldBe statements[mustComeAfter]
+                }
             }
         }
+    }
+
+    "But switching diacritics and symbols isn't confusing" {
+        val swapped = listOf(statements[0], statements[2], statements[1]) + statements.drop(3)
+        parser.parseFile(swapped.joinToString("\n"))
     }
 
     "All keywords should be case-insensitive" {
