@@ -199,6 +199,18 @@ rule in turn, becoming first ``p``, then ``b``, then ``v``. But since they're
 written as subrules, the second subrule can't apply to the output of the first,
 so the result is a ``p``.
 
+Earlier subrules block later ones from changing the same part of the word.
+This can be useful for making rules that do one thing in most cases,
+and another thing in some exceptional case::
+
+    k-shift:
+        k => s / _ {e, i}
+        k => h / $ _
+
+Even though the two subrules execute simultaneously, the first rule
+blocks the second from changing ``k`` to ``h`` before ``e`` and ``i``
+(by changing it to ``s`` instead).
+
 Sequential Subrules
 ~~~~~~~~~~~~~~~~~~~
 
