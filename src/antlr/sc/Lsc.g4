@@ -7,7 +7,9 @@ statement:
 
 classDecl: CLASS_DECL WHITESPACE value WHITESPACE LIST_START classElement (SEP classElement)* LIST_END;
 classElement: classRef | text;
-featureDecl: FEATURE_DECL WHITESPACE feature O_PAREN (nullAlias SEP)? value (SEP value)* C_PAREN (CHANGE matrix)?;
+featureDecl:
+    FEATURE_DECL WHITESPACE feature WHITESPACE?
+    O_PAREN (nullAlias SEP)? value (SEP value)* C_PAREN (CHANGE matrix)?;
 nullAlias: NULL value;
 diacriticDecl: DIACRITIC WHITESPACE STR1 WHITESPACE (DIA_BEFORE WHITESPACE)? (DIA_FLOATING WHITESPACE)? matrix;
 symbolDecl: SYMBOL WHITESPACE symbolName ((SEP symbolName)* | WHITESPACE matrix);

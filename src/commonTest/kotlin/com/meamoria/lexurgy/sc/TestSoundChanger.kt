@@ -1316,6 +1316,11 @@ class TestSoundChanger : StringSpec({
         )
     }
 
+    "The file format should allow spaces to be included or not in places where this doesn't affect the meaning" {
+        // We're just testing that these don't throw exceptions
+        lsc("Feature Stress (*unstressed, stressed)")
+    }
+
     "We should be able to use reserved characters in literal text by escaping them with a backslash" {
         val ch = lsc(
             """
