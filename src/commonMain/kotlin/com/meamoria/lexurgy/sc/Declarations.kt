@@ -49,6 +49,7 @@ class Declarations(
     private val matrixToSymbolCache = Cache<Matrix, PhoneticSegment>()
     private val phoneticSegmentToComplexSymbolCache = Cache<PhoneticSegment, ComplexSymbol>()
     private val phoneticSegmentMatchCache = Cache<Pair<PhoneticSegment, PhoneticSegment>, Boolean>()
+    private val undeclaredSymbolCache = Cache<String, Symbol>()
 
     private val classNameToClass = classes.associateBy { it.name }
 
@@ -88,6 +89,9 @@ class Declarations(
     fun String.toClass(): SegmentClass =
         classNameToClass[this] ?: throw LscUndefinedName("sound class", this)
 
+    fun String.toUndeclaredSymbol(): Symbol =
+        undeclaredSymbolCache.getOrPut(this) { Symbol(this, null) }
+
     /**
      * Checks if this segment is the same as the specified pattern plus
      * any number of floating diacritics.
@@ -96,9 +100,9 @@ class Declarations(
         phoneticSegmentMatchCache[this to pattern]?.let { return it }
 
         if (floatingDiacritics.isEmpty()) return this == pattern
-        val thisSymbol = this.toComplexSymbol() ?: return this == pattern
+        val thisSymbol = this.toComplexSymbol()
         if (!thisSymbol.diacritics.any { it.floating }) return this == pattern
-        val patternSymbol = pattern.toComplexSymbol() ?: return this == pattern
+        val patternSymbol = pattern.toComplexSymbol()
         return (searchDiacritics(
             thisSymbol.toMatrix(),
             listOf(patternSymbol),
@@ -107,11 +111,11 @@ class Declarations(
     }
 
     /**
-     * Tries to match the specified matrix to the this phonetic symbol.
+     * Tries to match the specified matrix to this phonetic symbol.
      * Returns true if the matrix matched, false otherwise. Binds variables.
      */
     fun PhoneticSegment.matches(matrix: Matrix, bindings: Bindings): Boolean {
-        val complexSymbolMatrix = (toMatrix() ?: Matrix.EMPTY)
+        val complexSymbolMatrix = (toMatrix())
         for (value in matrix.valueList) {
             if (!value.matches(complexSymbolMatrix, bindings)) return false
         }
@@ -125,12 +129,12 @@ class Declarations(
     ): PhoneticSegment {
         if (floatingDiacritics.isEmpty()) return this
         val excludingDiacritics = excluding?.toComplexSymbol()?.diacritics ?: listOf()
-        val otherSymbol = other.toComplexSymbol() ?: return this
+        val otherSymbol = other.toComplexSymbol()
         val otherFloating = otherSymbol.diacritics.filter {
             it.floating && it !in excludingDiacritics
         }
         if (otherFloating.isEmpty()) return this
-        val thisSymbol = this.toComplexSymbol() ?: return this
+        val thisSymbol = this.toComplexSymbol()
         var result = thisSymbol
         for (diacritic in otherFloating) {
             if (diacritic !in result.diacritics) result = result.withDiacritic(diacritic)
@@ -138,20 +142,23 @@ class Declarations(
         return result.toPhoneticSegment()
     }
 
-    fun PhoneticSegment.toComplexSymbol(): ComplexSymbol? {
+    fun PhoneticSegment.toComplexSymbol(): ComplexSymbol {
         phoneticSegmentToComplexSymbolCache[this]?.let { return it }
 
         val (core, before, after) = phoneticParser.breakDiacritics(string)
-        val coreSymbol = symbolNameToSymbol[core] ?: return null
+        val coreSymbol = symbolNameToSymbol[core] ?: Symbol(core, null)
         val diacritics = (before + after).map { diacriticNameToDiacritic.getValue(it) }
         return complexSymbol(coreSymbol, diacritics).also {
             phoneticSegmentToComplexSymbolCache[this] = it
         }
     }
 
-    fun PhoneticSegment.toMatrix(): Matrix? = toComplexSymbol()?.toMatrix()
+    fun PhoneticSegment.toMatrix(): Matrix = toComplexSymbol().toMatrix()
 
     fun Symbol.toPhoneticSegment(): PhoneticSegment = PhoneticSegment(name)
+
+    val Symbol.matrix: Matrix
+        get() = declaredMatrix ?: Matrix(listOf(UndeclaredSymbolValue(name)))
 
     /**
      * Creates a ``ComplexSymbol`` with the specified core and diacritics. This
@@ -209,12 +216,19 @@ class Declarations(
 
     private fun searchDiacritics(
         matrix: Matrix,
-        candidates: List<ComplexSymbol> = symbolsAsComplexSymbols,
+        candidates: List<ComplexSymbol> = emptyList(),
         bestDistance: Int? = null,
         availableDiacritics: List<Diacritic> = diacritics
     ): ComplexSymbol? {
         if (availableDiacritics.isEmpty()) return null
-        val sortedCandidates = candidates.sortedBy { it.distanceTo(matrix) }
+        if (matrix.hasUndeclaredSymbol() && candidates.isEmpty()) {
+            return searchDiacritics(
+                matrix,
+                listOf(complexSymbol(matrix.undeclaredSymbol())),
+                bestDistance,
+                availableDiacritics)
+        }
+        val sortedCandidates = candidates.ifEmpty { symbolsAsComplexSymbols }.sortedBy { it.distanceTo(matrix) }
         sortedCandidates.first().takeIf { it.distanceTo(matrix) == 0 }?.let { return it }
 
         for (candidate in sortedCandidates) {
@@ -246,6 +260,14 @@ class Declarations(
         return Matrix(newMatrixValues)
     }
 
+    /**
+     * If this matrix represents an undeclared symbol, convert to a Symbol.
+     */
+    fun Matrix.undeclaredSymbol(): Symbol =
+        valueList.filterIsInstance<UndeclaredSymbolValue>().single().toUndeclaredSymbol()
+
+    fun UndeclaredSymbolValue.toUndeclaredSymbol(): Symbol = name.toUndeclaredSymbol()
+
     private fun SimpleValue.toFeature(): Feature =
         valueToFeature[this] ?: throw LscUndefinedName("feature value", name)
 
@@ -265,8 +287,7 @@ class Feature(val name: String, val values: List<SimpleValue>, explicitDefault: 
 }
 
 class Symbol(val name: String, val declaredMatrix: Matrix?) {
-    val matrix = declaredMatrix ?: Matrix.EMPTY
-    override fun toString(): String = name + if (declaredMatrix == null) "" else " $matrix"
+    override fun toString(): String = name + if (declaredMatrix == null) "" else " $declaredMatrix"
 }
 
 /**

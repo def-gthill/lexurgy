@@ -365,6 +365,28 @@ class TestSoundChanger : StringSpec({
         ch("petetsa") shouldBe "pecetʰa"
     }
 
+    "Diacritics should be able to give a diacritic feature to an undeclared symbol" {
+        val ch = lsc(
+            """
+                Feature Length(*short, long)
+                Feature Stress(*unstressed, stressed)
+                Diacritic ː [long]
+                Diacritic ˈ [stressed]
+                Class vowel {a, e, i, ɔ, u, ɛ, ə, æ}
+                
+                stress-first-syllable @vowel:
+                [] => [stressed] / $ _
+                
+                stressed-vowel-clusters-merge:
+                {eˈə, æˈə, əˈæ, eˈæ, æˈe, əˈe} => {ɛː, aː, ɛː, aː, iː, aː}
+            """.trimIndent()
+        )
+
+        ch("keət") shouldBe "kɛːt"
+        ch("sæek") shouldBe "siːk"
+        ch("bætɔm") shouldBe "bæˈtɔm"
+    }
+
     "Duplicate diacritic declarations should produce an LscDuplicateName" {
         shouldThrow<LscDuplicateName> {
             lsc(
@@ -691,7 +713,7 @@ class TestSoundChanger : StringSpec({
                 Symbol i [vowel high front]
                 short-harmony:
                 [vowel] => [${'$'}Height] / [${'$'}Height] n+ _
-                [${'$'}Height ${'$'}Depth] => * / [${'$'}Height ${'$'}Depth] _
+                [vowel ${'$'}Height ${'$'}Depth] => * / [vowel ${'$'}Height ${'$'}Depth] _
             """.trimIndent()
         )
 
@@ -701,19 +723,20 @@ class TestSoundChanger : StringSpec({
 
         val ch2 = lsc(
             """
+                Feature Type(*cons, vowel)
                 Feature Height(low, high)
                 Feature Depth(front, back)
                 Feature Rounding(round, unround)
-                Symbol a [low back unround]
-                Symbol o [low back round]
-                Symbol e [low front unround]
-                Symbol ö [low front round]
-                Symbol ï [high back unround]
-                Symbol u [high back round]
-                Symbol i [high front unround]
-                Symbol ü [high front round]
+                Symbol a [vowel low back unround]
+                Symbol o [vowel low back round]
+                Symbol e [vowel low front unround]
+                Symbol ö [vowel low front round]
+                Symbol ï [vowel high back unround]
+                Symbol u [vowel high back round]
+                Symbol i [vowel high front unround]
+                Symbol ü [vowel high front round]
                 coalescence:
-                {[${'$'}Rounding ${'$'}Height] [high ${'$'}Depth], [high ${'$'}Depth] [${'$'}Rounding ${'$'}Height]} => [${'$'}Rounding ${'$'}Depth ${'$'}Height] *
+                {[vowel ${'$'}Rounding ${'$'}Height] [high ${'$'}Depth], [high ${'$'}Depth] [vowel ${'$'}Rounding ${'$'}Height]} => [${'$'}Rounding ${'$'}Depth ${'$'}Height] *
             """.trimIndent()
         )
 

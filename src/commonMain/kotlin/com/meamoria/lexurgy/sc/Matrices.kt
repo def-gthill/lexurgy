@@ -19,6 +19,12 @@ class Matrix(val valueList: List<MatrixValue>) {
         return if (updated) Matrix(values) else this
     }
 
+    /**
+     * Checks if this matrix contains a phonetic symbol that's used in a sound change
+     * rule without being declared in a Symbol declaration.
+     */
+    fun hasUndeclaredSymbol(): Boolean = valueList.any { it is UndeclaredSymbolValue }
+
     override fun toString(): String = valueList.joinToString(separator = " ", prefix = "[", postfix = "]")
 
     override fun equals(other: Any?): Boolean {
@@ -74,6 +80,15 @@ data class SimpleValue(val name: String) : MatrixValue {
     companion object {
         fun absent(featureName: String): SimpleValue = SimpleValue("*$featureName")
     }
+}
+
+data class UndeclaredSymbolValue(val name: String) : MatrixValue {
+    override fun matches(declarations: Declarations, matrix: Matrix, bindings: Bindings): Boolean =
+        with (declarations) {
+            this@UndeclaredSymbolValue in matrix.fullValueSet
+        }
+
+    override fun toString(): String = "($name)"
 }
 
 class LscInvalidMatrix(val matrix: Matrix) :

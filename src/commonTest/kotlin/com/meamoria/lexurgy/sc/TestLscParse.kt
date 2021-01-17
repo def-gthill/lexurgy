@@ -82,7 +82,6 @@ class TestLscParse : StringSpec({
             (5 to 6) to SwapError(5, 6, 5),
         )
         for (pair in statements.indices.pairs()) {
-            println(pair)
             val (x, y) = pair
             @Suppress("UnnecessaryVariable") val first = x // These variables work around a weird corner-case bug
             @Suppress("UnnecessaryVariable") val second = y
