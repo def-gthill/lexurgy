@@ -8,6 +8,10 @@ actual fun ParserRuleContext.getStartColumn(): Int = start.column
 
 actual fun RuleContext.getParentContext(): RuleContext? = parentCtx
 
+actual fun TerminalNode.getLine(): Int = symbol.line
+
+actual fun TerminalNode.getStartColumn(): Int = symbol.column
+
 actual object CharStreams {
     actual fun fromString(s: String): CharStream = InputStream(s)
 }

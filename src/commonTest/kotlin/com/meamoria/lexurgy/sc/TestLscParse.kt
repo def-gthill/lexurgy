@@ -138,6 +138,30 @@ class TestLscParse : StringSpec({
         )
     }
 
+    "A rule without a colon should trigger a friendly LscNotParsable" {
+        shouldThrow<LscNotParsable> {
+            parser.parseFile(
+                """
+                    rule-without-colon
+                        o => a
+                """.trimIndent()
+            )
+        }.also {
+            it.message should startWith("The rule \"rule-without-colon\" needs a colon after the rule name")
+        }
+
+        shouldThrow<LscNotParsable> {
+            parser.parseFile(
+                """
+                    fancy-rule-without-colon [vowel] propagate
+                        o => a
+                """.trimIndent()
+            )
+        }.also {
+            it.message should startWith("The rule \"fancy-rule-without-colon\" needs a colon after \"propagate\"")
+        }
+    }
+
     "A feature declaration should be parsable as a string" {
         parser.parseFeatureDeclaration("Feature Type(cons, vowel)") shouldBe "fdec(f(Type), v(cons), v(vowel))"
         parser.parseFeatureDeclaration(

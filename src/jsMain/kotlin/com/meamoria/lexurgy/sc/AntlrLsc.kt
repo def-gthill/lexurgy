@@ -87,7 +87,13 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
 
     class ChangeRuleContext : ParserRuleContext {
         fun ruleName(): RuleNameContext
+        fun RULE_START(): TerminalNode?
+        fun NEWLINE(): Array<TerminalNode>
         fun subrules(): SubrulesContext
+        fun changeRuleModifier(): Array<ChangeRuleModifierContext>
+    }
+
+    class ChangeRuleModifierContext : ParserRuleContext {
         fun filter(): FilterContext?
         fun PROPAGATE(): TerminalNode?
     }
@@ -370,6 +376,12 @@ actual typealias InterRomanizerContext = LscParser.InterRomanizerContext
 
 actual typealias ChangeRuleContext = LscParser.ChangeRuleContext
 
+actual fun ChangeRuleContext.allChangeRuleModifiers(): List<ChangeRuleModifierContext> = changeRuleModifier().toList()
+
+actual fun ChangeRuleContext.firstNewline(): TerminalNode = NEWLINE().first()
+
+actual typealias ChangeRuleModifierContext = LscParser.ChangeRuleModifierContext
+
 actual typealias FilterContext = LscParser.FilterContext
 
 actual typealias SubrulesContext = LscParser.SubrulesContext
@@ -459,3 +471,4 @@ actual typealias TextContext = LscParser.TextContext
 actual val LSC_NEWLINE: Int = js("LscParser.NEWLINE") as Int
 actual val LSC_FEATURE: Int = js("LscParser.FEATURE") as Int
 actual val LSC_VALUE: Int = js("LscParser.VALUE") as Int
+actual val LSC_RULE_START: Int = js("LscParser.RULE_START") as Int

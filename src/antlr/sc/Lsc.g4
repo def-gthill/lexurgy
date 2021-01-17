@@ -22,7 +22,8 @@ deromanizer: DEROMANIZER (WHITESPACE LITERAL)? RULE_START NEWLINE+ subrules;
 romanizer: ROMANIZER (WHITESPACE LITERAL)? RULE_START NEWLINE+ subrules;
 interRomanizer: ROMANIZER HYPHEN ruleName (WHITESPACE LITERAL)? RULE_START NEWLINE+ subrules;
 
-changeRule: ruleName (WHITESPACE filter)? (WHITESPACE PROPAGATE)? RULE_START NEWLINE+ subrules;
+changeRule: ruleName (WHITESPACE changeRuleModifier)* RULE_START? NEWLINE+ subrules;
+changeRuleModifier: filter | PROPAGATE;
 filter: classRef | matrix;
 subrules: subrule (NEWLINE+ SUBRULE RULE_START (WHITESPACE | NEWLINE+) subrule)*;
 subrule: expression (NEWLINE+ expression)*;

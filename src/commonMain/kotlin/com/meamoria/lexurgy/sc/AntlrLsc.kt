@@ -136,7 +136,15 @@ expect class InterRomanizerContext : ParserRuleContext {
 
 expect class ChangeRuleContext : ParserRuleContext {
     fun ruleName(): RuleNameContext
+    fun RULE_START(): TerminalNode?
     fun subrules(): SubrulesContext
+}
+
+expect fun ChangeRuleContext.allChangeRuleModifiers(): List<ChangeRuleModifierContext>
+
+expect fun ChangeRuleContext.firstNewline(): TerminalNode
+
+expect class ChangeRuleModifierContext : ParserRuleContext {
     fun filter(): FilterContext?
     fun PROPAGATE(): TerminalNode?
 }
@@ -274,3 +282,4 @@ expect class TextContext : ParserRuleContext {
 expect val LSC_NEWLINE: Int
 expect val LSC_FEATURE: Int
 expect val LSC_VALUE: Int
+expect val LSC_RULE_START: Int

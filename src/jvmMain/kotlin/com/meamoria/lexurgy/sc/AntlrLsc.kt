@@ -4,6 +4,7 @@ import com.meamoria.lexurgy.sc.java.LscBaseVisitor
 import com.meamoria.lexurgy.sc.java.LscLexer
 import com.meamoria.lexurgy.sc.java.LscParser
 import org.antlr.v4.runtime.ANTLRErrorListener
+import org.antlr.v4.runtime.tree.TerminalNode
 
 actual typealias LscLexer = LscLexer
 
@@ -48,6 +49,12 @@ actual typealias RomanizerContext = LscParser.RomanizerContext
 actual typealias InterRomanizerContext = LscParser.InterRomanizerContext
 
 actual typealias ChangeRuleContext = LscParser.ChangeRuleContext
+
+actual fun ChangeRuleContext.allChangeRuleModifiers(): List<ChangeRuleModifierContext> = changeRuleModifier()
+
+actual fun ChangeRuleContext.firstNewline(): TerminalNode = NEWLINE(0)
+
+actual typealias ChangeRuleModifierContext = LscParser.ChangeRuleModifierContext
 
 actual typealias FilterContext = LscParser.FilterContext
 
@@ -138,3 +145,4 @@ actual typealias TextContext = LscParser.TextContext
 actual val LSC_NEWLINE: Int = LscParser.NEWLINE
 actual val LSC_FEATURE: Int = LscParser.FEATURE
 actual val LSC_VALUE: Int = LscParser.VALUE
+actual val LSC_RULE_START: Int = LscParser.RULE_START

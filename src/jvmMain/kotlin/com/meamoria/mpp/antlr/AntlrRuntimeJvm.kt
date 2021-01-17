@@ -46,6 +46,10 @@ actual typealias RuleNode = RuleNode
 
 actual typealias TerminalNode = TerminalNode
 
+actual fun TerminalNode.getLine(): Int = symbol.line
+
+actual fun TerminalNode.getStartColumn(): Int = symbol.charPositionInLine
+
 actual typealias ParseTree = ParseTree
 
 actual typealias CharStream = CharStream

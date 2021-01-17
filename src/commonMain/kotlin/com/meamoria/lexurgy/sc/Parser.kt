@@ -165,12 +165,43 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
     override fun visitInterRomanizer(ctx: InterRomanizerContext): T =
         walkIntermediateRomanizer(ctx.ruleName().getText(), untlist(visit(ctx.subrules())), ctx.LITERAL() != null)
 
-    override fun visitChangeRule(ctx: ChangeRuleContext): T = walkChangeRule(
-        ctx.ruleName().getText(),
-        untlist(visit(ctx.subrules())),
-        optionalVisit(ctx.filter()),
-        ctx.PROPAGATE() != null,
-    )
+    override fun visitChangeRule(ctx: ChangeRuleContext): T {
+        val ruleName = ctx.ruleName().getText()
+        val modifiers = ctx.allChangeRuleModifiers()
+        if (ctx.RULE_START() == null) {
+            noColon(ruleName, modifiers, ctx.firstNewline())
+        }
+        val filter = modifiers.mapNotNull { it.filter() }.let { filters ->
+            if (filters.isEmpty()) null
+            else filters.singleOrNull() ?: multipleFilters(ruleName, filters)
+        }
+        val propagate = modifiers.any { it.PROPAGATE() != null }
+        return walkChangeRule(
+            ruleName,
+            untlist(visit(ctx.subrules())),
+            optionalVisit(filter),
+            propagate,
+        )
+    }
+
+    private fun noColon(
+        ruleName: String, modifiers: List<ChangeRuleModifierContext>, newline: TerminalNode
+    ): Nothing =
+        throw LscNotParsable(
+            newline.getLine(),
+            newline.getStartColumn(),
+            "new line",
+            "The rule \"$ruleName\" needs a colon after " +
+                    if (modifiers.isEmpty()) "the rule name" else "\"${modifiers.last().getText()}\""
+        )
+
+    private fun multipleFilters(ruleName: String, filters: List<FilterContext>): Nothing =
+        throw LscNotParsable(
+            filters[1].getStartLine(),
+            filters[1].getStartColumn(),
+            filters[1].getText(),
+            "The rule \"$ruleName\" has more than one filter: ${filters[0].getText()} and ${filters[1].getText()}"
+        )
 
     override fun visitFilter(ctx: FilterContext): T = visit(ctx.getChild(0))
 
@@ -434,6 +465,13 @@ private class LscErrorListener : CommonAntlrErrorListener() {
                     else -> "value names must consist of letters and numbers only and start with a lowercase letter"
                 }
                 "A feature value can't be called \"$attemptedValueName\"; $reason"
+            } else null
+        }
+
+    private fun ifRuleDeclaredWithoutColon(exception: RecognitionException): String? =
+        (exception.getContext() as ParserRuleContext?).upToType<ChangeRuleContext> {
+            if (exception.getExpectedTokens().contains(LSC_RULE_START)) {
+                "The rule \"${it.ruleName().getText()}\" needs a colon after the rule name"
             } else null
         }
 }

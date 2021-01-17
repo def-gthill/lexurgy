@@ -24,6 +24,10 @@ expect interface RuleNode : ParseTree
 
 expect interface TerminalNode : ParseTree
 
+expect fun TerminalNode.getLine(): Int
+
+expect fun TerminalNode.getStartColumn(): Int
+
 expect interface ParseTree {
     fun getText(): String
 

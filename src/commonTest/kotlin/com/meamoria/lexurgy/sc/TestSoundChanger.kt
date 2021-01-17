@@ -1051,7 +1051,7 @@ class TestSoundChanger : StringSpec({
                 Symbol y [vowel high front rnd]
                 harmony-forward [vowel] propagate:
                 [] => [${'$'}Depth] / [${'$'}Depth] _
-                harmony-backward [vowel] propagate:
+                harmony-backward propagate [vowel]:
                 [] => [${'$'}Rounding] / _ [${'$'}Rounding]
             """.trimIndent()
         )

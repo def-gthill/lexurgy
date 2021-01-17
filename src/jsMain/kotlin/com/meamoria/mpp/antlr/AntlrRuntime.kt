@@ -29,7 +29,9 @@ actual open external class RuleContext : RuleNode {
 
 actual external interface RuleNode : ParseTree
 
-actual external interface TerminalNode : ParseTree
+actual external interface TerminalNode : ParseTree {
+    val symbol: Token
+}
 
 actual external interface ParseTree {
     actual fun getText(): String
