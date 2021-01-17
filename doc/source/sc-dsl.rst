@@ -414,7 +414,18 @@ Diacritics also work when translating matrices back into symbols: if a rule prod
 Lexurgy will search through possible combinations of symbols and diacritics to find
 one that fits the matrix, namely [n̥].
 
-Diacritic declarations go after feature declarations but before symbol declarations.
+Diacritics can even be applied to symbols that aren't declared with feature
+matrices, in which case you can change the diacritics using matrix rules but
+not the base symbol. For example, suppose you define a vowel length feature
+with ``Feature Length(*short, long)`` and a long diacritic
+with ``Diacritic ː [long]``, but no other features or symbols. Then
+this rule will still turn the sequence [ar] into [aː]::
+
+    a-before-r:
+        a r => [long] *
+
+But if you wanted to change the ``a`` into a different vowel using matrix
+rules, you would have to declare it as a symbol with a feature matrix.
 
 .. note::
     Diacritics are added to a symbol in the order they're declared
