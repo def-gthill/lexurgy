@@ -54,6 +54,12 @@ LscVisitor.prototype.visitDiacriticDecl = function(ctx) {
 };
 
 
+// Visit a parse tree produced by LscParser#diacriticModifier.
+LscVisitor.prototype.visitDiacriticModifier = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
 // Visit a parse tree produced by LscParser#symbolDecl.
 LscVisitor.prototype.visitSymbolDecl = function(ctx) {
   return this.visitChildren(ctx);

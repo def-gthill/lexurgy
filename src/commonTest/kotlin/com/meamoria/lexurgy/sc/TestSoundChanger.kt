@@ -365,6 +365,25 @@ class TestSoundChanger : StringSpec({
         ch("petetsa") shouldBe "pecetʰa"
     }
 
+    "Diacritics declared with (before) should go before their symbol" {
+        val ch = lsc(
+            """
+                Feature Prenasalized(prenasalized)
+                Feature Preaspirated(preaspirated)
+                Feature Place (labial, alveolar)
+                Symbol p [labial]
+                Symbol t [alveolar]
+                Diacritic ⁿ (before) [prenasalized]
+                Diacritic ʰ [preaspirated] (before)
+                
+                swallow-nasal:
+                    n [preaspirated] => * [*Preaspirated prenasalized]
+            """.trimIndent()
+        )
+
+        ch("anʰtanʰpaʰpa") shouldBe "aⁿtaⁿpaʰpa"
+    }
+
     "Diacritics should be able to give a diacritic feature to an undeclared symbol" {
         val ch = lsc(
             """

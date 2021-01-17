@@ -54,6 +54,10 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     class DiacriticDeclContext : ParserRuleContext {
         fun STR1(): TerminalNode
         fun matrix(): MatrixContext
+        fun diacriticModifier(): Array<DiacriticModifierContext>
+    }
+
+    class DiacriticModifierContext : ParserRuleContext {
         fun DIA_BEFORE(): TerminalNode?
         fun DIA_FLOATING(): TerminalNode?
     }
@@ -347,6 +351,10 @@ actual fun FeatureDeclContext.allValues(): List<ValueContext> = value().toList()
 actual typealias NullAliasContext = LscParser.NullAliasContext
 
 actual typealias DiacriticDeclContext = LscParser.DiacriticDeclContext
+
+actual fun DiacriticDeclContext.allDiacriticModifiers(): List<DiacriticModifierContext> = diacriticModifier().toList()
+
+actual typealias DiacriticModifierContext = LscParser.DiacriticModifierContext
 
 actual typealias SymbolDeclContext = LscParser.SymbolDeclContext
 

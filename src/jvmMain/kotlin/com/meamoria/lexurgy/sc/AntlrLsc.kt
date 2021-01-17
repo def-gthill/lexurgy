@@ -31,6 +31,10 @@ actual typealias NullAliasContext = LscParser.NullAliasContext
 
 actual typealias DiacriticDeclContext = LscParser.DiacriticDeclContext
 
+actual fun DiacriticDeclContext.allDiacriticModifiers(): List<DiacriticModifierContext> = diacriticModifier()
+
+actual typealias DiacriticModifierContext = LscParser.DiacriticModifierContext
+
 actual typealias SymbolDeclContext = LscParser.SymbolDeclContext
 
 actual fun SymbolDeclContext.allSymbolNames(): List<SymbolNameContext> = symbolName()

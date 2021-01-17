@@ -101,6 +101,11 @@ expect class NullAliasContext : ParserRuleContext {
 expect class DiacriticDeclContext : ParserRuleContext {
     fun STR1(): TerminalNode
     fun matrix(): MatrixContext
+}
+
+expect fun DiacriticDeclContext.allDiacriticModifiers(): List<DiacriticModifierContext>
+
+expect class DiacriticModifierContext : ParserRuleContext {
     fun DIA_BEFORE(): TerminalNode?
     fun DIA_FLOATING(): TerminalNode?
 }

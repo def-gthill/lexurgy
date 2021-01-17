@@ -67,7 +67,7 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
         val romanizers = mutableListOf<RomanizerToFollowingRule<T>>()
         val curRomanizers = mutableListOf<T>()
         for (context in contexts) {
-            when(context) {
+            when (context) {
                 is InterRomanizerContext -> curRomanizers += visit(context)
                 is ChangeRuleContext -> {
                     val rule = visit(context)
@@ -137,12 +137,17 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
 
     override fun visitNullAlias(ctx: NullAliasContext): T = visit(ctx.value())
 
-    override fun visitDiacriticDecl(ctx: DiacriticDeclContext): T = walkDiacriticDeclaration(
-        ctx.STR1().getText(),
-        visit(ctx.matrix()),
-        ctx.DIA_BEFORE() != null,
-        ctx.DIA_FLOATING() != null,
-    )
+    override fun visitDiacriticDecl(ctx: DiacriticDeclContext): T {
+        val modifiers = ctx.allDiacriticModifiers()
+        val before = modifiers.any { it.DIA_BEFORE() != null }
+        val floating = modifiers.any { it.DIA_FLOATING() != null }
+        return walkDiacriticDeclaration(
+            ctx.STR1().getText(),
+            visit(ctx.matrix()),
+            before,
+            floating,
+        )
+    }
 
     override fun visitSymbolDecl(ctx: SymbolDeclContext): T {
         val symbolNames = ctx.allSymbolNames().map { removeEscapes(it.getText()) }

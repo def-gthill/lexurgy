@@ -11,7 +11,10 @@ featureDecl:
     FEATURE_DECL WHITESPACE feature WHITESPACE?
     O_PAREN (nullAlias SEP)? value (SEP value)* C_PAREN (CHANGE matrix)?;
 nullAlias: NULL value;
-diacriticDecl: DIACRITIC WHITESPACE STR1 WHITESPACE (DIA_BEFORE WHITESPACE)? (DIA_FLOATING WHITESPACE)? matrix;
+diacriticDecl:
+    DIACRITIC WHITESPACE STR1 WHITESPACE
+    (diacriticModifier WHITESPACE)* matrix (WHITESPACE diacriticModifier)*;
+diacriticModifier: DIA_BEFORE | DIA_FLOATING;
 symbolDecl: SYMBOL WHITESPACE symbolName ((SEP symbolName)* | WHITESPACE matrix);
 symbolName: text;
 

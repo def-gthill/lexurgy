@@ -414,6 +414,11 @@ Diacritics also work when translating matrices back into symbols: if a rule prod
 Lexurgy will search through possible combinations of symbols and diacritics to find
 one that fits the matrix, namely [n̥].
 
+If you add ``(before)`` to a diacritic declaration (before or after the
+matrix), it will go before the base symbol. For example, if you define
+``Diacritic ⁿ (before) [prenasalized]`` (or ``Diacritic ⁿ [prenasalized] (before)``),
+then the prenasalized version of [d] will show up as ``ⁿd`` rather than ``dⁿ``.
+
 Diacritics can even be applied to symbols that aren't declared with feature
 matrices, in which case you can change the diacritics using matrix rules but
 not the base symbol. For example, suppose you define a vowel length feature

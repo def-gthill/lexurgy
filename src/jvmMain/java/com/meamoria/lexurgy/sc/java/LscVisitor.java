@@ -53,6 +53,12 @@ public interface LscVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitDiacriticDecl(LscParser.DiacriticDeclContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link LscParser#diacriticModifier}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitDiacriticModifier(LscParser.DiacriticModifierContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link LscParser#symbolDecl}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

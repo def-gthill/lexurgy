@@ -66,6 +66,13 @@ public class LscBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements Ls
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
+	@Override public T visitDiacriticModifier(LscParser.DiacriticModifierContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
 	@Override public T visitSymbolDecl(LscParser.SymbolDeclContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
