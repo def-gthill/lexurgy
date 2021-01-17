@@ -138,4 +138,255 @@ class TestRealExamples : StringSpec({
         ch("ta'ínki") shouldBe "t’'ínki"
         ch("ta'an") shouldBe "t’'an"
     }
+
+    val exampleWords = listOf(
+        "ka",
+        "pika",
+        "tonu",
+        "lita",
+        "sema",
+        "talimu",
+        "mehato",
+        "kameti",
+        "lapote",
+        "po'alu",
+        "samali",
+        "muhasa",
+        "kopiko",
+        "atepino",
+        "ki'ama",
+        "haniposa",
+        "kani'asoto",
+        "nekosa'ima",
+    )
+
+    "The Basican example in the web app should work" {
+        val ch = lsc(
+            """
+            Class vowel {a, e, i, o, u}
+
+            k-before-a:
+             k => ʃ / _ a
+
+            palatalization:
+             k => tʃ / _ i
+    
+            intervocalic-voicing:
+             {p, t, k, s} => {b, d, g, z} / @vowel _ @vowel
+    
+            initial-s-aspiration:
+             s => h / $ _
+    
+            glottal-loss:
+             {h, '} => *
+
+            l-gliding:
+             # "Except at the start of a word"; otherwise lita becomes jda
+             li => j // $ _
+
+            final-vowel-loss-after-nasal:
+             @vowel => * / @vowel {m, n} _ $
+            """.trimIndent()
+        )
+
+        val expected = listOf(
+            "ʃa",
+            "piʃa",
+            "ton",
+            "lida",
+            "em",
+            "tajmu",
+            "meado",
+            "ʃamedi",
+            "labode",
+            "poalu",
+            "amaj",
+            "muaza",
+            "kobigo",
+            "adebin",
+            "tʃiam",
+            "aniboza",
+            "ʃaniazodo",
+            "negozaim",
+        )
+
+        for ((expectedWord, originalWord) in expected.zip(exampleWords)) {
+            ch(originalWord) shouldBe expectedWord
+        }
+    }
+
+    "The Intermediatese example in the web app should work" {
+        val ch = lsc(
+            """
+            Feature Type(*cons, vowel)
+
+            Feature Place(bilabial, alveolar, velar, glottal)
+            Feature Manner(stop, fricative, nasal, lateral)
+            
+            Feature Height(low, mid, high)
+            Feature Frontness(front, central, back)
+            
+            Feature Length(*short, long)
+            Feature Stress(*unstressed, stressed)
+            
+            Diacritic ː [long]
+            Diacritic ˈ [stressed]
+            
+            Symbol p [bilabial stop]
+            Symbol t [alveolar stop]
+            Symbol k [velar stop]
+            Symbol ʔ [glottal stop]
+            Symbol s [alveolar fricative]
+            Symbol h [glottal fricative]
+            Symbol m [bilabial nasal]
+            Symbol n [alveolar nasal]
+            Symbol l [alveolar lateral]
+            
+            Symbol a [low central vowel]
+            Symbol e [mid front vowel]
+            Symbol i [high front vowel]
+            Symbol o [mid back vowel]
+            Symbol u [high back vowel]
+            
+            Deromanizer:
+             ' => ʔ
+            
+            stress-first-syllable:
+             [vowel] => [stressed] / ${'$'} [cons]? _
+            
+            syncope:
+             [unstressed vowel] => * / {[!stop] _ [cons], [stop] _ [stop]}
+            
+            coda-drop-and-lengthen:
+             [vowel] {h, [stop]} => [long] * / _ [cons]
+            
+            nasal-assimilation:
+             [nasal] => [${'$'}Place] / _ [cons !glottal ${'$'}Place]
+            
+            Romanizer-phonetic:
+             unchanged
+            
+            Romanizer:
+             # Get rid of the stress marks, since stress is still predictable
+             [stressed] => [unstressed]
+             Then:
+             {aː, eː, iː, oː, uː} => {ā, ē, ī, ō, ū}
+             ʔ => '
+
+            """.trimIndent()
+        )
+
+        val expected = listOf(
+            "ka",
+            "pika",
+            "tonu",
+            "lita",
+            "sema",
+            "talmu",
+            "mēto",
+            "kanti",
+            "lāte",
+            "po'alu",
+            "sanli",
+            "mūsa",
+            "kōko",
+            "āpino",
+            "ki'ama",
+            "hamposa",
+            "kan'asto",
+            "nekos'ima",
+        )
+
+        for ((expectedWord, originalWord) in expected.zip(exampleWords)) {
+            ch(originalWord) shouldBe expectedWord
+        }
+    }
+
+    "The Advancedish example in the web app should work" {
+        val ch = lsc(
+            """
+            Feature Type(*cons, vowel)
+
+            Feature Place(bilabial, alveolar, velar, glottal)
+            Feature Manner(stop, fricative, nasal, lateral)
+            
+            Feature Height(low, mid, high)
+            Feature Frontness(front, central, back)
+            
+            Feature Length(*short, long)
+            Feature Stress(*unstressed, secondary, primary)
+            
+            Diacritic ː [long]
+            Diacritic ˈ [primary]
+            Diacritic ˌ [secondary]
+            
+            Symbol a [low central vowel]
+            Symbol e [mid front vowel]
+            Symbol i [high front vowel]
+            Symbol o [mid back vowel]
+            Symbol u [high back vowel]
+            
+            Class stop {p, t, k}
+            Class sonorant {m, n, l}
+            
+            Deromanizer:
+             ' => ʔ
+            
+            primary-stress-second-last-syllable [vowel]:
+             [] => [primary] / _ [] ${'$'}
+            
+            add-secondary-stress [vowel] propagate:
+             # Applies secondary stress to alternating vowels before the main stress
+             [unstressed] => [secondary] / _ [] {[primary], [secondary]}
+            
+            Romanizer-before-syncope:
+             unchanged
+            
+            syncope:
+             [unstressed vowel] => * // _ ${'$'}
+             Then:
+             # Secondary stress has served its purpose
+             [secondary] => [unstressed]
+            
+            glottal-loss:
+             ʔ => * / {[cons] _, _ [cons]}
+            
+            stop-stop-clusters:
+             @stop => * / ${'$'} _ @stop
+             @stop => ${'$'}1 / _ @stop${'$'}1
+            
+            obey-sonority:
+             @sonorant${'$'}1 @stop${'$'}2 => ${'$'}2 ${'$'}1 / ${'$'} _
+            
+            Romanizer:
+             # Get rid of the stress marks, since stress is still predictable
+             [primary] => [unstressed]
+            """.trimIndent()
+        )
+
+        val expected = listOf(
+            "ka",
+            "pika",
+            "tonu",
+            "lita",
+            "sema",
+            "tlimu",
+            "mhato",
+            "kmeti",
+            "plote",
+            "palu",
+            "smali",
+            "mhasa",
+            "piko",
+            "appino",
+            "kama",
+            "hanposa",
+            "knisoto",
+            "knosima",
+        )
+
+        for ((expectedWord, originalWord) in expected.zip(exampleWords)) {
+            ch(originalWord) shouldBe expectedWord
+        }
+    }
 })

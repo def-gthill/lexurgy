@@ -83,7 +83,8 @@ class TestLscParse : StringSpec({
         )
         for (pair in statements.indices.pairs()) {
             val (x, y) = pair
-            @Suppress("UnnecessaryVariable") val first = x // These variables work around a weird corner-case bug
+            // These variables work around a weird corner-case bug in Kotlin/JS
+            @Suppress("UnnecessaryVariable") val first = x
             @Suppress("UnnecessaryVariable") val second = y
             val swapped = statements.withIndex().map {
                 when (it.index) {
@@ -95,7 +96,10 @@ class TestLscParse : StringSpec({
             val lineNumbers = statements.scan(1) { acc, statement -> acc + statement.split("\n").size }
             val swapError = swapErrors[pair]
             if (swapError != null) {
-                val (mustComeBefore, mustComeAfter, errorAtStatement) = swapError
+                val (a, b, c) = swapError
+                @Suppress("UnnecessaryVariable") val mustComeBefore = a
+                @Suppress("UnnecessaryVariable") val mustComeAfter = b
+                @Suppress("UnnecessaryVariable") val errorAtStatement = c
                 val line = lineNumbers[errorAtStatement]
                 val column = 0
                 shouldThrow<LscNotParsable> {
