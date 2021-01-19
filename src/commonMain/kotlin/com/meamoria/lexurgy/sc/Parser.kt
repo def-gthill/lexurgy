@@ -31,8 +31,14 @@ class LscInterpreter<T>(val walker: LscWalker<T>) {
         val inputStream = CharStreams.fromString(text)
         val lexer = LscLexer(inputStream)
         val tokenStream = CommonTokenStream(lexer)
-        val tree = parser(makeLscParser(tokenStream))
-        return walker.visit(tree)!!
+        try {
+            val tree = parser(makeLscParser(tokenStream))
+            return walker.visit(tree)!!
+        } catch (e: LscNotParsable) {
+            if (e.needsBetterErrorMessage()) {
+                throwWithBetterErrorMessage(e, text)
+            } else throw e
+        }
     }
 
     private fun makeLscParser(stream: TokenStream): LscParser {
@@ -41,6 +47,21 @@ class LscInterpreter<T>(val walker: LscWalker<T>) {
         parser.addCommonAntlrErrorListener(LscErrorListener())
         return parser
     }
+
+    private fun LscNotParsable.needsBetterErrorMessage() =
+        customMessage.startsWith("extraneous")
+
+    private fun throwWithBetterErrorMessage(e: LscNotParsable, inputText: String): Nothing {
+        val offendingLine = inputText.lines()[e.line - 1]
+        throw LscNotParsable(
+            e.line, e.column, e.offendingSymbol,
+            betterErrorMessage(e.customMessage, e.offendingSymbol, offendingLine)
+        )
+    }
+
+    private fun betterErrorMessage(
+        oldMessage: String, offendingSymbol: String, offendingLine: String
+    ): String = "\"$offendingSymbol\" doesn't make sense in the line \"$offendingLine\""
 }
 
 abstract class LscWalker<T> : LscBaseVisitor<T>() {
@@ -427,7 +448,12 @@ private class LscErrorListener : CommonAntlrErrorListener() {
         exception: RecognitionException?,
     ): Nothing {
         val userFriendlyMessage = exception?.let { getUserFriendlyMessage(it) }
-        throw LscNotParsable(line, charPositionInLine, offendingSymbol.toString(), userFriendlyMessage ?: msg)
+        throw LscNotParsable(
+            line,
+            charPositionInLine,
+            (offendingSymbol as? Token)?.getTokenText() ?: offendingSymbol.toString(),
+            userFriendlyMessage ?: msg
+        )
     }
 
     private fun getUserFriendlyMessage(exception: RecognitionException): String? {
@@ -476,5 +502,5 @@ private class LscErrorListener : CommonAntlrErrorListener() {
         }
 }
 
-class LscNotParsable(val line: Int, val column: Int, val offendingSymbol: String, message: String) :
-    LscUserError("$message (Line $line, column $column)")
+class LscNotParsable(val line: Int, val column: Int, val offendingSymbol: String, val customMessage: String) :
+    LscUserError("$customMessage (Line $line, column $column)")

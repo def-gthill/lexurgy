@@ -319,6 +319,14 @@ class TestLscParse : StringSpec({
         }
     }
 
+    "Completely unintelligible files should still yield decent error messages" {
+        shouldThrow<LscNotParsable> {
+            parser.parseFile("[foo]")
+        }.also {
+            it.message should startWith("\"[\" doesn't make sense in the line \"[foo]\"")
+        }
+    }
+
     "A romanizer should be parsable as a string" {
         parser.parseRomanizer(
             """
