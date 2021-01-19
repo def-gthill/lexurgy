@@ -213,7 +213,7 @@ var serializedATN = ["\u0003\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964",
     "\u0003\u0002\u0002\u0002\u0120\u0123\u0005 \u0011\u0002\u0121\u0123",
     "\u0007\"\u0002\u0002\u0122\u0120\u0003\u0002\u0002\u0002\u0122\u0121",
     "\u0003\u0002\u0002\u0002\u0123\u001f\u0003\u0002\u0002\u0002\u0124\u0127",
-    "\u0005L\'\u0002\u0125\u0127\u0005`1\u0002\u0126\u0124\u0003\u0002\u0002",
+    "\u0005L\'\u0002\u0125\u0127\u0005P)\u0002\u0126\u0124\u0003\u0002\u0002",
     "\u0002\u0126\u0125\u0003\u0002\u0002\u0002\u0127!\u0003\u0002\u0002",
     "\u0002\u0128\u013b\u0005$\u0013\u0002\u0129\u012b\u0007\t\u0002\u0002",
     "\u012a\u0129\u0003\u0002\u0002\u0002\u012b\u012c\u0003\u0002\u0002\u0002",
@@ -2159,8 +2159,8 @@ FilterContext.prototype.classRef = function() {
     return this.getTypedRuleContext(ClassRefContext,0);
 };
 
-FilterContext.prototype.matrix = function() {
-    return this.getTypedRuleContext(MatrixContext,0);
+FilterContext.prototype.fancyMatrix = function() {
+    return this.getTypedRuleContext(FancyMatrixContext,0);
 };
 
 FilterContext.prototype.accept = function(visitor) {
@@ -2192,7 +2192,7 @@ LscParser.prototype.filter = function() {
         case LscParser.MATRIX_START:
             this.enterOuterAlt(localctx, 2);
             this.state = 291;
-            this.matrix();
+            this.fancyMatrix();
             break;
         default:
             throw new antlr4.error.NoViableAltException(this);

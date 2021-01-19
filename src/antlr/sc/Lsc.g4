@@ -24,7 +24,7 @@ interRomanizer: ROMANIZER HYPHEN ruleName (WHITESPACE LITERAL)? RULE_START NEWLI
 
 changeRule: ruleName (WHITESPACE changeRuleModifier)* RULE_START? NEWLINE+ subrules;
 changeRuleModifier: filter | PROPAGATE;
-filter: classRef | matrix;
+filter: classRef | fancyMatrix;
 subrules: subrule (NEWLINE+ SUBRULE RULE_START (WHITESPACE | NEWLINE+) subrule)*;
 subrule: expression (NEWLINE+ expression)*;
 ruleName: VALUE (HYPHEN VALUE)*;

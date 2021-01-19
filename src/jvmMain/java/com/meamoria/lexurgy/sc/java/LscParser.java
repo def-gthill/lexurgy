@@ -1323,8 +1323,8 @@ public class LscParser extends Parser {
 		public ClassRefContext classRef() {
 			return getRuleContext(ClassRefContext.class,0);
 		}
-		public MatrixContext matrix() {
-			return getRuleContext(MatrixContext.class,0);
+		public FancyMatrixContext fancyMatrix() {
+			return getRuleContext(FancyMatrixContext.class,0);
 		}
 		public FilterContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -1355,7 +1355,7 @@ public class LscParser extends Parser {
 				enterOuterAlt(_localctx, 2);
 				{
 				setState(291);
-				matrix();
+				fancyMatrix();
 				}
 				break;
 			default:
@@ -3554,7 +3554,7 @@ public class LscParser extends Parser {
 		"\2\2\u011b\u011c\3\2\2\2\u011c\u011a\3\2\2\2\u011c\u011d\3\2\2\2\u011d"+
 		"\u011e\3\2\2\2\u011e\u011f\5\"\22\2\u011f\35\3\2\2\2\u0120\u0123\5 \21"+
 		"\2\u0121\u0123\7\"\2\2\u0122\u0120\3\2\2\2\u0122\u0121\3\2\2\2\u0123\37"+
-		"\3\2\2\2\u0124\u0127\5L\'\2\u0125\u0127\5`\61\2\u0126\u0124\3\2\2\2\u0126"+
+		"\3\2\2\2\u0124\u0127\5L\'\2\u0125\u0127\5P)\2\u0126\u0124\3\2\2\2\u0126"+
 		"\u0125\3\2\2\2\u0127!\3\2\2\2\u0128\u013b\5$\23\2\u0129\u012b\7\t\2\2"+
 		"\u012a\u0129\3\2\2\2\u012b\u012c\3\2\2\2\u012c\u012a\3\2\2\2\u012c\u012d"+
 		"\3\2\2\2\u012d\u012e\3\2\2\2\u012e\u012f\7!\2\2\u012f\u0136\7\25\2\2\u0130"+

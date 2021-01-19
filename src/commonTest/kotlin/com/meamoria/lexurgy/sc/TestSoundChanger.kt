@@ -997,6 +997,27 @@ class TestSoundChanger : StringSpec({
         shouldNotThrowAny { lsc("Symbol ai\nharmony [vowel]:\n[low] ai => [high] a") }
     }
 
+    "Negated features should be usable in filters" {
+        val ch = lsc(
+            """
+                Feature Type(*cons, vowel)
+                Feature Height(low, mid, high)
+                Feature Depth(front, back)
+                Symbol æ [low front vowel]
+                Symbol e [mid front vowel]
+                Symbol i [high front vowel]
+                Symbol ɑ [low back vowel]
+                Symbol o [mid back vowel]
+                Symbol u [high back vowel]
+                harmony [vowel !low]:
+                    [] => [${'$'}Depth] / [${'$'}Depth] _
+            """.trimIndent()
+        )
+
+        ch("pinoki") shouldBe "pineku"
+        ch("pinɑku") shouldBe "pinɑki"
+    }
+
     "Classes should be usable as filters" {
         val ch = lsc(
             """
