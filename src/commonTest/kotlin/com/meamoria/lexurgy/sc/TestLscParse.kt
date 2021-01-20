@@ -162,6 +162,32 @@ class TestLscParse : StringSpec({
         }
     }
 
+    "A rule name with invalid characters should trigger a helpful error message" {
+        shouldThrow<LscNotParsable> {
+            parser.parseFile(
+                """
+                    rule with spaces:
+                        o => a
+                """.trimIndent()
+            )
+        }.also {
+            it.message should startWith("A rule name can't start with \"rule \"; " +
+                    "rule names must consist of only lowercase letters and hyphens")
+        }
+
+        shouldThrow<LscNotParsable> {
+            parser.parseFile(
+                """
+                    rule+with+special+characters:
+                        o => a
+                """.trimIndent()
+            )
+        }.also {
+            it.message should startWith("A rule name can't start with \"rule+\"; " +
+                    "rule names must consist of only lowercase letters and hyphens")
+        }
+    }
+
     "A feature declaration should be parsable as a string" {
         parser.parseFeatureDeclaration("Feature Type(cons, vowel)") shouldBe "fdec(f(Type), v(cons), v(vowel))"
         parser.parseFeatureDeclaration(

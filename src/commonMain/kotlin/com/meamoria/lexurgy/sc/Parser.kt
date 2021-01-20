@@ -49,7 +49,8 @@ class LscInterpreter<T>(val walker: LscWalker<T>) {
     }
 
     private fun LscNotParsable.needsBetterErrorMessage() =
-        customMessage.startsWith("extraneous")
+        customMessage.startsWith("extraneous") ||
+                customMessage.startsWith("mismatched")
 
     private fun throwWithBetterErrorMessage(e: LscNotParsable, inputText: String): Nothing {
         val offendingLine = inputText.lines()[e.line - 1]
@@ -60,7 +61,9 @@ class LscInterpreter<T>(val walker: LscWalker<T>) {
     }
 
     private fun betterErrorMessage(
-        oldMessage: String, offendingSymbol: String, offendingLine: String
+        @Suppress("UNUSED_PARAMETER") oldMessage: String,
+        offendingSymbol: String,
+        offendingLine: String
     ): String = "\"$offendingSymbol\" doesn't make sense in the line \"$offendingLine\""
 }
 
@@ -447,28 +450,33 @@ private class LscErrorListener : CommonAntlrErrorListener() {
         msg: String,
         exception: RecognitionException?,
     ): Nothing {
-        val userFriendlyMessage = exception?.let { getUserFriendlyMessage(it) }
+        val offendingToken = (offendingSymbol as? Token)?.getTokenText() ?: offendingSymbol.toString()
+        val userFriendlyMessage = exception?.let { getUserFriendlyMessage(it, offendingToken) }
         throw LscNotParsable(
             line,
             charPositionInLine,
-            (offendingSymbol as? Token)?.getTokenText() ?: offendingSymbol.toString(),
+            offendingToken,
             userFriendlyMessage ?: msg
         )
     }
 
-    private fun getUserFriendlyMessage(exception: RecognitionException): String? {
+    private fun getUserFriendlyMessage(exception: RecognitionException, offendingToken: String): String? {
         for (messageMaker in userFriendlyMessageMakers) {
-            messageMaker(exception)?.let { return it }
+            messageMaker(exception, offendingToken)?.let { return it }
         }
         return null
     }
 
-    private val userFriendlyMessageMakers: List<(RecognitionException) -> String?> = listOf(
+    private val userFriendlyMessageMakers: List<(RecognitionException, String) -> String?> = listOf(
         this::ifFeatureNameIsInvalid,
         this::ifFeatureValueNameIsInvalid,
+        this::ifRuleNameIsInvalid,
     )
 
-    private fun ifFeatureNameIsInvalid(exception: RecognitionException): String? =
+    private fun ifFeatureNameIsInvalid(
+        exception: RecognitionException,
+        @Suppress("UNUSED_PARAMETER") offendingToken: String
+    ): String? =
         (exception.getContext() as ParserRuleContext?).upToType<FeatureDeclContext> {
             if (exception.getExpectedTokens().contains(LSC_FEATURE)) {
                 val attemptedFeatureName = exception.getMismatchedToken().getTokenText()
@@ -481,7 +489,10 @@ private class LscErrorListener : CommonAntlrErrorListener() {
             } else null
         }
 
-    private fun ifFeatureValueNameIsInvalid(exception: RecognitionException): String? =
+    private fun ifFeatureValueNameIsInvalid(
+        exception: RecognitionException,
+        @Suppress("UNUSED_PARAMETER") offendingToken: String
+    ): String? =
         (exception.getContext() as ParserRuleContext?).upToType<FeatureDeclContext> {
             if (exception.getExpectedTokens().contains(LSC_VALUE)) {
                 val attemptedValueName = exception.getMismatchedToken().getTokenText()
@@ -494,11 +505,23 @@ private class LscErrorListener : CommonAntlrErrorListener() {
             } else null
         }
 
-    private fun ifRuleDeclaredWithoutColon(exception: RecognitionException): String? =
-        (exception.getContext() as ParserRuleContext?).upToType<ChangeRuleContext> {
-            if (exception.getExpectedTokens().contains(LSC_RULE_START)) {
-                "The rule \"${it.ruleName().getText()}\" needs a colon after the rule name"
-            } else null
+    private fun ifRuleNameIsInvalid(exception: RecognitionException, offendingToken: String): String? =
+        (exception.getContext() as ParserRuleContext?).upToType<ChangeRuleContext> { ctx ->
+            val expectedTokens = exception.getExpectedTokens()
+            val ruleNameStart =
+                when {
+                    expectedTokens.contains(LSC_RULE_START) -> {
+                        ctx.getText() + offendingToken
+                    }
+                    expectedTokens.contains(LSC_PROPAGATE) -> {
+                        ctx.getText()
+                    }
+                    else -> null
+                }
+            ruleNameStart?.let {
+                "A rule name can't start with \"${it}\"; " +
+                        "rule names must consist of only lowercase letters and hyphens"
+            }
         }
 }
 

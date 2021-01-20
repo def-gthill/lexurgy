@@ -283,3 +283,4 @@ expect val LSC_NEWLINE: Int
 expect val LSC_FEATURE: Int
 expect val LSC_VALUE: Int
 expect val LSC_RULE_START: Int
+expect val LSC_PROPAGATE: Int

@@ -146,3 +146,4 @@ actual val LSC_NEWLINE: Int = LscParser.NEWLINE
 actual val LSC_FEATURE: Int = LscParser.FEATURE
 actual val LSC_VALUE: Int = LscParser.VALUE
 actual val LSC_RULE_START: Int = LscParser.RULE_START
+actual val LSC_PROPAGATE: Int = LscParser.PROPAGATE

@@ -472,3 +472,4 @@ actual val LSC_NEWLINE: Int = js("LscParser.NEWLINE") as Int
 actual val LSC_FEATURE: Int = js("LscParser.FEATURE") as Int
 actual val LSC_VALUE: Int = js("LscParser.VALUE") as Int
 actual val LSC_RULE_START: Int = js("LscParser.RULE_START") as Int
+actual val LSC_PROPAGATE: Int = js("LscParser.PROPAGATE") as Int
