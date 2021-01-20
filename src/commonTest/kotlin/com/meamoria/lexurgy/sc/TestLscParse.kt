@@ -204,6 +204,9 @@ class TestLscParse : StringSpec({
         }
         shouldThrow<LscNotParsable> { parser.parseFeatureDeclaration("Type(cons, vowel)") }
         shouldThrow<LscNotParsable> { parser.parseFeatureDeclaration("=>") }
+        shouldThrow<LscNotParsable> { parser.parseFeatureDeclaration("Feature Type[cons, vowel]") }.also {
+            it.message should startWith("The values of the feature Type need to be in parentheses () not square brackets []")
+        }
     }
 
     "A diacritic declaration should be parsable as a string" {

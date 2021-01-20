@@ -470,6 +470,7 @@ private class LscErrorListener : CommonAntlrErrorListener() {
     private val userFriendlyMessageMakers: List<(RecognitionException, String) -> String?> = listOf(
         this::ifFeatureNameIsInvalid,
         this::ifFeatureValueNameIsInvalid,
+        this::ifFeatureValuesInSquareBrackets,
         this::ifRuleNameIsInvalid,
     )
 
@@ -502,6 +503,17 @@ private class LscErrorListener : CommonAntlrErrorListener() {
                     else -> "value names must consist of letters and numbers only and start with a lowercase letter"
                 }
                 "A feature value can't be called \"$attemptedValueName\"; $reason"
+            } else null
+        }
+
+    private fun ifFeatureValuesInSquareBrackets(
+        exception: RecognitionException,
+        @Suppress("UNUSED_PARAMETER") offendingToken: String
+    ): String? =
+        (exception.getContext() as ParserRuleContext?).upToType<FeatureDeclContext> {
+            if (offendingToken == "[" && exception.getExpectedTokens().contains(LSC_O_PAREN)) {
+                val featureName = it.downToType<FeatureContext>()!!.getText()
+                "The values of the feature $featureName need to be in parentheses () not square brackets []"
             } else null
         }
 

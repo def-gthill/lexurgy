@@ -284,3 +284,4 @@ expect val LSC_FEATURE: Int
 expect val LSC_VALUE: Int
 expect val LSC_RULE_START: Int
 expect val LSC_PROPAGATE: Int
+expect val LSC_O_PAREN: Int
