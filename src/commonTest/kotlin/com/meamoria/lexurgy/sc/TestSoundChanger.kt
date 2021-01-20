@@ -698,6 +698,8 @@ class TestSoundChanger : StringSpec({
         )
 
         ch("ahafasa") shouldBe "ahavaza"
+
+        shouldThrow<LscInvalidOutputMatrix> { lsc("negated-in-output:\n[foo] => [!bar]") }
     }
 
     "An absent feature value should only match sounds that don't have any value from that feature" {

@@ -381,6 +381,9 @@ class RuleExpression<I : Segment<I>, O : Segment<O>>(
         } else if (result is SequenceEmitter) {
             mismatchedLengths(match, result, 1, result.elements.size)
         } else if (match is SimpleMatcher && result is SimpleEmitter) {
+            if (result is MatrixEmitter && result.matrix.valueList.any { it is NegatedValue }) {
+                throw LscInvalidOutputMatrix(result.matrix, "negated feature")
+            }
             SimpleTransformer(match, result)
         } else {
             throw IllegalArgumentException(
@@ -578,6 +581,9 @@ class LscRuleNotFound(val ruleName: String, val attemptedAction: String) :
 
 class LscMatrixInPlain(val matrix: Matrix) :
     LscUserError("Feature matrix $matrix isn't allowed in a romanized context")
+
+class LscInvalidOutputMatrix(val matrix: Matrix, val invalidFeature: String) :
+    LscUserError("Feature matrix $matrix has a $invalidFeature, which isn't allowed in the output of a rule")
 
 class LscClassInPlain(val className: String) :
     LscUserError("Sound class $className isn't allowed in a romanized context")
