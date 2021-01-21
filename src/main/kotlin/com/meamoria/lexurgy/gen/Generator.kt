@@ -54,7 +54,7 @@ class Sequence(val elements: List<Generator>) : Generator {
 }
 
 fun optionalGenerator(element: Generator, probability: Double) : Generator =
-    Alternatives(listOf(Alternative(Atom(""), 1 - probability), Alternative(element, probability)))
+    Alternatives(Alternative(Atom(""), 1 - probability), Alternative(element, probability))
 
 fun alternativesGenerator(alternatives: List<Alternative>) : Generator =
     Alternatives(alternatives)

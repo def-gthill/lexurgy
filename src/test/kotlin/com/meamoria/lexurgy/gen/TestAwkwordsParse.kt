@@ -5,7 +5,7 @@ import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 
 class TestAwkwordsParse : StringSpec({
-    val parser = AwkwordsInterpreter(StringWalker())
+    val parser = AwkwordsInterpreter
 
     "An uppercase letter should be interpreted as a subreference" {
         parser.parseSubreference("C") shouldBe "sr(C)"
@@ -46,15 +46,15 @@ class TestAwkwordsParse : StringSpec({
     }
 
 }) {
-    class StringWalker : AwkwordsWalker<String>() {
-        override fun walkAlternative(elements: List<String>): String = "alt(${elements.joinToString()})"
-
-        override fun walkOptional(element: String): String = "op($element)"
-
-        override fun walkSequence(elements: List<String>): String = "seq(${elements.joinToString()})"
-
-        override fun walkSubref(name: String): String = "sr($name)"
-
-        override fun walkAtom(text: String): String = text
-    }
+//    class StringWalker : AwkwordsWalker<String>() {
+//        override fun walkAlternative(elements: List<String>): String = "alt(${elements.joinToString()})"
+//
+//        override fun walkOptional(element: String): String = "op($element)"
+//
+//        override fun walkSequence(elements: List<String>): String = "seq(${elements.joinToString()})"
+//
+//        override fun walkSubref(name: String): String = "sr($name)"
+//
+//        override fun walkAtom(text: String): String = text
+//    }
 }

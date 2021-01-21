@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module external.system.module.type="sourceSet" type="JAVA_MODULE" version="4">
+  <component name="NewModuleRootManager">
+    <output-test url="file://$MODULE_DIR$/../../build/js/packages/lexurgy-test/kotlin" />
+    <exclude-output />
+    <content url="file://$MODULE_DIR$/../../src/jsTest">
+      <sourceFolder url="file://$MODULE_DIR$/../../src/jsTest/kotlin" type="kotlin-test" />
+    </content>
+    <orderEntry type="jdk" jdkName="Kotlin SDK" jdkType="KotlinSDK" />
+    <orderEntry type="library" scope="RUNTIME" name="Gradle: org.jetbrains.kotlinx:kotlinx-coroutines-core-js:1.3.9" level="project" />
+    <orderEntry type="library" scope="RUNTIME" name="Gradle: io.kotest:kotest-common-js:4.2.5" level="project" />
+    <orderEntry type="library" scope="RUNTIME" name="Gradle: org.jetbrains.kotlinx:atomicfu-js:0.14.4" level="project" />
+    <orderEntry type="module" module-name="lexurgy.commonMain" scope="TEST" />
+    <orderEntry type="module" module-name="lexurgy.jsMain" scope="TEST" />
+    <orderEntry type="module" module-name="lexurgy.commonTest" scope="TEST" production-on-test="" />
+    <orderEntry type="module" module-name="lexurgy.jsMain" scope="RUNTIME" />
+    <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" scope="TEST" name="Gradle: io.kotest:kotest-framework-api-js:4.2.5" level="project" />
+    <orderEntry type="library" scope="TEST" name="Gradle: io.kotest:kotest-assertions-core-js:4.2.5" level="project" />
+    <orderEntry type="library" scope="TEST" name="Gradle: io.kotest:kotest-framework-engine-metadata:4.2.5" level="project" />
+    <orderEntry type="library" scope="TEST" name="Gradle: io.kotest:kotest-framework-api-metadata:4.2.5" level="project" />
+    <orderEntry type="library" scope="TEST" name="Gradle: org.jetbrains.kotlin:kotlin-stdlib-js:1.4.10" level="project" />
+    <orderEntry type="library" scope="TEST" name="Gradle: io.kotest:kotest-assertions-core-metadata:4.2.5" level="project" />
+    <orderEntry type="library" scope="TEST" name="Gradle: org.jetbrains.kotlin:kotlin-stdlib-common:1.4.10" level="project" />
+    <orderEntry type="library" scope="TEST" name="Gradle: io.kotest:kotest-assertions-shared-metadata:4.2.5" level="project" />
+    <orderEntry type="library" scope="TEST" name="Gradle: org.jetbrains.kotlin:kotlin-test-js:1.4.0" level="project" />
+    <orderEntry type="library" scope="TEST" name="Gradle: io.kotest:kotest-assertions-api-metadata:4.2.5" level="project" />
+    <orderEntry type="library" scope="TEST" name="Gradle: io.kotest:kotest-framework-engine-js:4.2.5" level="project" />
+    <orderEntry type="library" scope="TEST" name="Gradle: org.jetbrains.kotlin:kotlin-test-common:1.4.0" level="project" />
+    <orderEntry type="library" scope="TEST" name="Gradle: org.jetbrains.kotlin:kotlin-test-annotations-common:1.4.0" level="project" />
+    <orderEntry type="library" scope="TEST" name="Gradle: io.kotest:kotest-assertions-shared-js:4.2.5" level="project" />
+    <orderEntry type="library" scope="TEST" name="Gradle: io.kotest:kotest-assertions-api-js:4.2.5" level="project" />
+  </component>
+  <component name="TestModuleProperties" production-module="lexurgy.jsMain" />
+</module>

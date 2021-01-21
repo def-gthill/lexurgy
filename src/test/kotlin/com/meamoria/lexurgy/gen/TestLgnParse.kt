@@ -4,7 +4,7 @@ import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 
 class TestLgnParse : StringSpec({
-    val parser = LgnInterpreter(StringWalker())
+    val parser = LgnInterpreter
 
     "A class declaration should be parsable" {
         parser.parseClassDeclaration("Class vowel {a, e, i, o, u}") shouldBe "cdec(vowel: a, e, i, o, u)"
@@ -36,18 +36,18 @@ class TestLgnParse : StringSpec({
         "Pattern gibgab:\n    g @vowel b"
     }
 }) {
-    class StringWalker : LgnWalker<String>() {
-        override fun walkClassDeclaration(className: String, elements: List<String>): String =
-            "cdec($className: ${elements.joinToString()})"
-
-        override fun walkClassReference(className: String): String = "ref($className)"
-
-        override fun walkSequence(items: List<String>): String = "seq(${items.joinToString()})"
-
-        override fun walkOptional(item: String): String = "op($item)"
-
-        override fun walkList(items: List<String>): String = "alt(${items.joinToString()})"
-
-        override fun walkText(text: String): String = text
-    }
+//    class StringWalker : LgnWalker<String>() {
+//        override fun walkClassDeclaration(className: String, elements: List<String>): String =
+//            "cdec($className: ${elements.joinToString()})"
+//
+//        override fun walkClassReference(className: String): String = "ref($className)"
+//
+//        override fun walkSequence(items: List<String>): String = "seq(${items.joinToString()})"
+//
+//        override fun walkOptional(item: String): String = "op($item)"
+//
+//        override fun walkList(items: List<String>): String = "alt(${items.joinToString()})"
+//
+//        override fun walkText(text: String): String = text
+//    }
 }

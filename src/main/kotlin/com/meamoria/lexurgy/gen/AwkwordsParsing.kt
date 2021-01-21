@@ -4,19 +4,18 @@ import com.meamoria.lexurgy.BoringErrorListener
 import com.meamoria.lexurgy.Interpreter
 import com.meamoria.lexurgy.Walker
 import org.antlr.v4.runtime.*
-import org.antlr.v4.runtime.tree.ParseTree
 
-class AwkwordsInterpreter<T>(val walker: AwkwordsWalker<T>) : Interpreter<T, AwkwordsParser>(walker) {
+object AwkwordsInterpreter : Interpreter<ParseNode, AwkwordsParser>(AwkwordsWalker) {
 
-    fun parsePattern(text: String): T = parseAndWalk(text) { it.pattern() }
+    fun parsePattern(text: String): ParseNode = parseAndWalk(text) { it.pattern() }
 
-    fun parseAlternative(text: String): T = parseAndWalk(text) { it.alternative() }
+    fun parseAlternative(text: String): ParseNode = parseAndWalk(text) { it.alternative() }
 
-    fun parseOptional(text: String): T = parseAndWalk(text) { it.optional() }
+    fun parseOptional(text: String): ParseNode = parseAndWalk(text) { it.optional() }
 
-    fun parseSequence(text: String): T = parseAndWalk(text) { it.sequence() }
+    fun parseSequence(text: String): ParseNode = parseAndWalk(text) { it.sequence() }
 
-    fun parseSubreference(text: String): T = parseAndWalk(text) { it.subref() }
+    fun parseSubreference(text: String): ParseNode = parseAndWalk(text) { it.subref() }
 
     override fun lexerFor(inputStream: CharStream): Lexer = AwkwordsLexer(inputStream)
 
@@ -27,27 +26,31 @@ class AwkwordsInterpreter<T>(val walker: AwkwordsWalker<T>) : Interpreter<T, Awk
         }
 }
 
-abstract class AwkwordsWalker<T> : AwkwordsBaseVisitor<T>(), Walker<T> {
-    override fun visitAlternative(ctx: AwkwordsParser.AlternativeContext): T =
+object AwkwordsWalker : AwkwordsBaseVisitor<ParseNode>(), Walker<ParseNode> {
+    override fun visitAlternative(ctx: AwkwordsParser.AlternativeContext): ParseNode =
         walkAlternative(listVisit(ctx.weightedchoice()))
 
-    override fun visitOptional(ctx: AwkwordsParser.OptionalContext): T = walkOptional(visit(ctx.pattern()))
+    override fun visitOptional(ctx: AwkwordsParser.OptionalContext): ParseNode = walkOptional(visit(ctx.pattern()))
 
-    override fun visitSequence(ctx: AwkwordsParser.SequenceContext): T = walkSequence(listVisit(ctx.children))
+    override fun visitSequence(ctx: AwkwordsParser.SequenceContext): ParseNode = walkSequence(listVisit(ctx.children))
 
-    override fun visitSubref(ctx: AwkwordsParser.SubrefContext): T = walkSubref(ctx.SUBREF().text)
+    override fun visitSubref(ctx: AwkwordsParser.SubrefContext): ParseNode = walkSubref(ctx.SUBREF().text)
 
-    override fun visitAtom(ctx: AwkwordsParser.AtomContext): T = walkAtom(ctx.getChild(0).text)
+    override fun visitAtom(ctx: AwkwordsParser.AtomContext): ParseNode = walkAtom(ctx.getChild(0).text)
 
-    abstract fun walkAlternative(elements: List<T>): T
+    private fun walkAlternative(elements: List<ParseNode>): ParseNode =
+        TODO()
 
-    abstract fun walkOptional(element: T): T
+    private fun walkOptional(element: ParseNode): ParseNode =
+        TODO()
 
-    abstract fun walkSequence(elements: List<T>): T
+    private fun walkSequence(elements: List<ParseNode>): ParseNode =
+        TODO()
 
-    abstract fun walkSubref(name: String): T
+    private fun walkSubref(name: String): ParseNode =
+        TODO()
 
-    abstract fun walkAtom(text: String): T
+    private fun walkAtom(text: String): ParseNode = ConstantNode(text)
 }
 
 private class AwkwordsErrorListener : BoringErrorListener() {
@@ -65,6 +68,3 @@ private class AwkwordsErrorListener : BoringErrorListener() {
 
 class AwkwordsNotParsable(val line: Int, val column: Int, val offendingSymbol: String, message: String) :
     Exception("$message (Line $line, column $column")
-
-class AwkwordsUndefinedName(val nameType: String, val undefinedName: String) :
-    Exception("The $nameType name $undefinedName is not defined")
