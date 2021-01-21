@@ -52,6 +52,21 @@ class TestSoundChanger : StringSpec({
         ch("ababad") shouldBe "cccccd"
     }
 
+    "Duplicate rules should produce an LscDuplicateName" {
+        shouldThrow<LscDuplicateName> {
+            lsc(
+                """
+                    duplicate-rule:
+                        o => a
+                    duplicate-rule:
+                        a => o
+                """.trimIndent()
+            )
+        }.also {
+            it.message shouldBe "The rule \"duplicate-rule\" is defined more than once"
+        }
+    }
+
     "We should be able to declare compound rules that execute simultaneously" {
         val ch = lsc(
             """

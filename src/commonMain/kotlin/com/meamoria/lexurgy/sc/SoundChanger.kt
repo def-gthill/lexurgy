@@ -9,6 +9,13 @@ class SoundChanger(
     val romanizer: Romanizer,
     val intermediateRomanizers: Map<String?, List<IntermediateRomanizer>> = emptyMap()
 ) : SoundChangerLscWalker.ParseNode {
+    init {
+        val duplicated = rules.groupBy { it.name }.filterValues { it.size > 1 }.keys.firstOrNull()
+        if (duplicated != null) {
+            throw LscDuplicateName("rule", duplicated)
+        }
+    }
+
     operator fun invoke(word: String): String = change(listOf(word)).single()
 
     fun change(
