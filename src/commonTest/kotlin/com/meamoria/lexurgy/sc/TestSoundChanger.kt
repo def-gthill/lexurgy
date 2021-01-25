@@ -424,6 +424,36 @@ class TestSoundChanger : StringSpec({
         ch("bætɔm") shouldBe "bætɔm"
     }
 
+    "Floating diacritics should still float when on undeclared symbols" {
+        val ch = lsc(
+            """
+                Feature Stress(*unstressed, stressed)
+                Feature Tone(*lowtone, hightone)
+                Feature Atr(*natr, atr)
+                Diacritic ˈ (before) (floating) [stressed]
+                Diacritic ́  (floating) [hightone]
+                Diacritic ̘  [atr]
+                Class front {e, i}
+                w-back:
+                    {e, i} => {a, u} / _ w
+                stress-raise:
+                    {ˈa, ˈe} => {ˈu, ˈi}
+                tone-atr:
+                    {ú, í} => {u̘, i̘}
+                j-front:
+                    {a, u} => {e, i} / _ j
+                coalesce:
+                    ui => ú
+                palatalization:
+                    t => tʃ / _ @front
+            """.trimIndent()
+        )
+
+        ch("tˈewtáj") shouldBe "tˈuwtʃéj"
+        ch("tˈájtaj") shouldBe "tˈu̘jtʃej"
+        ch("tˈuitui") shouldBe "tˈútú"
+    }
+
     "Duplicate diacritic declarations should produce an LscDuplicateName" {
         shouldThrow<LscDuplicateName> {
             lsc(
@@ -478,11 +508,13 @@ class TestSoundChanger : StringSpec({
                     {a, u} => {e, i} / _ j
                 coalesce:
                     ui => ú
+                palatalization:
+                    t => tʃ / _ {e, i}
             """.trimIndent()
         )
 
-        ch("tˈewtáj") shouldBe "tˈuwtéj"
-        ch("tˈájtaj") shouldBe "tˈu̘jtej"
+        ch("tˈewtáj") shouldBe "tˈuwtʃéj"
+        ch("tˈájtaj") shouldBe "tˈu̘jtʃej"
         ch("tˈuitui") shouldBe "tˈútú"
     }
 

@@ -286,7 +286,7 @@ class Feature(val name: String, val values: List<SimpleValue>, explicitDefault: 
     override fun toString(): String = values.joinToString(prefix = "$name(", postfix = ")")
 }
 
-class Symbol(val name: String, val declaredMatrix: Matrix?) {
+data class Symbol(val name: String, val declaredMatrix: Matrix?) {
     override fun toString(): String = name + if (declaredMatrix == null) "" else " $declaredMatrix"
 }
 
