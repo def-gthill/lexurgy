@@ -205,8 +205,13 @@ class PhoneticParser(
         val before = mutableListOf<String>()
         var core: String? = null
         val after = mutableListOf<String>()
+        var alreadyFailedMatch = false
         while (cursor < symbol.length) {
-            val match = tree.tryMatch(symbol.drop(cursor)) ?: return DiacriticBreakdown(symbol)
+            val match = tree.tryMatch(symbol.drop(cursor)) ?: (symbol[cursor].toString() to 0).also {
+                if (alreadyFailedMatch) return DiacriticBreakdown(symbol)
+                alreadyFailedMatch = true
+            }
+
             val (matchString, matchType) = match
             if (matchType == -1) {
                 // Before diacritic

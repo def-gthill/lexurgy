@@ -412,13 +412,16 @@ class TestSoundChanger : StringSpec({
                 [] => [stressed] / $ _
                 
                 stressed-vowel-clusters-merge:
-                {eˈə, æˈə, əˈæ, eˈæ, æˈe, əˈe} => {ɛː, aː, ɛː, aː, iː, aː}
+                {eˈə, æˈə, əˈæ, eˈæ, æˈe, əˈe} => {ɛːˈ, aːˈ, ɛːˈ, aːˈ, iːˈ, aːˈ}
+                
+                remove-stress:
+                [stressed] => [unstressed]
             """.trimIndent()
         )
 
         ch("keət") shouldBe "kɛːt"
         ch("sæek") shouldBe "siːk"
-        ch("bætɔm") shouldBe "bæˈtɔm"
+        ch("bætɔm") shouldBe "bætɔm"
     }
 
     "Duplicate diacritic declarations should produce an LscDuplicateName" {
