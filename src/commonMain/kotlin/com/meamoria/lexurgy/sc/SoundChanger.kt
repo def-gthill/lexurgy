@@ -447,7 +447,7 @@ class RuleExpression<I : Segment<I>, O : Segment<O>>(
     }
 
     private fun claimNextExclusion(word: Word<I>, start: Int): Int? {
-        for (matchStart in start until word.length) {
+        for (matchStart in start..word.length) {
             for (environment in realExclusion) {
                 val bindings = Bindings()
                 environment.before.claim(
