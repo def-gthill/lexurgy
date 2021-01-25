@@ -119,3 +119,5 @@ hs_err_pid*
 /doc/build/*
 /doc/build-public/*
 /.idea/artifacts/
+/.idea/compiler.xml
+/.idea/misc.xml
