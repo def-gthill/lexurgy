@@ -66,24 +66,24 @@ object LgnWalker : LgnBaseVisitor<ParseNode>(), Walker<ParseNode> {
     private fun walkClassDeclaration(className: ParseNode, elements: List<ParseNode>): ParseNode =
         ClassDeclNode(className.text, elements.map { it as GeneratorNode })
 
-    private class ClassDeclNode(className: String, elements: List<GeneratorNode>) : GeneratorNode {
-        override val text: String = TODO()
+    private class ClassDeclNode(val className: String, val elements: List<GeneratorNode>) : ToStringIsText(), GeneratorNode {
+        override val text: String = "cdec($className: ${elements.joinToString()})"
 
         override fun generator(declarations: Declarations): Generator =
-            TODO()
+            alternativesGenerator(elements.map { Alternative(it.generator(declarations), 1.0 / elements.size) })
     }
 
     private fun walkClassReference(className: ParseNode): ParseNode =
         ReferenceNode("class", "ref", className.text)
 
     private fun walkSequence(items: List<ParseNode>): ParseNode =
-        TODO()
+        SequenceNode(items.map { it as GeneratorNode })
 
     private fun walkOptional(item: ParseNode): ParseNode =
-        TODO()
+        OptionalNode(item as GeneratorNode, 0.5)
 
     private fun walkList(items: List<ParseNode>): ParseNode =
-        TODO()
+        AlternativeNode(items.map { it as GeneratorNode })
 
     private fun walkText(text: String): ParseNode = ConstantNode(text)
 
