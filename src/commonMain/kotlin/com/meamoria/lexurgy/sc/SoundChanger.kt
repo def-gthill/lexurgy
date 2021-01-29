@@ -185,7 +185,10 @@ class SimpleChangeRule<I : Segment<I>, O : Segment<O>>(
     val defaultRule: (Word<I>) -> Word<O>,
     val filter: ((I) -> Boolean)? = null
 ) {
-    operator fun invoke(word: Word<I>): Word<O> {
+    operator fun invoke(word: Word<I>): Word<O> =
+        outType.joinWithSpaces(word.split().map { applyToSingleWord(it) })
+
+    private fun applyToSingleWord(word: Word<I>): Word<O> {
         val (filteredWord, filterMap) = filterWord(word)
         val allTransformations = expressions.mapIndexed { i, expr -> expr.claim(i, filteredWord) }.flatten()
         val validTransformations = filterOverlappingClaims(allTransformations)

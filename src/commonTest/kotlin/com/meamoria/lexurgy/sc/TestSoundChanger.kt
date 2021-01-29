@@ -1355,6 +1355,17 @@ class TestSoundChanger : StringSpec({
         )
     }
 
+    "Spaces in a line should delimit separate words" {
+        val ch = lsc(
+            """
+                drop-final-t:
+                    t => * / _ $
+            """.trimIndent()
+        )
+
+        ch("sit amet") shouldBe "si ame"
+    }
+
     "The file format should be fairly robust to extra newlines and blank lines" {
         // We're just testing that these don't throw exceptions
         lsc("Deromanizer:\n    y => j\n")

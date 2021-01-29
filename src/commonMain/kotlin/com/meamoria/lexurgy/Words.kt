@@ -41,6 +41,11 @@ interface Word<S : Segment<S>> : Comparable<Word<S>> {
 
     fun drop(n: Int): Word<S> = type.fromSegments(segments.drop(n))
 
+    /**
+     * Splits the word at spaces
+     */
+    fun split(): List<Word<S>> = segments.split(type.space).map { type.fromSegments(it) }
+
     operator fun plus(other: Word<S>): Word<S> = type.fromSegments(segments + other.segments)
 }
 
@@ -68,11 +73,15 @@ interface SegmentType<S : Segment<S>> {
     val empty: Word<S>
         get() = fromSegments(emptyList())
 
+    val space: S
+
     fun single(segment: S): Word<S> = fromSegments(listOf(segment))
 
     fun fromSegments(segments: Iterable<S>): Word<S>
 
     fun join(words: Iterable<Word<S>>): Word<S> = fromSegments(words.flatMap { it.segments })
+
+    fun joinWithSpaces(words: Iterable<Word<S>>): Word<S> = fromSegments(words.map { it.segments }.join(space))
 }
 
 
@@ -92,6 +101,8 @@ data class PlainSegment(val char: Char) : Segment<PlainSegment> {
 }
 
 object Plain : SegmentType<PlainSegment> {
+    override val space: PlainSegment = PlainSegment(' ')
+
     override fun fromSegments(segments: Iterable<PlainSegment>): Word<PlainSegment> =
         PlainWord(segments.map(PlainSegment::char).joinToString(""))
 }
@@ -142,6 +153,8 @@ data class PhoneticSegment(override val string: String) : StringSegment<Phonetic
 }
 
 object Phonetic : StringSegmentType<PhoneticSegment> {
+    override val space: PhoneticSegment = PhoneticSegment(" ")
+
     override fun fromSegments(segments: Iterable<PhoneticSegment>): Word<PhoneticSegment> =
         PhoneticWord(segments.map(PhoneticSegment::string))
 
