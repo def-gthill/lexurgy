@@ -39,16 +39,16 @@ object AwkwordsWalker : AwkwordsBaseVisitor<ParseNode>(), Walker<ParseNode> {
     override fun visitAtom(ctx: AwkwordsParser.AtomContext): ParseNode = walkAtom(ctx.getChild(0).text)
 
     private fun walkAlternative(elements: List<ParseNode>): ParseNode =
-        TODO()
+        AlternativeNode(elements.map { it as GeneratorNode })
 
     private fun walkOptional(element: ParseNode): ParseNode =
-        TODO()
+        OptionalNode(element as GeneratorNode, 0.5)
 
     private fun walkSequence(elements: List<ParseNode>): ParseNode =
-        TODO()
+        SequenceNode(elements.map { it as GeneratorNode })
 
     private fun walkSubref(name: String): ParseNode =
-        TODO()
+        ReferenceNode("subref", "sr", name)
 
     private fun walkAtom(text: String): ParseNode = ConstantNode(text)
 }

@@ -33,7 +33,30 @@ internal class ReferenceNode(val refType: String, val shortRefType: String, val 
 }
 
 internal class ConstantNode(override val text: String) : ToStringIsText(), GeneratorNode {
-    override fun generator(declarations: Declarations): Generator = Atom(text)
+    override fun generator(declarations: Declarations): Generator = atomGenerator(text)
+}
+
+internal class OptionalNode(val element: GeneratorNode, val probability: Double) :
+    ToStringIsText(), GeneratorNode {
+
+    override val text: String = "op($element)"
+
+    override fun generator(declarations: Declarations): Generator =
+        optionalGenerator(element.generator(declarations), probability)
+}
+
+internal class AlternativeNode(val elements: List<GeneratorNode>) : ToStringIsText(), GeneratorNode {
+    override val text: String = "alt(${elements.joinToString()})"
+
+    override fun generator(declarations: Declarations): Generator =
+        alternativesGenerator(elements.map { Alternative(it.generator(declarations), 1.0 / elements.size) })
+}
+
+internal class SequenceNode(val elements: List<GeneratorNode>) : ToStringIsText(), GeneratorNode {
+    override val text: String = "seq(${elements.joinToString()})"
+
+    override fun generator(declarations: Declarations): Generator =
+        sequenceGenerator(elements.map { it.generator(declarations) })
 }
 
 class Declarations(val declarations: Map<String, GeneratorNode>) {
