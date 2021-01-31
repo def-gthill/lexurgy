@@ -46,16 +46,4 @@ class TestAwkwordsParse : StringSpec({
                 "seq(op(seq(a, op(seq(e, op(alt(i, o)), u)), sr(V))), t)"
     }
 
-}) {
-//    class StringWalker : AwkwordsWalker<String>() {
-//        override fun walkAlternative(elements: List<String>): String = "alt(${elements.joinToString()})"
-//
-//        override fun walkOptional(element: String): String = "op($element)"
-//
-//        override fun walkSequence(elements: List<String>): String = "seq(${elements.joinToString()})"
-//
-//        override fun walkSubref(name: String): String = "sr($name)"
-//
-//        override fun walkAtom(text: String): String = text
-//    }
-}
+})

@@ -9,7 +9,7 @@ object LgnInterpreter : Interpreter<ParseNode, LgnParser>(LgnWalker) {
 
     fun parseClassDeclaration(text: String): ParseNode = parseAndWalk(text) { it.classdecl() }
 
-    fun parsePattern(text: String): ParseNode = parseAndWalk(text) { it.pattern() }
+    fun parsePatternDeclaration(text: String): ParseNode = parseAndWalk(text) { it.patterndecl() }
 
     fun parseSequence(text: String): ParseNode = parseAndWalk(text) { it.sequence() }
 
@@ -35,6 +35,12 @@ object LgnWalker : LgnBaseVisitor<ParseNode>(), Walker<ParseNode> {
 
     override fun visitClasselement(ctx: LgnParser.ClasselementContext): ParseNode =
         visit(ctx.getChild(0))
+
+    override fun visitPatterndecl(ctx: LgnParser.PatterndeclContext): ParseNode =
+        walkPatternDeclaration(
+            visit(ctx.name()),
+            visit(ctx.pattern()),
+        )
 
     override fun visitPattern(ctx: LgnParser.PatternContext): ParseNode =
         visit(ctx.getChild(0))
@@ -71,6 +77,15 @@ object LgnWalker : LgnBaseVisitor<ParseNode>(), Walker<ParseNode> {
 
         override fun generator(declarations: Declarations): Generator =
             alternativesGenerator(elements.map { Alternative(it.generator(declarations), 1.0 / elements.size) })
+    }
+
+    private fun walkPatternDeclaration(patternName: ParseNode, pattern: ParseNode): ParseNode =
+        PatternDeclNode(patternName.text, pattern as GeneratorNode)
+
+    private class PatternDeclNode(val patternName: String, val pattern: GeneratorNode) : ToStringIsText(), GeneratorNode {
+        override val text: String = "pat($patternName: $pattern)"
+
+        override fun generator(declarations: Declarations): Generator = pattern.generator(declarations)
     }
 
     private fun walkClassReference(className: ParseNode): ParseNode =

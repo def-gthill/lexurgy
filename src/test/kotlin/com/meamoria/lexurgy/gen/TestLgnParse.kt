@@ -7,17 +7,21 @@ class TestLgnParse : StringSpec({
     val parser = LgnInterpreter
 
     "A class declaration should be parsable" {
-        parser.parseClassDeclaration("Class vowel {a, e, i, o, u}").text shouldBe "cdec(vowel: a, e, i, o, u)"
-        parser.parseClassDeclaration("Class final {p, t, k, s, m, n}").text shouldBe "cdec(final: p, t, k, s, m, n)"
+        parser.parseClassDeclaration("Class vowel {a, e, i, o, u}").text shouldBe
+                "cdec(vowel: a, e, i, o, u)"
+        parser.parseClassDeclaration("Class final {p, t, k, s, m, n}").text shouldBe
+                "cdec(final: p, t, k, s, m, n)"
     }
 
     "Class declarations that reference other classes should be parsable" {
-        parser.parseClassDeclaration("Class cons {@stop, s, @nasal}").text shouldBe "cdec(cons: ref(stop), s, ref(nasal))"
+        parser.parseClassDeclaration("Class cons {@stop, s, @nasal}").text shouldBe
+                "cdec(cons: ref(stop), s, ref(nasal))"
     }
 
     "Simple sequences should be parsable" {
         parser.parseSequence("g @vowel b").text shouldBe "seq(g, ref(vowel), b)"
-        parser.parseSequence("@cons @vowel @cons").text shouldBe "seq(ref(cons), ref(vowel), ref(cons))"
+        parser.parseSequence("@cons @vowel @cons").text shouldBe
+                "seq(ref(cons), ref(vowel), ref(cons))"
     }
 
     "A question mark should be parsed as an optional" {
@@ -33,21 +37,7 @@ class TestLgnParse : StringSpec({
     }
 
     "Pattern declarations should be parsable" {
-        "Pattern gibgab:\n    g @vowel b"
+        parser.parsePatternDeclaration("Pattern gibgab:\n    g @vowel b").text shouldBe
+                "pat(gibgab: seq(g, ref(vowel), b))"
     }
-}) {
-//    class StringWalker : LgnWalker<String>() {
-//        override fun walkClassDeclaration(className: String, elements: List<String>): String =
-//            "cdec($className: ${elements.joinToString()})"
-//
-//        override fun walkClassReference(className: String): String = "ref($className)"
-//
-//        override fun walkSequence(items: List<String>): String = "seq(${items.joinToString()})"
-//
-//        override fun walkOptional(item: String): String = "op($item)"
-//
-//        override fun walkList(items: List<String>): String = "alt(${items.joinToString()})"
-//
-//        override fun walkText(text: String): String = text
-//    }
-}
+})

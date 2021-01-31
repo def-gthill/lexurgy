@@ -23,6 +23,12 @@ public interface LgnVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitClasselement(LgnParser.ClasselementContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link LgnParser#patterndecl}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitPatterndecl(LgnParser.PatterndeclContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link LgnParser#pattern}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

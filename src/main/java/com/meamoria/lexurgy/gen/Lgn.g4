@@ -3,6 +3,8 @@ grammar Lgn;
 classdecl: CLASSDECL WHITESPACE name WHITESPACE LISTSTART classelement (SEP classelement)* LISTEND;
 classelement: classref | text;
 
+patterndecl: PATTERNDECL WHITESPACE name BLOCKSTART NEWLINE pattern;
+
 pattern: simple | sequence;
 sequence: sequenceelement (WHITESPACE sequenceelement)+;
 sequenceelement: optional | list | simple;
@@ -17,11 +19,14 @@ text: NAME | STR;
 
 SEP: ',' WHITESPACE?;
 WHITESPACE: ' '+;
+NEWLINE: WHITESPACE? ('\r\n' | '\n') WHITESPACE?;
 LISTSTART: '{';
 LISTEND: '}';
 OPTIONAL: '?';
 CLASSREF: '@';
+BLOCKSTART: ':';
 CLASSDECL: 'Class';
+PATTERNDECL: 'Pattern';
 
 NAME: LOWER CHAR*;
 STR: ANY+;
