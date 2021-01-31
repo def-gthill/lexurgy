@@ -10,7 +10,8 @@
       </option>
       <option name="taskNames">
         <list>
-          <option value="test" />
+          <option value="jsTest" />
+          <option value="jvmTest" />
         </list>
       </option>
       <option name="vmOptions" value="" />

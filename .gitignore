@@ -25,6 +25,7 @@ gradle-app.setting
 .idea/**/usage.statistics.xml
 .idea/**/dictionaries
 .idea/**/shelf
+.idea/**/*.iml
 
 # Generated files
 .idea/**/contentModel.xml
@@ -116,3 +117,7 @@ hs_err_pid*
 /test/*.wlm
 /test/*trace.wli
 /doc/build/*
+/doc/build-public/*
+/.idea/artifacts/
+/.idea/compiler.xml
+/.idea/misc.xml

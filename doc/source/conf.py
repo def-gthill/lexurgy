@@ -22,7 +22,7 @@ copyright = '2020, Graham Hill'
 author = 'Graham Hill'
 
 # The full version, including alpha/beta/rc tags
-release = '0.7.2'
+release = '0.10.3'
 
 
 # -- General configuration ---------------------------------------------------
@@ -41,6 +41,9 @@ templates_path = ['_templates']
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = []
 
+# noinspection PyUnresolvedReferences
+if tags.has("public"):
+    exclude_patterns += ["gen.rst"]
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -53,3 +56,9 @@ html_theme = 'bizstyle'
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+
+html_copy_source = False
+
+html_show_sourcelink = False
+
+highlight_language = 'none'
