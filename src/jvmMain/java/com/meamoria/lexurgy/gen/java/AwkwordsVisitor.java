@@ -1,5 +1,5 @@
 // Generated from Awkwords.g4 by ANTLR 4.7.2
-package com.meamoria.lexurgy.gen;
+package com.meamoria.lexurgy.gen.java;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
 /**
