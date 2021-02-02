@@ -1,5 +1,52 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<module external.system.module.type="sourceSet" type="JAVA_MODULE" version="4">
+<module external.linked.project.id="lexurgy:jsTest" external.linked.project.path="$MODULE_DIR$/../.." external.root.project.path="$MODULE_DIR$/../.." external.system.id="GRADLE" external.system.module.group="com.meamoria" external.system.module.type="sourceSet" external.system.module.version="0.10.3" type="JAVA_MODULE" version="4">
+  <component name="FacetManager">
+    <facet type="kotlin-language" name="Kotlin">
+      <configuration version="3" platform="JavaScript " allPlatforms="JS []" useProjectSettings="false" isTestModule="true" externalProjectId="lexurgy" pureKotlinSourceFolders="D:\Documents\lexurgy\src\jsMain\kotlin;D:\Documents\lexurgy\build\externals\lexurgy\src;D:\Documents\lexurgy\src\jsTest\kotlin;D:\Documents\lexurgy\src\jvmMain\kotlin;D:\Documents\lexurgy\src\jvmTest\kotlin;D:\Documents\lexurgy\src\commonMain\kotlin">
+        <dependsOnModuleNames>lexurgy:commonTest</dependsOnModuleNames>
+        <sourceSets>
+          <sourceSet>lexurgy.commonTest</sourceSet>
+          <sourceSet>lexurgy.jsMain</sourceSet>
+          <sourceSet>lexurgy.commonMain</sourceSet>
+        </sourceSets>
+        <newMppModelJpsModuleKind>COMPILATION_AND_SOURCE_SET_HOLDER</newMppModelJpsModuleKind>
+        <externalSystemTestTasks>
+          <externalSystemTestTask>jsBrowserTest|lexurgy:jsTest|js</externalSystemTestTask>
+        </externalSystemTestTasks>
+        <testOutputPath>$MODULE_DIR$/../../build/js/packages/lexurgy-test/kotlin/lexurgy-test.js</testOutputPath>
+        <compilerSettings />
+        <compilerArguments>
+          <option name="outputFile" value="$MODULE_DIR$/../../build/js/packages/lexurgy-test/kotlin/lexurgy-test.js" />
+          <option name="noStdlib" value="true" />
+          <option name="sourceMap" value="true" />
+          <option name="metaInfo" value="true" />
+          <option name="target" value="v5" />
+          <option name="moduleKind" value="umd" />
+          <option name="main" value="call" />
+          <option name="languageVersion" value="1.4" />
+          <option name="apiVersion" value="1.4" />
+          <option name="pluginOptions">
+            <array />
+          </option>
+          <option name="pluginClasspaths">
+            <array>
+              <option value="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-script-runtime/1.4.10/7c19d9c2001e016cd7664cebe9eea66fc04a7f4f/kotlin-script-runtime-1.4.10.jar" />
+              <option value="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-scripting-common/1.4.10/befe5a2bcae1e5b86691e0a0dfb0b3ef039b00a9/kotlin-scripting-common-1.4.10.jar" />
+              <option value="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-scripting-jvm/1.4.10/89b312aa7b7944586c1e64e5ec52130d03019db0/kotlin-scripting-jvm-1.4.10.jar" />
+              <option value="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib-common/1.4.10/6229be3465805c99db1142ad75e6c6ddeac0b04c/kotlin-stdlib-common-1.4.10.jar" />
+              <option value="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib/1.4.10/ea29e063d2bbe695be13e9d044dcfb0c7add398e/kotlin-stdlib-1.4.10.jar" />
+              <option value="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlinx/kotlinx-coroutines-core/1.3.7/8e2eb78158638b33793d204ffef0b65c4a578e1c/kotlinx-coroutines-core-1.3.7.jar" />
+              <option value="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.jetbrains/annotations/13.0/919f0dfe192fb4e063e7dacadee7f8bb9a2672a9/annotations-13.0.jar" />
+            </array>
+          </option>
+          <option name="multiPlatform" value="true" />
+          <option name="errors">
+            <ArgumentParseErrors />
+          </option>
+        </compilerArguments>
+      </configuration>
+    </facet>
+  </component>
   <component name="NewModuleRootManager">
     <output-test url="file://$MODULE_DIR$/../../build/js/packages/lexurgy-test/kotlin" />
     <exclude-output />
@@ -7,14 +54,11 @@
       <sourceFolder url="file://$MODULE_DIR$/../../src/jsTest/kotlin" type="kotlin-test" />
     </content>
     <orderEntry type="jdk" jdkName="Kotlin SDK" jdkType="KotlinSDK" />
-    <orderEntry type="library" scope="RUNTIME" name="Gradle: org.jetbrains.kotlinx:kotlinx-coroutines-core-js:1.3.9" level="project" />
-    <orderEntry type="library" scope="RUNTIME" name="Gradle: io.kotest:kotest-common-js:4.2.5" level="project" />
-    <orderEntry type="library" scope="RUNTIME" name="Gradle: org.jetbrains.kotlinx:atomicfu-js:0.14.4" level="project" />
-    <orderEntry type="module" module-name="lexurgy.commonMain" scope="TEST" />
-    <orderEntry type="module" module-name="lexurgy.jsMain" scope="TEST" />
-    <orderEntry type="module" module-name="lexurgy.commonTest" scope="TEST" production-on-test="" />
-    <orderEntry type="module" module-name="lexurgy.jsMain" scope="RUNTIME" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="module" module-name="lexurgy.commonMain" scope="TEST" />
+    <orderEntry type="module" module-name="lexurgy.commonTest" scope="TEST" production-on-test="" />
+    <orderEntry type="module" module-name="lexurgy.jsMain" scope="TEST" />
+    <orderEntry type="module" module-name="lexurgy.jsMain" scope="RUNTIME" />
     <orderEntry type="library" scope="TEST" name="Gradle: io.kotest:kotest-framework-api-js:4.2.5" level="project" />
     <orderEntry type="library" scope="TEST" name="Gradle: io.kotest:kotest-assertions-core-js:4.2.5" level="project" />
     <orderEntry type="library" scope="TEST" name="Gradle: io.kotest:kotest-framework-engine-metadata:4.2.5" level="project" />
@@ -30,6 +74,9 @@
     <orderEntry type="library" scope="TEST" name="Gradle: org.jetbrains.kotlin:kotlin-test-annotations-common:1.4.0" level="project" />
     <orderEntry type="library" scope="TEST" name="Gradle: io.kotest:kotest-assertions-shared-js:4.2.5" level="project" />
     <orderEntry type="library" scope="TEST" name="Gradle: io.kotest:kotest-assertions-api-js:4.2.5" level="project" />
+    <orderEntry type="library" scope="RUNTIME" name="Gradle: io.kotest:kotest-common-js:4.2.5" level="project" />
+    <orderEntry type="library" scope="RUNTIME" name="Gradle: org.jetbrains.kotlinx:kotlinx-coroutines-core-js:1.3.9" level="project" />
+    <orderEntry type="library" scope="RUNTIME" name="Gradle: org.jetbrains.kotlinx:atomicfu-js:0.14.4" level="project" />
   </component>
   <component name="TestModuleProperties" production-module="lexurgy.jsMain" />
 </module>
