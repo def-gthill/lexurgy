@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/lexurgy.iml" filepath="$PROJECT_DIR$/.idea/modules/lexurgy.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/lexurgy.commonMain.iml" filepath="$PROJECT_DIR$/.idea/modules/lexurgy.commonMain.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/lexurgy.commonTest.iml" filepath="$PROJECT_DIR$/.idea/modules/lexurgy.commonTest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/lexurgy.jsMain.iml" filepath="$PROJECT_DIR$/.idea/modules/lexurgy.jsMain.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/lexurgy.jsTest.iml" filepath="$PROJECT_DIR$/.idea/modules/lexurgy.jsTest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/lexurgy.jvmMain.iml" filepath="$PROJECT_DIR$/.idea/modules/lexurgy.jvmMain.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/lexurgy.jvmTest.iml" filepath="$PROJECT_DIR$/.idea/modules/lexurgy.jvmTest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/lexurgy.main.iml" filepath="$PROJECT_DIR$/.idea/modules/lexurgy.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/lexurgy.test.iml" filepath="$PROJECT_DIR$/.idea/modules/lexurgy.test.iml" />
+    </modules>
+  </component>
+</project>
