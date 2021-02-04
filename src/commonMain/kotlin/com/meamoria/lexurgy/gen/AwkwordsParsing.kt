@@ -3,7 +3,7 @@ package com.meamoria.lexurgy.gen
 import com.meamoria.lexurgy.BoringErrorListener
 import com.meamoria.lexurgy.Interpreter
 import com.meamoria.lexurgy.Walker
-import org.antlr.v4.runtime.*
+import com.meamoria.mpp.antlr.*
 
 object AwkwordsInterpreter : Interpreter<ParseNode, AwkwordsParser>(AwkwordsWalker) {
 

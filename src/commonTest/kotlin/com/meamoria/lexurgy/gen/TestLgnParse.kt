@@ -1,7 +1,6 @@
 package com.meamoria.lexurgy.gen
 
-import io.kotest.core.spec.style.StringSpec
-import io.kotest.matchers.shouldBe
+import com.meamoria.mpp.kotest.*
 
 class TestLgnParse : StringSpec({
     val parser = LgnInterpreter

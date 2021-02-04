@@ -1,8 +1,6 @@
 package com.meamoria.lexurgy.gen
 
-import io.kotest.assertions.throwables.shouldThrow
-import io.kotest.core.spec.style.StringSpec
-import io.kotest.matchers.shouldBe
+import com.meamoria.mpp.kotest.*
 
 class TestAwkwordsParse : StringSpec({
     val parser = AwkwordsInterpreter

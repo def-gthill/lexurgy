@@ -5,9 +5,9 @@
       <configuration version="3" platform="JavaScript " allPlatforms="JS []" useProjectSettings="false" isTestModule="true" externalProjectId="lexurgy" pureKotlinSourceFolders="D:\Documents\lexurgy\src\jsMain\kotlin;D:\Documents\lexurgy\build\externals\lexurgy\src;D:\Documents\lexurgy\src\jsTest\kotlin;D:\Documents\lexurgy\src\jvmMain\kotlin;D:\Documents\lexurgy\src\jvmTest\kotlin;D:\Documents\lexurgy\src\commonMain\kotlin">
         <dependsOnModuleNames>lexurgy:commonTest</dependsOnModuleNames>
         <sourceSets>
-          <sourceSet>lexurgy.commonTest</sourceSet>
-          <sourceSet>lexurgy.jsMain</sourceSet>
           <sourceSet>lexurgy.commonMain</sourceSet>
+          <sourceSet>lexurgy.jsMain</sourceSet>
+          <sourceSet>lexurgy.commonTest</sourceSet>
         </sourceSets>
         <newMppModelJpsModuleKind>COMPILATION_AND_SOURCE_SET_HOLDER</newMppModelJpsModuleKind>
         <externalSystemTestTasks>
