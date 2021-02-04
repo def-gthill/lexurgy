@@ -139,6 +139,23 @@ class TestRealExamples : StringSpec({
         ch("ta'an") shouldBe "t’'an"
     }
 
+    "The echo vowel rule in Engala should work" {
+        val ch = lsc(
+            """
+                Class consonant {p, t, k, s, n}
+                Class vowel {a, e, i, o, u}
+                
+                echo-vowel:
+                    * => $1 / @vowel$1 @consonant* _ $ // {n, s} _
+            """.trimIndent()
+        )
+
+        ch("pak") shouldBe "paka"
+        ch("nop") shouldBe "nopo"
+        ch("kis") shouldBe "kis"
+        ch("san") shouldBe "san"
+    }
+
     val exampleWords = listOf(
         "ka",
         "pika",
