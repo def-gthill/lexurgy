@@ -2,7 +2,7 @@ package com.meamoria.lexurgy.sc
 
 import com.meamoria.lexurgy.*
 
-typealias UnboundResult<T> = (Bindings) -> Word<T>
+typealias UnboundResult<T> = (Bindings) -> List<Word<T>>
 
 interface Emitter<I : Segment<I>, O : Segment<O>>
 
@@ -15,7 +15,17 @@ class ListEmitter<I : Segment<I>, O : Segment<O>>(val elements: List<Emitter<I, 
 }
 
 interface SimpleEmitter<I : Segment<I>, O : Segment<O>> : Emitter<I, O> {
-    fun result(declarations: Declarations, matcher: SimpleMatcher<I>, original: Word<I>): UnboundResult<O>
+    fun result(
+        declarations: Declarations,
+        matcher: SimpleMatcher<I>,
+        original: List<Word<I>>
+    ): UnboundResult<O> = result(declarations, matcher, original.first())
+
+    fun result(
+        declarations: Declarations,
+        matcher: SimpleMatcher<I>,
+        original: Word<I>
+    ): UnboundResult<O>
 }
 
 class CaptureReferenceEmitter(val number: Int) : SimpleEmitter<PhonS, PhonS> {
@@ -23,7 +33,7 @@ class CaptureReferenceEmitter(val number: Int) : SimpleEmitter<PhonS, PhonS> {
         declarations: Declarations, matcher: SimpleMatcher<PhonS>, original: Word<PhonS>
     ): UnboundResult<PhonS> =
         { bindings ->
-            bindings.captures[number] ?: throw LscUnboundCapture(number)
+            listOf(bindings.captures[number] ?: throw LscUnboundCapture(number))
         }
 }
 
@@ -32,12 +42,14 @@ class MatrixEmitter(val matrix: Matrix) : SimpleEmitter<PhonS, PhonS> {
         declarations: Declarations, matcher: SimpleMatcher<PhonS>, original: Word<PhonS>
     ): UnboundResult<PhonS> =
         { bindings ->
-            with(declarations) {
-                val boundMatrix = matrix.bindVariables(bindings)
-                val matchMatrix = original.softGet(0)?.toMatrix() ?: Matrix(emptyList())
-                val resultMatrix = matchMatrix.update(boundMatrix)
-                Phonetic.single(resultMatrix.toSymbol())
-            }
+            listOf(
+                with(declarations) {
+                    val boundMatrix = matrix.bindVariables(bindings)
+                    val matchMatrix = original.softGet(0)?.toMatrix() ?: Matrix(emptyList())
+                    val resultMatrix = matchMatrix.update(boundMatrix)
+                    Phonetic.single(resultMatrix.toSymbol())
+                }
+            )
         }
 
     override fun toString(): String = matrix.toString()
@@ -71,9 +83,9 @@ class SymbolEmitter<I : Segment<I>>(val text: Word<PhonS>) : SimpleEmitter<I, Ph
                     }
                 } else text.segments
             }
-            return { Phonetic.fromSegments(result) }
+            return { listOf(Phonetic.fromSegments(result)) }
         } else {
-            return { text }
+            return { listOf(text) }
         }
     }
 
@@ -84,7 +96,7 @@ class TextEmitter<I : Segment<I>, O : Segment<O>>(val text: Word<O>) : SimpleEmi
     override fun result(
         declarations: Declarations, matcher: SimpleMatcher<I>, original: Word<I>
     ): UnboundResult<O> {
-        return { text }
+        return { listOf(text) }
     }
 
     override fun toString(): String = text.string.ifEmpty { "*" }
@@ -94,7 +106,7 @@ class NullEmitter<I : Segment<I>, O : Segment<O>>(val outType: SegmentType<O>) :
     override fun result(
         declarations: Declarations, matcher: SimpleMatcher<I>, original: Word<I>
     ): UnboundResult<O> =
-        { outType.empty }
+        { listOf(outType.empty) }
 
     override fun toString(): String = "*"
 }

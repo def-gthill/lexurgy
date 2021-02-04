@@ -212,6 +212,8 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
 
     class BoundaryContext : ParserRuleContext
 
+    class BetweenWordsContext : ParserRuleContext
+
     class RepeaterTypeContext : ParserRuleContext {
         fun AT_LEAST_ONE(): TerminalNode?
         fun NULL(): TerminalNode?
@@ -324,6 +326,8 @@ open external class LscVisitor<T> {
     open fun visitEmpty(ctx: EmptyContext): T
 
     open fun visitBoundary(ctx: BoundaryContext): T
+
+    open fun visitBetweenWords(ctx: BetweenWordsContext): T
 
     open fun visitRepeaterType(ctx: RepeaterTypeContext): T
 
@@ -455,6 +459,8 @@ actual typealias FeatureVariableContext = LscParser.FeatureVariableContext
 actual typealias EmptyContext = LscParser.EmptyContext
 
 actual typealias BoundaryContext = LscParser.BoundaryContext
+
+actual typealias BetweenWordsContext = LscParser.BetweenWordsContext
 
 actual typealias RepeaterTypeContext = LscParser.RepeaterTypeContext
 

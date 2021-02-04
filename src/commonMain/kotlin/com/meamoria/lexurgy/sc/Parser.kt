@@ -314,6 +314,8 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
 
     override fun visitBoundary(ctx: BoundaryContext): T = walkBoundary()
 
+    override fun visitBetweenWords(ctx: BetweenWordsContext): T = walkBetweenWords()
+
     override fun visitRepeaterType(ctx: RepeaterTypeContext): T = walkRepeaterType(
         when {
             ctx.AT_LEAST_ONE() != null -> RepeaterType.ONE_OR_MORE
@@ -406,6 +408,8 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
     protected abstract fun walkEmpty(): T
 
     protected abstract fun walkBoundary(): T
+
+    protected abstract fun walkBetweenWords(): T
 
     protected abstract fun walkClassReference(value: T): T
 

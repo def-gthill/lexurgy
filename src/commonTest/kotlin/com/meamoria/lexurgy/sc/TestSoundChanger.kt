@@ -407,6 +407,7 @@ class TestSoundChanger : StringSpec({
                 Diacritic ː [long]
                 Diacritic ˈ [stressed]
                 Class vowel {a, e, i, ɔ, u, ɛ, ə, æ}
+                Class cons {b, t, k, m, s}
                 
                 stress-first-syllable @vowel:
                 [] => [stressed] / $ _
@@ -1388,6 +1389,48 @@ class TestSoundChanger : StringSpec({
             "phonetic" to listOf("ʃaʃi", "vaneʃak"),
             null to listOf("shäshi", "väneshäk"),
         )
+    }
+
+    "Spaces in a line should delimit separate words" {
+        val ch = lsc(
+            """
+                drop-final-t:
+                    t => * / _ $
+            """.trimIndent()
+        )
+
+        ch("sit amet") shouldBe "si ame"
+    }
+
+    "We should be able to delete the $$ token to join words together" {
+        val ch = lsc(
+            """
+                Feature Stress(*unstressed, stressed)
+                Diacritic ˈ (floating) [stressed]
+                Class vowel {a, e, i, o, u}
+                
+                stress-first-syllable @vowel:
+                    @vowel => [stressed] / $ _
+                
+                stress-raising:
+                    {eˈ, oˈ} => {iˈ, uˈ}
+                
+                tapping:
+                    t => ɾ / @vowel _ @vowel
+                
+                glomination:
+                    $$ => *
+                    Then:
+                    [stressed] => [unstressed] / [stressed] [unstressed]* _
+                
+                intervocalic-lenition:
+                    {p, t, k} => {b, d, g} / @vowel _ @vowel
+            """.trimIndent()
+        )
+
+        ch("sit amet") shouldBe "siˈdamet"
+        ch("ko peko") shouldBe "kuˈbigo"
+        ch("mate kupo tonumeka") shouldBe "maˈɾegubodunumega"
     }
 
     "The file format should be fairly robust to extra newlines and blank lines" {

@@ -65,6 +65,7 @@ expect open class LscBaseVisitor<T>() {
     open fun visitFeatureVariable(ctx: FeatureVariableContext): T
     open fun visitEmpty(ctx: EmptyContext): T
     open fun visitBoundary(ctx: BoundaryContext): T
+    open fun visitBetweenWords(ctx: BetweenWordsContext): T
     open fun visitRepeaterType(ctx: RepeaterTypeContext): T
     open fun visitMatrix(ctx: MatrixContext): T
     open fun visitFeature(ctx: FeatureContext): T
@@ -256,6 +257,8 @@ expect class FeatureVariableContext : ParserRuleContext {
 expect class EmptyContext : ParserRuleContext
 
 expect class BoundaryContext : ParserRuleContext
+
+expect class BetweenWordsContext : ParserRuleContext
 
 expect class RepeaterTypeContext : ParserRuleContext {
     fun AT_LEAST_ONE(): TerminalNode?

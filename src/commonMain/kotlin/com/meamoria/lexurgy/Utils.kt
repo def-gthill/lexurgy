@@ -10,6 +10,29 @@ fun <T, R, S, V> Iterable<T>.zip3(
 fun <T, R> Iterable<Iterable<T>>.nestedMap(transform: (T) -> R): List<List<R>> =
     map { it.map(transform) }
 
+/**
+ * Splits the iterable at copies of the specified separator.
+ * The separator is not part of any of the returned lists.
+ */
+fun <T> Iterable<T>.split(separator: T): List<List<T>> {
+    val result = mutableListOf<List<T>>()
+    var remaining = this.toList()
+    while (true) {
+        val index = remaining.indexOf(separator)
+        if (index < 0) break
+        result += remaining.take(index)
+        remaining = remaining.drop(index + 1)
+    }
+    result += remaining
+    return result
+}
+
+/**
+ * Joins the iterables with the specified separator.
+ */
+fun <T> Iterable<Iterable<T>>.join(separator: T): List<T> =
+    flatMap { it + separator }.dropLast(1)
+
 fun <T> Iterable<T>.subsets(): Sequence<List<T>> {
     val list = toList()
     return generateSequence(emptyList()) { prev ->

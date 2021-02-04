@@ -41,6 +41,11 @@ interface Word<S : Segment<S>> : Comparable<Word<S>> {
 
     fun drop(n: Int): Word<S> = type.fromSegments(segments.drop(n))
 
+    /**
+     * Splits the word at spaces
+     */
+    fun split(): List<Word<S>> = segments.split(type.space).map { type.fromSegments(it) }
+
     operator fun plus(other: Word<S>): Word<S> = type.fromSegments(segments + other.segments)
 }
 
@@ -68,11 +73,33 @@ interface SegmentType<S : Segment<S>> {
     val empty: Word<S>
         get() = fromSegments(emptyList())
 
+    val space: S
+
     fun single(segment: S): Word<S> = fromSegments(listOf(segment))
 
     fun fromSegments(segments: Iterable<S>): Word<S>
 
     fun join(words: Iterable<Word<S>>): Word<S> = fromSegments(words.flatMap { it.segments })
+
+    /**
+     * Joins the last element of each sub-iterable to the first element of the
+     * next subiterable.
+     */
+    fun joinEdgeWords(words: Iterable<Iterable<Word<S>>>): List<Word<S>> {
+        val result = mutableListOf<Word<S>>()
+        for (subList in words) {
+            if (result.isEmpty()) {
+                result += subList
+            } else {
+                val last = result.removeLast()
+                result += join(listOf(last, subList.first()))
+                result += subList.drop(1)
+            }
+        }
+        return result
+    }
+
+    fun joinWithSpaces(words: Iterable<Word<S>>): Word<S> = fromSegments(words.map { it.segments }.join(space))
 }
 
 
@@ -92,6 +119,8 @@ data class PlainSegment(val char: Char) : Segment<PlainSegment> {
 }
 
 object Plain : SegmentType<PlainSegment> {
+    override val space: PlainSegment = PlainSegment(' ')
+
     override fun fromSegments(segments: Iterable<PlainSegment>): Word<PlainSegment> =
         PlainWord(segments.map(PlainSegment::char).joinToString(""))
 }
@@ -142,6 +171,8 @@ data class PhoneticSegment(override val string: String) : StringSegment<Phonetic
 }
 
 object Phonetic : StringSegmentType<PhoneticSegment> {
+    override val space: PhoneticSegment = PhoneticSegment(" ")
+
     override fun fromSegments(segments: Iterable<PhoneticSegment>): Word<PhoneticSegment> =
         PhoneticWord(segments.map(PhoneticSegment::string))
 
@@ -242,3 +273,60 @@ data class DiacriticBreakdown(
 
 class DanglingDiacritic(word: String, position: Int, diacritic: String) :
     UserError("The diacritic $diacritic at position $position in $word isn't attached to a symbol")
+
+data class WordListIndex(val wordIndex: Int, val segmentIndex: Int) : Comparable<WordListIndex> {
+    override fun compareTo(other: WordListIndex): Int =
+        compareBy<WordListIndex>(
+            { it.wordIndex },
+            { it.segmentIndex },
+        ).compare(this, other)
+
+    override fun toString(): String = "($wordIndex, $segmentIndex)"
+}
+
+infix fun ClosedRange<WordListIndex>.overlaps(other: ClosedRange<WordListIndex>): Boolean =
+    !(start >= other.endInclusive || other.start >= endInclusive)
+
+val List<Word<*>>.string : String
+    get() = joinToString(" ") { it.string }
+
+fun <S : Segment<S>> List<Word<S>>.iterateFrom(start: WordListIndex): Iterator<WordListIndex> =
+    object : Iterator<WordListIndex> {
+        private var cursor: WordListIndex = start
+
+        override fun hasNext(): Boolean =
+            !(cursor.wordIndex == size - 1 && cursor.segmentIndex == last().length + 1)
+
+        override fun next(): WordListIndex = cursor.also { cursor = advance(it) }
+    }
+
+fun List<Word<*>>.advance(index: WordListIndex): WordListIndex {
+    val (wordIndex, segmentIndex) = index
+    return if (segmentIndex > this[wordIndex].length) {
+        WordListIndex(wordIndex + 1, 0)
+    } else {
+        WordListIndex(wordIndex, segmentIndex + 1)
+    }
+}
+
+fun List<Word<*>>.reversedIndex(index: WordListIndex): WordListIndex {
+    val (wordIndex, segmentIndex) = index
+    return WordListIndex(size - wordIndex - 1, this[wordIndex].length - segmentIndex)
+}
+
+fun <S : Segment<S>> List<Word<S>>.dropUntil(index: WordListIndex): List<Word<S>> =
+    listOf(this[index.wordIndex].drop(index.segmentIndex)) + drop(index.wordIndex + 1)
+
+
+fun <S : Segment<S>> List<Word<S>>.slice(start: WordListIndex, end: WordListIndex): List<Word<S>> =
+    if (start.wordIndex == end.wordIndex) {
+        listOf(this[start.wordIndex].slice(start.segmentIndex until end.segmentIndex))
+    } else {
+        listOf(this[start.wordIndex].drop(start.segmentIndex)) +
+                slice(start.wordIndex + 1 until end.wordIndex) +
+                this[end.wordIndex].take(end.segmentIndex)
+    }
+
+
+fun <S : Segment<S>> List<Word<S>>.fullyReversed(): List<Word<S>> =
+    reversed().map { it.reversed() }

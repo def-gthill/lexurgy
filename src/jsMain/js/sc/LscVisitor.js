@@ -288,6 +288,12 @@ LscVisitor.prototype.visitBoundary = function(ctx) {
 };
 
 
+// Visit a parse tree produced by LscParser#betweenWords.
+LscVisitor.prototype.visitBetweenWords = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
 // Visit a parse tree produced by LscParser#repeaterType.
 LscVisitor.prototype.visitRepeaterType = function(ctx) {
   return this.visitChildren(ctx);
