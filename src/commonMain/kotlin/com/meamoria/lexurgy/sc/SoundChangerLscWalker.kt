@@ -169,6 +169,8 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
 
     override fun walkBoundary(): ParseNode = WordBoundaryElement
 
+    override fun walkBetweenWords(): ParseNode = BetweenWordsElement
+
     override fun walkClassReference(value: ParseNode): ParseNode =
         ClassReferenceElement((value as SimpleValueNode).simpleValue.name)
 
@@ -413,6 +415,11 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
                 RulePos.ENV_END -> WordEndMatcher()
                 else -> throw LscInteriorWordBoundary()
             }
+    }
+
+    private object BetweenWordsElement : ChameleonRuleElement {
+        override fun <T : Segment<T>> link(pos: RulePos): Matcher<T> =
+            BetweenWordsMatcher()
     }
 
     private class SequenceElement(

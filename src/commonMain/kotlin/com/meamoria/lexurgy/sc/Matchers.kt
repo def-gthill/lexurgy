@@ -2,11 +2,48 @@ package com.meamoria.lexurgy.sc
 
 import com.meamoria.lexurgy.Segment
 import com.meamoria.lexurgy.Word
+import com.meamoria.lexurgy.WordListIndex
 
 interface Matcher<I : Segment<I>> {
-    fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int?
+    fun claim(
+        declarations: Declarations,
+        words: List<Word<I>>,
+        start: WordListIndex,
+        bindings: Bindings
+    ): WordListIndex? {
+        val (startWord, startIndex) = start
+        claim(declarations, words[startWord], startIndex, bindings)?.let { return WordListIndex(startWord, it) }
+        return null
+    }
+
+    fun claim(
+        declarations: Declarations,
+        word: Word<I>,
+        start: Int,
+        bindings: Bindings
+    ): Int?
 
     fun reversed(): Matcher<I>
+}
+
+class BetweenWordsMatcher<I : Segment<I>> : SimpleMatcher<I> {
+    override fun claim(
+        declarations: Declarations,
+        words: List<Word<I>>,
+        start: WordListIndex,
+        bindings: Bindings
+    ): WordListIndex? {
+        val (startWord, startIndex) = start
+        return if (startWord < words.size - 1 && startIndex == words[startWord].length) {
+            WordListIndex(startWord + 1, 0)
+        } else null
+    }
+
+    override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int? = null
+
+    override fun reversed(): Matcher<I> = this
+
+    override fun toString(): String = "$$"
 }
 
 class WordStartMatcher<I : Segment<I>> : Matcher<I> {
@@ -158,7 +195,7 @@ class NegatedMatcher<I : Segment<I>>(val matcher: Matcher<I>) : SimpleMatcher<I>
 }
 
 class NullMatcher<I : Segment<I>> : SimpleMatcher<I> {
-    override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int? =
+    override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int =
         start
 
     override fun reversed(): Matcher<I> = this

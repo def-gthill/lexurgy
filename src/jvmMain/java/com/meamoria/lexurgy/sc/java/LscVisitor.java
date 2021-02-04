@@ -287,6 +287,12 @@ public interface LscVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitBoundary(LscParser.BoundaryContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link LscParser#betweenWords}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitBetweenWords(LscParser.BetweenWordsContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link LscParser#repeaterType}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

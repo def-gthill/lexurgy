@@ -512,6 +512,8 @@ class TestLscParse : StringSpec({
 
         override fun walkBoundary(): String = "$"
 
+        override fun walkBetweenWords(): String = "$$"
+
         override fun walkClassReference(value: String): String = "c($value)"
 
         override fun walkCaptureReference(number: Int): String = "cap($number)"

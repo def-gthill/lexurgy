@@ -407,18 +407,22 @@ class TestSoundChanger : StringSpec({
                 Diacritic ː [long]
                 Diacritic ˈ [stressed]
                 Class vowel {a, e, i, ɔ, u, ɛ, ə, æ}
+                Class cons {b, t, k, m, s}
                 
                 stress-first-syllable @vowel:
                 [] => [stressed] / $ _
                 
                 stressed-vowel-clusters-merge:
-                {eˈə, æˈə, əˈæ, eˈæ, æˈe, əˈe} => {ɛː, aː, ɛː, aː, iː, aː}
+                {eˈə, æˈə, əˈæ, eˈæ, æˈe, əˈe} => {ɛːˈ, aːˈ, ɛːˈ, aːˈ, iːˈ, aːˈ}
+                
+                delete-unstressed:
+                [unstressed] => * / @cons _
             """.trimIndent()
         )
 
-        ch("keət") shouldBe "kɛːt"
-        ch("sæek") shouldBe "siːk"
-        ch("bætɔm") shouldBe "bæˈtɔm"
+        ch("keət") shouldBe "kɛːˈt"
+        ch("sæek") shouldBe "siːˈk"
+        ch("bætɔm") shouldBe "bæˈtm"
     }
 
     "Duplicate diacritic declarations should produce an LscDuplicateName" {
@@ -1364,6 +1368,34 @@ class TestSoundChanger : StringSpec({
         )
 
         ch("sit amet") shouldBe "si ame"
+    }
+
+    "We should be able to delete the $$ token to join words together" {
+        val ch = lsc(
+            """
+                Feature Stress(*unstressed, stressed)
+                Diacritic ˈ [stressed]
+                Class vowel {a, e, i, o, u}
+                
+                stress-first-syllable @vowel:
+                    @vowel => [stressed] / $ _
+                
+                stress-raising:
+                    {eˈ, oˈ} => {iˈ, uˈ}
+                
+                glomination:
+                    $$ => *
+                    Then:
+                    [stressed] => [unstressed] / [stressed] [unstressed]* _
+                
+                intervocalic-lenition:
+                    {p, t, k} => {b, d, g} / @vowel _ @vowel
+            """.trimIndent()
+        )
+
+        ch("sit amet") shouldBe "siˈdamet"
+        ch("ko peko") shouldBe "kuˈbigo"
+        ch("mate kupo tonumeka") shouldBe "maˈdegubodunumeka"
     }
 
     "The file format should be fairly robust to extra newlines and blank lines" {

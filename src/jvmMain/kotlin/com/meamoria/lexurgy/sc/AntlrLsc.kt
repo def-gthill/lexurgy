@@ -130,6 +130,8 @@ actual typealias EmptyContext = LscParser.EmptyContext
 
 actual typealias BoundaryContext = LscParser.BoundaryContext
 
+actual typealias BetweenWordsContext = LscParser.BetweenWordsContext
+
 actual typealias RepeaterTypeContext = LscParser.RepeaterTypeContext
 
 actual typealias MatrixContext = LscParser.MatrixContext
