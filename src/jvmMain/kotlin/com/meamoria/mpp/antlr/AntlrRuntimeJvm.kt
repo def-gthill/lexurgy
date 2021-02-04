@@ -5,6 +5,7 @@ import org.antlr.v4.runtime.ANTLRErrorListener
 import org.antlr.v4.runtime.BufferedTokenStream
 import org.antlr.v4.runtime.CharStream
 import org.antlr.v4.runtime.CharStreams
+import org.antlr.v4.runtime.CommonToken
 import org.antlr.v4.runtime.CommonTokenStream
 import org.antlr.v4.runtime.InputMismatchException
 import org.antlr.v4.runtime.Lexer
@@ -15,6 +16,7 @@ import org.antlr.v4.runtime.RuleContext
 import org.antlr.v4.runtime.Token
 import org.antlr.v4.runtime.TokenSource
 import org.antlr.v4.runtime.TokenStream
+import org.antlr.v4.runtime.WritableToken
 import org.antlr.v4.runtime.atn.ATNConfigSet
 import org.antlr.v4.runtime.dfa.DFA
 import org.antlr.v4.runtime.misc.IntervalSet
@@ -69,6 +71,10 @@ actual typealias Token = Token
 actual fun Token.getTokenText(): String = text
 
 actual fun Token.getTokenType(): Int = type
+
+actual typealias WritableToken = WritableToken
+
+actual typealias CommonToken = CommonToken
 
 actual typealias IntervalSet = IntervalSet
 

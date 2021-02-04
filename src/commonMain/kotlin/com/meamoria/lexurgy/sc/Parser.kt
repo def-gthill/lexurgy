@@ -454,7 +454,7 @@ private class LscErrorListener : CommonAntlrErrorListener() {
         msg: String,
         exception: RecognitionException?,
     ): Nothing {
-        val offendingToken = (offendingSymbol as? Token)?.getTokenText() ?: offendingSymbol.toString()
+        val offendingToken = (offendingSymbol as? CommonToken)?.getTokenText() ?: offendingSymbol.toString()
         val userFriendlyMessage = exception?.let { getUserFriendlyMessage(it, offendingToken) }
         throw LscNotParsable(
             line,

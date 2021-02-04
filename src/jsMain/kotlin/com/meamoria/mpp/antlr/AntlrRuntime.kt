@@ -65,6 +65,15 @@ external class TokenClass {
     }
 }
 
+actual external interface WritableToken : Token
+
+actual external class CommonToken : WritableToken {
+    override val text: String
+    override val type: Int
+    override val line: Int
+    override val column: Int
+}
+
 actual external class IntervalSet {
     actual fun contains(el: Int): Boolean
 }

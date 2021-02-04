@@ -57,6 +57,10 @@ expect fun Token.getTokenText(): String
 
 expect fun Token.getTokenType(): Int
 
+expect interface WritableToken : Token
+
+expect class CommonToken : WritableToken
+
 expect class IntervalSet {
     fun contains(el: Int): Boolean
 }
