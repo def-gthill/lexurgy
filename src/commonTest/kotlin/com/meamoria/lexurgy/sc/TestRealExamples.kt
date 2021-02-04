@@ -173,8 +173,7 @@ class TestRealExamples : StringSpec({
         "atepino",
         "ki'ama",
         "haniposa",
-        "kani'asoto",
-        "nekosa'ima",
+        "kani'asoto nekosa'ima",
     )
 
     "The Basican example in the web app should work" {
@@ -223,8 +222,7 @@ class TestRealExamples : StringSpec({
             "adebin",
             "tʃiam",
             "aniboza",
-            "ʃaniazodo",
-            "negozaim",
+            "ʃaniazodo negozaim",
         )
 
         for ((expectedWord, originalWord) in expected.zip(exampleWords)) {
@@ -310,8 +308,7 @@ class TestRealExamples : StringSpec({
             "āpino",
             "ki'ama",
             "hamposa",
-            "kan'asto",
-            "nekos'ima",
+            "kan'asto nekos'ima",
         )
 
         for ((expectedWord, originalWord) in expected.zip(exampleWords)) {
@@ -398,8 +395,7 @@ class TestRealExamples : StringSpec({
             "appino",
             "kama",
             "hanposa",
-            "knisoto",
-            "knosima",
+            "knisoto knosima",
         )
 
         for ((expectedWord, originalWord) in expected.zip(exampleWords)) {

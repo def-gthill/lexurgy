@@ -12,6 +12,7 @@ interface Matcher<I : Segment<I>> {
         bindings: Bindings
     ): WordListIndex? {
         val (startWord, startIndex) = start
+        if (startIndex !in 0 .. words[startWord].length) return null
         claim(declarations, words[startWord], startIndex, bindings)?.let { return WordListIndex(startWord, it) }
         return null
     }

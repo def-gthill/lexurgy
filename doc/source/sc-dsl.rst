@@ -225,7 +225,7 @@ simultaneously, as if they were separate rules. For example, the palatalization 
 
 This makes it clear that the three stages are really part of the same sound change.
 
-Sound classes
+Sound Classes
 -------------
 
 You can define premade lists of sounds at the top of the file::
@@ -259,7 +259,7 @@ without repeating yourself.
 
 Lexurgy's sound classes should be familiar to users of Rosenfelder's SCA.
 
-Feature matrices
+Feature Matrices
 ----------------
 
 Another, more flexible way of generalizing rules is to define each sound as a
@@ -348,7 +348,7 @@ from the matrix).
         Rules that delete all features from a sound are always invalid, and will lead to errors.
 
 
-Feature variables
+Feature Variables
 ~~~~~~~~~~~~~~~~~
 
 Languages often undergo *assimilation*, where one sound becomes more like a nearby sound.
@@ -367,7 +367,7 @@ value of that consonant's ``Place`` feature. This feature value is copied into t
 applied to it and become an [m], a nasal before a [d] would have the matrix [alveolar]
 applied and become an [n], etc.
 
-Absent features and absent aliases
+Absent Features and Absent Aliases
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 As mentioned previously, every feature automatically has an extra value indicating that
@@ -381,7 +381,7 @@ It can make rules clearer to give the absent feature an explicit name using an *
 The value marked by an asterisk is the absent alias; now all sounds that don't have an
 explicit stress will be ``unstressed``.
 
-Negated features
+Negated Features
 ~~~~~~~~~~~~~~~~
 
 A feature value in a matrix can be negated by prefixing it with ``!``. Then the matrix
@@ -487,7 +487,7 @@ put ``!`` after the sound::
 
 This will turn ``kepo`` into ``kipu``, but leave ``keˈpó`` unaltered.
 
-Multiple-segment rules
+Multiple-Segment Rules
 ------------------------
 
 A rule can affect a sequence of consecutive sounds at the same time. For example, this rule
@@ -500,7 +500,7 @@ The number of segments must be the same on each side of the ``=>``. If a change
 adds or deletes sounds, fill in the missing spaces with the empty sound ``*``.
 This is useful when dealing with :ref:`gemination <sc-gemination>`.
 
-Optional and repeated segments
+Optional and Repeated Segments
 ------------------------------
 
 You can mark part of the environment *optional* by putting a question mark after it::
@@ -586,7 +586,7 @@ Optional and repeated segments can also be used in :ref:`exclusions <sc-exclusio
 
 .. _sc-gemination:
 
-Gemination and metathesis
+Gemination and Metathesis
 -------------------------
 
 Sometimes it's useful to copy an entire sound from one place to another, rather than
@@ -616,7 +616,7 @@ This rule uses a bare capture variable on the old side of the rule to remove gem
 
     [cons]$1 $1 => $1 *
 
-Rule filters
+Rule Filters
 ------------
 
 Some rules only care about certain kinds of sounds, ignoring any intervening sounds.
@@ -716,3 +716,35 @@ of the final words.
 
 For the command-line tool, you need to specify the :option:`-m` command-line argument
 in order for intermediate romanizers to activate.
+
+Interactions Between Words
+---------------------------
+
+If you write multiple words on a line in the input (separated
+by spaces), each will be treated as a separate word. For example,
+if your rules are::
+
+    drop-final-t:
+        t => * / _ $
+
+and your words are::
+
+    sit amet
+
+Then the result will be ``si ame``; the space between the words
+is treated as a word boundary. Similarly, rules that look for
+a specific environment won't look across word boundaries.
+
+Affixation
+~~~~~~~~~~~
+
+When creating a language diachronically, you may want to
+simulate how grammatical particles turn into affixes. This
+means you need the words to be treated as separate *before*
+the affixation, but as one word after.
+
+You do this with a rule that destroys the space between words, which is
+represented by ``$$``::
+
+    glomination:
+        $$ => *

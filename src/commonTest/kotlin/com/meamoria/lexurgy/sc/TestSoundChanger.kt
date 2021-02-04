@@ -1406,7 +1406,7 @@ class TestSoundChanger : StringSpec({
         val ch = lsc(
             """
                 Feature Stress(*unstressed, stressed)
-                Diacritic ˈ [stressed]
+                Diacritic ˈ (floating) [stressed]
                 Class vowel {a, e, i, o, u}
                 
                 stress-first-syllable @vowel:
@@ -1414,6 +1414,9 @@ class TestSoundChanger : StringSpec({
                 
                 stress-raising:
                     {eˈ, oˈ} => {iˈ, uˈ}
+                
+                tapping:
+                    t => ɾ / @vowel _ @vowel
                 
                 glomination:
                     $$ => *
@@ -1427,7 +1430,7 @@ class TestSoundChanger : StringSpec({
 
         ch("sit amet") shouldBe "siˈdamet"
         ch("ko peko") shouldBe "kuˈbigo"
-        ch("mate kupo tonumeka") shouldBe "maˈdegubodunumeka"
+        ch("mate kupo tonumeka") shouldBe "maˈɾegubodunumega"
     }
 
     "The file format should be fairly robust to extra newlines and blank lines" {
