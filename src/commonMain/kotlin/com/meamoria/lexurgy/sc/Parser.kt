@@ -50,7 +50,8 @@ class LscInterpreter<T>(val walker: LscWalker<T>) {
 
     private fun LscNotParsable.needsBetterErrorMessage() =
         customMessage.startsWith("extraneous") ||
-                customMessage.startsWith("mismatched")
+                customMessage.startsWith("mismatched") ||
+                customMessage.startsWith("no viable alternative")
 
     private fun throwWithBetterErrorMessage(e: LscNotParsable, inputText: String): Nothing {
         val offendingLine = inputText.lines()[e.line - 1]
