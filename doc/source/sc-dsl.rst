@@ -774,3 +774,11 @@ represented by ``$$``::
 
     glomination:
         $$ => *
+
+This can be conditioned sounds in the neighbouring words. The following
+will only join words if the first word ends in a [t] or the second word
+starts with an [s]::
+
+    selective-glomination:
+        $$ => * / t _
+        $$ => * / _ s

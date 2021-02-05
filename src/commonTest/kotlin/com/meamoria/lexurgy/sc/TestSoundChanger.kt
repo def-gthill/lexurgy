@@ -1470,6 +1470,32 @@ class TestSoundChanger : StringSpec({
         ch("mate kupo tonumeka") shouldBe "maˈɾegubodunumega"
     }
 
+    "We should be able to join words conditionally" {
+        val ch = lsc(
+            """
+                selective-glomination:
+                    $$ => * / t _
+                    $$ => * / _ s
+            """.trimIndent()
+        )
+
+        ch("sit amet") shouldBe "sitamet"
+        ch("cogito ergo sum") shouldBe "cogito ergosum"
+    }
+
+    "We should be able to implement sandhi rules by using $$ in the environment" {
+        val ch = lsc(
+            """
+                Class vowel {a, e, i, o, u}
+                
+                mutation:
+                    {p, t, k} => {b, d, g} / @vowel $$ _
+            """.trimIndent()
+        )
+
+        ch("rumpa pum pum") shouldBe "rumpa bum pum"
+    }
+
     "The file format should be fairly robust to extra newlines and blank lines" {
         // We're just testing that these don't throw exceptions
         lsc("Deromanizer:\n    y => j\n")
