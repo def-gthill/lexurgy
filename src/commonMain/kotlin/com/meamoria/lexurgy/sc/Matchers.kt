@@ -132,12 +132,7 @@ class IntersectionMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : Matc
     override fun toString(): String = elements.joinToString("&")
 }
 
-/**
- * A matcher that isn't a container for other matchers
- */
-interface SimpleMatcher<I : Segment<I>> : Matcher<I>
-
-class CaptureMatcher(val element: Matcher<PhonS>, val number: Int) : SimpleMatcher<PhonS> {
+class CaptureMatcher(val element: Matcher<PhonS>, val number: Int) : Matcher<PhonS> {
     override fun claim(declarations: Declarations, word: Word<PhonS>, start: Int, bindings: Bindings): Int? =
         if (number in bindings.captures) {
             throw LscReboundCapture(number)
@@ -149,6 +144,11 @@ class CaptureMatcher(val element: Matcher<PhonS>, val number: Int) : SimpleMatch
 
     override fun reversed(): Matcher<PhonS> = CaptureMatcher(element.reversed(), number)
 }
+
+/**
+ * A matcher that isn't a container for other matchers
+ */
+interface SimpleMatcher<I : Segment<I>> : Matcher<I>
 
 class CaptureReferenceMatcher(val number: Int) : SimpleMatcher<PhonS> {
     override fun claim(declarations: Declarations, word: Word<PhonS>, start: Int, bindings: Bindings): Int? =

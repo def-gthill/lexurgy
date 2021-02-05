@@ -492,6 +492,40 @@ class TestSoundChanger : StringSpec({
         ch2("iniˈte") shouldBe "ɨniˈtə"
     }
 
+    "We should be able to copy a feature value out of an intersection" {
+        val ch = lsc(
+            """
+                Feature Voicing(unvoiced, voiced)
+                Feature Nasality(*nonnasal, nasal)
+                Feature Place(labial, alveolar, velar, glottal)
+                Feature Manner(stop, fricative, approximant)
+
+                Symbol p [unvoiced labial stop]
+                Symbol b [voiced labial stop]
+                Symbol k [unvoiced velar stop]
+                Symbol g [voiced velar stop]
+                Symbol f [unvoiced labial fricative]
+                Symbol v [voiced labial fricative]
+                Symbol n [voiced nasal alveolar]
+                Symbol m [voiced nasal labial]
+                Symbol r [voiced approximant]
+
+                Class vowel {a, i, e, o, u}
+                Class cons {p, b, k, g, f, v, r}
+
+                nasal-assimilation:
+                [nasal] => [${'$'}Place] / _ @cons&[${'$'}Place]
+
+                obstruent-voicing-assimilation:
+                @cons&!r => [${'$'}Voicing] / _ @cons&[${'$'}Voicing]
+            """.trimIndent()
+        )
+
+        ch("anpara") shouldBe "ampara"
+        ch("aprirka") shouldBe "abrirka"
+        ch("avpika") shouldBe "afpika"
+    }
+
     "Duplicate diacritic declarations should produce an LscDuplicateName" {
         shouldThrow<LscDuplicateName> {
             lsc(
@@ -1027,6 +1061,23 @@ class TestSoundChanger : StringSpec({
                     "Reason: Capture variable 1 is bound more than once; " +
                     "replace the second with a capture reference (\"${'$'}1\")"
         }
+    }
+
+    "We should be able to negate plain text and capture references" {
+        val ch = lsc(
+            """
+                Class vowel {a, e, i, o, u}
+                
+                i-before-e:
+                    i => * / !c _ e
+                
+                not-the-same:
+                    {i, u}$1 => {j, w} / _ @vowel&!$1
+            """.trimIndent()
+        )
+
+        ch("cietua") shouldBe "cjetwa"
+        ch("vietuu") shouldBe "vetuu"
     }
 
     "We should be able to sequence rule expressions rather than having them all happen at once" {

@@ -89,6 +89,30 @@ class IntersectionTransformer<I : Segment<I>, O : Segment<O>>(
     }
 }
 
+class CaptureTransformer<O : Segment<O>>(
+    val element: Transformer<PhonS, O>,
+    val number: Int
+) : Transformer<PhonS, O> {
+    override fun transform(
+        order: Int,
+        declarations: Declarations,
+        words: List<Word<PhonS>>,
+        start: WordListIndex,
+        bindings: Bindings
+    ): UnboundTransformation<O>? =
+        if (number in bindings.captures) {
+            throw LscReboundCapture(number)
+        } else {
+            element.transform(order, declarations, words, start, bindings)?.takeIf {
+                it.start.wordIndex == it.end.wordIndex
+            }?.also {
+                bindings.captures[number] = words[it.start.wordIndex].slice(
+                    it.start.segmentIndex until it.end.segmentIndex
+                )
+            }
+        }
+}
+
 class SimpleTransformer<I : Segment<I>, O : Segment<O>>(
     val matcher: SimpleMatcher<I>,
     val emitter: SimpleEmitter<I, O>

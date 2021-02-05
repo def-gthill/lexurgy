@@ -51,7 +51,7 @@ list: LIST_START ruleElement (SEP ruleElement)* LIST_END;
 intersection: intersectionElement (INTERSECTION intersectionElement)+;
 intersectionElement: capture | repeater | group | list | simple;
 simple: negated | classRef | captureRef | fancyMatrix | empty | boundary | betweenWords | text;
-negated: NEGATION classRef;
+negated: NEGATION (classRef | captureRef | text);
 classRef: CLASSREF value;
 captureRef: WORD_BOUNDARY NUMBER;
 

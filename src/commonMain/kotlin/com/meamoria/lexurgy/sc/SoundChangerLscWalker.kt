@@ -166,7 +166,12 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
         else -> element
     }
 
-    override fun walkNegatedElement(element: ParseNode): ParseNode = NegatedElement(element as RuleElement)
+    override fun walkNegatedElement(element: ParseNode): ParseNode = NegatedElement(
+        when (element) {
+            is TextNode -> TextElement(element.text, element.exact)
+            else -> element as RuleElement
+        }
+    )
 
     override fun walkEmpty(): ParseNode = EmptyElement
 

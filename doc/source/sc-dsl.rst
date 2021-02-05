@@ -640,6 +640,16 @@ This rule uses a bare capture variable on the old side of the rule to remove gem
 
     [cons]$1 $1 => $1 *
 
+Negation
+---------
+
+You can negate some types of rule elements --- match only segments that *don't* fit
+the element --- by preceding the element with ``!``, as with matrix features.
+
+Currently you can do this with literal text (``!r`` matches anything but the sound [r]),
+classes (``!@vowel`` matches anything not in the ``vowel`` class), and capture references
+(``!$1`` matches anything except what was captured in the ``$1`` variable).
+
 .. _sc-filters:
 
 Rule Filters

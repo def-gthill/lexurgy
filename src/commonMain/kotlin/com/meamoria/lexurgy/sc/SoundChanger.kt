@@ -376,7 +376,12 @@ class RuleExpression<I : Segment<I>, O : Segment<O>>(
 
 
     private fun makeTransformerChecked(match: Matcher<I>, result: Emitter<I, O>): Transformer<I, O> =
-        if (match is IntersectionMatcher) {
+        if (match is CaptureMatcher) {
+            @Suppress("UNCHECKED_CAST")
+            CaptureTransformer(
+                makeTransformer(match.element as Matcher<I>, result) as Transformer<PhonS, O>, match.number
+            ) as Transformer<I, O>
+        } else if (match is IntersectionMatcher) {
             IntersectionTransformer(makeTransformer(match.elements.first(), result), match.elements.drop(1))
         } else if (match is ListMatcher) {
             if (result is ListEmitter) {
