@@ -63,6 +63,32 @@ class ListTransformer<I : Segment<I>, O : Segment<O>>(
     }
 }
 
+class IntersectionTransformer<I : Segment<I>, O : Segment<O>>(
+    val transformer: Transformer<I, O>,
+    val otherMatchers: List<Matcher<I>>,
+) : Transformer<I, O> {
+    override fun transform(
+        order: Int,
+        declarations: Declarations,
+        words: List<Word<I>>,
+        start: WordListIndex,
+        bindings: Bindings
+    ): UnboundTransformation<O>? {
+        var matchEnd: WordListIndex? = null
+        for (matcher in otherMatchers) {
+            val thisMatchEnd = matcher.claim(declarations, words, start, bindings) ?: return null
+            if (matchEnd == null) {
+                matchEnd = thisMatchEnd
+            } else if (thisMatchEnd != matchEnd) {
+                return null
+            }
+        }
+        return transformer.transform(order, declarations, words, start, bindings)?.takeIf {
+            it.end == matchEnd
+        }
+    }
+}
+
 class SimpleTransformer<I : Segment<I>, O : Segment<O>>(
     val matcher: SimpleMatcher<I>,
     val emitter: SimpleEmitter<I, O>

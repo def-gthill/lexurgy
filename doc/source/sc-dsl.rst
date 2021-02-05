@@ -43,7 +43,7 @@ Any line that starts with # is a comment, and Lexurgy will ignore it::
 
     The following characters mean something special to Lexurgy::
 
-        \ , = > ( ) [ ] { } * + ? / - _ : ! $ @ #
+        \ , = > ( ) [ ] { } * + ? / - _ : ! $ @ # &
 
     If you need to use one of these characters as part of a rule
     (e.g. you're working with a click language and want to use ``!``),
@@ -78,7 +78,9 @@ If you want to use digraphs in your rules, you can declare *symbols*::
 Then rules that affect *t* or *s* will ignore them if they're part of a *ts*,
 and similarly with *dz*.
 
-Alternative lists
+.. _sc-alternative-lists:
+
+Alternative Lists
 ~~~~~~~~~~~~~~~~~
 
 Often, several sounds are affected by a change, or trigger it. You could write a bunch
@@ -111,7 +113,7 @@ This will turn [p] into [b], [t] into [d], and [k] into [g].
 It's invalid to have a single sound turn into an alternative list, or to
 have a list of one length turn into a list of a different length.
 
-Alternative environments
+Alternative Environments
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 The alternative list mechanism can be used not just for sounds, but for entire environments.
@@ -121,7 +123,7 @@ stops::
     frication:
         {p, t, k} => {f, θ, x} / {{a, e, i, o, u} _ {a, e, i, o, u}, _ {p, t, k}}
 
-Word boundaries
+Word Boundaries
 ~~~~~~~~~~~~~~~
 
 You can specify that a rule only applies at the beginning or end of a word by marking the
@@ -150,7 +152,7 @@ The first applies only at the beginning of a word, the second at the end of a wo
         okay:
             a => o / {o, $} _
 
-Empty sounds
+Empty Sounds
 ~~~~~~~~~~~~
 
 If you want to delete a sound entirely, put an asterisk in place of the new sound::
@@ -487,6 +489,28 @@ put ``!`` after the sound::
 
 This will turn ``kepo`` into ``kipu``, but leave ``keˈpó`` unaltered.
 
+Multiple Criteria
+------------------
+
+If you want to limit a rule to segments that have several different properties,
+you can join the properties with ``&``. This is useful, for example, if you want
+something to happen to sounds that fall into a sound class *and* have a specific
+feature::
+
+    unstressed-final-vowel-loss:
+        @vowel&[unstressed] => * / _ $ // {p, t, k} _
+
+Note that this rule couldn't be written with a :ref:`filter <sc-filters>` of
+``@vowel`` because the filter would also remove any /p/, /t/, or /k/, meaning
+the exclusion wouldn't work.
+
+If an :ref:`alternative list <sc-alternative-lists>` is the *first* element
+joined by ``&``, then it can match up with an alternative list of the same length
+on the new side of the rule. For example::
+
+    unstressed-vowel-centralizing:
+        {e, i, o, u}&[unstressed] => {ə, ɨ, ə, ɨ}
+
 Multiple-Segment Rules
 ------------------------
 
@@ -615,6 +639,8 @@ This rule uses a bare capture variable on the old side of the rule to remove gem
 (*degemination*)::
 
     [cons]$1 $1 => $1 *
+
+.. _sc-filters:
 
 Rule Filters
 ------------

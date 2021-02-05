@@ -455,6 +455,43 @@ class TestSoundChanger : StringSpec({
         ch("tˈuitui") shouldBe "tˈútú"
     }
 
+    "We should be able to use & to join two matchers" {
+        val ch = lsc(
+            """
+                Feature Stressed(*unstressed, stressed)
+                Diacritic ˈ [stressed]
+                Class vowel {a, e, i, o, u}
+                
+                Deromanizer:
+                    {á, é, í, ó, ú} => {aˈ, eˈ, iˈ, oˈ, uˈ}
+                
+                unstressed-final-vowel-loss:
+                    @vowel&[unstressed] => * / _ ${'$'} // {p, t, k} _
+                
+                Romanizer:
+                    {aˈ, eˈ, iˈ, oˈ, uˈ} => {á, é, í, ó, ú}
+            """.trimIndent()
+        )
+
+        ch("páno") shouldBe "pán"
+        ch("panó") shouldBe "panó"
+        ch("pánt") shouldBe "pánt"
+        ch("páko") shouldBe "páko"
+
+        val ch2 = lsc(
+            """
+                Feature Stressed(*unstressed, stressed)
+                Diacritic ˈ (floating) [stressed]
+
+                unstressed-vowel-centralizing:
+                    {e, i, o, u}&[unstressed] => {ə, ɨ, ə, ɨ}
+            """.trimIndent()
+        )
+
+        ch2("paˈno") shouldBe "paˈnə"
+        ch2("iniˈte") shouldBe "ɨniˈtə"
+    }
+
     "Duplicate diacritic declarations should produce an LscDuplicateName" {
         shouldThrow<LscDuplicateName> {
             lsc(

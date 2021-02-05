@@ -113,6 +113,25 @@ class ListMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : Matcher<I> {
     override fun toString(): String = elements.joinToString(prefix = "{", postfix = "}")
 }
 
+class IntersectionMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : Matcher<I> {
+    override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int? {
+        var matchEnd: Int? = null
+        for (element in elements) {
+            val elementMatchEnd = element.claim(declarations, word, start, bindings) ?: return null
+            if (matchEnd == null) {
+                matchEnd = elementMatchEnd
+            } else if (elementMatchEnd != matchEnd) {
+                return null
+            }
+        }
+        return matchEnd
+    }
+
+    override fun reversed(): Matcher<I> = IntersectionMatcher(elements.map { it.reversed() })
+
+    override fun toString(): String = elements.joinToString("&")
+}
+
 /**
  * A matcher that isn't a container for other matchers
  */

@@ -54,6 +54,8 @@ expect open class LscBaseVisitor<T>() {
     open fun visitRepeater(ctx: RepeaterContext): T
     open fun visitGroup(ctx: GroupContext): T
     open fun visitList(ctx: ListContext): T
+    open fun visitIntersection(ctx : IntersectionContext): T
+    open fun visitIntersectionElement(ctx : IntersectionElementContext): T
     open fun visitSimple(ctx: SimpleContext): T
     open fun visitNegated(ctx: NegatedContext): T
     open fun visitClassRef(ctx: ClassRefContext): T
@@ -223,6 +225,12 @@ expect class GroupContext : ParserRuleContext {
 expect class ListContext : ParserRuleContext
 
 expect fun ListContext.allRuleElements(): List<RuleElementContext>
+
+expect class IntersectionContext : ParserRuleContext
+
+expect fun IntersectionContext.allIntersectionElements(): List<IntersectionElementContext>
+
+expect class IntersectionElementContext : ParserRuleContext
 
 expect class SimpleContext : ParserRuleContext
 

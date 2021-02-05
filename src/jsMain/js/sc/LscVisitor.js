@@ -222,6 +222,18 @@ LscVisitor.prototype.visitList = function(ctx) {
 };
 
 
+// Visit a parse tree produced by LscParser#intersection.
+LscVisitor.prototype.visitIntersection = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
+// Visit a parse tree produced by LscParser#intersectionElement.
+LscVisitor.prototype.visitIntersectionElement = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
 // Visit a parse tree produced by LscParser#simple.
 LscVisitor.prototype.visitSimple = function(ctx) {
   return this.visitChildren(ctx);

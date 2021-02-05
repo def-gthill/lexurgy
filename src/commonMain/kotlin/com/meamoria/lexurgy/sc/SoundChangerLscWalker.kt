@@ -157,6 +157,9 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
     override fun walkRuleList(items: List<ParseNode>): ParseNode =
         ListElement(items.map { it as RuleElement })
 
+    override fun walkIntersection(items: List<ParseNode>): ParseNode =
+        IntersectionElement(items.map { it as RuleElement })
+
     override fun walkSimpleElement(element: ParseNode): ParseNode = when (element) {
         is TextNode -> TextElement(element.text, element.exact)
         is MatrixNode -> MatrixElement(element.matrix)
@@ -506,6 +509,16 @@ class SoundChangerLscWalker : LscWalker<SoundChangerLscWalker.ParseNode>() {
 
         override fun <I : Segment<I>, O : Segment<O>> emitter(elements: List<Emitter<I, O>>): Emitter<I, O> =
             ListEmitter(elements)
+    }
+
+    private class IntersectionElement(override val elements: List<RuleElement>) :
+        ContainerResultElement() {
+
+        override fun <T : Segment<T>> matcher(elements: List<Matcher<T>>): Matcher<T> = IntersectionMatcher(elements)
+
+        override fun <I : Segment<I>, O : Segment<O>> emitter(elements: List<Emitter<I, O>>): Emitter<I, O> =
+            throw LscIntersectionInOutput(elements)
+
     }
 
     private class TextElement(val text: String, val exact: Boolean = false) : ResultElement {

@@ -376,7 +376,9 @@ class RuleExpression<I : Segment<I>, O : Segment<O>>(
 
 
     private fun makeTransformerChecked(match: Matcher<I>, result: Emitter<I, O>): Transformer<I, O> =
-        if (match is ListMatcher) {
+        if (match is IntersectionMatcher) {
+            IntersectionTransformer(makeTransformer(match.elements.first(), result), match.elements.drop(1))
+        } else if (match is ListMatcher) {
             if (result is ListEmitter) {
                 if (match.elements.size == result.elements.size) {
                     ListTransformer(match.elements.zip(result.elements, this::makeTransformer))
@@ -612,6 +614,9 @@ class LscClassInPlain(val className: String) :
 
 class LscCaptureInPlain(val number: Int) :
     LscUserError("Capture $number isn't allowed in a romanized context")
+
+class LscIntersectionInOutput(val elements: List<Emitter<*, *>>) :
+    LscUserError("Multiple criteria ${elements.joinToString()} aren't allowed in the output of a rule")
 
 class LscDivergingPropagation(val rule: ChangeRule, val initialWord: String, val wordsAtAbort: List<String>) :
     LscUserError(

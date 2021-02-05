@@ -178,6 +178,12 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
         fun ruleElement(): Array<RuleElementContext>
     }
 
+    class IntersectionContext : ParserRuleContext {
+        fun intersectionElement(): Array<IntersectionElementContext>
+    }
+
+    class IntersectionElementContext : ParserRuleContext
+
     class SimpleContext : ParserRuleContext
 
     class NegatedContext : ParserRuleContext
@@ -304,6 +310,10 @@ open external class LscVisitor<T> {
     open fun visitGroup(ctx: GroupContext): T
 
     open fun visitList(ctx: ListContext): T
+
+    open fun visitIntersection(ctx: IntersectionContext): T
+
+    open fun visitIntersectionElement(ctx: IntersectionElementContext): T
 
     open fun visitSimple(ctx: SimpleContext): T
 
@@ -435,6 +445,13 @@ actual typealias GroupContext = LscParser.GroupContext
 actual typealias ListContext = LscParser.ListContext
 
 actual fun ListContext.allRuleElements(): List<RuleElementContext> = ruleElement().toList()
+
+actual typealias IntersectionContext = LscParser.IntersectionContext
+
+actual fun IntersectionContext.allIntersectionElements(): List<IntersectionElementContext> =
+    intersectionElement().toList()
+
+actual typealias IntersectionElementContext = LscParser.IntersectionElementContext
 
 actual typealias SimpleContext = LscParser.SimpleContext
 

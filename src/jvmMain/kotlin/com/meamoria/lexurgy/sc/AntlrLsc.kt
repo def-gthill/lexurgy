@@ -3,7 +3,6 @@ package com.meamoria.lexurgy.sc
 import com.meamoria.lexurgy.sc.java.LscBaseVisitor
 import com.meamoria.lexurgy.sc.java.LscLexer
 import com.meamoria.lexurgy.sc.java.LscParser
-import org.antlr.v4.runtime.ANTLRErrorListener
 import org.antlr.v4.runtime.tree.TerminalNode
 
 actual typealias LscLexer = LscLexer
@@ -105,6 +104,12 @@ actual typealias GroupContext = LscParser.GroupContext
 actual typealias ListContext = LscParser.ListContext
 
 actual fun ListContext.allRuleElements(): List<RuleElementContext> = ruleElement()
+
+actual typealias IntersectionContext = LscParser.IntersectionContext
+
+actual fun IntersectionContext.allIntersectionElements(): List<IntersectionElementContext> = intersectionElement()
+
+actual typealias IntersectionElementContext = LscParser.IntersectionElementContext
 
 actual typealias SimpleContext = LscParser.SimpleContext
 

@@ -291,6 +291,11 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
 
     override fun visitList(ctx: ListContext): T = walkRuleList(listVisit(ctx.allRuleElements()))
 
+    override fun visitIntersection(ctx: IntersectionContext): T =
+        walkIntersection(listVisit(ctx.allIntersectionElements()))
+
+    override fun visitIntersectionElement(ctx: IntersectionElementContext): T = visit(ctx.getChild(0))
+
     override fun visitSimple(ctx: SimpleContext): T = walkSimpleElement(visit(ctx.getChild(0)))
 
     override fun visitNegated(ctx: NegatedContext): T = walkNegatedElement(visit(ctx.getChild(1)))
@@ -400,6 +405,8 @@ abstract class LscWalker<T> : LscBaseVisitor<T>() {
     protected open fun walkRuleRepeater(text: String, item: T, repeaterType: T): T = item
 
     protected abstract fun walkRuleList(items: List<T>): T
+
+    protected abstract fun walkIntersection(items: List<T>): T
 
     protected open fun walkSimpleElement(element: T): T = element
 
