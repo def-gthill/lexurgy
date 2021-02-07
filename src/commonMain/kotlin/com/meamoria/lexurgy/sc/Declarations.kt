@@ -44,7 +44,7 @@ class Declarations(
         { matrix, new, existing -> throw LscDuplicateMatrices(matrix, "symbols", new.name, existing.name) },
     )
 
-    private val matrixFullValueListCache = Cache<Matrix, List<MatrixValue>>()
+    private val matrixFullValueSetCache = Cache<Matrix, Set<MatrixValue>>()
     private val matrixSimpleValueCache = Cache<Matrix, Set<SimpleValue>>()
     private val matrixToSymbolCache = Cache<Matrix, PhoneticSegment>()
     private val phoneticSegmentToComplexSymbolCache = Cache<PhoneticSegment, ComplexSymbol>()
@@ -181,15 +181,16 @@ class Declarations(
 
     val Matrix.fullValueList: List<MatrixValue>
         get() {
-            matrixFullValueListCache[this]?.let { return it }
-
             val explicitFeatures = valueList.mapNotNull { valueToFeature[it] }.toSet()
             val implicitDefaults = features.filter { it !in explicitFeatures }.map { it.default }
-            return (valueList + implicitDefaults).also { matrixFullValueListCache[this] = it }
+            return (valueList + implicitDefaults)
         }
 
     val Matrix.fullValueSet: Set<MatrixValue>
-        get() = fullValueList.toSet()
+        get() {
+            matrixFullValueSetCache[this]?.let { return it }
+            return fullValueList.toSet().also { matrixFullValueSetCache[this] = it }
+        }
 
     val Matrix.simpleValues: Set<SimpleValue>
         get() {

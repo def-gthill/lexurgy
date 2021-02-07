@@ -4,6 +4,7 @@ import com.meamoria.lexurgy.LscUserError
 
 class Matrix(val valueList: List<MatrixValue>) {
     private val valueSet = valueList.toSet()
+    private val hashCode = valueSet.hashCode()
 
     fun bindVariables(bindings: Bindings): Matrix {
         var updated = false
@@ -34,7 +35,7 @@ class Matrix(val valueList: List<MatrixValue>) {
     }
 
     override fun hashCode(): Int {
-        return valueSet.hashCode()
+        return hashCode
     }
 
     companion object {
