@@ -43,7 +43,7 @@ environmentAfter: ruleElement;
 
 ruleElement: capture | repeater | group | list | intersection | simple | sequence;
 sequence: sequenceElement (WHITESPACE sequenceElement)+;
-sequenceElement: capture | repeater | group | list | simple;
+sequenceElement: capture | repeater | group | list | intersection | simple;
 capture: (group | list | negated | classRef | fancyMatrix) captureRef;
 repeater: (group | list | simple) repeaterType;
 group: O_PAREN ruleElement C_PAREN;

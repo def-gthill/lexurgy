@@ -206,8 +206,11 @@ class TextMatcher<I : Segment<I>>(text: Word<I>) : AbstractTextMatcher<I>(text) 
 
 class NegatedMatcher<I : Segment<I>>(val matcher: Matcher<I>) : SimpleMatcher<I> {
     override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int? =
-        if (matcher.claim(declarations, word, start, bindings) == null) start + 1
-        else null
+        when {
+            start >= word.length -> null
+            matcher.claim(declarations, word, start, bindings) == null -> start + 1
+            else -> null
+        }
 
     override fun reversed(): Matcher<I> = NegatedMatcher(matcher.reversed())
 

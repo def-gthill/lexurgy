@@ -490,6 +490,21 @@ class TestSoundChanger : StringSpec({
 
         ch2("paˈno") shouldBe "paˈnə"
         ch2("iniˈte") shouldBe "ɨniˈtə"
+
+        val ch3 = lsc(
+            """
+                Class vowel {a, e, i, o, u}
+                Class cons {p, t, k, s, m, n}
+                Class stop {p, t, k}
+                
+                final-vowel-loss:
+                    @vowel => * / @vowel @cons&!@stop _ $
+            """.trimIndent()
+        )
+
+        ch3("pano") shouldBe "pan"
+        ch3("pako") shouldBe "pako"
+        ch3("pao") shouldBe "pao"
     }
 
     "We should be able to copy a feature value out of an intersection" {

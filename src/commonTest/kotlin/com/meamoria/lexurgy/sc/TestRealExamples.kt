@@ -402,4 +402,19 @@ class TestRealExamples : StringSpec({
             ch(originalWord) shouldBe expectedWord
         }
     }
+
+    "This silly test should work" {
+        val ch = lsc(
+            """
+                Feature Type(*cons, vowel)
+                
+                Symbol a [vowel]
+                
+                k-only:
+                    !k => * / {[cons] _, _ [cons]}
+            """.trimIndent()
+        )
+
+        ch("ka") shouldBe "k"
+    }
 })
