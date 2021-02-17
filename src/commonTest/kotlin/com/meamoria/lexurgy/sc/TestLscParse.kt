@@ -6,7 +6,7 @@ import com.meamoria.mpp.kotest.*
 
 @Suppress("unused")
 class TestLscParse : StringSpec({
-    val parser = LscInterpreter(StringWalker())
+    val parser = LscInterpreter()
 
     "An entire lsc file should be parsable as a string" {
         parser.parseFile(
@@ -421,118 +421,4 @@ class TestLscParse : StringSpec({
         shouldThrow<LscNotParsable> { parser.parseValue("Cons") }
         shouldThrow<LscNotParsable> { parser.parseValue("=>") }
     }
-}) {
-    class StringWalker : LscWalker<String>() {
-        override fun walkFile(
-            featureDeclarations: List<String>,
-            diacriticDeclarations: List<String>,
-            symbolDeclarations: List<String>,
-            classDeclarations: List<String>,
-            deromanizer: String?,
-            changeRules: List<String>,
-            romanizer: String?,
-            intermediateRomanizers: List<RomanizerToFollowingRule<String>>
-        ): String = (
-                featureDeclarations + diacriticDeclarations + symbolDeclarations + classDeclarations +
-                        listOfNotNull(deromanizer) + changeRules + listOfNotNull(romanizer)
-                ).joinToString()
-
-        override fun walkClassDeclaration(className: String, elements: List<String>): String =
-            "cdec($className, ${elements.joinToString()})"
-
-        override fun walkFeatureDeclaration(
-            featureName: String,
-            nullAlias: String?,
-            values: List<String>,
-            implication: String?
-        ): String {
-            val nullAliasList = listOfNotNull(nullAlias?.let {"na($it)"})
-            val implicationList = listOfNotNull(implication?.let {"impl($it)"})
-            return "fdec($featureName, ${(nullAliasList + values + implicationList).joinToString()})"
-        }
-
-        override fun walkDiacriticDeclaration(
-            diacritic: String, matrix: String, before: Boolean, floating: Boolean
-        ): String =
-            "dia($diacritic, $matrix${if (before) ", bf" else ""}${if (floating) ", fl" else ""})"
-
-        override fun walkSymbolDeclaration(symbol: String, matrix: String?): String =
-            "sym($symbol${optionalArg(matrix)})"
-
-        override fun walkDeromanizer(subrules: List<String>, literal: Boolean): String =
-            "drom(${subrules.joinToString()}${if (literal) ", literal" else ""})"
-
-        override fun walkRomanizer(subrules: List<String>, literal: Boolean): String =
-            "rom(${subrules.joinToString()}${if (literal) ", literal" else ""})"
-
-        override fun walkIntermediateRomanizer(ruleName: String, subrules: List<String>, literal: Boolean): String =
-            "introm($ruleName, ${subrules.joinToString()}${if (literal) ", literal" else ""})"
-
-        override fun walkChangeRule(
-            ruleName: String,
-            subrules: List<String>,
-            ruleFilter: String?,
-            propagate: Boolean
-        ): String {
-            val expressionString =
-                if (subrules.size == 1) subrules.single() else subrules.joinToString(" then ") { "($it)" }
-            val filterText = optionalArg(ruleFilter, ", filter=$ruleFilter")
-            val propagateText = if (propagate) ", propagate" else ""
-            return "rule($ruleName, $expressionString$filterText$propagateText)"
-        }
-
-        override fun walkSubrule(expressions: List<String>): String = expressions.joinToString()
-
-        override fun walkRuleExpression(
-            ruleFrom: String,
-            ruleTo: String,
-            condition: String?,
-            exclusion: String?
-        ): String = "(from($ruleFrom), to($ruleTo)${optionalArg(condition)}${optionalArg(exclusion)})"
-
-        override fun walkDoNothingExpression(): String = "unchanged"
-
-        override fun walkRuleEnvironment(
-            text: String,
-            before: String?,
-            after: String?,
-        ): String {
-            val beforeText = optionalArg(before, "$before, ")
-            val afterText = optionalArg(after, ", $after")
-            return "env(${beforeText}_${afterText})"
-        }
-
-        override fun walkRuleSequence(text: String, items: List<String>): String = "seq(${items.joinToString()})"
-
-        override fun walkRuleList(items: List<String>): String = "list(${items.joinToString()})"
-
-        override fun walkIntersection(items: List<String>): String = "inter(${items.joinToString()})"
-
-        override fun walkNegatedElement(element: String): String = "!${element}"
-
-        override fun walkEmpty(): String = "null"
-
-        override fun walkBoundary(): String = "$"
-
-        override fun walkBetweenWords(): String = "$$"
-
-        override fun walkClassReference(value: String): String = "c($value)"
-
-        override fun walkCaptureReference(number: Int): String = "cap($number)"
-
-        override fun walkMatrix(values: List<String>): String = "mat(${values.joinToString()})"
-
-        override fun walkValue(name: String): String = "v($name)"
-
-        override fun walkFeature(name: String): String = "f($name)"
-
-        override fun walkText(text: String, exact: Boolean): String = text + if (exact) "!" else ""
-
-        override fun tlist(items: List<String>): String = items.joinToString("|")
-
-        override fun untlist(list: String): List<String> = list.split("|")
-
-        private fun optionalArg(inText: String?, outText: String? = null): String =
-            if (inText == null) "" else (outText ?: ", $inText")
-    }
-}
+})

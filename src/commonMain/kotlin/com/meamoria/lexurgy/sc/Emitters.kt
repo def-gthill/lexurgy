@@ -102,7 +102,7 @@ class TextEmitter<I : Segment<I>, O : Segment<O>>(val text: Word<O>) : SimpleEmi
     override fun toString(): String = text.string.ifEmpty { "*" }
 }
 
-class NullEmitter<I : Segment<I>, O : Segment<O>>(val outType: SegmentType<O>) : SimpleEmitter<I, O> {
+class EmptyEmitter<I : Segment<I>, O : Segment<O>>(val outType: SegmentType<O>) : SimpleEmitter<I, O> {
     override fun result(
         declarations: Declarations, matcher: SimpleMatcher<I>, original: Word<I>
     ): UnboundResult<O> =

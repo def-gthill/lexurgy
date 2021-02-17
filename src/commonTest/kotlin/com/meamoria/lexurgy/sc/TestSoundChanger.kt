@@ -110,6 +110,18 @@ class TestSoundChanger : StringSpec({
         ch2("baaaaaaabaaaaa") shouldBe "bzaqzx"
     }
 
+    "Rules with mismatched elements should produce an LscInvalidRuleExpression with a clear error message" {
+        shouldThrow<LscInvalidRuleExpression> {
+            lsc("badrule:\n   a => b c")
+        }.also {
+            it.cause.shouldBeInstanceOf<LscInvalidTransformation>()
+            it.message shouldBe """
+                Error in expression 1 ("a => b c") of rule "badrule"
+                Found 1 element ("a") on the left side of the arrow but 2 elements ("b", "c") on the right side
+            """.trimIndent()
+        }
+    }
+
     "Overlapping sequence rules should be resolved in precedence order" {
         val ch1 = lsc(
             """
@@ -751,18 +763,23 @@ class TestSoundChanger : StringSpec({
     }
 
     "Misplaced word boundaries should result in an LscInteriorWordBoundary" {
-        shouldThrow<LscInteriorWordBoundary> {
+        shouldThrow<LscInvalidRuleExpression> {
             lsc("foo:\no => a / _ $ o")
         }.also {
-            it.message shouldBe
-                    "A word boundary in \"$ o\" in the environment \"_ $ o\" needs to be at the beginning or end"
+            it.cause.shouldBeInstanceOf<LscInteriorWordBoundary>()
+            it.message shouldBe """
+                Error in expression 1 ("o => a / _ $ o") of rule "foo"
+                A word boundary in "$ o" in the environment "_ $ o" needs to be at the beginning or end
+            """.trimIndent()
         }
-        shouldThrow<LscInteriorWordBoundary> {
+        shouldThrow<LscInvalidRuleExpression> {
             lsc("foo:\no => a / $ e _ {a, i {$ o, o $}, e $}")
         }.also {
-            it.message shouldBe
-                    "A word boundary in \"$ o\" in the environment \"$ e _ {a, i {$ o, o $}, e $}\" " +
-                    "needs to be at the beginning or end"
+            it.cause.shouldBeInstanceOf<LscInteriorWordBoundary>()
+            it.message shouldBe """
+                Error in expression 1 ("o => a / $ e _ {a, i {$ o, o $}, e $}") of rule "foo"
+                A word boundary in "$ o" in the environment "$ e _ {a, i {$ o, o $}, e $}" needs to be at the beginning or end
+            """.trimIndent()
         }
     }
 
@@ -781,19 +798,23 @@ class TestSoundChanger : StringSpec({
     }
 
     "Repeated segments on the edge of a rule should result in an LscPeripheralRepeater" {
-        shouldThrow<LscPeripheralRepeater> {
+        shouldThrow<LscInvalidRuleExpression> {
             lsc("foo:\no => a / _ a*")
         }.also {
-            it.message shouldBe
-                    "The repeater \"a*\" in the environment \"_ a*\" is meaningless because it's at " +
-                    "the edge of the environment; remove it"
+            it.cause.shouldBeInstanceOf<LscPeripheralRepeater>()
+            it.message shouldBe """
+                Error in expression 1 ("o => a / _ a*") of rule "foo"
+                The repeater "a*" in the environment "_ a*" is meaningless because it's at the edge of the environment; remove it
+            """.trimIndent()
         }
-        shouldThrow<LscPeripheralRepeater> {
+        shouldThrow<LscInvalidRuleExpression> {
             lsc("foo:\no => a / f+ _")
         }.also {
-            it.message shouldBe
-                    "The repeater \"f+\" in the environment \"f+ _\" is meaningless because it's at " +
-                    "the edge of the environment; just use \"f\""
+            it.cause.shouldBeInstanceOf<LscPeripheralRepeater>()
+            it.message shouldBe """
+                Error in expression 1 ("o => a / f+ _") of rule "foo"
+                The repeater "f+" in the environment "f+ _" is meaningless because it's at the edge of the environment; just use "f"
+            """.trimIndent()
         }
     }
 
@@ -836,7 +857,15 @@ class TestSoundChanger : StringSpec({
 
         ch("ahafasa") shouldBe "ahavaza"
 
-        shouldThrow<LscInvalidOutputMatrix> { lsc("negated-in-output:\n[foo] => [!bar]") }
+        shouldThrow<LscInvalidRuleExpression> {
+            lsc("negated-in-output:\n[foo] => [!bar]")
+        }.also {
+            it.cause.shouldBeInstanceOf<LscInvalidOutputMatrix>()
+            it.message shouldBe """
+                Error in expression 1 ("[foo] => [!bar]") of rule "negated-in-output"
+                Feature matrix [!bar] has a negated feature, which isn't allowed in the output of a rule
+            """.trimIndent()
+        }
     }
 
     "An absent feature value should only match sounds that don't have any value from that feature" {
@@ -1073,7 +1102,7 @@ class TestSoundChanger : StringSpec({
             it.cause.shouldBeInstanceOf<LscReboundCapture>()
             it.message shouldBe
                     "Rule double-stop-epenthesis could not be applied to word ppa (originally ppa)\n" +
-                    "Reason: Capture variable 1 is bound more than once; " +
+                    "Capture variable 1 is bound more than once; " +
                     "replace the second with a capture reference (\"${'$'}1\")"
         }
     }
@@ -1148,8 +1177,24 @@ class TestSoundChanger : StringSpec({
         ch("onno") shouldBe "inn"
         ch("onni") shouldBe "onnai"
 
-        shouldThrow<LscInvalidRuleExpression> { lsc("harmony [vowel]:\n[low] * => [high] a") }
-        shouldThrow<LscInvalidRuleExpression> { lsc("harmony [vowel]:\n[low] ai => [high] a") }
+        shouldThrow<LscInvalidRuleExpression> {
+            lsc("harmony [vowel]:\n[low] * => [high] a")
+        }.also {
+            it.cause.shouldBeInstanceOf<LscInvalidTransformation>()
+            it.message shouldBe """
+                Error in expression 1 ("[low] * => [high] a") of rule "harmony"
+                Asterisks aren't allowed on the match side of filtered rules
+            """.trimIndent()
+        }
+        shouldThrow<LscInvalidRuleExpression> {
+            lsc("harmony [vowel]:\n[low] ai => [high] a")
+        }.also {
+            it.cause.shouldBeInstanceOf<LscInvalidTransformation>()
+            it.message shouldBe """
+                Error in expression 1 ("[low] ai => [high] a") of rule "harmony"
+                Multi-segment matches aren't allowed on the match side of filtered rules
+            """.trimIndent()
+        }
         shouldNotThrowAny { lsc("Symbol ai\nharmony [vowel]:\n[low] ai => [high] a") }
     }
 

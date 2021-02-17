@@ -9,7 +9,7 @@ classDecl: CLASS_DECL WHITESPACE value WHITESPACE LIST_START classElement (SEP c
 classElement: classRef | text;
 featureDecl:
     FEATURE_DECL WHITESPACE feature WHITESPACE?
-    O_PAREN (nullAlias SEP)? value (SEP value)* C_PAREN (CHANGE matrix)?;
+    O_PAREN (nullAlias SEP)? value (SEP value)* C_PAREN;
 nullAlias: NULL value;
 diacriticDecl:
     DIACRITIC WHITESPACE STR1 WHITESPACE

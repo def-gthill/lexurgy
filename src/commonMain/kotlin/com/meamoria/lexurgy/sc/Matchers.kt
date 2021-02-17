@@ -217,7 +217,7 @@ class NegatedMatcher<I : Segment<I>>(val matcher: Matcher<I>) : SimpleMatcher<I>
     override fun toString(): String = "!$matcher"
 }
 
-class NullMatcher<I : Segment<I>> : SimpleMatcher<I> {
+class EmptyMatcher<I : Segment<I>> : SimpleMatcher<I> {
     override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int =
         start
 
