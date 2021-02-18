@@ -8,25 +8,6 @@ import com.meamoria.mpp.kotest.*
 class TestLscParse : StringSpec({
     val parser = LscInterpreter()
 
-    "An entire lsc file should be parsable as a string" {
-        parser.parseFile(
-            """
-                a-rule:
-                x=>h
-            """.trimIndent()
-        ) shouldBe "rule(a-rule, (from(x), to(h)))"
-        parser.parseFile(
-            """
-               |Deromanizer:
-               |    c => x
-               |a-rule:
-               |    x => h
-               |Romanizer:
-               |    h => '
-            """.trimMargin()
-        ) shouldBe "drom((from(c), to(x))), rule(a-rule, (from(x), to(h))), rom((from(h), to(')))"
-    }
-
     val statements = listOf(
         "Feature Foo(foo, bar)",
         "Diacritic ́  [stressed]",
@@ -188,14 +169,7 @@ class TestLscParse : StringSpec({
         }
     }
 
-    "A feature declaration should be parsable as a string" {
-        parser.parseFeatureDeclaration("Feature Type(cons, vowel)") shouldBe "fdec(f(Type), v(cons), v(vowel))"
-        parser.parseFeatureDeclaration(
-            "Feature Rounding(*unrnd, rnd)"
-        ) shouldBe "fdec(f(Rounding), na(v(unrnd)), v(rnd))"
-        parser.parseFeatureDeclaration(
-            "Feature Nasal(*unnas, nas) => [cons]"
-        ) shouldBe "fdec(f(Nasal), na(v(unnas)), v(nas), impl(mat(v(cons))))"
+    "Bad feature declarations should be rejected" {
         shouldThrow<LscNotParsable> { parser.parseFeatureDeclaration("Feature type(cons, vowel)") }.also {
             it.message should startWith("A feature can't be called \"type\"; feature names must start with an uppercase letter")
         }
@@ -209,39 +183,19 @@ class TestLscParse : StringSpec({
         }
     }
 
-    "A diacritic declaration should be parsable as a string" {
-        parser.parseDiacriticDeclaration("Diacritic ʰ [aspir]") shouldBe "dia(ʰ, mat(v(aspir)))"
-        parser.parseDiacriticDeclaration("Diacritic ̥  [unvcd]") shouldBe "dia(̥, mat(v(unvcd)))"
-        parser.parseDiacriticDeclaration("Diacritic ˈ (before) [str]") shouldBe "dia(ˈ, mat(v(str)), bf)"
+    "Bad diacritic declarations should be rejected" {
         shouldThrow<LscNotParsable> { parser.parseDiacriticDeclaration("ʰ [aspir]") }
         shouldThrow<LscNotParsable> { parser.parseDiacriticDeclaration("Diacritic ʰ aspir") }
         shouldThrow<LscNotParsable> { parser.parseDiacriticDeclaration("Diacritic ʰʰ [aspir]") }
         shouldThrow<LscNotParsable> { parser.parseDiacriticDeclaration("=>") }
     }
 
-    "A symbol declaration should be parsable as a string" {
-        parser.parseSymbolDeclaration("Symbol p [stop unvcd lab]") shouldBe "sym(p, mat(v(stop), v(unvcd), v(lab)))"
-        parser.parseSymbolDeclaration("Symbol ᵑg [stop nas vcd vel]") shouldBe "sym(ᵑg, mat(v(stop), v(nas), v(vcd), v(vel)))"
-        parser.parseSymbolDeclaration("Symbol stoopid [dumb idiotic]") shouldBe "sym(stoopid, mat(v(dumb), v(idiotic)))"
+    "Bad symbol declarations should be rejected" {
         shouldThrow<LscNotParsable> { parser.parseSymbolDeclaration("Symbol blah blah [blah]") }
         shouldThrow<LscNotParsable> { parser.parseSymbolDeclaration("=>") }
     }
 
-    "A deromanizer should be parsable as a string" {
-        parser.parseDeromanizer(
-            """
-               |Deromanizer:
-               |    c => x
-               |    ' => ʔ
-            """.trimMargin()
-        ) shouldBe "drom((from(c), to(x)), (from('), to(ʔ)))"
-        parser.parseDeromanizer(
-            """
-               |Deromanizer:
-               |    c => s / _ {e, i}
-               |    c => k
-            """.trimMargin()
-        ) shouldBe "drom((from(c), to(s), env(_, list(e, i))), (from(c), to(k)))"
+    "Bad deromanizers should be rejected" {
         shouldThrow<LscNotParsable> {
             parser.parseDeromanizer(
                 """
@@ -269,40 +223,6 @@ class TestLscParse : StringSpec({
         }
         shouldThrow<LscNotParsable> { parser.parseDeromanizer("Deromanizer a => a") }
         shouldThrow<LscNotParsable> { parser.parseDeromanizer("=>") }
-    }
-
-    "A change rule should be parsable as a string" {
-        parser.parseChangeRule(
-            """
-               |velar-fricative:
-               |    x => h
-            """.trimMargin()
-        ) shouldBe "rule(velar-fricative, (from(x), to(h)))"
-        parser.parseChangeRule(
-            """
-               |remove-stress:
-               |    [str] => [unstr]
-            """.trimMargin()
-        ) shouldBe "rule(remove-stress, (from(mat(v(str))), to(mat(v(unstr)))))"
-        parser.parseChangeRule(
-            """
-               |intervoc-voice:
-               |    [stop] => [vcd] / [vowel] _ [vowel]
-            """.trimMargin()
-        ) shouldBe "rule(intervoc-voice, (from(mat(v(stop))), to(mat(v(vcd))), env(mat(v(vowel)), _, mat(v(vowel)))))"
-        parser.parseChangeRule(
-            """
-               |intervoc-voice:
-               |    {p, t, k} => {b, d, g} / [vowel] _ [vowel]
-            """.trimMargin()
-        ) shouldBe
-                "rule(intervoc-voice, (from(list(p, t, k)), to(list(b, d, g)), env(mat(v(vowel)), _, mat(v(vowel)))))"
-        parser.parseChangeRule(
-            """
-               |delete-h:
-               |    h => *
-            """.trimMargin()
-        ) shouldBe "rule(delete-h, (from(h), to(null)))"
     }
 
     "A change rule with no '_' anchor should throw an error with a helpful message" {
@@ -356,21 +276,7 @@ class TestLscParse : StringSpec({
         }
     }
 
-    "A romanizer should be parsable as a string" {
-        parser.parseRomanizer(
-            """
-               |Romanizer:
-               |    x => c
-               |    ʔ => '
-            """.trimMargin()
-        ) shouldBe "rom((from(x), to(c)), (from(ʔ), to(')))"
-        parser.parseRomanizer(
-            """
-               |Romanizer:
-               |    f => v / [vowel] _ [vowel]
-               |    f => ph
-            """.trimMargin()
-        ) shouldBe "rom((from(f), to(v), env(mat(v(vowel)), _, mat(v(vowel)))), (from(f), to(ph)))"
+    "Bad romanizers should be rejected" {
         shouldThrow<LscNotParsable> {
             parser.parseRomanizer(
                 """
@@ -400,24 +306,18 @@ class TestLscParse : StringSpec({
         shouldThrow<LscNotParsable> { parser.parseRomanizer("=>") }
     }
 
-    "A matrix should be parsable as a string" {
-        parser.parseMatrix("[cons]") shouldBe "mat(v(cons))"
-        parser.parseMatrix("[stop unvcd lab]") shouldBe "mat(v(stop), v(unvcd), v(lab))"
+    "Bad matrices should be rejected" {
         shouldThrow<LscNotParsable> { parser.parseMatrix("cons") }
         shouldThrow<LscNotParsable> { parser.parseMatrix("[stop, unvcd, lab]") }
         shouldThrow<LscNotParsable> { parser.parseMatrix("=>") }
     }
 
-    "A feature reference should be parsable as a string" {
-        parser.parseFeature("Place") shouldBe "f(Place)"
-        parser.parseFeature("Manner") shouldBe "f(Manner)"
+    "Bad feature references should be rejected" {
         shouldThrow<LscNotParsable> { parser.parseFeature("place") }
         shouldThrow<LscNotParsable> { parser.parseFeature("=>") }
     }
 
-    "A lowercase word should be parsable as a string" {
-        parser.parseValue("cons") shouldBe "v(cons)"
-        parser.parseValue("vowel") shouldBe "v(vowel)"
+    "Bad feature values should be rejected" {
         shouldThrow<LscNotParsable> { parser.parseValue("Cons") }
         shouldThrow<LscNotParsable> { parser.parseValue("=>") }
     }

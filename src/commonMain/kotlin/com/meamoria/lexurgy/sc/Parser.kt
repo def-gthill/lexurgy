@@ -426,7 +426,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         )
 
     override fun visitText(ctx: TextContext): ParseNode =
-        walkText(removeEscapes(ctx.getChild(0).getText()), ctx.NEGATION() != null)
+        walkText(ctx.getText(), removeEscapes(ctx.getChild(0).getText()), ctx.NEGATION() != null)
 
     private fun removeEscapes(text: String): String =
         text.split("\\\\").joinToString("\\") {
@@ -443,43 +443,24 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         changeRules: List<ParseNode>,
         romanizer: ParseNode?,
         intermediateRomanizers: List<RomanizerToFollowingRule<ParseNode>>
-    ): ParseNode {
-        val declarations = Declarations(
-            featureDeclarations.map { (it as FeatureDeclarationNode).feature },
-            diacriticDeclarations.map { (it as DiacriticDeclarationNode).diacritic },
-            symbolDeclarations.flatMap { sublist ->
-                (sublist as ParseNodeList).elements.map { (it as SymbolDeclarationNode).symbol }
-            },
-            resolveClasses(classDeclarations)
-        )
-        val linkedRules = changeRules.map { (it as UnlinkedChangeRule).link(declarations) }
-        val linkedDeromanizer =
-            (deromanizer as UnlinkedDeromanizer?)?.link(declarations) ?: Deromanizer.empty(declarations)
-        val linkedRomanizer =
-            (romanizer as UnlinkedRomanizer?)?.link(declarations) ?: Romanizer.empty()
-        val linkedIntermediateRomanizers = intermediateRomanizers.groupBy {
-            (it.rule as UnlinkedChangeRule?)?.name
-        }.mapValues { (_, value) ->
-            value.map { (it.romanizer as UnlinkedIntermediateRomanizer).link(declarations) }
-        }
-        return SoundChangerNode(
-            text,
-            SoundChanger(
-                declarations,
-                linkedRules,
-                linkedDeromanizer,
-                linkedRomanizer,
-                linkedIntermediateRomanizers
-            )
-        )
-    }
+    ): ParseNode = SoundChangerNodeImpl(
+        text,
+        featureDeclarations,
+        diacriticDeclarations,
+        symbolDeclarations,
+        classDeclarations,
+        deromanizer,
+        changeRules,
+        romanizer,
+        intermediateRomanizers
+    )
 
     private fun resolveClasses(classDeclarations: List<ParseNode>): List<SegmentClass> {
         val classes = mutableMapOf<String, SegmentClass>()
         for (classDeclaration in classDeclarations) {
             val classNode = classDeclaration as ClassDeclarationNode
             val newClassSounds = classNode.elements.flatMap {
-                if (it is TextNode) listOf(it.text)
+                if (it is TextNode) listOf(it.literalText)
                 else {
                     val nestedName = (it as ClassReferenceElement).name
                     classes[nestedName]?.sounds ?: throw LscUndefinedName("class", nestedName)
@@ -690,7 +671,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     private fun walkSimpleElement(
         element: ParseNode,
     ): ParseNode = when (element) {
-        is TextNode -> TextElement(element.text, element.exact)
+        is TextNode -> TextElement(element.text, element.literalText, element.exact)
         is MatrixNode -> MatrixElement(element.text, element.matrix)
         else -> element
     }
@@ -701,7 +682,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     ): ParseNode = NegatedElement(
         text,
         when (element) {
-            is TextNode -> TextElement(element.text, element.exact)
+            is TextNode -> TextElement(element.text, element.literalText, element.exact)
             else -> element as RuleElement
         }
     )
@@ -771,26 +752,29 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     private fun walkFeature(
         text: String,
-        name: String
+        name: String,
     ): ParseNode = FeatureNode(text, name)
 
     private fun walkValue(
         text: String,
-        name: String
+        name: String,
     ): ParseNode = SimpleValueNode(text, SimpleValue(name))
 
     private fun walkText(
         text: String,
-        exact: Boolean
-    ): ParseNode = TextNode(text, exact)
+        literalText: String,
+        exact: Boolean,
+    ): ParseNode = TextNode(text, literalText, exact)
 
-    private data class ParseNodeList(val elements: List<ParseNode>) : BaseParseNode(elements.joinToString())
+    private data class ParseNodeList(
+        val elements: List<ParseNode>
+    ) : BaseParseNode(elements.joinToString())
 
     private fun unpackParseNodeList(node: ParseNode): List<ParseNode> = (node as ParseNodeList).elements
 
     interface ParseNode {
         /**
-         * The original text that
+         * The original text that was parsed to produce this node
          */
         val text: String
     }
@@ -799,10 +783,48 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         override fun toString(): String = text
     }
 
-    class SoundChangerNode(
+    interface SoundChangerNode {
+        val soundChanger: SoundChanger
+    }
+
+    private class SoundChangerNodeImpl(
         text: String,
-        val soundChanger: SoundChanger,
-    ) : BaseParseNode(text)
+        private val featureDeclarations: List<ParseNode>,
+        private val diacriticDeclarations: List<ParseNode>,
+        private val symbolDeclarations: List<ParseNode>,
+        private val classDeclarations: List<ParseNode>,
+        private val deromanizer: ParseNode?,
+        private val changeRules: List<ParseNode>,
+        private val romanizer: ParseNode?,
+        private val intermediateRomanizers: List<RomanizerToFollowingRule<ParseNode>>,
+    ) : BaseParseNode(text), SoundChangerNode {
+        private val declarations = Declarations(
+            featureDeclarations.map { (it as FeatureDeclarationNode).feature },
+            diacriticDeclarations.map { (it as DiacriticDeclarationNode).diacritic },
+            symbolDeclarations.flatMap { sublist ->
+                (sublist as ParseNodeList).elements.map { (it as SymbolDeclarationNode).symbol }
+            },
+            resolveClasses(classDeclarations)
+        )
+        private val linkedRules = changeRules.map { (it as UnlinkedChangeRule).link(declarations) }
+        private val linkedDeromanizer =
+            (deromanizer as UnlinkedDeromanizer?)?.link(declarations) ?: Deromanizer.empty(declarations)
+        private val linkedRomanizer =
+            (romanizer as UnlinkedRomanizer?)?.link(declarations) ?: Romanizer.empty()
+        private val linkedIntermediateRomanizers = intermediateRomanizers.groupBy {
+            (it.rule as UnlinkedChangeRule?)?.name
+        }.mapValues { (_, value) ->
+            value.map { (it.romanizer as UnlinkedIntermediateRomanizer).link(declarations) }
+        }
+
+        override val soundChanger = SoundChanger(
+            declarations,
+            linkedRules,
+            linkedDeromanizer,
+            linkedRomanizer,
+            linkedIntermediateRomanizers
+        )
+    }
 
     private class FeatureDeclarationNode(
         text: String,
@@ -915,9 +937,11 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         val expressions: List<List<UnlinkedRuleExpression>>,
         val literal: Boolean,
     ) : BaseParseNode(text) {
+        private val internalRomanizer = UnlinkedRomanizer(text, expressions, literal, name)
+
         fun link(declarations: Declarations): SoundChanger.IntermediateRomanizer =
             SoundChanger.IntermediateRomanizer(
-                name, UnlinkedRomanizer(text, expressions, literal, name).link(declarations)
+                name, internalRomanizer.link(declarations)
             )
     }
 
@@ -1085,7 +1109,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             foundInPlain()
     }
 
-    private object WordBoundaryElement : BaseUnlinkedRule("$"), ChameleonRuleElement {
+    private object WordBoundaryElement : BaseParseNode("$"), ChameleonRuleElement {
         override fun <T : Segment<T>> link(pos: RulePos): Matcher<T> =
             when (pos) {
                 RulePos.ENV_START -> WordStartMatcher()
@@ -1094,7 +1118,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             }
     }
 
-    private object BetweenWordsElement : BaseUnlinkedRule("$$"), ChameleonRuleElement {
+    private object BetweenWordsElement : BaseParseNode("$$"), ChameleonRuleElement {
         override fun <T : Segment<T>> link(pos: RulePos): Matcher<T> =
             BetweenWordsMatcher()
     }
@@ -1198,30 +1222,30 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
         override fun <I : Segment<I>, O : Segment<O>> emitter(elements: List<Emitter<I, O>>): Emitter<I, O> =
             throw LscIntersectionInOutput(elements)
-
     }
 
     private class TextElement(
         text: String,
+        val literalText: String,
         val exact: Boolean = false,
     ) : BaseParseNode(text), ResultElement {
-        override fun plain(pos: RulePos): Matcher<PlainS> = TextMatcher(PlainWord(text))
+        override fun plain(pos: RulePos): Matcher<PlainS> = TextMatcher(PlainWord(literalText))
 
         override fun phonetic(pos: RulePos, declarations: Declarations): Matcher<PhonS> =
-            declarations.parsePhonetic(text).let {
+            declarations.parsePhonetic(literalText).let {
                 if (exact) TextMatcher(it) else SymbolMatcher(it)
             }
 
         override fun inPhoneticEmitter(declarations: Declarations): Emitter<PhonS, PlainS> =
-            TextEmitter(PlainWord(text))
+            TextEmitter(PlainWord(literalText))
 
         override fun outPhoneticEmitter(declarations: Declarations): Emitter<PlainS, PhonS> =
-            declarations.parsePhonetic(text).let {
+            declarations.parsePhonetic(literalText).let {
                 if (exact) TextEmitter(it) else SymbolEmitter(it)
             }
 
         override fun phoneticEmitter(declarations: Declarations): Emitter<PhonS, PhonS> =
-            declarations.parsePhonetic(text).let {
+            declarations.parsePhonetic(literalText).let {
                 if (exact) TextEmitter(it) else SymbolEmitter(it)
             }
     }
@@ -1266,12 +1290,12 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     ) : PhoneticOnlyResultElement(text) {
         override fun phonetic(pos: RulePos, declarations: Declarations): Matcher<PhonS> =
             with(declarations) {
-                ListMatcher(name.toClass().sounds.map { TextElement(it).phonetic(pos, this) })
+                ListMatcher(name.toClass().sounds.map { TextElement(it, it).phonetic(pos, this) })
             }
 
         override fun phoneticEmitter(declarations: Declarations): Emitter<PhonS, PhonS> =
             with(declarations) {
-                ListEmitter(name.toClass().sounds.map { TextElement(it).phoneticEmitter(this) })
+                ListEmitter(name.toClass().sounds.map { TextElement(it, it).phoneticEmitter(this) })
             }
 
         override fun foundInPlain(): Nothing = throw LscClassInPlain(name)
@@ -1317,6 +1341,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     private class TextNode(
         text: String,
+        val literalText: String,
         val exact: Boolean
     ) : BaseParseNode(text)
 
