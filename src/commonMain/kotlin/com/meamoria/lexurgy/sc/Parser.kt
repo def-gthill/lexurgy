@@ -1207,10 +1207,10 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         override val elements: List<RuleElement>,
     ) : ContainerResultElement(text) {
 
-        override fun <T : Segment<T>> matcher(elements: List<Matcher<T>>): Matcher<T> = ListMatcher(elements)
+        override fun <T : Segment<T>> matcher(elements: List<Matcher<T>>): Matcher<T> = AlternativeMatcher(elements)
 
         override fun <I : Segment<I>, O : Segment<O>> emitter(elements: List<Emitter<I, O>>): Emitter<I, O> =
-            ListEmitter(elements)
+            AlternativeEmitter(elements)
     }
 
     private class IntersectionElement(
@@ -1290,12 +1290,12 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     ) : PhoneticOnlyResultElement(text) {
         override fun phonetic(pos: RulePos, declarations: Declarations): Matcher<PhonS> =
             with(declarations) {
-                ListMatcher(name.toClass().sounds.map { TextElement(it, it).phonetic(pos, this) })
+                AlternativeMatcher(name.toClass().sounds.map { TextElement(it, it).phonetic(pos, this) })
             }
 
         override fun phoneticEmitter(declarations: Declarations): Emitter<PhonS, PhonS> =
             with(declarations) {
-                ListEmitter(name.toClass().sounds.map { TextElement(it, it).phoneticEmitter(this) })
+                AlternativeEmitter(name.toClass().sounds.map { TextElement(it, it).phoneticEmitter(this) })
             }
 
         override fun foundInPlain(): Nothing = throw LscClassInPlain(name)

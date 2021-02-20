@@ -42,7 +42,7 @@ class SequenceTransformer<I : Segment<I>, O : Segment<O>>(
     }
 }
 
-class ListTransformer<I : Segment<I>, O : Segment<O>>(
+class AlternativeTransformer<I : Segment<I>, O : Segment<O>>(
     val elements: List<Transformer<I, O>>
 ) : Transformer<I, O> {
     override fun transform(
@@ -60,6 +60,21 @@ class ListTransformer<I : Segment<I>, O : Segment<O>>(
             }
         }
         return null
+    }
+}
+
+class RepeaterTransformer<I : Segment<I>, O : Segment<O>>(
+    val matcher: Matcher<I>,
+    val emitter: Emitter<I, O>,
+) : Transformer<I, O> {
+    override fun transform(
+        order: Int,
+        declarations: Declarations,
+        words: List<Word<I>>,
+        start: WordListIndex,
+        bindings: Bindings
+    ): UnboundTransformation<O>? {
+        TODO("Not yet implemented")
     }
 }
 
@@ -114,8 +129,8 @@ class CaptureTransformer<O : Segment<O>>(
 }
 
 class SimpleTransformer<I : Segment<I>, O : Segment<O>>(
-    val matcher: SimpleMatcher<I>,
-    val emitter: SimpleEmitter<I, O>
+    val matcher: Matcher<I>,
+    val emitter: Emitter<I, O>,
 ) : Transformer<I, O> {
     override fun transform(
         order: Int,
@@ -126,7 +141,11 @@ class SimpleTransformer<I : Segment<I>, O : Segment<O>>(
     ): UnboundTransformation<O>? {
         val claimEnd = matcher.claim(declarations, words, start, bindings) ?: return null
         val claim = words.slice(start, claimEnd)
-        val result = emitter.result(declarations, matcher, claim)
+        val result = when (emitter) {
+            is ConditionalEmitter -> emitter.result(declarations, matcher as SimpleMatcher, claim)
+            is SimpleEmitter -> emitter.result()
+            else -> throw ClassCastException("Complex emitter in simple transformer")
+        }
         return UnboundTransformation(order, start, claimEnd, result)
     }
 }

@@ -25,6 +25,30 @@ interface Matcher<I : Segment<I>> {
     ): Int?
 
     fun reversed(): Matcher<I>
+
+    /**
+     * Returns a ``SubSequence`` that identifies whether this matcher
+     * contains an accessible sequence of other matchers. This may
+     * "lift" nested sequences out of their containing matcher.
+     */
+    fun subSequence(): SubSequence<Matcher<I>>
+
+    /**
+     * Returns a ``SubAlternatives`` that identifies whether this
+     * matcher contains an accessible list of alternative matchers.
+     * This may "lift" nested alternatives out of their containing
+     * matcher.
+     */
+    fun subAlternatives(): SubAlternatives<Matcher<I>>
+}
+
+/**
+ * A matcher that isn't a container for other matchers
+ */
+interface SimpleMatcher<I : Segment<I>> : Matcher<I> {
+    override fun subAlternatives(): SubAlternatives<Matcher<I>> = OneAlternative
+
+    override fun subSequence(): SubSequence<Matcher<I>> = NonSequence
 }
 
 class BetweenWordsMatcher<I : Segment<I>> : SimpleMatcher<I> {
@@ -47,7 +71,7 @@ class BetweenWordsMatcher<I : Segment<I>> : SimpleMatcher<I> {
     override fun toString(): String = "$$"
 }
 
-class WordStartMatcher<I : Segment<I>> : Matcher<I> {
+class WordStartMatcher<I : Segment<I>> : SimpleMatcher<I> {
     override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int? =
         start.takeIf { it == 0 }
 
@@ -56,7 +80,7 @@ class WordStartMatcher<I : Segment<I>> : Matcher<I> {
     override fun toString(): String = "$"
 }
 
-class WordEndMatcher<I : Segment<I>> : Matcher<I> {
+class WordEndMatcher<I : Segment<I>> : SimpleMatcher<I> {
     override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int? =
         start.takeIf { it == word.length }
 
@@ -77,6 +101,10 @@ class SequenceMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : Matcher<
     override fun reversed(): Matcher<I> = SequenceMatcher(elements.asReversed().map { it.reversed() })
 
     override fun toString(): String = elements.joinToString(separator = " ", prefix = "(", postfix = ")")
+
+    override fun subAlternatives(): SubAlternatives<Matcher<I>> = OneAlternative
+
+    override fun subSequence(): SubSequence<Matcher<I>> = DefiniteSequence(elements)
 }
 
 class RepeaterMatcher<I : Segment<I>>(val element: Matcher<I>, val type: RepeaterType) : Matcher<I> {
@@ -94,9 +122,13 @@ class RepeaterMatcher<I : Segment<I>>(val element: Matcher<I>, val type: Repeate
     override fun reversed(): Matcher<I> = RepeaterMatcher(element.reversed(), type)
 
     override fun toString(): String = "$element${type.string}"
+
+    override fun subAlternatives(): SubAlternatives<Matcher<I>> = OneAlternative
+
+    override fun subSequence(): SubSequence<Matcher<I>> = IndefiniteSequence(listOf(element))
 }
 
-class ListMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : Matcher<I> {
+class AlternativeMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : Matcher<I> {
     override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int? {
         for (element in elements) {
             val altBindings = bindings.copy()
@@ -108,9 +140,13 @@ class ListMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : Matcher<I> {
         return null
     }
 
-    override fun reversed(): Matcher<I> = ListMatcher(elements.map { it.reversed() })
+    override fun reversed(): Matcher<I> = AlternativeMatcher(elements.map { it.reversed() })
 
     override fun toString(): String = elements.joinToString(prefix = "{", postfix = "}")
+
+    override fun subAlternatives(): SubAlternatives<Matcher<I>> = ManyAlternatives(elements)
+
+    override fun subSequence(): SubSequence<Matcher<I>> = NonSequence
 }
 
 class IntersectionMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : Matcher<I> {
@@ -130,6 +166,16 @@ class IntersectionMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : Matc
     override fun reversed(): Matcher<I> = IntersectionMatcher(elements.map { it.reversed() })
 
     override fun toString(): String = elements.joinToString("&")
+
+    override fun subAlternatives(): SubAlternatives<Matcher<I>> =
+        elements.first().subAlternatives().map {
+            IntersectionMatcher(listOf(it) + elements.drop(1))
+        }
+
+    override fun subSequence(): SubSequence<Matcher<I>> =
+        elements.first().subSequence().map {
+            IntersectionMatcher(listOf(it) + elements.drop(1))
+        }
 }
 
 class CaptureMatcher(val element: Matcher<PhonS>, val number: Int) : Matcher<PhonS> {
@@ -143,12 +189,12 @@ class CaptureMatcher(val element: Matcher<PhonS>, val number: Int) : Matcher<Pho
         }
 
     override fun reversed(): Matcher<PhonS> = CaptureMatcher(element.reversed(), number)
-}
 
-/**
- * A matcher that isn't a container for other matchers
- */
-interface SimpleMatcher<I : Segment<I>> : Matcher<I>
+    override fun subAlternatives(): SubAlternatives<Matcher<PhonS>> =
+        element.subAlternatives().map { CaptureMatcher(it, number) }
+
+    override fun subSequence(): SubSequence<Matcher<PhonS>> = NonSequence
+}
 
 class CaptureReferenceMatcher(val number: Int) : SimpleMatcher<PhonS> {
     override fun claim(declarations: Declarations, word: Word<PhonS>, start: Int, bindings: Bindings): Int? =

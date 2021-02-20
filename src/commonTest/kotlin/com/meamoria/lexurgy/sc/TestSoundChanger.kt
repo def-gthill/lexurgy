@@ -797,6 +797,32 @@ class TestSoundChanger : StringSpec({
         ch("enmnenmni") shouldBe "enmninmni"
     }
 
+    "We should be able to change repeaters into things" {
+        val ch = lsc(
+            """
+                Feature Height(low, high)
+                Symbol a [low]
+                Symbol i [high]
+                any-number-of-i-to-j:
+                    i+ => j / k _ a
+                any-number-of-a-all-high:
+                    a+ => [high] / t _
+                s-palatal-and-swallow-c:
+                    s c? => ʃ * / _ i
+            """.trimIndent()
+        )
+
+        ch("kiiia") shouldBe "kja"
+        ch("taaaaba") shouldBe "tiiiiba"
+        ch("sciensia") shouldBe "ʃienʃia"
+    }
+
+    "But we shouldn't be able to put repeaters on the output side" {
+        shouldThrow<LscInvalidRuleExpression> {
+            lsc("foo:\no => a+ / _ a")
+        }
+    }
+
     "Repeated segments on the edge of a rule should result in an LscPeripheralRepeater" {
         shouldThrow<LscInvalidRuleExpression> {
             lsc("foo:\no => a / _ a*")

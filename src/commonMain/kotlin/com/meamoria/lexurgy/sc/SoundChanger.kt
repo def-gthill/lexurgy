@@ -375,46 +375,81 @@ class RuleExpression<I : Segment<I>, O : Segment<O>>(
 
 
     private fun makeTransformerChecked(match: Matcher<I>, result: Emitter<I, O>): Transformer<I, O> =
-        if (match is CaptureMatcher) {
-            @Suppress("UNCHECKED_CAST")
-            CaptureTransformer(
-                makeTransformer(match.element as Matcher<I>, result) as Transformer<PhonS, O>, match.number
-            ) as Transformer<I, O>
-        } else if (match is IntersectionMatcher) {
-            IntersectionTransformer(makeTransformer(match.elements.first(), result), match.elements.drop(1))
-        } else if (match is ListMatcher) {
-            if (result is ListEmitter) {
-                if (match.elements.size == result.elements.size) {
-                    ListTransformer(match.elements.zip(result.elements, this::makeTransformer))
-                } else {
-                    mismatchedLengths(match, result, match.elements, result.elements)
+        when (val matchAlts = match.subAlternatives()) {
+            is ManyAlternatives ->
+                when (val resultAlts = result.subAlternatives()) {
+                    is ManyAlternatives ->
+                        if (matchAlts.length == resultAlts.length) {
+                            AlternativeTransformer(
+                                matchAlts.elements.zip(resultAlts.elements, this::makeTransformer)
+                            )
+                        } else {
+                            mismatchedLengths(match, result, matchAlts.elements, resultAlts.elements)
+                        }
+                    is OneAlternative ->
+                        AlternativeTransformer(
+                            matchAlts.elements.map { makeTransformer(it, result) }
+                        )
                 }
-            } else {
-                ListTransformer(match.elements.map { makeTransformer(it, result) })
-            }
-        } else if (result is ListEmitter) {
-            mismatchedLengths(match, result, listOf(match), result.elements)
-        } else if (match is SequenceMatcher) {
-            if (result is SequenceEmitter) {
-                if (match.elements.size == result.elements.size) {
-                    SequenceTransformer(outType, match.elements.zip(result.elements, this::makeTransformer))
-                } else {
-                    mismatchedLengths(match, result, match.elements, result.elements)
+            is OneAlternative ->
+                when (val resultAlts = result.subAlternatives()) {
+                    is ManyAlternatives ->
+                        mismatchedLengths(match, result, listOf(match), resultAlts.elements)
+                    is OneAlternative ->
+                        when (val matchSeq = match.subSequence()) {
+                            is DefiniteSequence ->
+                                when (val resultSeq = result.subSequence()) {
+                                    is DefiniteSequence ->
+                                        if (matchSeq.length == resultSeq.length) {
+                                            SequenceTransformer(
+                                                outType,
+                                                matchSeq.elements.zip(resultSeq.elements, this::makeTransformer),
+                                            )
+                                        } else {
+                                            mismatchedLengths(match, result, matchSeq.elements, resultSeq.elements)
+                                        }
+                                    is IndefiniteSequence -> indefiniteSequenceInOutput(result)
+                                    is NonSequence ->
+                                        if (result.isSimple()) {
+                                            SimpleTransformer(match, result)
+                                        } else {
+                                            mismatchedLengths(match, result, matchSeq.elements, listOf(result))
+                                        }
+                                }
+                            is IndefiniteSequence ->
+                                when (val resultSeq = result.subSequence()) {
+                                    is DefiniteSequence ->
+                                        if (result.isSimple()) {
+                                            SimpleTransformer(match, result)
+                                        } else {
+                                            mismatchedLengths(match, result, listOf(match), resultSeq.elements)
+                                        }
+                                    is IndefiniteSequence -> indefiniteSequenceInOutput(result)
+                                    is NonSequence ->
+                                        if (result.isSimple()) {
+                                            SimpleTransformer(match, result)
+                                        } else {
+                                            RepeaterTransformer(match, result)
+                                        }
+                                }
+                            is NonSequence ->
+                                when (val resultSeq = result.subSequence()) {
+                                    is DefiniteSequence ->
+                                        if (result.isSimple()) {
+                                            SimpleTransformer(match, result)
+                                        } else {
+                                            mismatchedLengths(match, result, listOf(match), resultSeq.elements)
+                                        }
+                                    is IndefiniteSequence -> indefiniteSequenceInOutput(result)
+                                    is NonSequence ->
+                                        if (result is MatrixEmitter && result.matrix.valueList.any { it is NegatedValue }) {
+                                            throw LscInvalidOutputMatrix(result.matrix, "negated feature")
+                                        } else {
+                                            SimpleTransformer(match, result)
+                                        }
+                                }
+                        }
                 }
-            } else {
-                mismatchedLengths(match, result, match.elements, listOf(result))
-            }
-        } else if (result is SequenceEmitter) {
-            mismatchedLengths(match, result, listOf(match), result.elements)
-        } else if (match is SimpleMatcher && result is SimpleEmitter) {
-            if (result is MatrixEmitter && result.matrix.valueList.any { it is NegatedValue }) {
-                throw LscInvalidOutputMatrix(result.matrix, "negated feature")
-            }
-            SimpleTransformer(match, result)
-        } else {
-            throw IllegalArgumentException(
-                "Invalid element types: ${match::class.simpleName} and ${result::class.simpleName}"
-            )
         }
 
     private fun mismatchedLengths(
@@ -426,6 +461,9 @@ class RuleExpression<I : Segment<I>, O : Segment<O>>(
                 "but ${enpl(resultElements.size, "element")} " +
                 "(${resultElements.joinToString { "\"$it\"" }}) on the right side"
     )
+
+    private fun indefiniteSequenceInOutput(result: Emitter<I, O>): Nothing =
+        TODO()
 
     fun claim(expressionNumber: Int, words: List<Word<I>>): List<Transformation<O>> {
         var index = WordListIndex(0, 0)

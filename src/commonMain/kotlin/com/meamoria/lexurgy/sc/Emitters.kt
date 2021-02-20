@@ -4,17 +4,69 @@ import com.meamoria.lexurgy.*
 
 typealias UnboundResult<T> = (Bindings) -> List<Word<T>>
 
-interface Emitter<I : Segment<I>, O : Segment<O>>
+interface Emitter<I : Segment<I>, O : Segment<O>> {
+    /**
+     * Returns a ``SubSequence`` that identifies whether
+     * this emitter contains an accessible sequence of other emitters.
+     * This may "lift" nested sequences out of their containing emitter.
+     */
+    fun subSequence(): SubSequence<Emitter<I, O>>
+
+    /**
+     * Returns a ``SubAlternatives`` that identifies whether this
+     * emitter contains an accessible list of alternative emitters.
+     * This may "lift" nested alternatives out of their containing
+     * emitter.
+     */
+    fun subAlternatives(): SubAlternatives<Emitter<I, O>>
+
+    /**
+     * Tests if this emitter is simple, i.e. its result doesn't depend
+     * on any matchers. An emitter is simple if and only if it
+     * has no ``ConditionalEmitter``s in its structure.
+     */
+    fun isSimple(): Boolean
+}
 
 class SequenceEmitter<I : Segment<I>, O : Segment<O>>(val elements: List<Emitter<I, O>>) : Emitter<I, O> {
     override fun toString(): String = elements.joinToString(separator = " ", prefix = "(", postfix = ")")
+
+    override fun isSimple(): Boolean = elements.all { it.isSimple() }
+
+    override fun subAlternatives(): SubAlternatives<Emitter<I, O>> = OneAlternative
+
+    override fun subSequence(): SubSequence<Emitter<I, O>> = DefiniteSequence(elements)
 }
 
-class ListEmitter<I : Segment<I>, O : Segment<O>>(val elements: List<Emitter<I, O>>) : Emitter<I, O> {
+class AlternativeEmitter<I : Segment<I>, O : Segment<O>>(val elements: List<Emitter<I, O>>) : Emitter<I, O> {
     override fun toString(): String = elements.joinToString(prefix = "{", postfix = "}")
+
+    override fun isSimple(): Boolean = elements.all { it.isSimple() }
+
+    override fun subAlternatives(): SubAlternatives<Emitter<I, O>> = ManyAlternatives(elements)
+
+    override fun subSequence(): SubSequence<Emitter<I, O>> = NonSequence
 }
 
+/**
+ * An emitter that conjures part of a word out of nothing.
+ * This means it doesn't need information from a connected
+ * ``Matcher`` about what it matched.
+ */
 interface SimpleEmitter<I : Segment<I>, O : Segment<O>> : Emitter<I, O> {
+    fun result(): UnboundResult<O>
+
+    override fun isSimple(): Boolean = true
+
+    override fun subAlternatives(): SubAlternatives<Emitter<I, O>> = OneAlternative
+
+    override fun subSequence(): SubSequence<Emitter<I, O>> = NonSequence
+}
+
+/**
+ * An emitter whose result depends on a connected ``Matcher``.
+ */
+interface ConditionalEmitter<I : Segment<I>, O : Segment<O>> : Emitter<I, O> {
     fun result(
         declarations: Declarations,
         matcher: SimpleMatcher<I>,
@@ -26,18 +78,22 @@ interface SimpleEmitter<I : Segment<I>, O : Segment<O>> : Emitter<I, O> {
         matcher: SimpleMatcher<I>,
         original: Word<I>
     ): UnboundResult<O>
+
+    override fun isSimple(): Boolean = false
+
+    override fun subAlternatives(): SubAlternatives<Emitter<I, O>> = OneAlternative
+
+    override fun subSequence(): SubSequence<Emitter<I, O>> = NonSequence
 }
 
 class CaptureReferenceEmitter(val number: Int) : SimpleEmitter<PhonS, PhonS> {
-    override fun result(
-        declarations: Declarations, matcher: SimpleMatcher<PhonS>, original: Word<PhonS>
-    ): UnboundResult<PhonS> =
+    override fun result(): UnboundResult<PhonS> =
         { bindings ->
             listOf(bindings.captures[number] ?: throw LscUnboundCapture(number))
         }
 }
 
-class MatrixEmitter(val matrix: Matrix) : SimpleEmitter<PhonS, PhonS> {
+class MatrixEmitter(val matrix: Matrix) : ConditionalEmitter<PhonS, PhonS> {
     override fun result(
         declarations: Declarations, matcher: SimpleMatcher<PhonS>, original: Word<PhonS>
     ): UnboundResult<PhonS> =
@@ -55,7 +111,7 @@ class MatrixEmitter(val matrix: Matrix) : SimpleEmitter<PhonS, PhonS> {
     override fun toString(): String = matrix.toString()
 }
 
-class SymbolEmitter<I : Segment<I>>(val text: Word<PhonS>) : SimpleEmitter<I, PhonS> {
+class SymbolEmitter<I : Segment<I>>(val text: Word<PhonS>) : ConditionalEmitter<I, PhonS> {
     override fun result(
         declarations: Declarations, matcher: SimpleMatcher<I>, original: Word<I>
     ): UnboundResult<PhonS> {
@@ -93,9 +149,7 @@ class SymbolEmitter<I : Segment<I>>(val text: Word<PhonS>) : SimpleEmitter<I, Ph
 }
 
 class TextEmitter<I : Segment<I>, O : Segment<O>>(val text: Word<O>) : SimpleEmitter<I, O> {
-    override fun result(
-        declarations: Declarations, matcher: SimpleMatcher<I>, original: Word<I>
-    ): UnboundResult<O> {
+    override fun result(): UnboundResult<O> {
         return { listOf(text) }
     }
 
@@ -103,9 +157,7 @@ class TextEmitter<I : Segment<I>, O : Segment<O>>(val text: Word<O>) : SimpleEmi
 }
 
 class EmptyEmitter<I : Segment<I>, O : Segment<O>>(val outType: SegmentType<O>) : SimpleEmitter<I, O> {
-    override fun result(
-        declarations: Declarations, matcher: SimpleMatcher<I>, original: Word<I>
-    ): UnboundResult<O> =
+    override fun result(): UnboundResult<O> =
         { listOf(outType.empty) }
 
     override fun toString(): String = "*"
