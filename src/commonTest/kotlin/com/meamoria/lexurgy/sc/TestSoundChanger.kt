@@ -820,6 +820,12 @@ class TestSoundChanger : StringSpec({
     "But we shouldn't be able to put repeaters on the output side" {
         shouldThrow<LscInvalidRuleExpression> {
             lsc("foo:\no => a+ / _ a")
+        }.also {
+            it.cause.shouldBeInstanceOf<LscIllegalStructureInOutput>()
+            it.message shouldBe """
+                Error in expression 1 ("o => a+ / _ a") of rule "foo"
+                A repeater like "a+" can't be used in the output of a rule
+            """.trimIndent()
         }
     }
 
