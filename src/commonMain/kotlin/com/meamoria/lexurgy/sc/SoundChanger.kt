@@ -350,120 +350,13 @@ class RuleExpression<I : Segment<I>, O : Segment<O>>(
     val exclusion: List<Environment<I>>,
     val filtered: Boolean = false
 ) {
-    val transformer = makeTransformer(match, result)
+    val transformer = match.transformerTo(result, outType, filtered)
 
     private val realCondition =
         if (condition.isEmpty()) listOf(Environment(EmptyMatcher(), EmptyMatcher()))
         else condition.map { it.beforeReversed() }
 
     private val realExclusion = exclusion.map { it.beforeReversed() }
-
-    private fun makeTransformer(match: Matcher<I>, result: Emitter<I, O>): Transformer<I, O> {
-        if (filtered) {
-            if (match is EmptyMatcher) {
-                throw LscInvalidTransformation(
-                    match, result, "Asterisks aren't allowed on the match side of filtered rules"
-                )
-            } else if (match is AbstractTextMatcher && match.text.length > 1) {
-                throw LscInvalidTransformation(
-                    match, result, "Multi-segment matches aren't allowed on the match side of filtered rules"
-                )
-            }
-        }
-        return makeTransformerChecked(match, result)
-    }
-
-
-    private fun makeTransformerChecked(match: Matcher<I>, result: Emitter<I, O>): Transformer<I, O> =
-        when (val matchAlts = match.subAlternatives()) {
-            is ManyAlternatives ->
-                when (val resultAlts = result.subAlternatives()) {
-                    is ManyAlternatives ->
-                        if (matchAlts.length == resultAlts.length) {
-                            AlternativeTransformer(
-                                matchAlts.elements.zip(resultAlts.elements, this::makeTransformer)
-                            )
-                        } else {
-                            mismatchedLengths(match, result, matchAlts.elements, resultAlts.elements)
-                        }
-                    is OneAlternative ->
-                        AlternativeTransformer(
-                            matchAlts.elements.map { makeTransformer(it, result) }
-                        )
-                }
-            is OneAlternative ->
-                when (val resultAlts = result.subAlternatives()) {
-                    is ManyAlternatives ->
-                        mismatchedLengths(match, result, listOf(match), resultAlts.elements)
-                    is OneAlternative ->
-                        when (val matchSeq = match.subSequence()) {
-                            is DefiniteSequence ->
-                                when (val resultSeq = result.subSequence()) {
-                                    is DefiniteSequence ->
-                                        if (matchSeq.length == resultSeq.length) {
-                                            SequenceTransformer(
-                                                outType,
-                                                matchSeq.elements.zip(resultSeq.elements, this::makeTransformer),
-                                            )
-                                        } else {
-                                            mismatchedLengths(match, result, matchSeq.elements, resultSeq.elements)
-                                        }
-                                    is IndefiniteSequence -> indefiniteSequenceInOutput(result)
-                                    is NonSequence ->
-                                        if (result.isSimple()) {
-                                            SimpleTransformer(match, result)
-                                        } else {
-                                            mismatchedLengths(match, result, matchSeq.elements, listOf(result))
-                                        }
-                                }
-                            is IndefiniteSequence ->
-                                when (val resultSeq = result.subSequence()) {
-                                    is DefiniteSequence ->
-                                        if (result.isSimple()) {
-                                            SimpleTransformer(match, result)
-                                        } else {
-                                            mismatchedLengths(match, result, listOf(match), resultSeq.elements)
-                                        }
-                                    is IndefiniteSequence -> indefiniteSequenceInOutput(result)
-                                    is NonSequence ->
-                                        if (result.isSimple()) {
-                                            SimpleTransformer(match, result)
-                                        } else {
-                                            RepeaterTransformer(match, result)
-                                        }
-                                }
-                            is NonSequence ->
-                                when (val resultSeq = result.subSequence()) {
-                                    is DefiniteSequence ->
-                                        if (result.isSimple()) {
-                                            SimpleTransformer(match, result)
-                                        } else {
-                                            mismatchedLengths(match, result, listOf(match), resultSeq.elements)
-                                        }
-                                    is IndefiniteSequence -> indefiniteSequenceInOutput(result)
-                                    is NonSequence ->
-                                        if (result is MatrixEmitter && result.matrix.valueList.any { it is NegatedValue }) {
-                                            throw LscInvalidOutputMatrix(result.matrix, "negated feature")
-                                        } else {
-                                            SimpleTransformer(match, result)
-                                        }
-                                }
-                        }
-                }
-        }
-
-    private fun mismatchedLengths(
-        match: Matcher<I>, result: Emitter<I, O>, matchElements: List<Matcher<I>>, resultElements: List<Emitter<I, O>>
-    ): Nothing = throw LscInvalidTransformation(
-        match, result,
-        "Found ${enpl(matchElements.size, "element")} " +
-                "(${matchElements.joinToString { "\"$it\"" }}) on the left side of the arrow " +
-                "but ${enpl(resultElements.size, "element")} " +
-                "(${resultElements.joinToString { "\"$it\"" }}) on the right side"
-    )
-
-    private fun indefiniteSequenceInOutput(result: Emitter<I, O>): Nothing =
-        TODO()
 
     fun claim(expressionNumber: Int, words: List<Word<I>>): List<Transformation<O>> {
         var index = WordListIndex(0, 0)
@@ -652,9 +545,6 @@ class LscRuleNotFound(val ruleName: String, val attemptedAction: String) :
 
 class LscMatrixInPlain(val matrix: Matrix) :
     LscUserError("Feature matrix $matrix isn't allowed in a romanized context")
-
-class LscInvalidOutputMatrix(val matrix: Matrix, val invalidFeature: String) :
-    LscUserError("Feature matrix $matrix has a $invalidFeature, which isn't allowed in the output of a rule")
 
 class LscClassInPlain(val className: String) :
     LscUserError("Sound class $className isn't allowed in a romanized context")
