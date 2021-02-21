@@ -146,7 +146,27 @@ class SequenceMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : BaseMatc
         outType: SegmentType<O>,
         filtered: Boolean
     ): Transformer<I, O> {
-        TODO("Not yet implemented")
+        val matchAlternatives = elements.mapNotNull { it as? AlternativeMatcher }
+        val resultSequences = result.elements.map { it as? SequenceEmitter }
+        if (
+            matchAlternatives.all { it.elements.size == result.elements.size } &&
+            resultSequences.all { it != null && it.elements.size == elements.size }
+        ) {
+            val matchSequences = elements.map {
+                when (it) {
+                    is AlternativeMatcher -> it.elements
+                    else -> generateSequence { it }.asIterable()
+                }
+            }.zipAll { SequenceMatcher(it) }
+            return AlternativeTransformer(
+                matchSequences,
+                resultSequences.requireNoNulls(),
+                outType,
+                filtered,
+            )
+        } else {
+            mismatchedLengths(this, result, elements, listOf(result))
+        }
     }
 
     override fun <O : Segment<O>> transformerToSequence(

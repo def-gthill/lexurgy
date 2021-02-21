@@ -1,10 +1,21 @@
 package com.meamoria.lexurgy
 
+import com.meamoria.lexurgy.sc.SequenceMatcher
+
 fun <T, R, S, V> Iterable<T>.zip3(
     other1: Iterable<R>, other2: Iterable<S>, transform: (T, R, S) -> V
 ): List<V> = zip(other1).zip(other2) { tr, s ->
     val (t, r) = tr
     transform(t, r, s)
+}
+
+fun <T, R> List<Iterable<T>>.zipAll(transform: (List<T>) -> R): List<R> {
+    val result = mutableListOf<R>()
+    val iters = map { it.iterator() }
+    while (iters.all { it.hasNext() }) {
+        result += transform(iters.map { it.next() })
+    }
+    return result
 }
 
 fun <T, R> Iterable<Iterable<T>>.nestedMap(transform: (T) -> R): List<List<R>> =
