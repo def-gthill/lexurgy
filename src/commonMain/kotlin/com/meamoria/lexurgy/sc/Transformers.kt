@@ -98,9 +98,18 @@ class AlternativeTransformer<I : Segment<I>, O : Segment<O>>(
 }
 
 class RepeaterTransformer<I : Segment<I>, O : Segment<O>>(
-    val matcher: Matcher<I>,
-    val emitter: Emitter<I, O>,
+    val outType: SegmentType<O>,
+    val transformer: Transformer<I, O>,
+    val type: RepeaterType,
 ) : Transformer<I, O> {
+
+    constructor(
+        matcher: RepeaterMatcher<I>,
+        emitter: Emitter<I, O>,
+        outType: SegmentType<O>,
+        filtered: Boolean,
+    ) : this(outType, matcher.element.transformerTo(emitter, outType, filtered), matcher.type)
+
     override fun transform(
         order: Int,
         declarations: Declarations,
@@ -108,7 +117,23 @@ class RepeaterTransformer<I : Segment<I>, O : Segment<O>>(
         start: WordListIndex,
         bindings: Bindings
     ): UnboundTransformation<O>? {
-        TODO("Not yet implemented")
+        var elementStart = start
+        val resultBits = mutableListOf<UnboundTransformation<O>>()
+        var times = 0
+        while (true) {
+            val transformation = transformer.transform(order, declarations, words, elementStart, bindings) ?: break
+            elementStart = transformation.end
+            resultBits += transformation
+            times++
+            if (type.maxReps?.let { times >= it } == true) break
+        }
+
+        fun result(finalBindings: Bindings): List<Word<O>> =
+            outType.joinEdgeWords(resultBits.map { it.result(finalBindings) })
+
+        return UnboundTransformation(order, start, elementStart, ::result, resultBits).takeIf {
+            times >= type.minReps
+        }
     }
 }
 

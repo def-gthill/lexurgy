@@ -177,7 +177,7 @@ class RepeaterMatcher<I : Segment<I>>(val element: Matcher<I>, val type: Repeate
     override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int? {
         var elementStart = start
         var times = 0
-        while (elementStart < word.length) {
+        while (true) {
             elementStart = element.claim(declarations, word, elementStart, bindings) ?: break
             times++
             if (type.maxReps?.let { times >= it } == true) break
@@ -209,17 +209,7 @@ class RepeaterMatcher<I : Segment<I>>(val element: Matcher<I>, val type: Repeate
         result: ConditionalEmitter<I, O>,
         outType: SegmentType<O>,
         filtered: Boolean
-    ): Transformer<I, O> {
-        TODO("Not yet implemented")
-    }
-
-    override fun <O : Segment<O>> transformerToIndependent(
-        result: IndependentEmitter<I, O>,
-        outType: SegmentType<O>,
-        filtered: Boolean
-    ): Transformer<I, O> {
-        TODO("Not yet implemented")
-    }
+    ): Transformer<I, O> = RepeaterTransformer(this, result, outType, filtered)
 
     override fun <O : Segment<O>> transformerToIndependentSequence(
         result: SequenceEmitter<I, O>,
