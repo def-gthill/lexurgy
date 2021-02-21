@@ -109,7 +109,12 @@ class MatrixEmitter(val matrix: Matrix) : ConditionalEmitter<PhonS, PhonS> {
     override fun toString(): String = matrix.toString()
 }
 
-class SymbolEmitter<I : Segment<I>>(val text: Word<PhonS>) : ConditionalEmitter<I, PhonS> {
+class SymbolEmitter<I : Segment<I>>(val text: Word<PhonS>) :
+    ConditionalEmitter<I, PhonS>,
+    IndependentEmitter<I, PhonS> {
+
+    override fun result(): UnboundResult<PhonS> = { listOf(text) }
+
     override fun result(
         declarations: Declarations, matcher: SimpleMatcher<I>, original: Word<I>
     ): UnboundResult<PhonS> {
@@ -144,6 +149,10 @@ class SymbolEmitter<I : Segment<I>>(val text: Word<PhonS>) : ConditionalEmitter<
     }
 
     override fun toString(): String = text.string.ifEmpty { "*" }
+
+    override fun isConditional(): Boolean = true
+
+    override fun isIndependent(): Boolean = true
 }
 
 class TextEmitter<I : Segment<I>, O : Segment<O>>(val text: Word<O>) : IndependentEmitter<I, O> {

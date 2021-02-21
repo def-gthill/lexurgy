@@ -32,8 +32,15 @@ interface Matcher<I : Segment<I>> {
     fun <O : Segment<O>> transformerTo(
         result: Emitter<I, O>,
         outType: SegmentType<O>,
-        filtered: Boolean
+        filtered: Boolean,
     ): Transformer<I, O>
+
+    /**
+     * Checks whether this matcher prefers to treat emitters as
+     * independent (rather than conditional) if both interpretations
+     * are provided.
+     */
+    fun prefersIndependentEmitters(): Boolean
 }
 
 abstract class BaseMatcher<I : Segment<I>> : Matcher<I> {
@@ -48,7 +55,9 @@ abstract class BaseMatcher<I : Segment<I>> : Matcher<I> {
                 is AlternativeEmitter -> transformerToAlternatives(result, outType, filtered)
                 is SequenceEmitter -> transformerToSequence(result, outType, filtered)
                 else ->
-                    if (result.isConditional()) {
+                    if (prefersIndependentEmitters() && result.isIndependent()) {
+                        transformerToIndependent(result as IndependentEmitter, outType, filtered)
+                    } else if (result.isConditional()) {
                         transformerToConditional(result as ConditionalEmitter, outType, filtered)
                     } else {
                         transformerToIndependent(result as IndependentEmitter, outType, filtered)
@@ -115,6 +124,8 @@ abstract class BaseMatcher<I : Segment<I>> : Matcher<I> {
                 "but ${enpl(resultElements.size, "element")} " +
                 "(${resultElements.joinToString { "\"$it\"" }}) on the right side"
     )
+
+    override fun prefersIndependentEmitters(): Boolean = false
 }
 
 class SequenceMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : BaseMatcher<I>() {
@@ -218,6 +229,8 @@ class RepeaterMatcher<I : Segment<I>>(val element: Matcher<I>, val type: Repeate
     ): Transformer<I, O> {
         TODO("Not yet implemented")
     }
+
+    override fun prefersIndependentEmitters(): Boolean = true
 }
 
 class AlternativeMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : BaseMatcher<I>() {
