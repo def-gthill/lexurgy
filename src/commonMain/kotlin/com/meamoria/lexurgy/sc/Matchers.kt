@@ -157,6 +157,36 @@ abstract class BaseMatcher<I : Segment<I>> : Matcher<I> {
     override fun prefersIndependentSequenceEmitters(): Boolean = false
 }
 
+/**
+ * A matcher whose response to all emitters is to try to connect
+ * a sub-element to the emitter.
+ */
+abstract class LiftingMatcher<I : Segment<I>> : BaseMatcher<I>() {
+    override fun <O : Segment<O>> transformerToAlternatives(
+        result: AlternativeEmitter<I, O>,
+        outType: SegmentType<O>,
+        filtered: Boolean
+    ): Transformer<I, O> = liftingTransformerTo(result, outType, filtered)
+
+    override fun <O : Segment<O>> transformerToSequence(
+        result: SequenceEmitter<I, O>,
+        outType: SegmentType<O>,
+        filtered: Boolean
+    ): Transformer<I, O> = liftingTransformerTo(result, outType, filtered)
+
+    override fun <O : Segment<O>> transformerToConditional(
+        result: ConditionalEmitter<I, O>,
+        outType: SegmentType<O>,
+        filtered: Boolean
+    ): Transformer<I, O> = liftingTransformerTo(result, outType, filtered)
+
+    protected abstract fun <O : Segment<O>> liftingTransformerTo(
+        result: Emitter<I, O>,
+        outType: SegmentType<O>,
+        filtered: Boolean
+    ): Transformer<I, O>
+}
+
 class SequenceMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : BaseMatcher<I>() {
     override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int? {
         var elementStart = start
@@ -217,7 +247,7 @@ class SequenceMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : BaseMatc
     override fun prefersIndependentEmitters(): Boolean = true
 }
 
-class RepeaterMatcher<I : Segment<I>>(val element: Matcher<I>, val type: RepeaterType) : BaseMatcher<I>() {
+class RepeaterMatcher<I : Segment<I>>(val element: Matcher<I>, val type: RepeaterType) : LiftingMatcher<I>() {
     override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int? {
         var elementStart = start
         var times = 0
@@ -233,20 +263,8 @@ class RepeaterMatcher<I : Segment<I>>(val element: Matcher<I>, val type: Repeate
 
     override fun toString(): String = "$element${type.string}"
 
-    override fun <O : Segment<O>> transformerToAlternatives(
-        result: AlternativeEmitter<I, O>,
-        outType: SegmentType<O>,
-        filtered: Boolean
-    ): Transformer<I, O> = RepeaterTransformer(this, result, outType, filtered)
-
-    override fun <O : Segment<O>> transformerToSequence(
-        result: SequenceEmitter<I, O>,
-        outType: SegmentType<O>,
-        filtered: Boolean
-    ): Transformer<I, O> = RepeaterTransformer(this, result, outType, filtered)
-
-    override fun <O : Segment<O>> transformerToConditional(
-        result: ConditionalEmitter<I, O>,
+    override fun <O : Segment<O>> liftingTransformerTo(
+        result: Emitter<I, O>,
         outType: SegmentType<O>,
         filtered: Boolean
     ): Transformer<I, O> = RepeaterTransformer(this, result, outType, filtered)
@@ -295,7 +313,7 @@ class AlternativeMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : BaseM
     ): Transformer<I, O> = AlternativeTransformer(elements, result, outType, filtered)
 }
 
-class IntersectionMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : BaseMatcher<I>() {
+class IntersectionMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : LiftingMatcher<I>() {
     override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int? {
         var matchEnd: Int? = null
         for (element in elements) {
@@ -313,28 +331,8 @@ class IntersectionMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : Base
 
     override fun toString(): String = elements.joinToString("&")
 
-    override fun <O : Segment<O>> transformerToAlternatives(
-        result: AlternativeEmitter<I, O>,
-        outType: SegmentType<O>,
-        filtered: Boolean
-    ): Transformer<I, O> =
-        IntersectionTransformer(
-            elements.first().transformerTo(result, outType, filtered),
-            elements.drop(1),
-        )
-
-    override fun <O : Segment<O>> transformerToSequence(
-        result: SequenceEmitter<I, O>,
-        outType: SegmentType<O>,
-        filtered: Boolean
-    ): Transformer<I, O> =
-        IntersectionTransformer(
-            elements.first().transformerTo(result, outType, filtered),
-            elements.drop(1),
-        )
-
-    override fun <O : Segment<O>> transformerToConditional(
-        result: ConditionalEmitter<I, O>,
+    override fun <O : Segment<O>> liftingTransformerTo(
+        result: Emitter<I, O>,
         outType: SegmentType<O>,
         filtered: Boolean
     ): Transformer<I, O> =
@@ -344,7 +342,7 @@ class IntersectionMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : Base
         )
 }
 
-class CaptureMatcher(val element: Matcher<PhonS>, val number: Int) : BaseMatcher<PhonS>() {
+class CaptureMatcher(val element: Matcher<PhonS>, val number: Int) : LiftingMatcher<PhonS>() {
     override fun claim(declarations: Declarations, word: Word<PhonS>, start: Int, bindings: Bindings): Int? =
         if (number in bindings.captures) {
             throw LscReboundCapture(number)
@@ -358,22 +356,8 @@ class CaptureMatcher(val element: Matcher<PhonS>, val number: Int) : BaseMatcher
 
     override fun toString(): String = "$element$$number"
 
-    override fun <O : Segment<O>> transformerToAlternatives(
-        result: AlternativeEmitter<PhonS, O>,
-        outType: SegmentType<O>,
-        filtered: Boolean
-    ): Transformer<PhonS, O> =
-        CaptureTransformer(element.transformerTo(result, outType, filtered), number)
-
-    override fun <O : Segment<O>> transformerToSequence(
-        result: SequenceEmitter<PhonS, O>,
-        outType: SegmentType<O>,
-        filtered: Boolean
-    ): Transformer<PhonS, O> =
-        CaptureTransformer(element.transformerTo(result, outType, filtered), number)
-
-    override fun <O : Segment<O>> transformerToConditional(
-        result: ConditionalEmitter<PhonS, O>,
+    override fun <O : Segment<O>> liftingTransformerTo(
+        result: Emitter<PhonS, O>,
         outType: SegmentType<O>,
         filtered: Boolean
     ): Transformer<PhonS, O> =
