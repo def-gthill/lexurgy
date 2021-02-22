@@ -112,12 +112,12 @@ class TestSoundChanger : StringSpec({
 
     "Rules with mismatched elements should produce an LscInvalidRuleExpression with a clear error message" {
         shouldThrow<LscInvalidRuleExpression> {
-            lsc("badrule:\n   a => b c")
+            lsc("badrule:\n   a => b [mat]")
         }.also {
             it.cause.shouldBeInstanceOf<LscInvalidTransformation>()
             it.message shouldBe """
-                Error in expression 1 ("a => b c") of rule "badrule"
-                Found 1 element ("a") on the left side of the arrow but 2 elements ("b", "c") on the right side
+                Error in expression 1 ("a => b [mat]") of rule "badrule"
+                Found 1 element ("a") on the left side of the arrow but 2 elements ("b", "[mat]") on the right side
             """.trimIndent()
         }
     }

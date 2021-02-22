@@ -83,16 +83,17 @@ interface SegmentType<S : Segment<S>> {
 
     /**
      * Joins the last element of each sub-iterable to the first element of the
-     * next subiterable.
+     * next subiterable. Any empty sub-iterables are skipped.
      */
     fun joinEdgeWords(words: Iterable<Iterable<Word<S>>>): List<Word<S>> {
         val result = mutableListOf<Word<S>>()
         for (subList in words) {
+            val first = subList.firstOrNull() ?: continue
             if (result.isEmpty()) {
                 result += subList
             } else {
                 val last = result.removeLast()
-                result += join(listOf(last, subList.first()))
+                result += join(listOf(last, first))
                 result += subList.drop(1)
             }
         }

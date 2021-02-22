@@ -82,6 +82,8 @@ class CaptureReferenceEmitter(val number: Int) : IndependentEmitter<PhonS, PhonS
         { bindings ->
             listOf(bindings.captures[number] ?: throw LscUnboundCapture(number))
         }
+
+    override fun toString(): String = "$$number"
 }
 
 class MatrixEmitter(val matrix: Matrix) : ConditionalEmitter<PhonS, PhonS> {

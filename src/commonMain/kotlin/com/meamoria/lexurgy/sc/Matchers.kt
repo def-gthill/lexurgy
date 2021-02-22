@@ -38,9 +38,16 @@ interface Matcher<I : Segment<I>> {
     /**
      * Checks whether this matcher prefers to treat emitters as
      * independent (rather than conditional) if both interpretations
-     * are provided.
+     * are possible.
      */
     fun prefersIndependentEmitters(): Boolean
+
+    /**
+     * Checks whether this matcher prefers to treat sequence emitters
+     * as independent (rather than conditional) if both interpretations
+     * are possible.
+     */
+    fun prefersIndependentSequenceEmitters(): Boolean
 }
 
 abstract class BaseMatcher<I : Segment<I>> : Matcher<I> {
@@ -53,7 +60,12 @@ abstract class BaseMatcher<I : Segment<I>> : Matcher<I> {
         return try {
             when (result) {
                 is AlternativeEmitter -> transformerToAlternatives(result, outType, filtered)
-                is SequenceEmitter -> transformerToSequence(result, outType, filtered)
+                is SequenceEmitter ->
+                    if (prefersIndependentSequenceEmitters() && result.isIndependent()) {
+                        transformerToIndependentSequence(result, outType, filtered)
+                    } else {
+                        transformerToSequence(result, outType, filtered)
+                    }
                 else ->
                     if (prefersIndependentEmitters() && result.isIndependent()) {
                         transformerToIndependent(result as IndependentEmitter, outType, filtered)
@@ -63,7 +75,7 @@ abstract class BaseMatcher<I : Segment<I>> : Matcher<I> {
                         transformerToIndependent(result as IndependentEmitter, outType, filtered)
                     }
             }
-        } catch (e: LscInvalidRuleExpression) {
+        } catch (e: LscInvalidTransformation) {
             if (result.isIndependent()) {
                 when (result) {
                     is SequenceEmitter -> transformerToIndependentSequence(result, outType, filtered)
@@ -76,7 +88,7 @@ abstract class BaseMatcher<I : Segment<I>> : Matcher<I> {
     }
 
     /**
-     * Checks if this matcher can be used on the match side of a filtered rule.
+     * Checks if this matcher can be paired with the specified emitter in a filtered rule.
      * Returns normally if yes, throws an appropriate `LscInvalidTransformation` if not.
      * The default implementation always returns normally.
      */
@@ -106,11 +118,26 @@ abstract class BaseMatcher<I : Segment<I>> : Matcher<I> {
         filtered: Boolean,
     ): Transformer<I, O> = IndependentTransformer(this, result)
 
-    protected abstract fun <O : Segment<O>> transformerToIndependentSequence(
+    protected open fun <O : Segment<O>> transformerToIndependentSequence(
         result: SequenceEmitter<I, O>,
         outType: SegmentType<O>,
         filtered: Boolean,
-    ): Transformer<I, O>
+    ): Transformer<I, O> = if (filtered) {
+        // Filtered rules need each output element to correspond to an
+        // input element so it can restore the ignored segments in the
+        // right places. This isn't possible with IndependentSequenceEmitter.
+        mismatchedLengths(
+            this,
+            result,
+            when (this) {
+                is SequenceMatcher -> elements
+                else -> listOf(this)
+            },
+            result.elements,
+        )
+    } else {
+        IndependentSequenceTransformer(outType,this, result)
+    }
 
     protected fun <O : Segment<O>> mismatchedLengths(
         match: Matcher<I>,
@@ -126,6 +153,8 @@ abstract class BaseMatcher<I : Segment<I>> : Matcher<I> {
     )
 
     override fun prefersIndependentEmitters(): Boolean = false
+
+    override fun prefersIndependentSequenceEmitters(): Boolean = false
 }
 
 class SequenceMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : BaseMatcher<I>() {
@@ -183,25 +212,9 @@ class SequenceMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : BaseMatc
         result: ConditionalEmitter<I, O>,
         outType: SegmentType<O>,
         filtered: Boolean
-    ): Transformer<I, O> {
-        TODO("Not yet implemented")
-    }
+    ): Transformer<I, O> = SequenceTransformer(elements, elements.map { result }, outType, filtered)
 
-    override fun <O : Segment<O>> transformerToIndependent(
-        result: IndependentEmitter<I, O>,
-        outType: SegmentType<O>,
-        filtered: Boolean
-    ): Transformer<I, O> {
-        TODO("Not yet implemented")
-    }
-
-    override fun <O : Segment<O>> transformerToIndependentSequence(
-        result: SequenceEmitter<I, O>,
-        outType: SegmentType<O>,
-        filtered: Boolean
-    ): Transformer<I, O> {
-        TODO("Not yet implemented")
-    }
+    override fun prefersIndependentEmitters(): Boolean = true
 }
 
 class RepeaterMatcher<I : Segment<I>>(val element: Matcher<I>, val type: RepeaterType) : BaseMatcher<I>() {
@@ -224,17 +237,13 @@ class RepeaterMatcher<I : Segment<I>>(val element: Matcher<I>, val type: Repeate
         result: AlternativeEmitter<I, O>,
         outType: SegmentType<O>,
         filtered: Boolean
-    ): Transformer<I, O> {
-        TODO("Not yet implemented")
-    }
+    ): Transformer<I, O> = RepeaterTransformer(this, result, outType, filtered)
 
     override fun <O : Segment<O>> transformerToSequence(
         result: SequenceEmitter<I, O>,
         outType: SegmentType<O>,
         filtered: Boolean
-    ): Transformer<I, O> {
-        TODO("Not yet implemented")
-    }
+    ): Transformer<I, O> = RepeaterTransformer(this, result, outType, filtered)
 
     override fun <O : Segment<O>> transformerToConditional(
         result: ConditionalEmitter<I, O>,
@@ -242,15 +251,9 @@ class RepeaterMatcher<I : Segment<I>>(val element: Matcher<I>, val type: Repeate
         filtered: Boolean
     ): Transformer<I, O> = RepeaterTransformer(this, result, outType, filtered)
 
-    override fun <O : Segment<O>> transformerToIndependentSequence(
-        result: SequenceEmitter<I, O>,
-        outType: SegmentType<O>,
-        filtered: Boolean
-    ): Transformer<I, O> {
-        TODO("Not yet implemented")
-    }
-
     override fun prefersIndependentEmitters(): Boolean = true
+
+    override fun prefersIndependentSequenceEmitters(): Boolean = true
 }
 
 class AlternativeMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : BaseMatcher<I>() {
@@ -290,14 +293,6 @@ class AlternativeMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : BaseM
         outType: SegmentType<O>,
         filtered: Boolean
     ): Transformer<I, O> = AlternativeTransformer(elements, result, outType, filtered)
-
-    override fun <O : Segment<O>> transformerToIndependentSequence(
-        result: SequenceEmitter<I, O>,
-        outType: SegmentType<O>,
-        filtered: Boolean
-    ): Transformer<I, O> {
-        TODO("Not yet implemented")
-    }
 }
 
 class IntersectionMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : BaseMatcher<I>() {
@@ -332,9 +327,11 @@ class IntersectionMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : Base
         result: SequenceEmitter<I, O>,
         outType: SegmentType<O>,
         filtered: Boolean
-    ): Transformer<I, O> {
-        TODO("Not yet implemented")
-    }
+    ): Transformer<I, O> =
+        IntersectionTransformer(
+            elements.first().transformerTo(result, outType, filtered),
+            elements.drop(1),
+        )
 
     override fun <O : Segment<O>> transformerToConditional(
         result: ConditionalEmitter<I, O>,
@@ -345,14 +342,6 @@ class IntersectionMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : Base
             elements.first().transformerTo(result, outType, filtered),
             elements.drop(1),
         )
-
-    override fun <O : Segment<O>> transformerToIndependentSequence(
-        result: SequenceEmitter<I, O>,
-        outType: SegmentType<O>,
-        filtered: Boolean
-    ): Transformer<I, O> {
-        TODO("Not yet implemented")
-    }
 }
 
 class CaptureMatcher(val element: Matcher<PhonS>, val number: Int) : BaseMatcher<PhonS>() {
@@ -367,6 +356,8 @@ class CaptureMatcher(val element: Matcher<PhonS>, val number: Int) : BaseMatcher
 
     override fun reversed(): Matcher<PhonS> = CaptureMatcher(element.reversed(), number)
 
+    override fun toString(): String = "$element$$number"
+
     override fun <O : Segment<O>> transformerToAlternatives(
         result: AlternativeEmitter<PhonS, O>,
         outType: SegmentType<O>,
@@ -378,9 +369,8 @@ class CaptureMatcher(val element: Matcher<PhonS>, val number: Int) : BaseMatcher
         result: SequenceEmitter<PhonS, O>,
         outType: SegmentType<O>,
         filtered: Boolean
-    ): Transformer<PhonS, O> {
-        TODO("Not yet implemented")
-    }
+    ): Transformer<PhonS, O> =
+        CaptureTransformer(element.transformerTo(result, outType, filtered), number)
 
     override fun <O : Segment<O>> transformerToConditional(
         result: ConditionalEmitter<PhonS, O>,
@@ -388,14 +378,6 @@ class CaptureMatcher(val element: Matcher<PhonS>, val number: Int) : BaseMatcher
         filtered: Boolean
     ): Transformer<PhonS, O> =
         CaptureTransformer(element.transformerTo(result, outType, filtered), number)
-
-    override fun <O : Segment<O>> transformerToIndependentSequence(
-        result: SequenceEmitter<PhonS, O>,
-        outType: SegmentType<O>,
-        filtered: Boolean
-    ): Transformer<PhonS, O> {
-        TODO("Not yet implemented")
-    }
 }
 
 /**
@@ -480,6 +462,8 @@ class CaptureReferenceMatcher(val number: Int) : SimpleMatcher<PhonS>() {
         } ?: throw LscUnboundCapture(number)
 
     override fun reversed(): Matcher<PhonS> = this
+
+    override fun toString(): String = "$$number"
 }
 
 class MatrixMatcher(val matrix: Matrix) : SimpleMatcher<PhonS>() {

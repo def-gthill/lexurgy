@@ -234,7 +234,7 @@ class IndependentSequenceTransformer<I : Segment<I>, O : Segment<O>>(
         bindings: Bindings
     ): UnboundTransformation<O>? {
         val claimEnd = matcher.claim(declarations, words, start, bindings) ?: return null
-        val resultBits = emitter.resultBits()
+        val resultBits = emitter.resultBits(order, start, claimEnd)
 
         fun result(finalBindings: Bindings): List<Word<O>> =
             outType.joinEdgeWords(resultBits.map { it.result(finalBindings) })
@@ -242,7 +242,17 @@ class IndependentSequenceTransformer<I : Segment<I>, O : Segment<O>>(
         return UnboundTransformation(order, start, claimEnd, ::result, resultBits)
     }
 
-    private fun SequenceEmitter<I, O>.resultBits(): List<UnboundTransformation<O>> = TODO()
+    private fun SequenceEmitter<I, O>.resultBits(
+        order: Int,
+        start: WordListIndex,
+        claimEnd: WordListIndex,
+    ): List<UnboundTransformation<O>> =
+        elements.flatMap {
+            when (it) {
+                is SequenceEmitter -> it.resultBits(order, start, claimEnd)
+                else -> listOf(UnboundTransformation(order, start, claimEnd, (it as IndependentEmitter).result()))
+            }
+        }
 }
 
 data class Transformation<O : Segment<O>>(

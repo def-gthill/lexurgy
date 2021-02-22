@@ -46,4 +46,123 @@ class TestSoundChangerCombinations : StringSpec({
             """.trimIndent()
         }
     }
+
+    "We should be able to apply a conditional change to everything in a sequence, " +
+            "but an independent change should replace the entire sequence" {
+                val ch = lsc(
+                    """
+                        Feature Tone(*low, high)
+                        Diacritic ́  (floating) [high]
+                        Class vowel {a, ɑ, e, i, o, u}
+                        Class lowvowel {a, ɑ}
+                        Class highvowel {i, u}
+                        
+                        high-tone-after-s:
+                            @vowel @highvowel? => [high] / s _
+                        
+                        vowel-coalescence:
+                            @lowvowel i => e
+                            
+                    """.trimIndent()
+                )
+
+                ch("tasauni") shouldBe "tasáúni"
+                ch("tasainisia") shouldBe "tasenisía"
+            }
+
+    "We should be able to transform a sequence to another sequence of a different length if the " +
+            "second sequence is independent" {
+                val ch = lsc(
+                    """
+                        Class stop {p, t, k}
+                        weird-metathesis:
+                            r @stop$1 s => s $1
+                    """.trimIndent()
+                )
+
+                ch("arks") shouldBe "ask"
+            }
+
+    "Alternative lists should be lifted out of repeaters to line up with output alternative lists" {
+        val ch = lsc(
+            """
+                multi-voice-intervocalic:
+                    {p, t, k}+ => {b, d, g} / {a, i, u} _ {a, i, u}
+            """.trimIndent()
+        )
+
+        ch("aptkpiptkp") shouldBe "abdgbiptkp"
+    }
+
+    "Sequences should be lifted out of repeaters to line up with output sequences" {
+        val ch = lsc(
+            """
+                Feature Tone(*low, high)
+                Diacritic ́  (floating) [high]
+                Class vowel {a, e, i, o, u}
+                weird-tone-spreading:
+                    (@vowel&[high] @vowel)+ => [] [high] / k _
+            """.trimIndent()
+        )
+
+        ch("áuóikáuóináuói") shouldBe "áuóikáúóínáuói"
+    }
+
+    "Transforming a non-sequence repeater to a sequence shouldn't repeat the sequence" {
+        val ch = lsc(
+            """
+                Class vowel {a, e, i, o, u}
+                copy-after-i-and-reduce:
+                    i+ => i $1 / @vowel&!i$1 _
+            """.trimIndent()
+        )
+
+        ch("boiiiigii") shouldBe "boiogii"
+    }
+
+    "We should be able to transform an alternative list to an independent sequence" {
+        val ch = lsc(
+            """
+                Class stop {p, t, k}
+                Class fricative {f, s, x}
+                Class nasal {m, n}
+                crazy-cycle:
+                    {@fricative$2 @nasal$3 @stop$1 ^, @nasal$3 @stop$1 @fricative$2 ^} => $1 $2 $3
+            """.trimIndent()
+        )
+
+        ch("fnp^") shouldBe "pfn"
+        ch("mks^mks") shouldBe "ksmmks"
+    }
+
+    "We should be able to lift sequences out of intersections" {
+        val ch = lsc(
+            """
+                Feature Tone(*low, high)
+                Diacritic ́  (floating) [high]
+                waves:
+                    (a+ i+ a+)&([high]+ [low]+ [high]+) => [low] [high] [low]
+            """.trimIndent()
+        )
+
+        ch("baaáááíííiiíáá") shouldBe "baaaaaííííííaa"
+    }
+
+    "We should be able to lift sequences out of captures" {
+        val ch = lsc(
+            """
+                Feature Stressed (*unstressed, stressed)
+                Diacritic ˈ (floating) [stressed]
+                Class consonant {p, t, k, s, m, n}
+                Class vowel {a, e, i, o, u}
+                stress-first-syllable @vowel:
+                    [] => [stressed] / $ _
+                copy-first-cv:
+                    * (@consonant @vowel)$1 => $1 ([] [unstressed]) / $ _
+            """.trimIndent()
+        )
+
+        ch("patu") shouldBe "paˈpatu"
+        ch("sikema") shouldBe "siˈsikema"
+    }
 })
