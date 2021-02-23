@@ -1142,6 +1142,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
         override fun <T : Segment<T>> link(context: RuleContext): Matcher<T> =
             when {
+                context.section == RuleSection.MAIN -> throw LscIllegalStructureInInput(publicName, text)
                 context.precedingElement is ContextElement.None -> WordStartMatcher()
                 context.followingElement is ContextElement.None -> WordEndMatcher()
                 else -> throw LscInteriorWordBoundary()
@@ -1521,6 +1522,13 @@ class LscInvalidRuleExpression(
 ) : LscUserError(
     "Error in expression $expressionNumber (\"$expression\") of rule \"$rule\"\n${reason.message}",
     reason
+)
+
+class LscIllegalStructureInInput(
+    val invalidNodeType: String,
+    val invalidNode: String,
+) : LscUserError(
+    "${invalidNodeType.capitalize()} like \"$invalidNode\" can't be used in the input of a rule"
 )
 
 class LscIllegalStructureInOutput(
