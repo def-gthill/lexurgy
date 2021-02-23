@@ -667,7 +667,9 @@ public class LscParser extends Parser {
 		public TerminalNode WHITESPACE(int i) {
 			return getToken(LscParser.WHITESPACE, i);
 		}
-		public TerminalNode STR1() { return getToken(LscParser.STR1, 0); }
+		public TextContext text() {
+			return getRuleContext(TextContext.class,0);
+		}
 		public MatrixContext matrix() {
 			return getRuleContext(MatrixContext.class,0);
 		}
@@ -700,7 +702,7 @@ public class LscParser extends Parser {
 			setState(193);
 			match(WHITESPACE);
 			setState(194);
-			match(STR1);
+			text();
 			setState(195);
 			match(WHITESPACE);
 			setState(201);
@@ -3749,8 +3751,8 @@ public class LscParser extends Parser {
 		"\u00b6\3\2\2\2\u00b9\u00bc\3\2\2\2\u00ba\u00b8\3\2\2\2\u00ba\u00bb\3\2"+
 		"\2\2\u00bb\u00bd\3\2\2\2\u00bc\u00ba\3\2\2\2\u00bd\u00be\7\f\2\2\u00be"+
 		"\13\3\2\2\2\u00bf\u00c0\7\r\2\2\u00c0\u00c1\5j\66\2\u00c1\r\3\2\2\2\u00c2"+
-		"\u00c3\7\35\2\2\u00c3\u00c4\7\n\2\2\u00c4\u00c5\7*\2\2\u00c5\u00cb\7\n"+
-		"\2\2\u00c6\u00c7\5\20\t\2\u00c7\u00c8\7\n\2\2\u00c8\u00ca\3\2\2\2\u00c9"+
+		"\u00c3\7\35\2\2\u00c3\u00c4\7\n\2\2\u00c4\u00c5\5l\67\2\u00c5\u00cb\7"+
+		"\n\2\2\u00c6\u00c7\5\20\t\2\u00c7\u00c8\7\n\2\2\u00c8\u00ca\3\2\2\2\u00c9"+
 		"\u00c6\3\2\2\2\u00ca\u00cd\3\2\2\2\u00cb\u00c9\3\2\2\2\u00cb\u00cc\3\2"+
 		"\2\2\u00cc\u00ce\3\2\2\2\u00cd\u00cb\3\2\2\2\u00ce\u00d3\5f\64\2\u00cf"+
 		"\u00d0\7\n\2\2\u00d0\u00d2\5\20\t\2\u00d1\u00cf\3\2\2\2\u00d2\u00d5\3"+

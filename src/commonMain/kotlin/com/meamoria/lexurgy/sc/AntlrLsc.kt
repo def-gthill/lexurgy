@@ -92,7 +92,6 @@ expect class ClassElementContext : ParserRuleContext
 expect class FeatureDeclContext : ParserRuleContext {
     fun feature(): FeatureContext
     fun nullAlias(): NullAliasContext?
-    fun matrix(): MatrixContext?
 }
 
 expect fun FeatureDeclContext.allValues(): List<ValueContext>
@@ -102,7 +101,7 @@ expect class NullAliasContext : ParserRuleContext {
 }
 
 expect class DiacriticDeclContext : ParserRuleContext {
-    fun STR1(): TerminalNode
+    fun text(): TextContext
     fun matrix(): MatrixContext
 }
 

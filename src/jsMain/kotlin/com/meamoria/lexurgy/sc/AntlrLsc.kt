@@ -43,7 +43,6 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     class FeatureDeclContext : ParserRuleContext {
         fun feature(): FeatureContext
         fun nullAlias(): NullAliasContext?
-        fun matrix(): MatrixContext?
         fun value(): Array<ValueContext>
     }
 
@@ -52,7 +51,7 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     }
 
     class DiacriticDeclContext : ParserRuleContext {
-        fun STR1(): TerminalNode
+        fun text(): TextContext
         fun matrix(): MatrixContext
         fun diacriticModifier(): Array<DiacriticModifierContext>
     }

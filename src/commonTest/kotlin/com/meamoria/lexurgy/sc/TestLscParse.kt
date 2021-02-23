@@ -186,7 +186,6 @@ class TestLscParse : StringSpec({
     "Bad diacritic declarations should be rejected" {
         shouldThrow<LscNotParsable> { parser.parseDiacriticDeclaration("ʰ [aspir]") }
         shouldThrow<LscNotParsable> { parser.parseDiacriticDeclaration("Diacritic ʰ aspir") }
-        shouldThrow<LscNotParsable> { parser.parseDiacriticDeclaration("Diacritic ʰʰ [aspir]") }
         shouldThrow<LscNotParsable> { parser.parseDiacriticDeclaration("=>") }
     }
 

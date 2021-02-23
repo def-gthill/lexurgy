@@ -12,7 +12,7 @@ featureDecl:
     O_PAREN (nullAlias SEP)? value (SEP value)* C_PAREN;
 nullAlias: NULL value;
 diacriticDecl:
-    DIACRITIC WHITESPACE STR1 WHITESPACE
+    DIACRITIC WHITESPACE text WHITESPACE
     (diacriticModifier WHITESPACE)* matrix (WHITESPACE diacriticModifier)*;
 diacriticModifier: DIA_BEFORE | DIA_FLOATING;
 symbolDecl: SYMBOL WHITESPACE symbolName ((SEP symbolName)* | WHITESPACE matrix);

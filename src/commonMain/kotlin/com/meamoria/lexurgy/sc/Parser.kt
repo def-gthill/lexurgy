@@ -173,7 +173,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         val floating = modifiers.any { it.DIA_FLOATING() != null }
         return walkDiacriticDeclaration(
             ctx.getText(),
-            ctx.STR1().getText(),
+            removeEscapes(ctx.text().getText()),
             visit(ctx.matrix()),
             before,
             floating,
