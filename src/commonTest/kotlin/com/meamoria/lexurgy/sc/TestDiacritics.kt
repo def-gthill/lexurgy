@@ -4,6 +4,7 @@ import com.meamoria.mpp.kotest.StringSpec
 import com.meamoria.mpp.kotest.shouldBe
 import com.meamoria.mpp.kotest.shouldThrow
 
+@Suppress("unused")
 class TestDiacritics : StringSpec({
     val lsc = SoundChanger.Companion::fromLsc
 
