@@ -267,7 +267,12 @@ class RepeaterMatcher<I : Segment<I>>(
     }
 
     override fun reversed(): Matcher<I> =
-        RepeaterMatcher(element.reversed(), type, followingMatcher, precedingMatcher)
+        RepeaterMatcher(
+            element.reversed(),
+            type,
+            followingMatcher?.reversed(),
+            precedingMatcher?.reversed(),
+        )
 
     override fun toString(): String = "$element${type.string}"
 

@@ -37,6 +37,17 @@ class TestRepeaters : StringSpec({
 
         ch("altja") shouldBe "eltja"
         ch("otja") shouldBe "øtja"
+
+        val ch2 = lsc(
+            """
+                Class consonant {b, d, g}
+                silly:
+                    o => a / @consonant ab @consonant* _
+            """.trimIndent()
+        )
+
+        ch2("babgdo") shouldBe "babgda"
+        ch2("ibabogago") shouldBe "ibabagago"
     }
 
     "We should be able to change repeaters into things" {
