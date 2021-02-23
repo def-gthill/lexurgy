@@ -101,6 +101,7 @@ class RepeaterTransformer<I : Segment<I>, O : Segment<O>>(
     val outType: SegmentType<O>,
     val transformer: Transformer<I, O>,
     val type: RepeaterType,
+    val followingMatcher: Matcher<I>?,
 ) : Transformer<I, O> {
 
     constructor(
@@ -108,7 +109,12 @@ class RepeaterTransformer<I : Segment<I>, O : Segment<O>>(
         emitter: Emitter<I, O>,
         outType: SegmentType<O>,
         filtered: Boolean,
-    ) : this(outType, matcher.element.transformerTo(emitter, outType, filtered), matcher.type)
+    ) : this(
+        outType,
+        matcher.element.transformerTo(emitter, outType, filtered),
+        matcher.type,
+        matcher.followingMatcher,
+    )
 
     override fun transform(
         order: Int,
@@ -121,6 +127,8 @@ class RepeaterTransformer<I : Segment<I>, O : Segment<O>>(
         val resultBits = mutableListOf<UnboundTransformation<O>>()
         var times = 0
         while (true) {
+            val altBindings = bindings.copy()
+            if (followingMatcher?.claim(declarations, words, elementStart, altBindings) != null) break
             val transformation = transformer.transform(order, declarations, words, elementStart, bindings) ?: break
             elementStart = transformation.end
             resultBits += transformation

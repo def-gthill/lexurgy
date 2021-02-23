@@ -247,11 +247,18 @@ class SequenceMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : BaseMatc
     override fun prefersIndependentEmitters(): Boolean = true
 }
 
-class RepeaterMatcher<I : Segment<I>>(val element: Matcher<I>, val type: RepeaterType) : LiftingMatcher<I>() {
+class RepeaterMatcher<I : Segment<I>>(
+    val element: Matcher<I>,
+    val type: RepeaterType,
+    val precedingMatcher: Matcher<I>?,
+    val followingMatcher: Matcher<I>?,
+) : LiftingMatcher<I>() {
     override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int? {
         var elementStart = start
         var times = 0
         while (true) {
+            val altBindings = bindings.copy()
+            if (followingMatcher?.claim(declarations, word, elementStart, altBindings) != null) break
             elementStart = element.claim(declarations, word, elementStart, bindings) ?: break
             times++
             if (type.maxReps?.let { times >= it } == true) break
@@ -259,7 +266,8 @@ class RepeaterMatcher<I : Segment<I>>(val element: Matcher<I>, val type: Repeate
         return elementStart.takeIf { times >= type.minReps }
     }
 
-    override fun reversed(): Matcher<I> = RepeaterMatcher(element.reversed(), type)
+    override fun reversed(): Matcher<I> =
+        RepeaterMatcher(element.reversed(), type, followingMatcher, precedingMatcher)
 
     override fun toString(): String = "$element${type.string}"
 
