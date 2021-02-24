@@ -22,10 +22,6 @@ class LscInterpreter {
 
     fun parseMatrix(text: String): LscWalker.ParseNode = parseAndWalk(text) { it.matrix() }
 
-    fun parseFeature(text: String): LscWalker.ParseNode = parseAndWalk(text) { it.feature() }
-
-    fun parseValue(text: String): LscWalker.ParseNode = parseAndWalk(text) { it.value() }
-
     private fun parseAndWalk(text: String, parser: (LscParser) -> ParseTree): LscWalker.ParseNode {
         val inputStream = CharStreams.fromString(text)
         val lexer = LscLexer(inputStream)
@@ -152,7 +148,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     override fun visitClassDecl(ctx: ClassDeclContext): ParseNode = walkClassDeclaration(
         ctx.getText(),
-        visit(ctx.value()),
+        visit(ctx.name()),
         listVisit(ctx.allClassElements()),
     )
 
@@ -160,12 +156,12 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     override fun visitFeatureDecl(ctx: FeatureDeclContext): ParseNode = walkFeatureDeclaration(
         ctx.getText(),
-        visit(ctx.feature()),
+        visit(ctx.name()),
         optionalVisit(ctx.nullAlias()),
-        listVisit(ctx.allValues()),
+        listVisit(ctx.allFeatureValues()),
     )
 
-    override fun visitNullAlias(ctx: NullAliasContext): ParseNode = visit(ctx.value())
+    override fun visitNullAlias(ctx: NullAliasContext): ParseNode = visit(ctx.featureValue())
 
     override fun visitDiacriticDecl(ctx: DiacriticDeclContext): ParseNode {
         val modifiers = ctx.allDiacriticModifiers()
@@ -355,7 +351,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     override fun visitClassRef(ctx: ClassRefContext): ParseNode =
         walkClassReference(
             ctx.getText(),
-            visit(ctx.value()),
+            visit(ctx.name()),
         )
 
     override fun visitCaptureRef(ctx: CaptureRefContext): ParseNode =
@@ -376,19 +372,19 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     override fun visitNegatedValue(ctx: NegatedValueContext): ParseNode =
         walkNegatedValue(
             ctx.getText(),
-            visit(ctx.value()),
+            visit(ctx.name()),
         )
 
     override fun visitAbsentFeature(ctx: AbsentFeatureContext): ParseNode =
         walkAbsentFeature(
             ctx.getText(),
-            visit(ctx.feature()),
+            visit(ctx.name()),
         )
 
     override fun visitFeatureVariable(ctx: FeatureVariableContext): ParseNode =
         walkFeatureVariable(
             ctx.getText(),
-            visit(ctx.feature()),
+            visit(ctx.name()),
         )
 
     override fun visitEmpty(ctx: EmptyContext): ParseNode = walkEmpty()
@@ -411,19 +407,19 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     override fun visitMatrix(ctx: MatrixContext): ParseNode =
         walkMatrix(
             ctx.getText(),
-            listVisit(ctx.allValues()),
+            listVisit(ctx.allFeatureValues()),
         )
 
-    override fun visitFeature(ctx: FeatureContext): ParseNode =
-        walkFeature(
+    override fun visitFeatureValue(ctx: FeatureValueContext): ParseNode =
+        walkFeatureValue(
             ctx.getText(),
-            ctx.FEATURE().getText(),
+            visit(ctx.name()),
         )
 
-    override fun visitValue(ctx: ValueContext): ParseNode =
-        walkValue(
+    override fun visitName(ctx: NameContext): ParseNode =
+        walkName(
             ctx.getText(),
-            ctx.VALUE().getText(),
+            ctx.NAME().getText(),
         )
 
     override fun visitText(ctx: TextContext): ParseNode =
@@ -480,7 +476,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     ): ParseNode =
         ClassDeclarationNode(
             text,
-            (className as SimpleValueNode).simpleValue.name,
+            (className as NameNode).name,
             elements,
         )
 
@@ -492,7 +488,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     ): ParseNode = FeatureDeclarationNode(
         text,
         Feature(
-            (featureName as FeatureNode).name,
+            (featureName as NameNode).name,
             values.map { (it as SimpleValueNode).simpleValue },
             (nullAlias as? SimpleValueNode)?.simpleValue,
         )
@@ -700,7 +696,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     ): ParseNode =
         ClassReferenceElement(
             text,
-            (value as SimpleValueNode).simpleValue.name
+            (value as NameNode).name
         )
 
     private fun walkCaptureReference(
@@ -721,45 +717,45 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     ): ParseNode =
         MatrixNode(
             text,
-            Matrix(values.map { (it as ValueNode).value })
+            Matrix(values.map { (it as MatrixValueNode).value })
         )
 
     private fun walkNegatedValue(
         text: String,
         value: ParseNode,
     ): ParseNode =
-        ValueNode(
+        MatrixValueNode(
             text,
-            NegatedValue((value as SimpleValueNode).simpleValue.name)
+            NegatedValue((value as NameNode).name)
         )
 
     private fun walkAbsentFeature(
         text: String,
         feature: ParseNode,
     ): ParseNode =
-        ValueNode(
+        MatrixValueNode(
             text,
-            SimpleValue.absent((feature as FeatureNode).name)
+            SimpleValue.absent((feature as NameNode).name)
         )
 
     private fun walkFeatureVariable(
         text: String,
         feature: ParseNode,
     ): ParseNode =
-        ValueNode(
+        MatrixValueNode(
             text,
-            FeatureVariable((feature as FeatureNode).name)
+            FeatureVariable((feature as NameNode).name)
         )
 
-    private fun walkFeature(
+    private fun walkFeatureValue(
         text: String,
-        name: String,
-    ): ParseNode = FeatureNode(text, name)
+        name: ParseNode,
+    ): ParseNode = SimpleValueNode(text, SimpleValue((name as NameNode).name))
 
-    private fun walkValue(
+    private fun walkName(
         text: String,
         name: String,
-    ): ParseNode = SimpleValueNode(text, SimpleValue(name))
+    ): ParseNode = NameNode(text, name)
 
     private fun walkText(
         text: String,
@@ -1393,12 +1389,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         val matrix: Matrix,
     ) : BaseParseNode(text)
 
-    private class FeatureNode(
-        text: String,
-        val name: String,
-    ) : BaseParseNode(text)
-
-    private open class ValueNode(
+    private open class MatrixValueNode(
         text: String,
         val value: MatrixValue,
     ) : BaseParseNode(text)
@@ -1406,7 +1397,12 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     private class SimpleValueNode(
         text: String,
         val simpleValue: SimpleValue,
-    ) : ValueNode(text, simpleValue)
+    ) : MatrixValueNode(text, simpleValue)
+
+    private class NameNode(
+        text: String,
+        val name: String,
+    ) : BaseParseNode(text)
 
     private class TextNode(
         text: String,
@@ -1428,90 +1424,13 @@ private class LscErrorListener : CommonAntlrErrorListener() {
         exception: RecognitionException?,
     ): Nothing {
         val offendingToken = (offendingSymbol as? CommonToken)?.getTokenText() ?: offendingSymbol.toString()
-        val userFriendlyMessage = exception?.let { getUserFriendlyMessage(it, offendingToken) }
         throw LscNotParsable(
             line,
             charPositionInLine,
             offendingToken,
-            userFriendlyMessage ?: msg
+            msg
         )
     }
-
-    private fun getUserFriendlyMessage(exception: RecognitionException, offendingToken: String): String? {
-        for (messageMaker in userFriendlyMessageMakers) {
-            messageMaker(exception, offendingToken)?.let { return it }
-        }
-        return null
-    }
-
-    private val userFriendlyMessageMakers: List<(RecognitionException, String) -> String?> = listOf(
-        this::ifFeatureNameIsInvalid,
-        this::ifFeatureValueNameIsInvalid,
-        this::ifFeatureValuesInSquareBrackets,
-        this::ifRuleNameIsInvalid,
-    )
-
-    private fun ifFeatureNameIsInvalid(
-        exception: RecognitionException,
-        @Suppress("UNUSED_PARAMETER") offendingToken: String
-    ): String? =
-        (exception.getContext() as ParserRuleContext?).upToType<FeatureDeclContext> {
-            if (exception.getExpectedTokens().contains(LSC_FEATURE)) {
-                val attemptedFeatureName = exception.getMismatchedToken().getTokenText()
-                val reason = when {
-                    attemptedFeatureName[0].toUpperCase() != attemptedFeatureName[0] ->
-                        "feature names must start with an uppercase letter"
-                    else -> "feature names must consist of letters and numbers only and start with an uppercase letter"
-                }
-                "A feature can't be called \"$attemptedFeatureName\"; $reason"
-            } else null
-        }
-
-    private fun ifFeatureValueNameIsInvalid(
-        exception: RecognitionException,
-        @Suppress("UNUSED_PARAMETER") offendingToken: String
-    ): String? =
-        (exception.getContext() as ParserRuleContext?).upToType<FeatureDeclContext> {
-            if (exception.getExpectedTokens().contains(LSC_VALUE)) {
-                val attemptedValueName = exception.getMismatchedToken().getTokenText()
-                val reason = when {
-                    attemptedValueName[0].toLowerCase() != attemptedValueName[0] ->
-                        "value names must start with a lowercase letter"
-                    else -> "value names must consist of letters and numbers only and start with a lowercase letter"
-                }
-                "A feature value can't be called \"$attemptedValueName\"; $reason"
-            } else null
-        }
-
-    private fun ifFeatureValuesInSquareBrackets(
-        exception: RecognitionException,
-        @Suppress("UNUSED_PARAMETER") offendingToken: String
-    ): String? =
-        (exception.getContext() as ParserRuleContext?).upToType<FeatureDeclContext> {
-            if (offendingToken == "[" && exception.getExpectedTokens().contains(LSC_O_PAREN)) {
-                val featureName = it.downToType<FeatureContext>()!!.getText()
-                "The values of the feature $featureName need to be in parentheses () not square brackets []"
-            } else null
-        }
-
-    private fun ifRuleNameIsInvalid(exception: RecognitionException, offendingToken: String): String? =
-        (exception.getContext() as ParserRuleContext?).upToType<ChangeRuleContext> { ctx ->
-            val expectedTokens = exception.getExpectedTokens()
-            val ruleNameStart =
-                when {
-                    expectedTokens.contains(LSC_RULE_START) -> {
-                        ctx.getText() + offendingToken
-                    }
-                    expectedTokens.contains(LSC_PROPAGATE) -> {
-                        ctx.getText()
-                    }
-                    else -> null
-                }
-            ruleNameStart?.let {
-                "A rule name can't start with \"${it}\"; " +
-                        "rule names must consist of only lowercase letters and hyphens"
-            }
-        }
 }
 
 class LscInvalidRuleExpression(
@@ -1539,4 +1458,4 @@ class LscIllegalStructureInOutput(
 )
 
 class LscNotParsable(val line: Int, val column: Int, val offendingSymbol: String, val customMessage: String) :
-    LscUserError("$customMessage (Line $line, column $column)")
+    LscUserError("$customMessage (line $line)")

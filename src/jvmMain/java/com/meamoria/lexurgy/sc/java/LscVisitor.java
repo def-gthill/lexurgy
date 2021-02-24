@@ -317,17 +317,17 @@ public interface LscVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitMatrix(LscParser.MatrixContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link LscParser#feature}.
+	 * Visit a parse tree produced by {@link LscParser#featureValue}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitFeature(LscParser.FeatureContext ctx);
+	T visitFeatureValue(LscParser.FeatureValueContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link LscParser#value}.
+	 * Visit a parse tree produced by {@link LscParser#name}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitValue(LscParser.ValueContext ctx);
+	T visitName(LscParser.NameContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link LscParser#text}.
 	 * @param ctx the parse tree

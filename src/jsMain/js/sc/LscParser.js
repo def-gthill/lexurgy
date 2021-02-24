@@ -7,7 +7,7 @@ var grammarFileName = "Lsc.g4";
 
 
 var serializedATN = ["\u0003\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964",
-    "\u0003+\u0222\u0004\u0002\t\u0002\u0004\u0003\t\u0003\u0004\u0004\t",
+    "\u0003*\u0222\u0004\u0002\t\u0002\u0004\u0003\t\u0003\u0004\u0004\t",
     "\u0004\u0004\u0005\t\u0005\u0004\u0006\t\u0006\u0004\u0007\t\u0007\u0004",
     "\b\t\b\u0004\t\t\t\u0004\n\t\n\u0004\u000b\t\u000b\u0004\f\t\f\u0004",
     "\r\t\r\u0004\u000e\t\u000e\u0004\u000f\t\u000f\u0004\u0010\t\u0010\u0004",
@@ -86,7 +86,7 @@ var serializedATN = ["\u0003\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964",
     "\n7\u00037\u0002\u00028\u0002\u0004\u0006\b\n\f\u000e\u0010\u0012\u0014",
     "\u0016\u0018\u001a\u001c\u001e \"$&(*,.02468:<>@BDFHJLNPRTVXZ\\^`bd",
     "fhjl\u0002\u0005\u0003\u0002\u001e\u001f\u0004\u0002\r\r\u0012\u0013",
-    "\u0004\u0002\'(*+\u0002\u0246\u0002\u008a\u0003\u0002\u0002\u0002\u0004",
+    "\u0004\u0002\'\')*\u0002\u0246\u0002\u008a\u0003\u0002\u0002\u0002\u0004",
     "\u0094\u0003\u0002\u0002\u0002\u0006\u0096\u0003\u0002\u0002\u0002\b",
     "\u00a7\u0003\u0002\u0002\u0002\n\u00a9\u0003\u0002\u0002\u0002\f\u00bf",
     "\u0003\u0002\u0002\u0002\u000e\u00c2\u0003\u0002\u0002\u0002\u0010\u00d6",
@@ -146,19 +146,19 @@ var serializedATN = ["\u0003\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964",
     "\u0003\u0002\u0002\u0002\u00a5\u00a8\u0005P)\u0002\u00a6\u00a8\u0005",
     "l7\u0002\u00a7\u00a5\u0003\u0002\u0002\u0002\u00a7\u00a6\u0003\u0002",
     "\u0002\u0002\u00a8\t\u0003\u0002\u0002\u0002\u00a9\u00aa\u0007\u001c",
-    "\u0002\u0002\u00aa\u00ab\u0007\n\u0002\u0002\u00ab\u00ad\u0005h5\u0002",
+    "\u0002\u0002\u00aa\u00ab\u0007\n\u0002\u0002\u00ab\u00ad\u0005j6\u0002",
     "\u00ac\u00ae\u0007\n\u0002\u0002\u00ad\u00ac\u0003\u0002\u0002\u0002",
     "\u00ad\u00ae\u0003\u0002\u0002\u0002\u00ae\u00af\u0003\u0002\u0002\u0002",
     "\u00af\u00b3\u0007\u000b\u0002\u0002\u00b0\u00b1\u0005\f\u0007\u0002",
     "\u00b1\u00b2\u0007\u0004\u0002\u0002\u00b2\u00b4\u0003\u0002\u0002\u0002",
     "\u00b3\u00b0\u0003\u0002\u0002\u0002\u00b3\u00b4\u0003\u0002\u0002\u0002",
-    "\u00b4\u00b5\u0003\u0002\u0002\u0002\u00b5\u00ba\u0005j6\u0002\u00b6",
-    "\u00b7\u0007\u0004\u0002\u0002\u00b7\u00b9\u0005j6\u0002\u00b8\u00b6",
+    "\u00b4\u00b5\u0003\u0002\u0002\u0002\u00b5\u00ba\u0005h5\u0002\u00b6",
+    "\u00b7\u0007\u0004\u0002\u0002\u00b7\u00b9\u0005h5\u0002\u00b8\u00b6",
     "\u0003\u0002\u0002\u0002\u00b9\u00bc\u0003\u0002\u0002\u0002\u00ba\u00b8",
     "\u0003\u0002\u0002\u0002\u00ba\u00bb\u0003\u0002\u0002\u0002\u00bb\u00bd",
     "\u0003\u0002\u0002\u0002\u00bc\u00ba\u0003\u0002\u0002\u0002\u00bd\u00be",
     "\u0007\f\u0002\u0002\u00be\u000b\u0003\u0002\u0002\u0002\u00bf\u00c0",
-    "\u0007\r\u0002\u0002\u00c0\u00c1\u0005j6\u0002\u00c1\r\u0003\u0002\u0002",
+    "\u0007\r\u0002\u0002\u00c0\u00c1\u0005h5\u0002\u00c1\r\u0003\u0002\u0002",
     "\u0002\u00c2\u00c3\u0007\u001d\u0002\u0002\u00c3\u00c4\u0007\n\u0002",
     "\u0002\u00c4\u00c5\u0005l7\u0002\u00c5\u00cb\u0007\n\u0002\u0002\u00c6",
     "\u00c7\u0005\u0010\t\u0002\u00c7\u00c8\u0007\n\u0002\u0002\u00c8\u00ca",
@@ -238,8 +238,8 @@ var serializedATN = ["\u0003\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964",
     "\u0002\u0002\u0002\u0149\u014c\u0003\u0002\u0002\u0002\u014a\u0148\u0003",
     "\u0002\u0002\u0002\u014a\u014b\u0003\u0002\u0002\u0002\u014b%\u0003",
     "\u0002\u0002\u0002\u014c\u014a\u0003\u0002\u0002\u0002\u014d\u0152\u0007",
-    "(\u0002\u0002\u014e\u014f\u0007\u0014\u0002\u0002\u014f\u0151\u0007",
-    "(\u0002\u0002\u0150\u014e\u0003\u0002\u0002\u0002\u0151\u0154\u0003",
+    "\'\u0002\u0002\u014e\u014f\u0007\u0014\u0002\u0002\u014f\u0151\u0007",
+    "\'\u0002\u0002\u0150\u014e\u0003\u0002\u0002\u0002\u0151\u0154\u0003",
     "\u0002\u0002\u0002\u0152\u0150\u0003\u0002\u0002\u0002\u0152\u0153\u0003",
     "\u0002\u0002\u0002\u0153\'\u0003\u0002\u0002\u0002\u0154\u0152\u0003",
     "\u0002\u0002\u0002\u0155\u0162\u0007&\u0002\u0002\u0156\u0157\u0005",
@@ -330,7 +330,7 @@ var serializedATN = ["\u0003\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964",
     "\u0003\u0002\u0002\u0002\u01e0\u01df\u0003\u0002\u0002\u0002\u01e1O",
     "\u0003\u0002\u0002\u0002\u01e2\u01e3\u0007\u0019\u0002\u0002\u01e3\u01e4",
     "\u0005j6\u0002\u01e4Q\u0003\u0002\u0002\u0002\u01e5\u01e6\u0007\u0017",
-    "\u0002\u0002\u01e6\u01e7\u0007)\u0002\u0002\u01e7S\u0003\u0002\u0002",
+    "\u0002\u0002\u01e6\u01e7\u0007(\u0002\u0002\u01e7S\u0003\u0002\u0002",
     "\u0002\u01e8\u01ea\u0007\u000e\u0002\u0002\u01e9\u01eb\u0005V,\u0002",
     "\u01ea\u01e9\u0003\u0002\u0002\u0002\u01ea\u01eb\u0003\u0002\u0002\u0002",
     "\u01eb\u01f0\u0003\u0002\u0002\u0002\u01ec\u01ed\u0007\n\u0002\u0002",
@@ -338,35 +338,35 @@ var serializedATN = ["\u0003\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964",
     "\u01f2\u0003\u0002\u0002\u0002\u01f0\u01ee\u0003\u0002\u0002\u0002\u01f0",
     "\u01f1\u0003\u0002\u0002\u0002\u01f1\u01f3\u0003\u0002\u0002\u0002\u01f2",
     "\u01f0\u0003\u0002\u0002\u0002\u01f3\u01f4\u0007\u000f\u0002\u0002\u01f4",
-    "U\u0003\u0002\u0002\u0002\u01f5\u01fa\u0005j6\u0002\u01f6\u01fa\u0005",
+    "U\u0003\u0002\u0002\u0002\u01f5\u01fa\u0005h5\u0002\u01f6\u01fa\u0005",
     "X-\u0002\u01f7\u01fa\u0005Z.\u0002\u01f8\u01fa\u0005\\/\u0002\u01f9",
     "\u01f5\u0003\u0002\u0002\u0002\u01f9\u01f6\u0003\u0002\u0002\u0002\u01f9",
     "\u01f7\u0003\u0002\u0002\u0002\u01f9\u01f8\u0003\u0002\u0002\u0002\u01fa",
     "W\u0003\u0002\u0002\u0002\u01fb\u01fc\u0007\u0016\u0002\u0002\u01fc",
     "\u01fd\u0005j6\u0002\u01fdY\u0003\u0002\u0002\u0002\u01fe\u01ff\u0007",
-    "\r\u0002\u0002\u01ff\u0200\u0005h5\u0002\u0200[\u0003\u0002\u0002\u0002",
-    "\u0201\u0202\u0007\u0017\u0002\u0002\u0202\u0203\u0005h5\u0002\u0203",
+    "\r\u0002\u0002\u01ff\u0200\u0005j6\u0002\u0200[\u0003\u0002\u0002\u0002",
+    "\u0201\u0202\u0007\u0017\u0002\u0002\u0202\u0203\u0005j6\u0002\u0203",
     "]\u0003\u0002\u0002\u0002\u0204\u0205\u0007\r\u0002\u0002\u0205_\u0003",
     "\u0002\u0002\u0002\u0206\u0207\u0007\u0017\u0002\u0002\u0207a\u0003",
     "\u0002\u0002\u0002\u0208\u0209\u0007\u0018\u0002\u0002\u0209c\u0003",
     "\u0002\u0002\u0002\u020a\u020b\t\u0003\u0002\u0002\u020be\u0003\u0002",
-    "\u0002\u0002\u020c\u020e\u0007\u000e\u0002\u0002\u020d\u020f\u0005j",
-    "6\u0002\u020e\u020d\u0003\u0002\u0002\u0002\u020e\u020f\u0003\u0002",
+    "\u0002\u0002\u020c\u020e\u0007\u000e\u0002\u0002\u020d\u020f\u0005h",
+    "5\u0002\u020e\u020d\u0003\u0002\u0002\u0002\u020e\u020f\u0003\u0002",
     "\u0002\u0002\u020f\u0214\u0003\u0002\u0002\u0002\u0210\u0211\u0007\n",
-    "\u0002\u0002\u0211\u0213\u0005j6\u0002\u0212\u0210\u0003\u0002\u0002",
+    "\u0002\u0002\u0211\u0213\u0005h5\u0002\u0212\u0210\u0003\u0002\u0002",
     "\u0002\u0213\u0216\u0003\u0002\u0002\u0002\u0214\u0212\u0003\u0002\u0002",
     "\u0002\u0214\u0215\u0003\u0002\u0002\u0002\u0215\u0217\u0003\u0002\u0002",
     "\u0002\u0216\u0214\u0003\u0002\u0002\u0002\u0217\u0218\u0007\u000f\u0002",
-    "\u0002\u0218g\u0003\u0002\u0002\u0002\u0219\u021a\u0007\'\u0002\u0002",
-    "\u021ai\u0003\u0002\u0002\u0002\u021b\u021c\u0007(\u0002\u0002\u021c",
-    "k\u0003\u0002\u0002\u0002\u021d\u021f\t\u0004\u0002\u0002\u021e\u0220",
-    "\u0007\u0016\u0002\u0002\u021f\u021e\u0003\u0002\u0002\u0002\u021f\u0220",
-    "\u0003\u0002\u0002\u0002\u0220m\u0003\u0002\u0002\u0002>rv{\u0080\u0086",
-    "\u008a\u0094\u00a0\u00a7\u00ad\u00b3\u00ba\u00cb\u00d3\u00df\u00e4\u00eb",
-    "\u00f1\u00f8\u00fe\u0107\u010d\u0116\u011a\u011f\u0125\u0129\u012f\u0137",
-    "\u0139\u013e\u0145\u014a\u0152\u015b\u015f\u0161\u0165\u0169\u0175\u017d",
-    "\u0182\u0185\u0187\u0194\u019b\u01a3\u01aa\u01b1\u01bf\u01c9\u01d0\u01da",
-    "\u01e0\u01ea\u01f0\u01f9\u020e\u0214\u021f"].join("");
+    "\u0002\u0218g\u0003\u0002\u0002\u0002\u0219\u021a\u0005j6\u0002\u021a",
+    "i\u0003\u0002\u0002\u0002\u021b\u021c\u0007\'\u0002\u0002\u021ck\u0003",
+    "\u0002\u0002\u0002\u021d\u021f\t\u0004\u0002\u0002\u021e\u0220\u0007",
+    "\u0016\u0002\u0002\u021f\u021e\u0003\u0002\u0002\u0002\u021f\u0220\u0003",
+    "\u0002\u0002\u0002\u0220m\u0003\u0002\u0002\u0002>rv{\u0080\u0086\u008a",
+    "\u0094\u00a0\u00a7\u00ad\u00b3\u00ba\u00cb\u00d3\u00df\u00e4\u00eb\u00f1",
+    "\u00f8\u00fe\u0107\u010d\u0116\u011a\u011f\u0125\u0129\u012f\u0137\u0139",
+    "\u013e\u0145\u014a\u0152\u015b\u015f\u0161\u0165\u0169\u0175\u017d\u0182",
+    "\u0185\u0187\u0194\u019b\u01a3\u01aa\u01b1\u01bf\u01c9\u01d0\u01da\u01e0",
+    "\u01ea\u01f0\u01f9\u020e\u0214\u021f"].join("");
 
 
 var atn = new antlr4.atn.ATNDeserializer().deserialize(serializedATN);
@@ -387,8 +387,8 @@ var symbolicNames = [ null, "COMMENT", "SEP", "CHANGE", "CONDITION", "EXCLUSION"
                       "CLASSREF", "INTERSECTION", "CLASS_DECL", "FEATURE_DECL", 
                       "DIACRITIC", "DIA_BEFORE", "DIA_FLOATING", "SYMBOL", 
                       "DEROMANIZER", "ROMANIZER", "SUBRULE", "PROPAGATE", 
-                      "LITERAL", "UNCHANGED", "FEATURE", "VALUE", "NUMBER", 
-                      "STR1", "STR" ];
+                      "LITERAL", "UNCHANGED", "NAME", "NUMBER", "STR1", 
+                      "STR" ];
 
 var ruleNames =  [ "lscFile", "statement", "classDecl", "classElement", 
                    "featureDecl", "nullAlias", "diacriticDecl", "diacriticModifier", 
@@ -402,7 +402,7 @@ var ruleNames =  [ "lscFile", "statement", "classDecl", "classElement",
                    "simple", "negated", "classRef", "captureRef", "fancyMatrix", 
                    "fancyValue", "negatedValue", "absentFeature", "featureVariable", 
                    "empty", "boundary", "betweenWords", "repeaterType", 
-                   "matrix", "feature", "value", "text" ];
+                   "matrix", "featureValue", "name", "text" ];
 
 function LscParser (input) {
 	antlr4.Parser.call(this, input);
@@ -459,11 +459,10 @@ LscParser.SUBRULE = 33;
 LscParser.PROPAGATE = 34;
 LscParser.LITERAL = 35;
 LscParser.UNCHANGED = 36;
-LscParser.FEATURE = 37;
-LscParser.VALUE = 38;
-LscParser.NUMBER = 39;
-LscParser.STR1 = 40;
-LscParser.STR = 41;
+LscParser.NAME = 37;
+LscParser.NUMBER = 38;
+LscParser.STR1 = 39;
+LscParser.STR = 40;
 
 LscParser.RULE_lscFile = 0;
 LscParser.RULE_statement = 1;
@@ -516,8 +515,8 @@ LscParser.RULE_boundary = 47;
 LscParser.RULE_betweenWords = 48;
 LscParser.RULE_repeaterType = 49;
 LscParser.RULE_matrix = 50;
-LscParser.RULE_feature = 51;
-LscParser.RULE_value = 52;
+LscParser.RULE_featureValue = 51;
+LscParser.RULE_name = 52;
 LscParser.RULE_text = 53;
 
 
@@ -603,7 +602,7 @@ LscParser.prototype.lscFile = function() {
         case LscParser.SYMBOL:
         case LscParser.DEROMANIZER:
         case LscParser.ROMANIZER:
-        case LscParser.VALUE:
+        case LscParser.NAME:
             this.enterOuterAlt(localctx, 2);
             this.state = 112;
             this._errHandler.sync(this);
@@ -621,7 +620,7 @@ LscParser.prototype.lscFile = function() {
             this.state = 116;
             this._errHandler.sync(this);
             _la = this._input.LA(1);
-            if(((((_la - 25)) & ~0x1f) == 0 && ((1 << (_la - 25)) & ((1 << (LscParser.CLASS_DECL - 25)) | (1 << (LscParser.FEATURE_DECL - 25)) | (1 << (LscParser.DIACRITIC - 25)) | (1 << (LscParser.SYMBOL - 25)) | (1 << (LscParser.DEROMANIZER - 25)) | (1 << (LscParser.ROMANIZER - 25)) | (1 << (LscParser.VALUE - 25)))) !== 0)) {
+            if(((((_la - 25)) & ~0x1f) == 0 && ((1 << (_la - 25)) & ((1 << (LscParser.CLASS_DECL - 25)) | (1 << (LscParser.FEATURE_DECL - 25)) | (1 << (LscParser.DIACRITIC - 25)) | (1 << (LscParser.SYMBOL - 25)) | (1 << (LscParser.DEROMANIZER - 25)) | (1 << (LscParser.ROMANIZER - 25)) | (1 << (LscParser.NAME - 25)))) !== 0)) {
                 this.state = 115;
                 this.statement();
             }
@@ -846,8 +845,8 @@ ClassDeclContext.prototype.WHITESPACE = function(i) {
 };
 
 
-ClassDeclContext.prototype.value = function() {
-    return this.getTypedRuleContext(ValueContext,0);
+ClassDeclContext.prototype.name = function() {
+    return this.getTypedRuleContext(NameContext,0);
 };
 
 ClassDeclContext.prototype.LIST_START = function() {
@@ -906,7 +905,7 @@ LscParser.prototype.classDecl = function() {
         this.state = 149;
         this.match(LscParser.WHITESPACE);
         this.state = 150;
-        this.value();
+        this.name();
         this.state = 151;
         this.match(LscParser.WHITESPACE);
         this.state = 152;
@@ -992,8 +991,7 @@ LscParser.prototype.classElement = function() {
             this.state = 163;
             this.classRef();
             break;
-        case LscParser.FEATURE:
-        case LscParser.VALUE:
+        case LscParser.NAME:
         case LscParser.STR1:
         case LscParser.STR:
             this.enterOuterAlt(localctx, 2);
@@ -1050,22 +1048,22 @@ FeatureDeclContext.prototype.WHITESPACE = function(i) {
 };
 
 
-FeatureDeclContext.prototype.feature = function() {
-    return this.getTypedRuleContext(FeatureContext,0);
+FeatureDeclContext.prototype.name = function() {
+    return this.getTypedRuleContext(NameContext,0);
 };
 
 FeatureDeclContext.prototype.O_PAREN = function() {
     return this.getToken(LscParser.O_PAREN, 0);
 };
 
-FeatureDeclContext.prototype.value = function(i) {
+FeatureDeclContext.prototype.featureValue = function(i) {
     if(i===undefined) {
         i = null;
     }
     if(i===null) {
-        return this.getTypedRuleContexts(ValueContext);
+        return this.getTypedRuleContexts(FeatureValueContext);
     } else {
-        return this.getTypedRuleContext(ValueContext,i);
+        return this.getTypedRuleContext(FeatureValueContext,i);
     }
 };
 
@@ -1114,7 +1112,7 @@ LscParser.prototype.featureDecl = function() {
         this.state = 168;
         this.match(LscParser.WHITESPACE);
         this.state = 169;
-        this.feature();
+        this.name();
         this.state = 171;
         this._errHandler.sync(this);
         _la = this._input.LA(1);
@@ -1136,7 +1134,7 @@ LscParser.prototype.featureDecl = function() {
         }
 
         this.state = 179;
-        this.value();
+        this.featureValue();
         this.state = 184;
         this._errHandler.sync(this);
         _la = this._input.LA(1);
@@ -1144,7 +1142,7 @@ LscParser.prototype.featureDecl = function() {
             this.state = 180;
             this.match(LscParser.SEP);
             this.state = 181;
-            this.value();
+            this.featureValue();
             this.state = 186;
             this._errHandler.sync(this);
             _la = this._input.LA(1);
@@ -1186,8 +1184,8 @@ NullAliasContext.prototype.NULL = function() {
     return this.getToken(LscParser.NULL, 0);
 };
 
-NullAliasContext.prototype.value = function() {
-    return this.getTypedRuleContext(ValueContext,0);
+NullAliasContext.prototype.featureValue = function() {
+    return this.getTypedRuleContext(FeatureValueContext,0);
 };
 
 NullAliasContext.prototype.accept = function(visitor) {
@@ -1212,7 +1210,7 @@ LscParser.prototype.nullAlias = function() {
         this.state = 189;
         this.match(LscParser.NULL);
         this.state = 190;
-        this.value();
+        this.featureValue();
     } catch (re) {
     	if(re instanceof antlr4.error.RecognitionException) {
 	        localctx.exception = re;
@@ -2494,14 +2492,14 @@ function RuleNameContext(parser, parent, invokingState) {
 RuleNameContext.prototype = Object.create(antlr4.ParserRuleContext.prototype);
 RuleNameContext.prototype.constructor = RuleNameContext;
 
-RuleNameContext.prototype.VALUE = function(i) {
+RuleNameContext.prototype.NAME = function(i) {
 	if(i===undefined) {
 		i = null;
 	}
     if(i===null) {
-        return this.getTokens(LscParser.VALUE);
+        return this.getTokens(LscParser.NAME);
     } else {
-        return this.getToken(LscParser.VALUE, i);
+        return this.getToken(LscParser.NAME, i);
     }
 };
 
@@ -2539,7 +2537,7 @@ LscParser.prototype.ruleName = function() {
     try {
         this.enterOuterAlt(localctx, 1);
         this.state = 331;
-        this.match(LscParser.VALUE);
+        this.match(LscParser.NAME);
         this.state = 336;
         this._errHandler.sync(this);
         _la = this._input.LA(1);
@@ -2547,7 +2545,7 @@ LscParser.prototype.ruleName = function() {
             this.state = 332;
             this.match(LscParser.HYPHEN);
             this.state = 333;
-            this.match(LscParser.VALUE);
+            this.match(LscParser.NAME);
             this.state = 338;
             this._errHandler.sync(this);
             _la = this._input.LA(1);
@@ -2650,8 +2648,7 @@ LscParser.prototype.expression = function() {
         case LscParser.WORD_BOUNDARY:
         case LscParser.BETWEEN_WORDS:
         case LscParser.CLASSREF:
-        case LscParser.FEATURE:
-        case LscParser.VALUE:
+        case LscParser.NAME:
         case LscParser.STR1:
         case LscParser.STR:
             this.enterOuterAlt(localctx, 2);
@@ -3128,7 +3125,7 @@ LscParser.prototype.environment = function() {
             this.state = 379;
             this._errHandler.sync(this);
             _la = this._input.LA(1);
-            if((((_la) & ~0x1f) == 0 && ((1 << _la) & ((1 << LscParser.O_PAREN) | (1 << LscParser.NULL) | (1 << LscParser.MATRIX_START) | (1 << LscParser.LIST_START) | (1 << LscParser.NEGATION) | (1 << LscParser.WORD_BOUNDARY) | (1 << LscParser.BETWEEN_WORDS) | (1 << LscParser.CLASSREF))) !== 0) || ((((_la - 37)) & ~0x1f) == 0 && ((1 << (_la - 37)) & ((1 << (LscParser.FEATURE - 37)) | (1 << (LscParser.VALUE - 37)) | (1 << (LscParser.STR1 - 37)) | (1 << (LscParser.STR - 37)))) !== 0)) {
+            if(((((_la - 9)) & ~0x1f) == 0 && ((1 << (_la - 9)) & ((1 << (LscParser.O_PAREN - 9)) | (1 << (LscParser.NULL - 9)) | (1 << (LscParser.MATRIX_START - 9)) | (1 << (LscParser.LIST_START - 9)) | (1 << (LscParser.NEGATION - 9)) | (1 << (LscParser.WORD_BOUNDARY - 9)) | (1 << (LscParser.BETWEEN_WORDS - 9)) | (1 << (LscParser.CLASSREF - 9)) | (1 << (LscParser.NAME - 9)) | (1 << (LscParser.STR1 - 9)) | (1 << (LscParser.STR - 9)))) !== 0)) {
                 this.state = 376;
                 this.environmentBefore();
                 this.state = 377;
@@ -3154,7 +3151,7 @@ LscParser.prototype.environment = function() {
             this.state = 387;
             this._errHandler.sync(this);
             _la = this._input.LA(1);
-            if((((_la) & ~0x1f) == 0 && ((1 << _la) & ((1 << LscParser.O_PAREN) | (1 << LscParser.NULL) | (1 << LscParser.MATRIX_START) | (1 << LscParser.LIST_START) | (1 << LscParser.NEGATION) | (1 << LscParser.WORD_BOUNDARY) | (1 << LscParser.BETWEEN_WORDS) | (1 << LscParser.CLASSREF))) !== 0) || ((((_la - 37)) & ~0x1f) == 0 && ((1 << (_la - 37)) & ((1 << (LscParser.FEATURE - 37)) | (1 << (LscParser.VALUE - 37)) | (1 << (LscParser.STR1 - 37)) | (1 << (LscParser.STR - 37)))) !== 0)) {
+            if(((((_la - 9)) & ~0x1f) == 0 && ((1 << (_la - 9)) & ((1 << (LscParser.O_PAREN - 9)) | (1 << (LscParser.NULL - 9)) | (1 << (LscParser.MATRIX_START - 9)) | (1 << (LscParser.LIST_START - 9)) | (1 << (LscParser.NEGATION - 9)) | (1 << (LscParser.WORD_BOUNDARY - 9)) | (1 << (LscParser.BETWEEN_WORDS - 9)) | (1 << (LscParser.CLASSREF - 9)) | (1 << (LscParser.NAME - 9)) | (1 << (LscParser.STR1 - 9)) | (1 << (LscParser.STR - 9)))) !== 0)) {
                 this.state = 386;
                 this.environmentBefore();
             }
@@ -3790,8 +3787,7 @@ LscParser.prototype.repeater = function() {
         case LscParser.WORD_BOUNDARY:
         case LscParser.BETWEEN_WORDS:
         case LscParser.CLASSREF:
-        case LscParser.FEATURE:
-        case LscParser.VALUE:
+        case LscParser.NAME:
         case LscParser.STR1:
         case LscParser.STR:
             this.state = 430;
@@ -4375,8 +4371,7 @@ LscParser.prototype.negated = function() {
             this.state = 476;
             this.captureRef();
             break;
-        case LscParser.FEATURE:
-        case LscParser.VALUE:
+        case LscParser.NAME:
         case LscParser.STR1:
         case LscParser.STR:
             this.state = 477;
@@ -4420,8 +4415,8 @@ ClassRefContext.prototype.CLASSREF = function() {
     return this.getToken(LscParser.CLASSREF, 0);
 };
 
-ClassRefContext.prototype.value = function() {
-    return this.getTypedRuleContext(ValueContext,0);
+ClassRefContext.prototype.name = function() {
+    return this.getTypedRuleContext(NameContext,0);
 };
 
 ClassRefContext.prototype.accept = function(visitor) {
@@ -4446,7 +4441,7 @@ LscParser.prototype.classRef = function() {
         this.state = 480;
         this.match(LscParser.CLASSREF);
         this.state = 481;
-        this.value();
+        this.name();
     } catch (re) {
     	if(re instanceof antlr4.error.RecognitionException) {
 	        localctx.exception = re;
@@ -4596,7 +4591,7 @@ LscParser.prototype.fancyMatrix = function() {
         this.state = 488;
         this._errHandler.sync(this);
         _la = this._input.LA(1);
-        if(((((_la - 11)) & ~0x1f) == 0 && ((1 << (_la - 11)) & ((1 << (LscParser.NULL - 11)) | (1 << (LscParser.NEGATION - 11)) | (1 << (LscParser.WORD_BOUNDARY - 11)) | (1 << (LscParser.VALUE - 11)))) !== 0)) {
+        if(((((_la - 11)) & ~0x1f) == 0 && ((1 << (_la - 11)) & ((1 << (LscParser.NULL - 11)) | (1 << (LscParser.NEGATION - 11)) | (1 << (LscParser.WORD_BOUNDARY - 11)) | (1 << (LscParser.NAME - 11)))) !== 0)) {
             this.state = 487;
             this.fancyValue();
         }
@@ -4646,8 +4641,8 @@ function FancyValueContext(parser, parent, invokingState) {
 FancyValueContext.prototype = Object.create(antlr4.ParserRuleContext.prototype);
 FancyValueContext.prototype.constructor = FancyValueContext;
 
-FancyValueContext.prototype.value = function() {
-    return this.getTypedRuleContext(ValueContext,0);
+FancyValueContext.prototype.featureValue = function() {
+    return this.getTypedRuleContext(FeatureValueContext,0);
 };
 
 FancyValueContext.prototype.negatedValue = function() {
@@ -4683,10 +4678,10 @@ LscParser.prototype.fancyValue = function() {
         this.state = 503;
         this._errHandler.sync(this);
         switch(this._input.LA(1)) {
-        case LscParser.VALUE:
+        case LscParser.NAME:
             this.enterOuterAlt(localctx, 1);
             this.state = 499;
-            this.value();
+            this.featureValue();
             break;
         case LscParser.NEGATION:
             this.enterOuterAlt(localctx, 2);
@@ -4741,8 +4736,8 @@ NegatedValueContext.prototype.NEGATION = function() {
     return this.getToken(LscParser.NEGATION, 0);
 };
 
-NegatedValueContext.prototype.value = function() {
-    return this.getTypedRuleContext(ValueContext,0);
+NegatedValueContext.prototype.name = function() {
+    return this.getTypedRuleContext(NameContext,0);
 };
 
 NegatedValueContext.prototype.accept = function(visitor) {
@@ -4767,7 +4762,7 @@ LscParser.prototype.negatedValue = function() {
         this.state = 505;
         this.match(LscParser.NEGATION);
         this.state = 506;
-        this.value();
+        this.name();
     } catch (re) {
     	if(re instanceof antlr4.error.RecognitionException) {
 	        localctx.exception = re;
@@ -4803,8 +4798,8 @@ AbsentFeatureContext.prototype.NULL = function() {
     return this.getToken(LscParser.NULL, 0);
 };
 
-AbsentFeatureContext.prototype.feature = function() {
-    return this.getTypedRuleContext(FeatureContext,0);
+AbsentFeatureContext.prototype.name = function() {
+    return this.getTypedRuleContext(NameContext,0);
 };
 
 AbsentFeatureContext.prototype.accept = function(visitor) {
@@ -4829,7 +4824,7 @@ LscParser.prototype.absentFeature = function() {
         this.state = 508;
         this.match(LscParser.NULL);
         this.state = 509;
-        this.feature();
+        this.name();
     } catch (re) {
     	if(re instanceof antlr4.error.RecognitionException) {
 	        localctx.exception = re;
@@ -4865,8 +4860,8 @@ FeatureVariableContext.prototype.WORD_BOUNDARY = function() {
     return this.getToken(LscParser.WORD_BOUNDARY, 0);
 };
 
-FeatureVariableContext.prototype.feature = function() {
-    return this.getTypedRuleContext(FeatureContext,0);
+FeatureVariableContext.prototype.name = function() {
+    return this.getTypedRuleContext(NameContext,0);
 };
 
 FeatureVariableContext.prototype.accept = function(visitor) {
@@ -4891,7 +4886,7 @@ LscParser.prototype.featureVariable = function() {
         this.state = 511;
         this.match(LscParser.WORD_BOUNDARY);
         this.state = 512;
-        this.feature();
+        this.name();
     } catch (re) {
     	if(re instanceof antlr4.error.RecognitionException) {
 	        localctx.exception = re;
@@ -5171,14 +5166,14 @@ MatrixContext.prototype.MATRIX_END = function() {
     return this.getToken(LscParser.MATRIX_END, 0);
 };
 
-MatrixContext.prototype.value = function(i) {
+MatrixContext.prototype.featureValue = function(i) {
     if(i===undefined) {
         i = null;
     }
     if(i===null) {
-        return this.getTypedRuleContexts(ValueContext);
+        return this.getTypedRuleContexts(FeatureValueContext);
     } else {
-        return this.getTypedRuleContext(ValueContext,i);
+        return this.getTypedRuleContext(FeatureValueContext,i);
     }
 };
 
@@ -5219,9 +5214,9 @@ LscParser.prototype.matrix = function() {
         this.state = 524;
         this._errHandler.sync(this);
         _la = this._input.LA(1);
-        if(_la===LscParser.VALUE) {
+        if(_la===LscParser.NAME) {
             this.state = 523;
-            this.value();
+            this.featureValue();
         }
 
         this.state = 530;
@@ -5231,7 +5226,7 @@ LscParser.prototype.matrix = function() {
             this.state = 526;
             this.match(LscParser.WHITESPACE);
             this.state = 527;
-            this.value();
+            this.featureValue();
             this.state = 532;
             this._errHandler.sync(this);
             _la = this._input.LA(1);
@@ -5253,7 +5248,7 @@ LscParser.prototype.matrix = function() {
 };
 
 
-function FeatureContext(parser, parent, invokingState) {
+function FeatureValueContext(parser, parent, invokingState) {
 	if(parent===undefined) {
 	    parent = null;
 	}
@@ -5262,20 +5257,20 @@ function FeatureContext(parser, parent, invokingState) {
 	}
 	antlr4.ParserRuleContext.call(this, parent, invokingState);
     this.parser = parser;
-    this.ruleIndex = LscParser.RULE_feature;
+    this.ruleIndex = LscParser.RULE_featureValue;
     return this;
 }
 
-FeatureContext.prototype = Object.create(antlr4.ParserRuleContext.prototype);
-FeatureContext.prototype.constructor = FeatureContext;
+FeatureValueContext.prototype = Object.create(antlr4.ParserRuleContext.prototype);
+FeatureValueContext.prototype.constructor = FeatureValueContext;
 
-FeatureContext.prototype.FEATURE = function() {
-    return this.getToken(LscParser.FEATURE, 0);
+FeatureValueContext.prototype.name = function() {
+    return this.getTypedRuleContext(NameContext,0);
 };
 
-FeatureContext.prototype.accept = function(visitor) {
+FeatureValueContext.prototype.accept = function(visitor) {
     if ( visitor instanceof LscVisitor ) {
-        return visitor.visitFeature(this);
+        return visitor.visitFeatureValue(this);
     } else {
         return visitor.visitChildren(this);
     }
@@ -5284,16 +5279,16 @@ FeatureContext.prototype.accept = function(visitor) {
 
 
 
-LscParser.FeatureContext = FeatureContext;
+LscParser.FeatureValueContext = FeatureValueContext;
 
-LscParser.prototype.feature = function() {
+LscParser.prototype.featureValue = function() {
 
-    var localctx = new FeatureContext(this, this._ctx, this.state);
-    this.enterRule(localctx, 102, LscParser.RULE_feature);
+    var localctx = new FeatureValueContext(this, this._ctx, this.state);
+    this.enterRule(localctx, 102, LscParser.RULE_featureValue);
     try {
         this.enterOuterAlt(localctx, 1);
         this.state = 535;
-        this.match(LscParser.FEATURE);
+        this.name();
     } catch (re) {
     	if(re instanceof antlr4.error.RecognitionException) {
 	        localctx.exception = re;
@@ -5309,7 +5304,7 @@ LscParser.prototype.feature = function() {
 };
 
 
-function ValueContext(parser, parent, invokingState) {
+function NameContext(parser, parent, invokingState) {
 	if(parent===undefined) {
 	    parent = null;
 	}
@@ -5318,20 +5313,20 @@ function ValueContext(parser, parent, invokingState) {
 	}
 	antlr4.ParserRuleContext.call(this, parent, invokingState);
     this.parser = parser;
-    this.ruleIndex = LscParser.RULE_value;
+    this.ruleIndex = LscParser.RULE_name;
     return this;
 }
 
-ValueContext.prototype = Object.create(antlr4.ParserRuleContext.prototype);
-ValueContext.prototype.constructor = ValueContext;
+NameContext.prototype = Object.create(antlr4.ParserRuleContext.prototype);
+NameContext.prototype.constructor = NameContext;
 
-ValueContext.prototype.VALUE = function() {
-    return this.getToken(LscParser.VALUE, 0);
+NameContext.prototype.NAME = function() {
+    return this.getToken(LscParser.NAME, 0);
 };
 
-ValueContext.prototype.accept = function(visitor) {
+NameContext.prototype.accept = function(visitor) {
     if ( visitor instanceof LscVisitor ) {
-        return visitor.visitValue(this);
+        return visitor.visitName(this);
     } else {
         return visitor.visitChildren(this);
     }
@@ -5340,16 +5335,16 @@ ValueContext.prototype.accept = function(visitor) {
 
 
 
-LscParser.ValueContext = ValueContext;
+LscParser.NameContext = NameContext;
 
-LscParser.prototype.value = function() {
+LscParser.prototype.name = function() {
 
-    var localctx = new ValueContext(this, this._ctx, this.state);
-    this.enterRule(localctx, 104, LscParser.RULE_value);
+    var localctx = new NameContext(this, this._ctx, this.state);
+    this.enterRule(localctx, 104, LscParser.RULE_name);
     try {
         this.enterOuterAlt(localctx, 1);
         this.state = 537;
-        this.match(LscParser.VALUE);
+        this.match(LscParser.NAME);
     } catch (re) {
     	if(re instanceof antlr4.error.RecognitionException) {
 	        localctx.exception = re;
@@ -5381,12 +5376,8 @@ function TextContext(parser, parent, invokingState) {
 TextContext.prototype = Object.create(antlr4.ParserRuleContext.prototype);
 TextContext.prototype.constructor = TextContext;
 
-TextContext.prototype.FEATURE = function() {
-    return this.getToken(LscParser.FEATURE, 0);
-};
-
-TextContext.prototype.VALUE = function() {
-    return this.getToken(LscParser.VALUE, 0);
+TextContext.prototype.NAME = function() {
+    return this.getToken(LscParser.NAME, 0);
 };
 
 TextContext.prototype.STR1 = function() {
@@ -5423,7 +5414,7 @@ LscParser.prototype.text = function() {
         this.enterOuterAlt(localctx, 1);
         this.state = 539;
         _la = this._input.LA(1);
-        if(!(((((_la - 37)) & ~0x1f) == 0 && ((1 << (_la - 37)) & ((1 << (LscParser.FEATURE - 37)) | (1 << (LscParser.VALUE - 37)) | (1 << (LscParser.STR1 - 37)) | (1 << (LscParser.STR - 37)))) !== 0))) {
+        if(!(((((_la - 37)) & ~0x1f) == 0 && ((1 << (_la - 37)) & ((1 << (LscParser.NAME - 37)) | (1 << (LscParser.STR1 - 37)) | (1 << (LscParser.STR - 37)))) !== 0))) {
         this._errHandler.recoverInline(this);
         }
         else {

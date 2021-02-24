@@ -88,7 +88,7 @@ class TestLscParse : StringSpec({
                 }.also {
                     it.message shouldBe
                         "The ${statementNames[mustComeAfter]} must come after the " +
-                            "${statementNames[mustComeBefore]} (Line $line, column $column)"
+                            "${statementNames[mustComeBefore]} (line $line)"
                     it.line shouldBe line
                     it.column shouldBe column
                     it.offendingSymbol shouldBe statements[mustComeAfter]
@@ -143,44 +143,12 @@ class TestLscParse : StringSpec({
         }
     }
 
-    "A rule name with invalid characters should trigger a helpful error message" {
-        shouldThrow<LscNotParsable> {
-            parser.parseFile(
-                """
-                    rule with spaces:
-                        o => a
-                """.trimIndent()
-            )
-        }.also {
-            it.message should startWith("A rule name can't start with \"rule \"; " +
-                    "rule names must consist of only lowercase letters and hyphens")
-        }
-
-        shouldThrow<LscNotParsable> {
-            parser.parseFile(
-                """
-                    rule+with+special+characters:
-                        o => a
-                """.trimIndent()
-            )
-        }.also {
-            it.message should startWith("A rule name can't start with \"rule+\"; " +
-                    "rule names must consist of only lowercase letters and hyphens")
-        }
-    }
-
     "Bad feature declarations should be rejected" {
-        shouldThrow<LscNotParsable> { parser.parseFeatureDeclaration("Feature type(cons, vowel)") }.also {
-            it.message should startWith("A feature can't be called \"type\"; feature names must start with an uppercase letter")
-        }
-        shouldThrow<LscNotParsable> { parser.parseFeatureDeclaration("Feature Type(Cons, Vowel)") }.also {
-            it.message should startWith("A feature value can't be called \"Cons\"; value names must start with a lowercase letter")
-        }
+        shouldThrow<LscNotParsable> { parser.parseFeatureDeclaration("Feature ty-pe(cons, vowel)") }
+        shouldThrow<LscNotParsable> { parser.parseFeatureDeclaration("Feature Type(Co-ns, Vowel)") }
         shouldThrow<LscNotParsable> { parser.parseFeatureDeclaration("Type(cons, vowel)") }
         shouldThrow<LscNotParsable> { parser.parseFeatureDeclaration("=>") }
-        shouldThrow<LscNotParsable> { parser.parseFeatureDeclaration("Feature Type[cons, vowel]") }.also {
-            it.message should startWith("The values of the feature Type need to be in parentheses () not square brackets []")
-        }
+        shouldThrow<LscNotParsable> { parser.parseFeatureDeclaration("Feature Type[cons, vowel]") }
     }
 
     "Bad diacritic declarations should be rejected" {
@@ -309,15 +277,5 @@ class TestLscParse : StringSpec({
         shouldThrow<LscNotParsable> { parser.parseMatrix("cons") }
         shouldThrow<LscNotParsable> { parser.parseMatrix("[stop, unvcd, lab]") }
         shouldThrow<LscNotParsable> { parser.parseMatrix("=>") }
-    }
-
-    "Bad feature references should be rejected" {
-        shouldThrow<LscNotParsable> { parser.parseFeature("place") }
-        shouldThrow<LscNotParsable> { parser.parseFeature("=>") }
-    }
-
-    "Bad feature values should be rejected" {
-        shouldThrow<LscNotParsable> { parser.parseValue("Cons") }
-        shouldThrow<LscNotParsable> { parser.parseValue("=>") }
     }
 })

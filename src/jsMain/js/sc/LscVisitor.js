@@ -318,14 +318,14 @@ LscVisitor.prototype.visitMatrix = function(ctx) {
 };
 
 
-// Visit a parse tree produced by LscParser#feature.
-LscVisitor.prototype.visitFeature = function(ctx) {
+// Visit a parse tree produced by LscParser#featureValue.
+LscVisitor.prototype.visitFeatureValue = function(ctx) {
   return this.visitChildren(ctx);
 };
 
 
-// Visit a parse tree produced by LscParser#value.
-LscVisitor.prototype.visitValue = function(ctx) {
+// Visit a parse tree produced by LscParser#name.
+LscVisitor.prototype.visitName = function(ctx) {
   return this.visitChildren(ctx);
 };
 
