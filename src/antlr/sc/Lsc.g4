@@ -8,8 +8,11 @@ statement:
 classDecl: CLASS_DECL WHITESPACE name WHITESPACE LIST_START classElement (SEP classElement)* LIST_END;
 classElement: classRef | text;
 featureDecl:
-    FEATURE_DECL WHITESPACE name WHITESPACE?
-    O_PAREN (nullAlias SEP)? featureValue (SEP featureValue)* C_PAREN;
+    FEATURE_DECL WHITESPACE (
+        (plusFeature (SEP plusFeature)*) |
+        (name WHITESPACE? O_PAREN (nullAlias SEP)? featureValue (SEP featureValue)* C_PAREN)
+    );
+plusFeature: AT_LEAST_ONE? name;
 nullAlias: NULL featureValue;
 diacriticDecl:
     DIACRITIC WHITESPACE text WHITESPACE
@@ -56,7 +59,7 @@ classRef: CLASSREF name;
 captureRef: WORD_BOUNDARY NUMBER;
 
 fancyMatrix: MATRIX_START fancyValue? (WHITESPACE fancyValue)* MATRIX_END;
-fancyValue: featureValue | negatedValue | absentFeature | featureVariable;
+fancyValue: plusFeatureValue | featureValue | negatedValue | absentFeature | featureVariable;
 negatedValue: NEGATION name;
 absentFeature: NULL name;
 featureVariable: WORD_BOUNDARY name;
@@ -65,7 +68,9 @@ empty: NULL;
 boundary: WORD_BOUNDARY;
 betweenWords: BETWEEN_WORDS;
 repeaterType: AT_LEAST_ONE | NULL | OPTIONAL;
-matrix: MATRIX_START featureValue? (WHITESPACE featureValue)* MATRIX_END;
+matrix: MATRIX_START matrixValue? (WHITESPACE matrixValue)* MATRIX_END;
+matrixValue: plusFeatureValue | featureValue;
+plusFeatureValue: (AT_LEAST_ONE | HYPHEN) name;
 featureValue: name;
 name: NAME;
 text: (NAME | STR1 | STR) NEGATION?;

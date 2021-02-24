@@ -144,11 +144,9 @@ class TestLscParse : StringSpec({
     }
 
     "Bad feature declarations should be rejected" {
-        shouldThrow<LscNotParsable> { parser.parseFeatureDeclaration("Feature ty-pe(cons, vowel)") }
         shouldThrow<LscNotParsable> { parser.parseFeatureDeclaration("Feature Type(Co-ns, Vowel)") }
         shouldThrow<LscNotParsable> { parser.parseFeatureDeclaration("Type(cons, vowel)") }
         shouldThrow<LscNotParsable> { parser.parseFeatureDeclaration("=>") }
-        shouldThrow<LscNotParsable> { parser.parseFeatureDeclaration("Feature Type[cons, vowel]") }
     }
 
     "Bad diacritic declarations should be rejected" {

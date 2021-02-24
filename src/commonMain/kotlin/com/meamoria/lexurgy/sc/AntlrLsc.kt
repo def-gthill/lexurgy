@@ -25,6 +25,7 @@ expect open class LscBaseVisitor<T>() {
     open fun visitClassDecl(ctx: ClassDeclContext): T
     open fun visitClassElement(ctx: ClassElementContext): T
     open fun visitFeatureDecl(ctx: FeatureDeclContext): T
+    open fun visitPlusFeature(ctx: PlusFeatureContext): T
     open fun visitNullAlias(ctx: NullAliasContext): T
     open fun visitDiacriticDecl(ctx: DiacriticDeclContext): T
     open fun visitSymbolDecl(ctx: SymbolDeclContext): T
@@ -69,6 +70,8 @@ expect open class LscBaseVisitor<T>() {
     open fun visitBetweenWords(ctx: BetweenWordsContext): T
     open fun visitRepeaterType(ctx: RepeaterTypeContext): T
     open fun visitMatrix(ctx: MatrixContext): T
+    open fun visitMatrixValue(ctx: MatrixValueContext): T
+    open fun visitPlusFeatureValue(ctx: PlusFeatureValueContext): T
     open fun visitFeatureValue(ctx: FeatureValueContext): T
     open fun visitName(ctx: NameContext): T
     open fun visitText(ctx: TextContext): T
@@ -89,11 +92,18 @@ expect fun ClassDeclContext.allClassElements(): List<ClassElementContext>
 expect class ClassElementContext : ParserRuleContext
 
 expect class FeatureDeclContext : ParserRuleContext {
-    fun name(): NameContext
+    fun name(): NameContext?
     fun nullAlias(): NullAliasContext?
 }
 
+expect fun FeatureDeclContext.allPlusFeatures(): List<PlusFeatureContext>
+
 expect fun FeatureDeclContext.allFeatureValues(): List<FeatureValueContext>
+
+expect class PlusFeatureContext : ParserRuleContext {
+    fun AT_LEAST_ONE(): TerminalNode?
+    fun name(): NameContext
+}
 
 expect class NullAliasContext : ParserRuleContext {
     fun featureValue(): FeatureValueContext
@@ -274,7 +284,15 @@ expect class RepeaterTypeContext : ParserRuleContext {
 
 expect class MatrixContext : ParserRuleContext
 
-expect fun MatrixContext.allFeatureValues(): List<FeatureValueContext>
+expect fun MatrixContext.allMatrixValues(): List<MatrixValueContext>
+
+expect class MatrixValueContext : ParserRuleContext
+
+expect class PlusFeatureValueContext : ParserRuleContext {
+    fun AT_LEAST_ONE(): TerminalNode?
+    fun HYPHEN(): TerminalNode?
+    fun name(): NameContext
+}
 
 expect class FeatureValueContext : ParserRuleContext {
     fun name(): NameContext
@@ -287,9 +305,3 @@ expect class NameContext : ParserRuleContext {
 expect class TextContext : ParserRuleContext {
     fun NEGATION(): TerminalNode?
 }
-
-expect val LSC_NEWLINE: Int
-expect val LSC_NAME: Int
-expect val LSC_RULE_START: Int
-expect val LSC_PROPAGATE: Int
-expect val LSC_O_PAREN: Int

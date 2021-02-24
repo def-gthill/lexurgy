@@ -298,4 +298,31 @@ class TestFeatures : StringSpec({
         ch("sfiŋter") shouldBe "sfiŋkter"
         ch("bumkin") shouldBe "bumpkin"
     }
+
+    "We should be able to declare \"plus-minus\" features that behave the way linguists expect features to behave" {
+        val ch = lsc(
+            """
+                Feature type(*cons, vowel)
+                Feature +stress
+                Feature high, low, front, back
+                Diacritic ˈ [+stress]
+                Symbol a [vowel +low -high -front -back]
+                Symbol e [vowel -low -high +front -back]
+                Symbol i [vowel -low +high +front -back]
+                Symbol o [vowel -low -high -front +back]
+                Symbol u [vowel -low +high -front +back]
+                
+                stress-second-last-syllable [vowel]:
+                    [] => [+stress] / _ [] $
+                vowel-harmony [vowel] propagate:
+                    [-low] => [${'$'}high] / [${'$'}high -low] []* _
+                stress-breaking:
+                    *  => [vowel -low +high ${'$'}front ${'$'}back] / _ [-low -high +stress ${'$'}front ${'$'}back]
+            """.trimIndent()
+        )
+
+        ch("dormo") shouldBe "duoˈrmo"
+        ch("pegakibo") shouldBe "pegakieˈbo"
+        ch("minemuto") shouldBe "minimuˈtu"
+    }
 })

@@ -39,9 +39,15 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     class ClassElementContext : ParserRuleContext
 
     class FeatureDeclContext : ParserRuleContext {
-        fun name(): NameContext
+        fun plusFeature(): Array<PlusFeatureContext>
+        fun name(): NameContext?
         fun featureValue(): Array<FeatureValueContext>
         fun nullAlias(): NullAliasContext?
+    }
+
+    class PlusFeatureContext : ParserRuleContext {
+        fun AT_LEAST_ONE(): TerminalNode?
+        fun name(): NameContext
     }
 
     class NullAliasContext : ParserRuleContext {
@@ -224,7 +230,15 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     }
 
     class MatrixContext : ParserRuleContext {
-        fun featureValue(): Array<FeatureValueContext>
+        fun matrixValue(): Array<MatrixValueContext>
+    }
+
+    class MatrixValueContext : ParserRuleContext
+
+    class PlusFeatureValueContext : ParserRuleContext {
+        fun AT_LEAST_ONE(): TerminalNode?
+        fun HYPHEN(): TerminalNode?
+        fun name(): NameContext
     }
 
     class FeatureValueContext : ParserRuleContext {
@@ -251,6 +265,8 @@ open external class LscVisitor<T> {
     open fun visitClassElement(ctx: ClassElementContext): T
 
     open fun visitFeatureDecl(ctx: FeatureDeclContext): T
+
+    open fun visitPlusFeature(ctx: PlusFeatureContext): T
 
     open fun visitNullAlias(ctx: NullAliasContext): T
 
@@ -340,6 +356,10 @@ open external class LscVisitor<T> {
 
     open fun visitMatrix(ctx: MatrixContext): T
 
+    open fun visitMatrixValue(ctx: MatrixValueContext): T
+
+    open fun visitPlusFeatureValue(ctx: PlusFeatureValueContext): T
+
     open fun visitFeatureValue(ctx: FeatureValueContext): T
 
     open fun visitName(ctx: NameContext): T
@@ -363,7 +383,11 @@ actual typealias ClassElementContext = LscParser.ClassElementContext
 
 actual typealias FeatureDeclContext = LscParser.FeatureDeclContext
 
+actual fun FeatureDeclContext.allPlusFeatures(): List<PlusFeatureContext> = plusFeature().toList()
+
 actual fun FeatureDeclContext.allFeatureValues(): List<FeatureValueContext> = featureValue().toList()
+
+actual typealias PlusFeatureContext = LscParser.PlusFeatureContext
 
 actual typealias NullAliasContext = LscParser.NullAliasContext
 
@@ -480,16 +504,14 @@ actual typealias RepeaterTypeContext = LscParser.RepeaterTypeContext
 
 actual typealias MatrixContext = LscParser.MatrixContext
 
-actual fun MatrixContext.allFeatureValues(): List<FeatureValueContext> = featureValue().toList()
+actual fun MatrixContext.allMatrixValues(): List<MatrixValueContext> = matrixValue().toList()
+
+actual typealias MatrixValueContext = LscParser.MatrixValueContext
+
+actual typealias PlusFeatureValueContext = LscParser.PlusFeatureValueContext
 
 actual typealias FeatureValueContext = LscParser.FeatureValueContext
 
 actual typealias NameContext = LscParser.NameContext
 
 actual typealias TextContext = LscParser.TextContext
-
-actual val LSC_NEWLINE: Int = js("LscParser.NEWLINE") as Int
-actual val LSC_NAME: Int = js("LscParser.NAME") as Int
-actual val LSC_RULE_START: Int = js("LscParser.RULE_START") as Int
-actual val LSC_PROPAGATE: Int = js("LscParser.PROPAGATE") as Int
-actual val LSC_O_PAREN: Int = js("LscParser.O_PAREN") as Int

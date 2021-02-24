@@ -154,11 +154,28 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     override fun visitClassElement(ctx: ClassElementContext): ParseNode = visit(ctx.getChild(0))
 
-    override fun visitFeatureDecl(ctx: FeatureDeclContext): ParseNode = walkFeatureDeclaration(
+    override fun visitFeatureDecl(ctx: FeatureDeclContext): ParseNode =
+        if (ctx.name() == null) {
+            ParseNodeList(
+                listVisit(ctx.allPlusFeatures()),
+            )
+        } else {
+            ParseNodeList(
+                listOf(
+                    walkFeatureDeclaration(
+                        ctx.getText(),
+                        visit(ctx.name()!!),
+                        optionalVisit(ctx.nullAlias()),
+                        listVisit(ctx.allFeatureValues()),
+                    )
+                )
+            )
+        }
+
+    override fun visitPlusFeature(ctx: PlusFeatureContext): ParseNode = walkPlusFeature(
         ctx.getText(),
         visit(ctx.name()),
-        optionalVisit(ctx.nullAlias()),
-        listVisit(ctx.allFeatureValues()),
+        ctx.AT_LEAST_ONE() != null,
     )
 
     override fun visitNullAlias(ctx: NullAliasContext): ParseNode = visit(ctx.featureValue())
@@ -407,8 +424,27 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     override fun visitMatrix(ctx: MatrixContext): ParseNode =
         walkMatrix(
             ctx.getText(),
-            listVisit(ctx.allFeatureValues()),
+            listVisit(ctx.allMatrixValues()),
         )
+
+    override fun visitMatrixValue(ctx: MatrixValueContext): ParseNode =
+        visit(ctx.getChild(0))
+
+    override fun visitPlusFeatureValue(ctx: PlusFeatureValueContext): ParseNode =
+        walkPlusFeatureValue(
+            ctx.getText(),
+            visit(ctx.name()),
+            when {
+                ctx.AT_LEAST_ONE() != null -> PlusMinus.PLUS
+                ctx.HYPHEN() != null -> PlusMinus.MINUS
+                else -> throw AssertionError()
+            }
+        )
+
+    private enum class PlusMinus(val string: String) {
+        PLUS("+"),
+        MINUS("-"),
+    }
 
     override fun visitFeatureValue(ctx: FeatureValueContext): ParseNode =
         walkFeatureValue(
@@ -493,6 +529,22 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             (nullAlias as? SimpleValueNode)?.simpleValue,
         )
     )
+
+    private fun walkPlusFeature(
+        text: String,
+        featureName: ParseNode,
+        plusOnly: Boolean,
+    ): ParseNode {
+        val name = (featureName as NameNode).name
+        return FeatureDeclarationNode(
+            text,
+            Feature(
+                name,
+                listOf(SimpleValue("+$name")) +
+                        if (!plusOnly) listOf(SimpleValue("-$name")) else emptyList()
+            )
+        )
+    }
 
     private fun walkDiacriticDeclaration(
         text: String,
@@ -684,6 +736,33 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         }
     )
 
+    private fun walkNegatedValue(
+        text: String,
+        value: ParseNode,
+    ): ParseNode =
+        MatrixValueNode(
+            text,
+            NegatedValue((value as NameNode).name)
+        )
+
+    private fun walkAbsentFeature(
+        text: String,
+        feature: ParseNode,
+    ): ParseNode =
+        MatrixValueNode(
+            text,
+            SimpleValue.absent((feature as NameNode).name)
+        )
+
+    private fun walkFeatureVariable(
+        text: String,
+        feature: ParseNode,
+    ): ParseNode =
+        MatrixValueNode(
+            text,
+            FeatureVariable((feature as NameNode).name)
+        )
+
     private fun walkEmpty(): ParseNode = EmptyElement
 
     private fun walkBoundary(): ParseNode = WordBoundaryElement
@@ -720,32 +799,12 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             Matrix(values.map { (it as MatrixValueNode).value })
         )
 
-    private fun walkNegatedValue(
+    private fun walkPlusFeatureValue(
         text: String,
-        value: ParseNode,
+        name: ParseNode,
+        plusMinus: PlusMinus,
     ): ParseNode =
-        MatrixValueNode(
-            text,
-            NegatedValue((value as NameNode).name)
-        )
-
-    private fun walkAbsentFeature(
-        text: String,
-        feature: ParseNode,
-    ): ParseNode =
-        MatrixValueNode(
-            text,
-            SimpleValue.absent((feature as NameNode).name)
-        )
-
-    private fun walkFeatureVariable(
-        text: String,
-        feature: ParseNode,
-    ): ParseNode =
-        MatrixValueNode(
-            text,
-            FeatureVariable((feature as NameNode).name)
-        )
+        SimpleValueNode(text, SimpleValue(plusMinus.string + (name as NameNode).name))
 
     private fun walkFeatureValue(
         text: String,
@@ -796,7 +855,9 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         private val intermediateRomanizers: List<RomanizerToFollowingRule<ParseNode>>,
     ) : BaseParseNode(text), SoundChangerNode {
         private val declarations = Declarations(
-            featureDeclarations.map { (it as FeatureDeclarationNode).feature },
+            featureDeclarations.flatMap { sublist ->
+                (sublist as ParseNodeList).elements.map { (it as FeatureDeclarationNode).feature }
+            },
             diacriticDeclarations.map { (it as DiacriticDeclarationNode).diacritic },
             symbolDeclarations.flatMap { sublist ->
                 (sublist as ParseNodeList).elements.map { (it as SymbolDeclarationNode).symbol }

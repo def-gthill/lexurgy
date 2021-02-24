@@ -41,6 +41,12 @@ public interface LscVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitFeatureDecl(LscParser.FeatureDeclContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link LscParser#plusFeature}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitPlusFeature(LscParser.PlusFeatureContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link LscParser#nullAlias}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -316,6 +322,18 @@ public interface LscVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitMatrix(LscParser.MatrixContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link LscParser#matrixValue}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitMatrixValue(LscParser.MatrixValueContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link LscParser#plusFeatureValue}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitPlusFeatureValue(LscParser.PlusFeatureValueContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link LscParser#featureValue}.
 	 * @param ctx the parse tree

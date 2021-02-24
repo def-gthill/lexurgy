@@ -42,6 +42,12 @@ LscVisitor.prototype.visitFeatureDecl = function(ctx) {
 };
 
 
+// Visit a parse tree produced by LscParser#plusFeature.
+LscVisitor.prototype.visitPlusFeature = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
 // Visit a parse tree produced by LscParser#nullAlias.
 LscVisitor.prototype.visitNullAlias = function(ctx) {
   return this.visitChildren(ctx);
@@ -314,6 +320,18 @@ LscVisitor.prototype.visitRepeaterType = function(ctx) {
 
 // Visit a parse tree produced by LscParser#matrix.
 LscVisitor.prototype.visitMatrix = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
+// Visit a parse tree produced by LscParser#matrixValue.
+LscVisitor.prototype.visitMatrixValue = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
+// Visit a parse tree produced by LscParser#plusFeatureValue.
+LscVisitor.prototype.visitPlusFeatureValue = function(ctx) {
   return this.visitChildren(ctx);
 };
 
