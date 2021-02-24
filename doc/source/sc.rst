@@ -11,7 +11,7 @@ Why Lexurgy SC?
 ----------------
 
 Conlangers rarely get things exactly right the first try, and sound
-changers are especially prone to revision. Lexurgy embraces this truth.
+changes are especially prone to revision. Lexurgy embraces this truth.
 It's designed around two main goals:
 
     - Rules are short, easy to read, and can have descriptive names.
@@ -63,5 +63,6 @@ User Guide
     :maxdepth: 2
     :caption: Contents:
 
+    sc-tutorial
     sc-dsl
     sc-cli

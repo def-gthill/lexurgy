@@ -1,5 +1,91 @@
-The Lexurgy SC Rules Format
-===========================
+The Lexurgy SC Rules Language
+=============================
+
+This is the full technical specification of the Lexurgy SC
+rules language. For a gentler introduction, see :doc:`sc-tutorial`.
+
+Overall Structure
+------------------
+
+Lexurgy sound changes consist of any number of *declarations*
+followed by any number of *rules*.
+
+Declarations define
+concepts that can be used in the rest of the file:
+:ref:`classes <sc-class-decl>`, .
+
+:ref:`Rules <sc-rules>` define how
+*input words* change into *output words*. Each word
+in the input lexicon is passed through all rules in
+the order they're declared, transforming it one step
+at a time into an output word.
+
+Rules whose names start with "Romanizer-" or "romanizer-"
+are called :ref:`intermediate romanizers <sc-inter-roman>`.
+Intermediate romanizers break the linear sequence of rules;
+their output may be sent to a file or text box, but subsequent
+rules don't see their changes.
+
+Declarations
+------------
+
+.. _sc-class-decl:
+
+Class Declarations
+~~~~~~~~~~~~~~~~~~
+
+.. _sc-feature-decl:
+
+Feature Declarations
+~~~~~~~~~~~~~~~~~~~~~
+
+.. _sc-symbol-decl:
+
+Symbol Declarations
+~~~~~~~~~~~~~~~~~~~~
+
+.. _sc-diacritic-decl:
+
+Diacritic Declarations
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. _sc-rules:
+
+Rules
+------
+
+A rule consists of a line giving the *rule name* followed by a colon,
+and then one or more *expressions*, which may be grouped into *subrules*.
+
+Rule names have to follow the same
+restrictions as feature, value, and class names except that they
+can also contain hyphens.
+
+If a rule has multiple expressions, each expression is
+executed *simultaneously*. This means that later expressions don't
+see changes made by earlier expressions. If two expressions try
+to change overlapping parts of the word, the first expression declared
+takes precedence.
+
+Subrules
+~~~~~~~~~
+
+A rule's expressions can be grouped into subrules by separating the subrules
+with ``Then:``, either on its own line or sharing a line with the first
+expression of the next group.
+
+The expressons *within* a subrule (between
+
+Expressions
+~~~~~~~~~~~~
+
+An expression
+
+.. _sc-inter-roman:
+
+Intermediate Romanizers
+~~~~~~~~~~~~~~~~~~~~~~~~
+
 
 Basics
 ------
@@ -784,3 +870,4 @@ represented by ``$$``::
 
     glomination:
         $$ => *
+
