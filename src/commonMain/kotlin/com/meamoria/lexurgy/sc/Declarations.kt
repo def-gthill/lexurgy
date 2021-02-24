@@ -15,12 +15,15 @@ class Declarations(
         { listOf(it.name) },
         { name, _, _ -> throw LscDuplicateName("feature", name) }
     )
-    private val valueNameToSimpleValue = features.flatMap { it.allValues }.associateBy { it.name }
+    private val defaults = features.map { it.default }
+    private val absents = features.map { it.absent }
     private val valueToFeature = features.associateByCheckingDuplicates(
         { it.allValues },
         { value, _, _ -> throw LscDuplicateName("feature value", value.name) },
     )
-    private val defaults = features.map { it.default }
+    private val valueNameToSimpleValue = features.flatMap { it.allValues }.associate {
+        it.name to (if (it in absents) valueToFeature.getValue(it).default else it)
+    }
 
     private val diacriticNameToDiacritic = diacritics.associateByCheckingDuplicates(
         { listOf(it.name) },
@@ -124,6 +127,8 @@ class Declarations(
 
     private fun MatrixValue.isDefault(): Boolean = this in defaults
 
+    private fun MatrixValue.isAbsent(): Boolean = this in absents
+
     fun PhoneticSegment.withFloatingDiacriticsFrom(
         other: PhoneticSegment, excluding: PhoneticSegment? = null
     ): PhoneticSegment {
@@ -213,7 +218,7 @@ class Declarations(
         return result.also { matrixToSymbolCache[this] = it }
     }
 
-    private fun Matrix.removeExplicitDefaults(): Matrix = Matrix(valueList.filterNot { it.isDefault() })
+    private fun Matrix.removeExplicitDefaults(): Matrix = Matrix(valueList.filterNot { it.isDefault() || it.isAbsent() })
 
     private fun searchDiacritics(
         matrix: Matrix,
@@ -281,8 +286,9 @@ expect class Cache<K, V>() : MutableMap<K, V>
 data class SegmentClass(val name: String, val sounds: List<String>)
 
 class Feature(val name: String, val values: List<SimpleValue>, explicitDefault: SimpleValue? = null) {
-    val default: SimpleValue = explicitDefault ?: SimpleValue.absent(name)
-    val allValues: List<SimpleValue> = listOf(default) + values
+    val absent: SimpleValue = SimpleValue.absent(name)
+    val default: SimpleValue = explicitDefault ?: absent
+    val allValues: List<SimpleValue> = listOf(absent) + listOfNotNull(explicitDefault) + values
 
     override fun toString(): String = values.joinToString(prefix = "$name(", postfix = ")")
 }

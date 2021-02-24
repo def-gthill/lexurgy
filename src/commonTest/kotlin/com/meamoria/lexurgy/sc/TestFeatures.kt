@@ -119,7 +119,7 @@ class TestFeatures : StringSpec({
         ch("prefabricative") shouldBe "prefapricatife"
     }
 
-    "We should be able to rename the \"absent\" value of a feature" {
+    "We should be able to name the \"absent\" value of a feature" {
         val ch = lsc(
             """
                |Feature Manner(stop)
@@ -134,6 +134,31 @@ class TestFeatures : StringSpec({
                |lenition:
                |    [stop aspir] => [plain] / a _ a
                |    [stop plain] => * / a _ a
+               |velar-shift:
+               |    [stop] => [vel] / _ u
+            """.trimMargin()
+        )
+
+        ch("psataba") shouldBe "pʰaaba"
+        ch("patsaba") shouldBe "pataba"
+        ch("putsu") shouldBe "kukʰu"
+    }
+
+    "Even if we name the absent value, we should still be able to use the * syntax for it" {
+        val ch = lsc(
+            """
+               |Feature Manner(stop)
+               |Feature Place(lab, apic, vel)
+               |Feature Breath(*plain, aspir)
+               |Diacritic ʰ [aspir]
+               |Symbol p [stop lab]
+               |Symbol t [stop apic]
+               |Symbol k [stop vel plain]
+               |aspiration:
+               |    [stop *Breath] s => [aspir] *
+               |lenition:
+               |    [stop aspir] => [*Breath] / a _ a
+               |    [stop *Breath] => * / a _ a
                |velar-shift:
                |    [stop] => [vel] / _ u
             """.trimMargin()
@@ -299,7 +324,7 @@ class TestFeatures : StringSpec({
         ch("bumkin") shouldBe "bumpkin"
     }
 
-    "We should be able to declare \"plus-minus\" features that behave the way linguists expect features to behave" {
+    "We should be able to declare binary features that behave the way linguists expect features to behave" {
         val ch = lsc(
             """
                 Feature type(*cons, vowel)
@@ -324,5 +349,26 @@ class TestFeatures : StringSpec({
         ch("dormo") shouldBe "duoˈrmo"
         ch("pegakibo") shouldBe "pegakieˈbo"
         ch("minemuto") shouldBe "minimuˈtu"
+    }
+
+    "We should be able to use the absent values of binary features" {
+        // And we should be able to negate a plus-only feature with * and - interchangeably.
+        val ch = lsc(
+            """
+                Feature hitone
+                Feature +stress
+                Diacritic ˈ (floating) [+stress]
+                Diacritic ́  (floating) [+hitone]
+                Diacritic ̀  (floating) [-hitone]
+                Class vowel {a, e, i, o, u}
+                lowtone-last-syllable-if-not-stressed @vowel:
+                    [-stress] => [-hitone] / _ $
+                tone-spreading-unstressed @vowel:
+                    [*stress *hitone] => [${'$'}hitone] / [${'$'}hitone] _
+            """.trimIndent()
+        )
+
+        ch("fuba") shouldBe "fubà"
+        ch("kímataˈ") shouldBe "kímátaˈ"
     }
 })

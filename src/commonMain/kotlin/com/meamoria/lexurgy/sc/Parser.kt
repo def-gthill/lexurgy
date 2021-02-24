@@ -541,7 +541,8 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             Feature(
                 name,
                 listOf(SimpleValue("+$name")) +
-                        if (!plusOnly) listOf(SimpleValue("-$name")) else emptyList()
+                        if (!plusOnly) listOf(SimpleValue("-$name")) else emptyList(),
+                if (plusOnly) SimpleValue("-$name") else null,
             )
         )
     }
