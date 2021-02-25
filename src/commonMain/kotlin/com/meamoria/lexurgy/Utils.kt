@@ -56,14 +56,26 @@ fun <T> Iterable<T>.subsets(): Sequence<List<T>> {
 fun <T> Iterable<T>.pairs(): Sequence<Pair<T, T>> = subsets().filter { it.size == 2 }.map { it[0] to it[1] }
 
 /**
+ * Returns the number of no-width combining characters in this string
+ */
+fun String.combiningCount(): Int =
+    // \p{Mn} is the Unicode property for non-spacing marks
+    Regex("\\p{Mn}").findAll(this).toList().size
+
+/**
+ * Returns the width of this string in a monospaced font; this is the number
+ * of characters not including combining characters that don't take up
+ * horizontal space
+ */
+fun String.lengthCombining(): Int = length - combiningCount()
+
+/**
  * Adds spaces to pad this string to the specified length, but adding extra
  * spaces to compensate for combining characters that don't take up horizontal
  * space
  */
 fun String.padEndCombining(length: Int): String {
-    // \p{Mn} is the Unicode property for non-spacing marks
-    val combiningCount = Regex("\\p{Mn}").findAll(this).toList().size
-    return padEnd(length + combiningCount)
+    return padEnd(length + combiningCount())
 }
 
 /**

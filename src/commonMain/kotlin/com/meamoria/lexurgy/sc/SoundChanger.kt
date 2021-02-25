@@ -172,7 +172,7 @@ internal fun makeStageComparisons(wordListSequence: List<List<String>>): List<St
     return result
 }
 
-internal fun Iterable<String>.maxLength(): Int = map { it.length }.maxOrNull() ?: 0
+internal fun Iterable<String>.maxLength(): Int = map { it.lengthCombining() }.maxOrNull() ?: 0
 
 expect fun <T, U, R> Iterable<T>.fastZipMap(other: Iterable<U>, function: (T, U) -> R): List<R>
 
