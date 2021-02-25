@@ -1,7 +1,5 @@
 package com.meamoria.lexurgy
 
-import com.meamoria.lexurgy.sc.SequenceMatcher
-
 fun <T, R, S, V> Iterable<T>.zip3(
     other1: Iterable<R>, other2: Iterable<S>, transform: (T, R, S) -> V
 ): List<V> = zip(other1).zip(other2) { tr, s ->
@@ -58,9 +56,7 @@ fun <T> Iterable<T>.pairs(): Sequence<Pair<T, T>> = subsets().filter { it.size =
 /**
  * Returns the number of no-width combining characters in this string
  */
-fun String.combiningCount(): Int =
-    // \p{Mn} is the Unicode property for non-spacing marks
-    Regex("\\p{Mn}").findAll(this).toList().size
+expect fun String.combiningCount(): Int
 
 /**
  * Returns the width of this string in a monospaced font; this is the number
