@@ -2,7 +2,10 @@ Writing Sound Changes With Lexurgy SC
 =====================================
 
 This page is a tour through the features of Lexurgy SC.
-For all the gory details, see :doc:`sc-dsl`.
+
+.. only:: not public
+
+    For all the gory details, see :doc:`sc-dsl`.
 
 As you read, be sure to try out each example in the
 `Lexurgy SC web app <https://www.meamoria.com/lexurgy/app/sc>`_.
@@ -249,6 +252,7 @@ Simultaneous Expressions
 
 You can put multiple expressions in a single rule::
 
+    Class nasal {m, n}
     post-nasal-lenition:
         {b, d, ɡ} => * / @nasal _
         {p, t, k, f, x} => {b, d, ɡ, h, h} / @nasal _
@@ -418,6 +422,12 @@ feature, and *only* the ``high`` feature, will be changed
 to ``+high``, while all other features (like the ``front``
 and ``back`` features) are left unchanged.
 
+.. note::
+    Each symbol must have a distinct matrix --- you can't define both
+    [ɛ] and [e] as just ``[-low -high +front -back]``. You have to
+    add some kind of distinguishing feature; an ``ATR``
+    feature could be used to distinguish these two sounds.
+
 Absent Values
 ****************
 
@@ -434,6 +444,11 @@ sounds, where the ``low`` feature is irrelevant.
 
 You can use absent features in rules just like any other
 feature value.
+
+.. note::
+    Any characters in an input word that don't match symbols are considered to
+    lack all features, so they'll only match matrices consisting entirely
+    of absent features, like ``[*low *front]``, or the empty matrix ``[]``.
 
 Univalent Features
 *******************
@@ -481,6 +496,7 @@ sense, you have to use the names, like ``[labial nasal]``.
 
 With these definitons, you can write rules like this::
 
+    Class vowel {a, e, i, o, u}
     intervocalic-lenition:
         [stop] => [voiced] / @vowel _ @vowel
         [voiced stop] => [fricative] / @vowel _ @vowel
@@ -581,13 +597,14 @@ then the prenasalized version of [d] will show up as ``ⁿd`` rather than ``dⁿ
 
 Diacritics can even be applied to symbols that aren't declared with feature
 matrices, in which case you can change the diacritics using matrix rules but
-not the base symbol. For example, suppose you define a vowel length feature
-with ``Feature Length(*short, long)`` and a long diacritic
-with ``Diacritic ː [long]``, but no other features or symbols. Then
-this rule will still turn the sequence [ar] into [aː]::
+not the base symbol. For example,
+this rule will turn the sequence [ar] into [aː], even without a symbol
+definition for [a]::
 
+    Feature +long
+    Diacritic ː [+long]
     a-before-r:
-        a r => [long] *
+        a r => [+long] *
 
 But if you wanted to change the ``a`` into a different vowel using matrix
 rules, you would have to declare it as a symbol with a feature matrix.
@@ -640,23 +657,33 @@ The most common use of this is when you're mixing sound classes with features,
 and need to specify that a rule only applies when a sound both *has a feature*
 and *is in a class*::
 
+    Feature +stress
+    Diacritic ˈ (floating) [+stress]
+    Class vowel {a, e, i, o, u}
     unstressed-final-vowel-loss:
-        @vowel&[unstressed] => * / _ $ // {p, t, k} _
+        @vowel&[-stress] => * / _ $ // {p, t, k} _
 
 If an :ref:`alternative list <sc-alternative-lists>` is the *first* element
 in an intersection, then it can match up with an alternative list of the same length
 on the result side of the rule. For example::
 
+    Feature +stress
+    Diacritic ˈ (floating) [+stress]
     unstressed-vowel-centralizing:
-        {e, i, o, u}&[unstressed] => {ə, ɨ, ə, ɨ}
+        {e, i, o, u}&[-stress] => {ə, ɨ, ə, ɨ}
 
 Optional and Repeated Segments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 You can mark part of the environment *optional* by putting a question mark after it::
 
+    Feature +stress
+    Diacritic ˈ (floating) [+stress]
+    Class vowel {a, e, i, o, u}
+    Class consonant {p, t, k, s, m, n, l}
+    Class glide {j, w}
     stress-closed-last-syllable:
-        [vowel] => [stressed] / _ [glide]? [consonant] $
+        @vowel => [+stress] / _ @glide? @consonant $
 
 This rule will stress the vowel in a final closed syllable, even if there's an
 offglide like [j] or [w] after the vowel.
@@ -666,7 +693,7 @@ it won't match a word like [krajsk]. To deal with that case, you can use a *repe
 segment::
 
     stress-closed-last-syllable:
-        [vowel] => [stressed] / _ [glide]? [consonant]+ $
+        @vowel => [+stress] / _ @glide? @consonant+ $
 
 The ``+`` indicates that we want *at least one* consonant at the end of the word.
 
@@ -675,8 +702,8 @@ copies of the segment), you can use ``*`` instead of ``+``. For example, this
 rule will stress the vowel in the last syllable regardless of whether there are
 any consonants at the end::
 
-    stress-last-syllable:
-        [vowel] => [stressed] / _ [glide]? [consonant]* $
+    stress-closed-last-syllable:
+        @vowel => [+stress] / _ @glide? @consonant* $
 
 Intermediatese
 ~~~~~~~~~~~~~~~
@@ -708,20 +735,25 @@ recognize a copy of the sound.
 This rule applies gemination in stop-stop clusters, turning the first stop into
 a copy of the second::
 
+    Class stop {p, t, k}
     @stop @stop$1 => $1 $1
 
 This rule applies metathesis to stop-fricative sequences::
 
+    Class stop {p, t, k}
+    Class fricative {f, s}
     @fricative$1 @stop$2 => $2 $1
 
 This rule uses a capture variable in the environment to *recognize* a geminate::
 
-    * => e / _ [cons]$1 $1
+    Class consonant {p, t, k, s, m, n, l}
+    * => e / _ @consonant$1 $1
 
 This rule uses a bare capture variable on the match side of the rule to remove gemination
 (*degemination*)::
 
-    [cons]$1 $1 => $1 *
+    Class consonant {p, t, k, s, m, n, l}
+    @consonant$1 $1 => $1 *
 
 Negation
 ~~~~~~~~~
@@ -748,23 +780,40 @@ a filter will treat sounds that don't match the filter as if they didn't exist.
 For example, a rule that assigns stress to the vowel in the first symbol could be
 written like this::
 
+    Feature +stress
+    Diacritic ˈ (floating) [+stress]
+    Class vowel {a, e, i, o, u}
+    Class consonant {p, t, k, s, m, n, l}
     stress-first-syllable:
-        [vowel] => [stressed] / $ [cons]* _
+        @vowel => [+stress] / $ @consonant* _
 
 But any consonants before the vowel are actually irrelevant to this rule, so the
-``[cons]*`` in the environment is a distraction. Instead, you can write it like this::
+``@consonant*`` in the environment is a distraction. Instead, you can write it like this::
 
-    stress-first-syllable [vowel]:
-        [] => [stressed] / $ _
+    stress-first-syllable @vowel:
+        [] => [+stress] / $ _
 
-Note that we can use ``[]`` on the old side instead of ``[vowel]`` because anything
+Note that we can use ``[]`` on the match side instead of ``@vowel`` because anything
 that passes the filter will already be a vowel, so we don't need to test for vowelhood
 again.
 
 Similarly, a short-distance vowel harmony rule could be written like this::
 
+    Feature type(*consonant, vowel)
+    Feature height(low, mid, high)
+    Feature frontness(front, central, back)
+    Feature rounded
+    Symbol a [low central -rounded vowel]
+    Symbol e [mid front -rounded vowel]
+    Symbol i [high front -rounded vowel]
+    Symbol ø [mid front +rounded vowel]
+    Symbol y [high front +rounded vowel]
+    Symbol ɤ [mid back -rounded vowel]
+    Symbol ɯ [high back -rounded vowel]
+    Symbol o [mid back +rounded vowel]
+    Symbol u [high back +rounded vowel]
     vowel-harmony [vowel]:
-        [!central] => [$Frontness] / [!central $Frontness] _
+        [!central] => [$frontness] / [!central $frontness] _
 
 Propagation
 ~~~~~~~~~~~~
@@ -782,7 +831,7 @@ Propagation is all that's needed to turn the vowel harmony rule into a long-dist
 rule::
 
     vowel-harmony [vowel] propagate:
-        [!central] => [$Frontness] / [!central $Frontness] _
+        [!central] => [$frontness] / [!central $frontness] _
 
 Note that it's impossible to tell in general whether a propagating rule will ever
 terminate. So Lexurgy is conservative and stops with an error message if a
