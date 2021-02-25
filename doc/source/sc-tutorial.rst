@@ -46,28 +46,6 @@ This change turns all [ɔ] sounds into [ɑ], wherever they appear in the word.
     but Lexurgy doesn't actually care about indentation. Your rules will
     still work even if all the lines are left-justified.
 
-Comments
-~~~~~~~~~
-
-Any line that starts with # is a comment, and Lexurgy will ignore it.
-Comments can help you remember why you wrote your sound changes a certain
-way, especially if you had to use a complicated rule that's hard to
-understand just by looking at it.
-
-.. _sc-three-stage-palatalization:
-
-You can put comments on their own, inside rules, or even at the ends
-of lines::
-
-    # These rules palatalize k to s before i in three steps.
-    palatalization-1:
-        k => tʃ / _ i
-    palatalization-2:
-        # This is step 2!
-        tʃ => ʃ
-    palatalization-3:
-        ʃ => s # This is step 3!
-
 Special Characters
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -189,18 +167,18 @@ The first applies only at the beginning of a word, the second at the end of a wo
 Deleting and Inserting Sounds
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If you want to delete a sound entirely, put an asterisk in the output side::
+If you want to delete a sound entirely, put an asterisk in the result side::
 
     drop-final-vowel:
         {a, e, i, o, u} => * / _ $
 
-Similarly, you can add epenthetic sounds by putting an asterisk on the input side
+Similarly, you can add epenthetic sounds by putting an asterisk on the match side
 and specifying the environment where the sound should appear::
 
     spanish-e:
         * => e / _ s {p, t, k}
 
-When using asterisks on the input side, be sure to specify a condition!
+When using asterisks on the match side, be sure to specify a condition!
 Not using a condition causes the sound to be inserted *everywhere*, turning
 e.g. *scola* into *eseceoeleae* --- probably not what you want!
 
@@ -215,6 +193,28 @@ specify exceptions to a rule using a double slash::
 
 This rule drops a final [e], *except* after a voiceless stop.
 
+Comments
+~~~~~~~~~
+
+Any line that starts with ``#`` is a comment, and Lexurgy will ignore it.
+Comments can help you remember why you wrote your sound changes a certain
+way, especially if you had to use a complicated rule that's hard to
+understand just by looking at it.
+
+.. _sc-three-stage-palatalization:
+
+You can put comments on their own, inside rules, or even at the ends
+of lines::
+
+    # These rules palatalize k to s before i in three steps.
+    palatalization-1:
+        k => tʃ / _ i
+    palatalization-2:
+        # This is step 2!
+        tʃ => ʃ
+    palatalization-3:
+        ʃ => s # This is step 3!
+
 Basican
 ~~~~~~~~
 
@@ -227,88 +227,49 @@ scratch the surface of what Lexurgy offers.
 Intermediate Structures
 ------------------------
 
-Romanization
-~~~~~~~~~~~~~
-
-It's a good idea to do all the sound changes in phonetic notation (e.g. IPA).
-But you probably do most of the work for your languages in their romanization systems.
-You can define romanization rules at the beginning and end of any sound change applier,
-but Lexurgy supports specific notation for it so your intention is clear.
-
-Just define a special rule at the beginning with the name "Deromanizer"
-and another rule at the end with the name "Romanizer". Like any rule, romanizers
-and deromanizers can have both sequential subrules (separated by ``Then:``) and
-simultaneous subrules.
-
-Deromanizers and romanizers work just like ordinary rules, except that they don't support
-filters or propagation.
-
-.. TODO examples
-
-.. _sc-intermediate-romanizers:
-
-Intermediate romanizers
-~~~~~~~~~~~~~~~~~~~~~~~
-
-If you want to preserve the history of a language at several stages, you can
-use intermediate romanizers. In intermediate romanizer is declared the same
-way as the final romanizer, except they can go anywhere within the rule
-portion of the file, and they must have a name like "Romanizer-middle" or
-"Romanizer-post-classical" rather than just "Romanizer". An intermediate
-romanizer will only see the changes declared before it, not those declared
-after it (which haven't happened yet).
-
-.. TODO examples
-
-If the intermediate "romanizer" should just dump the phonetic form of each word,
-you can use the special rule "unchanged"::
-
-    Romanizer-phonetic:
-        unchanged
-
-    Romanizer:
-        {tʃ, ʃ} => {ch, sh}
-
-This will make Lexurgy produce both the phonetic form and the romanized form
-of the final words.
-
-For the command-line tool, you need to specify the :option:`-m` command-line argument
-in order for intermediate romanizers to activate.
-
 Multiple-Segment Rules
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-.. TODO different example without the more advanced features
+A rule can affect a *sequence* of consecutive sounds at the same time.
+For example, this rule implements *compensatory lengthening* when a
+coda stop consonant is lost::
 
-A rule can affect a sequence of consecutive sounds at the same time. For example, this rule
-applies nasal assimilation and voicing of the following sound at the same time::
+    coda-stop-drop-and-lengthen:
+        {a, e, i, o, u} {p, t, k} => {aː, eː, iː, oː, uː} * / _ @consonant
 
-    nasal-assimilation-and-voicing:
-        [nasal] [cons $Place] => [$Place] [voiced]
+Lexurgy lines up ``{a, e, i, o, u}`` with ``{aː, eː, iː, oː, uː}`` and
+``{p, t, k}`` with ``*``, and applies both changes.
 
-The number of segments must be the same on each side of the ``=>``. If a change
-adds or deletes sounds, fill in the missing spaces with the empty sound ``*``.
-This is useful when dealing with :ref:`gemination <sc-gemination>`.
+In most cases, the number of elements must be the same on each side of the ``=>``.
+If a change adds or deletes some of the sounds, fill in the missing spaces
+with asterisks.
 
 Simultaneous Expressions
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. TODO rewrite
+You can put multiple expressions in a single rule::
 
-By default, compound rules are executed simultaneously.
-This is useful for "chain shifts". For example::
+    post-nasal-lenition:
+        {b, d, ɡ} => * / @nasal _
+        {p, t, k, f, x} => {b, d, ɡ, h, h} / @nasal _
 
-    chain-shift:
-        {pʰ, tʰ, kʰ} => {p, t, k}
-        {p, t, k} => {b, d, g}
-        {b, d, g} => {v, ð, ɣ}
+When a rule has several expressions, each expression
+runs simultaneously, so later expressions don't see
+the results of earlier expressions. This means we could
+actually reverse the order of the expressions above
+without changing the result::
 
-If these were separate rules, then a proto-language ``pʰ`` would pass through each
-rule in turn, becoming first ``p``, then ``b``, then ``v``. But since they're
-written as subrules, the second subrule can't apply to the output of the first,
-so the result is a ``p``.
+    post-nasal-lenition:
+        {p, t, k, f, x} => {b, d, ɡ, h, h} / @nasal _
+        {b, d, ɡ} => * / @nasal _
 
-Earlier subrules block later ones from changing the same part of the word.
+Even though the first expression changes [p] into [b], this
+isn't visible to the second expression, so the second expression
+won't delete the resulting [b]'s.
+
+The order of expressions only matters if two expressions try to change
+the same part of the word; in these situations, the earliest expression
+takes precedence.
 This can be useful for making rules that do one thing in most cases,
 and another thing in some exceptional case::
 
@@ -316,17 +277,15 @@ and another thing in some exceptional case::
         k => s / _ {e, i}
         k => h / $ _
 
-Even though the two subrules execute simultaneously, the first rule
+The first expression
 blocks the second from changing ``k`` to ``h`` before ``e`` and ``i``
 (by changing it to ``s`` instead).
 
 Compound Rules
 ~~~~~~~~~~~~~~~
 
-.. TODO rewrite
-
-If you put ``Then:`` between two subrules, then Lexurgy will apply them sequentially instead of
-simultaneously, as if they were separate rules. For example, the palatalization rule from
+You can combine two or more rules under one name by putting ``Then:``
+between the expressions. For example, the palatalization rule from
 :ref:`above <sc-three-stage-palatalization>` could be rewritten as::
 
     palatalization:
@@ -334,7 +293,81 @@ simultaneously, as if they were separate rules. For example, the palatalization 
         Then: tʃ => ʃ
         Then: ʃ => s
 
-This makes it clear that the three stages are really part of the same sound change.
+If you put more than one expression between each ``Then:``, then those
+expressions run simultaneously, just like in an ordinary rule.
+
+Compound rules help keep the sound changes organized by grouping related
+changes together under one name.
+
+Romanization
+~~~~~~~~~~~~~
+
+It's a good idea to do all the sound changes in phonetic notation (e.g. IPA).
+But you probably do most of the work for your languages in their romanization systems.
+Lexurgy has conventions for converting between IPA and romanizations so
+that you don't confuse romanization rules with actual sound changes.
+
+If the input language has a romanization system, the first rule should
+be called "deromanizer" and contain all of the rules for converting from
+the input language's romanization to phonetic notation. If you make this
+a compound rule (by separating expressions with ``Then:``), you can do
+complex sequences of transformations within a single "deromanizer" rule.
+
+Similarly, if the output language has a romanization system, the last
+rule should be called "romanizer" and contain all of the rules for
+converting from phonetic language to the output language's romanization.
+
+.. _sc-intermediate-romanizers:
+
+Intermediate Romanizers
+~~~~~~~~~~~~~~~~~~~~~~~
+
+If you want to preserve the history of the language at several stages, you can
+use intermediate romanizers. Any rule whose name starts with "romanizer-" will
+be treated as an intermediate romanizer.
+
+Intermediate romanizers differ from ordinary rules in an important way: subsequent
+rules don't see the changes they make. Instead, their results are included in the
+output along with the final form of the word.
+Let's revisit the three-stage palatalization
+rule, but put in some intermediate romanizers::
+
+    palatalization-1:
+        k => tʃ / _ i
+    romanizer-old-examplish:
+        tʃ => ch
+    palatalization-2:
+        tʃ => ʃ
+    romanizer-middle-examplish:
+        ʃ => sh
+    palatalization-3:
+        ʃ => s
+
+Suppose you pass the word "kinoki" to these sound changes. It
+will go through the changes as follows:
+
+- The rule ``palatalization-1`` executes, turning "kinoki" into "tʃinotʃi".
+- The rule ``romanizer-old-examplish`` executes, turning "tʃinotʃi" into "chinochi".
+- The rule ``palatalization-2`` executes, but it *still sees* "tʃinotʃi";
+  it turns this into "ʃinoʃi".
+- The rule ``romanizer-middle-examplish`` executes, turning "ʃinoʃi" into "shinoshi".
+- The rule ``palatalization-3`` executes, but it *still sees* "ʃinoʃi"; it turns
+  this into "sinosi".
+
+The output of this sound changer would look something like this::
+
+    kinoki => chinochi => shinoshi => sinosi
+
+If the intermediate "romanizer" should just dump the phonetic forms,
+you can use the special rule "unchanged"::
+
+    romanizer-phonetic:
+        unchanged
+
+.. note::
+
+    For the command-line tool, you need to specify the :option:`-m` command-line argument
+    in order for intermediate romanizers to activate.
 
 Using Features
 ~~~~~~~~~~~~~~~
@@ -372,7 +405,7 @@ that vowel has. Now, anytime Lexurgy encounters an [e]
 in a word, it knows that that [e] is a front vowel, but
 not a low, high, or back vowel.
 
-Now, we can write a rule like this::
+With these definitions, we can write a rule like this::
 
     final-vowel-raising:
         [-low -high] => [+high] / _ $
@@ -380,12 +413,12 @@ Now, we can write a rule like this::
 This rule says that any mid vowel (non-low, non-high) at
 the end of a word becomes *the corresponding* high vowel:
 [e] becomes [i], and [o] becomes [u]. The matrix ``[+high]``
-on the output side of the rule means that the ``high``
+on the result side of the rule means that the ``high``
 feature, and *only* the ``high`` feature, will be changed
 to ``+high``, while all other features (like the ``front``
 and ``back`` features) are left unchanged.
 
-Absent Features
+Absent Values
 ****************
 
 Binary features actually have a *third* value: *absent*,
@@ -413,22 +446,17 @@ The following defines two univalent features::
     Feature +nasalized
     Feature +stress
 
-This is just like defining binary features, except
-for the plus sign before the feature name.
-
-As with binary features, a sound that has the
-``stress`` feature would have ``+stress`` in its
-feature matrix. The *absence* of the ``stress``
-feature can be written *either* ``-stress`` or
-``*stress``; both mean the same thing. Any sound that
+With these definitions, the feature ``stress`` has the two values
+``+stress`` and ``-stress``. Any sound that
 isn't explicitly declared to be ``+stress`` is
-automatically ``*stress``.
+automatically ``-stress``. There's no separate ``*stress``
+value; ``-stress`` *is* the absent value.
 
 Univalent features are convenient for suprasegmentals
 like stress, because it would be annoying to have
 to declare every single vowel to be ``[-stress]``.
 
-Multivalued Features
+Multivalent Features
 *********************
 
 Lexurgy differs from tools like
@@ -446,16 +474,21 @@ you can recreate the IPA consonant chart like this::
     ...
     Symbol l [alveolar approximant]
 
-Just like binary and univalent features, multivalued features always
-have an *absent* value. In this example, we didn't specify a voicing for ``l``,
-so it automatically has the absent value ``*voicing``.
+This defines two features, ``place`` and ``manner``, each with
+four values. With multivalent features, each value has a name;
+rather than writing ``[+place]`` or ``[-manner]``, which wouldn't make
+sense, you have to use the names, like ``[labial nasal]``.
 
-Now you can write rules like this::
+With these definitons, you can write rules like this::
 
     intervocalic-lenition:
         [stop] => [voiced] / @vowel _ @vowel
         [voiced stop] => [fricative] / @vowel _ @vowel
         [unvoiced fricative] => h / @vowel _ @vowel
+
+Just like binary and univalent features, multivalent features always
+have an *absent* value. In this example, we didn't specify a voicing for ``l``,
+so it automatically has the absent value ``*voicing``.
 
 Feature Variables
 ******************
@@ -494,7 +527,7 @@ applied and become an [n], etc.
 Giving the Absent Value a Name
 *********************************
 
-You can give the absent value of any multivalued feature a name. This declaration
+You can give the absent value of any multivalent feature a name. This declaration
 allows ``unstressed`` to be used instead of ``*stress`` to indicate a lack
 of both primary and secondary stress::
 
@@ -510,6 +543,11 @@ A feature value in a matrix can be negated by prefixing it with ``!``. Then the 
 will match any sound that *doesn't* have that value. For example, ``[stop !glottal]``
 will match any stop *except* the glottal stop, while ``[vowel front !high]`` will match
 non-high back vowels.
+
+You can't use negated features on the result side of a rule; if you try to transform
+a sound *to* ``[stop !glottal]``, Lexurgy doesn't know what you want
+the place of articulation to be (is it ``alveolar``? ``velar``?), only what you want
+it *not* to be.
 
 .. _sc-diacritics:
 
@@ -596,18 +634,18 @@ This will turn ``kepo`` into ``kipu``, but leave ``keˈpó`` unaltered.
 Multiple Criteria
 ~~~~~~~~~~~~~~~~~~
 
-.. TODO Work in the word "intersection".
-
-If you want to limit a rule to segments that have several different properties,
-you can join the properties with ``&``. This is useful when mixing sound classes
-with features::
+You can force Lexurgy to match multiple criteria on the same segment using
+an *intersection*, which is notated by joining the criteria with ``&``.
+The most common use of this is when you're mixing sound classes with features,
+and need to specify that a rule only applies when a sound both *has a feature*
+and *is in a class*::
 
     unstressed-final-vowel-loss:
         @vowel&[unstressed] => * / _ $ // {p, t, k} _
 
 If an :ref:`alternative list <sc-alternative-lists>` is the *first* element
-joined by ``&``, then it can match up with an alternative list of the same length
-on the new side of the rule. For example::
+in an intersection, then it can match up with an alternative list of the same length
+on the result side of the rule. For example::
 
     unstressed-vowel-centralizing:
         {e, i, o, u}&[unstressed] => {ə, ɨ, ə, ɨ}
@@ -640,6 +678,16 @@ any consonants at the end::
     stress-last-syllable:
         [vowel] => [stressed] / _ [glide]? [consonant]* $
 
+Intermediatese
+~~~~~~~~~~~~~~~
+
+Now you should understand enough to be able to follow along with the
+*Intermediatese* example in the web app. Load this example and give
+it a try!
+
+With that, it's time to get to the power features that really make Lexurgy
+stand out.
+
 Advanced Structures
 --------------------
 
@@ -670,7 +718,7 @@ This rule uses a capture variable in the environment to *recognize* a geminate::
 
     * => e / _ [cons]$1 $1
 
-This rule uses a bare capture variable on the old side of the rule to remove gemination
+This rule uses a bare capture variable on the match side of the rule to remove gemination
 (*degemination*)::
 
     [cons]$1 $1 => $1 *
