@@ -27,6 +27,17 @@ class TestSoundChanger : StringSpec({
         ch("expexax") shouldBe "ehpehah"
     }
 
+    "We should be able to have numbers in names, as long as the whole name isn't numbers" {
+        lsc(
+            """
+                Feature 2fast(2furious)
+                Class v0w3l {a, i, u}
+                4tition-1:
+                    b => p
+            """.trimIndent()
+        )
+    }
+
     "A file with syntax errors should fail to parse even if the start is valid" {
         shouldThrow<LscNotParsable> {
             lsc(

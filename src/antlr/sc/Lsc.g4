@@ -30,7 +30,7 @@ changeRuleModifier: filter | PROPAGATE;
 filter: classRef | fancyMatrix;
 subrules: subrule (NEWLINE+ SUBRULE RULE_START (WHITESPACE | NEWLINE+) subrule)*;
 subrule: expression (NEWLINE+ expression)*;
-ruleName: NAME (HYPHEN NAME)*;
+ruleName: NAME (HYPHEN (NAME | NUMBER))*;
 
 expression: UNCHANGED | (from CHANGE to (CONDITION condition)? (EXCLUSION exclusion)?);
 condition: environment | environmentList;
@@ -111,12 +111,11 @@ SUBRULE: 'Then' | 'then';
 PROPAGATE: 'Propagate' | 'propagate';
 LITERAL: 'Literal' | 'literal';
 UNCHANGED: 'Unchanged' | 'unchanged';
-NAME: LETTER CHAR*;
 NUMBER: DIGIT+;
+NAME: CHAR+;
 STR1: ANY;
 STR: ANY+;
 
-fragment LETTER: [A-Za-z];
 fragment CHAR: [A-Za-z0-9];
 fragment DIGIT: [0-9];
 fragment ANY: ('\\' .) | ~[ \\,=>()*[\]{}+?/\-_:!$@#&\n\r];
