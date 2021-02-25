@@ -24,7 +24,8 @@ It's designed around two main goals:
 Why not just use Rosenfelder's SCA?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Rosenfelder's SCA is a great tool, but it's pretty limited in power.
+Rosenfelder's `SCA <http://zompist.com/sca2.html>`_ is a great tool,
+but it's pretty limited in power.
 Certain kinds of rules, like stress-sensitive changes and assimilation,
 require convoluted sequences of rules, if they're possible at all.
 Lexurgy lets you do everything the "SCA way" if you want, but the
@@ -38,7 +39,8 @@ remember what L and Q stood for.
 Why not just use Phonix?
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Phonix is what I used for sound changes before I started working on
+`Phonix <https://gitlab.com/jaspax/phonix/blob/master/README.md>`_
+is what I used for sound changes before I started working on
 Lexurgy. Its distinctive feature paradigm is very powerful, and
 Lexurgy owes a great debt to it.
 
