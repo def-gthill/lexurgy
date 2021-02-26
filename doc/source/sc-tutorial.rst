@@ -138,7 +138,8 @@ classes::
 
 Now we can write intervocalic lenition like this::
 
-    @unvcdstop => @vcdstop / @vowel _ @vowel
+    intervocalic-lenition:
+        @unvcdstop => @vcdstop / @vowel _ @vowel
 
 You can use the names of previously defined classes in your
 class definitions::
@@ -237,6 +238,7 @@ A rule can affect a *sequence* of consecutive sounds at the same time.
 For example, this rule implements *compensatory lengthening* when a
 coda stop consonant is lost::
 
+    Class consonant {p, t, k, s, m, n, l}
     coda-stop-drop-and-lengthen:
         {a, e, i, o, u} {p, t, k} => {aː, eː, iː, oː, uː} * / _ @consonant
 
@@ -481,17 +483,29 @@ features with any number of values. For example,
 you can recreate the IPA consonant chart like this::
 
     Feature voicing(unvoiced, voiced)
-    Feature place(labial, alveolar, velar, glottal)
+    Feature place(labial, dental, alveolar, velar, glottal)
     Feature manner(stop, fricative, nasal, approximant)
 
     Symbol p [unvoiced labial stop]
     Symbol b [voiced labial stop]
-    Symbol t [unvoiced alveolar stop]
-    ...
+    Symbol t [unvoiced dental stop]
+    Symbol d [voiced dental stop]
+    Symbol k [unvoiced velar stop]
+    Symbol ɡ [voiced velar stop]
+    Symbol f [unvoiced labial fricative]
+    Symbol v [voiced labial fricative]
+    Symbol ð [voiced dental fricative]
+    Symbol s [unvoiced alveolar fricative]
+    Symbol z [voiced alveolar fricative]
+    Symbol x [unvoiced velar fricative]
+    Symbol ɣ [voiced velar fricative]
+    Symbol h [unvoiced glottal fricative]
+    Symbol m [labial nasal]
+    Symbol n [alveolar nasal]
     Symbol l [alveolar approximant]
 
-This defines three features, ``voicing``, ``place`` and ``manner``, each
-with its own set of values. With multivalent features, each value has a name;
+This defines three features, ``voicing``, ``place`` and ``manner``, with
+two, five, and four values respectively. With multivalent features, each value has a name;
 rather than writing ``[+place]`` or ``[-manner]``, which wouldn't make
 sense, you have to use the names, like ``[labial nasal]``.
 
@@ -499,13 +513,14 @@ With these definitons, you can write rules like this::
 
     Class vowel {a, e, i, o, u}
     intervocalic-lenition:
-        [stop] => [voiced] / @vowel _ @vowel
+        [unvoiced stop] => [voiced] / @vowel _ @vowel
         [voiced stop] => [fricative] / @vowel _ @vowel
         [unvoiced fricative] => h / @vowel _ @vowel
+        h => * / @vowel _ @vowel
 
 Just like binary and univalent features, multivalent features always
-have an *absent* value. In this example, we didn't specify a voicing for ``l``,
-so it automatically has the absent value ``*voicing``.
+have an *absent* value. In this example, we didn't specify a voicing for [m], [n], and [l],
+so they automatically have the absent value ``*voicing``.
 
 Feature Variables
 ******************
@@ -516,18 +531,18 @@ a feature value from one sound to another.
 
 For example, suppose you have these declarations::
 
-    Feature type(*consonant, vowel)
+    Feature type(*vowel, consonant)
     Feature place(labial, alveolar, velar, glottal)
     Feature manner(stop, fricative, nasal, approximant)
 
-    Symbol p [labial stop]
-    Symbol t [alveolar stop]
-    Symbol k [velar stop]
-    Symbol s [alveolar fricative]
-    Symbol m [labial nasal]
-    Symbol n [alveolar nasal]
-    Symbol ŋ [velar nasal]
-    Symbol l [alveolar approximant]
+    Symbol p [labial stop consonant]
+    Symbol t [alveolar stop consonant]
+    Symbol k [velar stop consonant]
+    Symbol s [alveolar fricative consonant]
+    Symbol m [labial nasal consonant]
+    Symbol n [alveolar nasal consonant]
+    Symbol ŋ [velar nasal consonant]
+    Symbol l [alveolar approximant consonant]
 
 Then you can write the common *nasal assimilation* rule like this::
 
@@ -590,24 +605,25 @@ indicates aspiration, [ː] makes a vowel long, and [ ̥ ] makes a sound voiceles
 
 You can declare these in Lexurgy like this::
 
-    Diacritic ʰ [aspirated]
-    Diacritic ː [long]
-    Diacritic ̥  [unvoiced]
+    Feature +aspirated, +long, voiced
+    Diacritic ʰ [+aspirated]
+    Diacritic ː [+long]
+    Diacritic ̥  [-voiced]
 
-If these diacritics appear in the old-language words or in rules, Lexurgy will
-consider them to add the specified feature value to the previous sound, replacing
+If these diacritics appear in the input words or in rules, Lexurgy will
+consider them to add the specified feature value to the modified sound, replacing
 the existing value of that feature. For example, if
-[p] is ``[unvoiced bilabial stop]``, then [pʰ] is ``[aspirated unvoiced bilabial stop]``;
-if [n] is ``[voiced alveolar nasal]``, then [n̥] is ``[unvoiced alveolar nasal]``.
+[p] is ``[-voiced bilabial stop]``, then [pʰ] is ``[+aspirated -voiced bilabial stop]``;
+if [n] is ``[+voiced alveolar nasal]``, then [n̥] is ``[-voiced alveolar nasal]``.
 
 Diacritics also work when translating matrices back into symbols: if a rule produces
-``[unvoiced alveolar nasal]``, and there's no symbol explicitly defined with that matrix,
+``[-voiced alveolar nasal]``, and there's no symbol explicitly defined with that matrix,
 Lexurgy will search through possible combinations of symbols and diacritics to find
 one that fits the matrix, namely [n̥].
 
 If you add ``(before)`` to a diacritic declaration (before or after the
 matrix), it will go before the base symbol. For example, if you define
-``Diacritic ⁿ (before) [prenasalized]`` (or ``Diacritic ⁿ [prenasalized] (before)``),
+``Diacritic ⁿ (before) [+prenasalized]`` (or ``Diacritic ⁿ [+prenasalized] (before)``),
 then the prenasalized version of [d] will show up as ``ⁿd`` rather than ``dⁿ``.
 
 Diacritics can even be applied to symbols that aren't declared with feature
@@ -635,8 +651,9 @@ should ignore the feature.
 
 You can indicate this by making the diacritic *floating*::
 
-    Diacritic ˈ (floating) [stressed]
-    Diacritic ́  (floating) [hightone]
+    Feature +hightone, +stress
+    Diacritic ˈ (floating) [+stress]
+    Diacritic ́  (floating) [+hightone]
 
 Literal sounds *without* floating diacritics match sounds *with or without* floating diacritics, and
 transmit any floating diacritics unaltered to the output. For example, suppose that we write this rule::
@@ -715,10 +732,10 @@ The ``+`` indicates that we want *at least one* consonant at the end of the word
 If the repeated segment is also optional (i.e. the rule should accept zero or more
 copies of the segment), you can use ``*`` instead of ``+``. For example, this
 rule will stress the vowel in the last syllable regardless of whether there are
-any consonants at the end::
+any glides or consonants at the end::
 
-    stress-closed-last-syllable:
-        @vowel => [+stress] / _ @glide? @consonant* $
+    stress-last-syllable:
+        @vowel => [+stress] / _ {@glide, @consonant}* $
 
 Intermediatese
 ~~~~~~~~~~~~~~~
@@ -751,24 +768,28 @@ This rule applies gemination in stop-stop clusters, turning the first stop into
 a copy of the second::
 
     Class stop {p, t, k}
-    @stop @stop$1 => $1 $1
+    gemination:
+        @stop @stop$1 => $1 $1
 
 This rule applies metathesis to stop-fricative sequences::
 
     Class stop {p, t, k}
     Class fricative {f, s}
-    @fricative$1 @stop$2 => $2 $1
+    metathesis:
+        @stop$1 @fricative$2 => $2 $1
 
 This rule uses a capture variable in the environment to *recognize* a geminate::
 
     Class consonant {p, t, k, s, m, n, l}
-    * => e / _ @consonant$1 $1
+    geminate-epenthesis:
+        * => e / _ @consonant$1 $1
 
 This rule uses a bare capture variable on the match side of the rule to remove gemination
 (*degemination*)::
 
     Class consonant {p, t, k, s, m, n, l}
-    @consonant$1 $1 => $1 *
+    degemination:
+        @consonant$1 $1 => $1 *
 
 Negation
 ~~~~~~~~~
