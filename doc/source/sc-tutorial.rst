@@ -480,6 +480,7 @@ Lexurgy differs from tools like
 features with any number of values. For example,
 you can recreate the IPA consonant chart like this::
 
+    Feature voicing(unvoiced, voiced)
     Feature place(labial, alveolar, velar, glottal)
     Feature manner(stop, fricative, nasal, approximant)
 
@@ -489,8 +490,8 @@ you can recreate the IPA consonant chart like this::
     ...
     Symbol l [alveolar approximant]
 
-This defines two features, ``place`` and ``manner``, each with
-four values. With multivalent features, each value has a name;
+This defines three features, ``voicing``, ``place`` and ``manner``, each
+with its own set of values. With multivalent features, each value has a name;
 rather than writing ``[+place]`` or ``[-manner]``, which wouldn't make
 sense, you have to use the names, like ``[labial nasal]``.
 
@@ -513,11 +514,25 @@ Languages often undergo *assimilation*, where one sound becomes more like a near
 Lexurgy helps in writing assimilation rules by allowing *feature variables*, which copy
 a feature value from one sound to another.
 
-For example, if you indicate the place of articulation of all your consonants with a
-``place`` feature, the common *nasal assimilation* rule
-can be written like this::
+For example, suppose you have these declarations::
 
-    [nasal] => [$place] / _ [consonant $place]
+    Feature type(*consonant, vowel)
+    Feature place(labial, alveolar, velar, glottal)
+    Feature manner(stop, fricative, nasal, approximant)
+
+    Symbol p [labial stop]
+    Symbol t [alveolar stop]
+    Symbol k [velar stop]
+    Symbol s [alveolar fricative]
+    Symbol m [labial nasal]
+    Symbol n [alveolar nasal]
+    Symbol ŋ [velar nasal]
+    Symbol l [alveolar approximant]
+
+Then you can write the common *nasal assimilation* rule like this::
+
+    nasal-assimilation:
+        [nasal] => [$place] / _ [consonant $place]
 
 The ``[consonant $place]`` matrix in the environment matches any consonant, but captures the
 value of that consonant's ``place`` feature. This feature value is copied into the matching
