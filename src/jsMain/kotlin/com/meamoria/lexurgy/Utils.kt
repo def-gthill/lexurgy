@@ -1,7 +1,11 @@
 package com.meamoria.lexurgy
 
-import com.meamoria.mpp.xregexp.test
 import kotlin.js.RegExp
 
 actual fun String.combiningCount(): Int =
-    count { test(it.toString(), RegExp("\\p{Mn}")) }
+    try {
+        count { RegExp("\\p{Mn}", flags = "u").test(it.toString()) }
+    } catch (e: Throwable) {
+        // Fallback for old browsers
+        0
+    }

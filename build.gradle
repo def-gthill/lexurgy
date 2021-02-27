@@ -97,7 +97,6 @@ kotlin {
         jsMain {
             dependencies {
                 implementation npm("antlr4", "4.7.2")
-                implementation npm("xregexp", "5.0.1")
             }
         }
         jsTest {
