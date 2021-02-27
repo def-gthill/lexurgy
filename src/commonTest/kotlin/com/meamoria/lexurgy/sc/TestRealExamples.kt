@@ -71,6 +71,381 @@ class TestRealExamples : StringSpec({
         ch("eefase") shouldBe "éːfse"
     }
 
+    "This version of the Nusyan sound changes should work consistently" {
+        val ch = lsc(
+            """
+                Feature Type(*cons, vowel)
+                Feature Height(low, mid, high)
+                Feature Depth(front, central, back)
+                Feature Tone(*neutral, lowtone, hightone, rising, falling)
+                Feature Length(*short, long)
+
+                Diacritic ̀  (floating) [lowtone]
+                Diacritic ́  (floating) [hightone]
+                Diacritic ̌  (floating) [rising]
+                Diacritic ̂  (floating) [falling]
+                Diacritic ː [long]
+
+                Symbol æ [vowel low front]
+                Symbol a [vowel low central]
+                Symbol ɑ [vowel low back]
+                Symbol e [vowel mid front]
+                Symbol ə [vowel mid central]
+                Symbol o [vowel mid back]
+                Symbol i [vowel high front]
+                Symbol ɨ [vowel high central]
+                Symbol u [vowel high back]
+
+                Class unvcd {p, t, k}
+                Class vcd {b, d, g}
+                Class stop {@unvcd, ʔ, @vcd}
+                Class fricative {s, h}
+                Class nasal {m, n, ŋ}
+                Class approximant {w, ɾ, j}
+                Class sonorant {@nasal, @approximant}
+
+                Deromanizer:
+                    ' => ʔ
+                    ng => ŋ
+                    nk => ŋk
+                    r => ɾ
+                    y => j
+                    s => z / {{@vcd, @sonorant} _, _ {@vcd, @sonorant}}
+                    [vowel]${'$'}1 ${'$'}1 => [long] *
+
+                level-tones:
+                    [vowel] => [lowtone] / @vcd @sonorant? _
+                    [vowel] => [hightone] / @unvcd @sonorant? _
+
+                devoicing:
+                    @vcd => @unvcd
+                    z => s
+
+                vowel-shift-early:
+                    [long] => [short] / _ ɾ {[cons], ${'$'}}
+                    Then:
+                    {aː, eː, iː, oː, uː} => {æ, e, i, o, u}
+                    {aɾ, eɾ, iɾ, oɾ, uɾ} => {ɑ, æ, e, ɑ, o} / _ {[cons], ${'$'}}
+                    {a, e, i, o, u} => {ɑ, i, i, ɑ, u} / _ ${'$'}
+                    {a, e, i, o, u} => {ɑ, ə, ɨ, ə, ɨ}
+                    Then:
+                    {əj, əw, ɨj, ɨw} => {e, o, i, u}
+                    {jɨ, wɨ} => {i, u}
+
+                contour-tones:
+                    {[lowtone], [neutral vowel]} => {[rising], [hightone]} / _ {s, @sonorant}? @stop {[cons], ${'$'}}
+                    {[hightone], [neutral vowel]} => {[falling], [lowtone]} / _ @sonorant? s {[cons], ${'$'}}
+
+                toning-coda-loss:
+                    {s, @stop} => * / _ {[cons] [vowel], ${'$'}} // ${'$'} _
+                    ʔ => *
+
+                clustered-h-loss:
+                    h => * / {[cons] _, _ [cons]}
+
+                full-coda-loss:
+                    [vowel] {s, @stop} => [long] * / _ {[cons], ${'$'}} // ${'$'} _
+
+                nasal-assimilation:
+                    @nasal => m / _ {p, m}
+                    @nasal => n / _ {t, s, ɾ, n, ${'$'}}
+                    @nasal => ŋ / _ {k, ŋ, w}
+
+                cluster-reduction:
+                    ɾ => * / @stop _
+                    Then:
+                    {@stop, s} => * / _ {@stop, @fricative, @nasal}
+                    s => * / _ ɾ
+
+                Romanizer-on:
+                    ŋ => n / _ k
+                    ŋ => ng
+                    {j, ɾ} => {y, r}
+
+                palatalization:
+                    {k, t, s} => {tʃ, tʃ, ʃ} / _ i
+                    {kj, tj, sj} => {tʃ, tʃ, ʃ}
+
+                nasal-raising:
+                    {[low], [mid]} => {[mid], [high]} / _ @nasal {[cons], ${'$'}}
+
+                vowel-shift-late:
+                    {e, eː, o, oː} => {i, iː, u, uː} / @approximant _
+                    {* e, * o, ɨ} => {j æ, w ɑ, ə}
+                    {* eː, * oː, ɨː} => {j æ, w ɑ, əː}
+
+                fortition:
+                    {w, j} => {f, ʃ} // {[cons] _, _ [cons]}
+
+                intervocalic-lenition:
+                    {t, s, h} => {ts, h, *} / [vowel] _ [vowel]
+
+                nasal-dropping:
+                    [vowel] @nasal => [long] * / _ [cons]
+
+                vowel-coalescence:
+                    unchanged
+
+                deaffrication:
+                    {tʃ, ts} => {ʃ, s}
+
+                Romanizer-phonetic:
+                    unchanged
+
+                Romanizer:
+                    [long]${'$'}1 * => ${'$'}1 ${'$'}1
+                    Then:
+                    [long] => [short]
+                    Then:
+                    {æ, ə, i, ɑ, u} => {a, e, i, o, u}
+                    Then:
+                    ŋ => n / _ k
+                    ŋ => ng
+                    {j, tʃ, ʃ, ɾ} => {y, ch, sh, r}
+            """.trimIndent()
+        )
+
+        val exampleWords = listOf(
+            "sniwsaans",
+            "rankahuumsi",
+            "rankahuumste",
+            "rankahuumsree",
+            "wiir",
+            "poyginuu",
+            "poygist",
+            "sreskansi",
+            "sreskanste",
+            "sreskansree",
+            "ksaartobdast",
+            "es",
+            "estees",
+            "en",
+            "entees",
+            "re",
+            "retees",
+            "doro",
+            "dorotees",
+            "gow",
+            "gowtees",
+            "ktam",
+            "ktamtees",
+            "dsii",
+            "dsiitees",
+            "honuu",
+            "honuutees",
+            "ka",
+            "katees",
+            "brani",
+            "brante",
+            "branyin",
+            "brankas",
+            "branwa",
+            "branree",
+            "brantsa",
+            "branken",
+            "bransoo",
+            "byorti",
+            "byortte",
+            "byortree",
+            "dati",
+            "datte",
+            "datree",
+            "dorti",
+            "dortte",
+            "dortree",
+            "doski",
+            "doskte",
+            "doskree",
+            "gampi",
+            "gampte",
+            "gampree",
+            "huumsi",
+            "huumste",
+            "huumsree",
+            "hyuungi",
+            "hyuungto",
+            "hyuungtos'",
+            "hyuungtobdast",
+            "ksaar'i",
+            "ksaarto",
+            "ksaartos'",
+            "ksaartobdast",
+            "mesti",
+            "mestte",
+            "mestree",
+            "naamsi",
+            "naamste",
+            "naamsree",
+            "niidsi",
+            "niidste",
+            "niidsree",
+            "paninuu",
+            "pani",
+            "panto",
+            "pantos'",
+            "pantobdast",
+            "poygi",
+            "poykto",
+            "poyktos'",
+            "poyktobdast",
+            "psansi",
+            "psanste",
+            "psansree",
+            "pursi",
+            "purste",
+            "pursree",
+            "ranki",
+            "rankte",
+            "rankree",
+            "reki",
+            "rekte",
+            "rekree",
+            "sresi",
+            "sresto",
+            "srestos'",
+            "srestobdast",
+            "tari",
+            "tarto",
+            "tartos'",
+            "tartobdast",
+            "tsonki",
+            "tsonkte",
+            "tsonkree",
+            "wedi",
+            "wetto",
+            "wettos'",
+            "wettobdast",
+            "wiiri",
+            "wiirte",
+            "wiirree",
+            "yorbi",
+            "yorpte",
+            "yorbree",
+        )
+
+        val expected = listOf(
+            "nusyàn",
+            "ruukóuushi",
+            "ruukóùùshí",
+            "ruukóùùri",
+            "fi",
+            "pyákènu",
+            "pyákěě",
+            "rèkwóóshi",
+            "rèkwôôshí",
+            "rèkwôôri",
+            "sosésǒǒ",
+            "è",
+            "ètyâ",
+            "en",
+            "eetyâ",
+            "ri",
+            "retyâ",
+            "tèro",
+            "tèretyâ",
+            "kwò",
+            "kwòtyâ",
+            "twón",
+            "twóótyâ",
+            "shi",
+            "shityâ",
+            "henu",
+            "henutyâ",
+            "kó",
+            "kótyâ",
+            "pòni",
+            "pwòòshí",
+            "pònin",
+            "pwòòkô",
+            "pwòòwo",
+            "pwòòri",
+            "pwǒǒso",
+            "pwòòkén",
+            "pwòòswo",
+            "pyòshí",
+            "pyǒshí",
+            "pyǒrí",
+            "tòshí",
+            "tǒshí",
+            "tǒrí",
+            "tòshí",
+            "tǒshí",
+            "tǒrí",
+            "tèshí",
+            "těěshí",
+            "těěrí",
+            "kwòòpí",
+            "kwǒǒshí",
+            "kwǒǒrí",
+            "huushi",
+            "hùùshí",
+            "hùùri",
+            "shungi",
+            "shuutó",
+            "shuutêê",
+            "shuutésǒǒ",
+            "soi",
+            "sosó",
+            "sosêê",
+            "sosésǒǒ",
+            "mèshí",
+            "mééshí",
+            "méérí",
+            "nyaashi",
+            "nyààshí",
+            "nyààri",
+            "níshi",
+            "nííshí",
+            "nííri",
+            "pónenu",
+            "póni",
+            "pwóótó",
+            "pwóótêê",
+            "pwóótésǒǒ",
+            "pyáshì",
+            "pyásó",
+            "pyásêê",
+            "pyásésǒǒ",
+            "swooshi",
+            "swòòshí",
+            "swòòri",
+            "pwóshi",
+            "pwôshí",
+            "pwôri",
+            "ruushí",
+            "rúúshí",
+            "rúúrí",
+            "reshí",
+            "réshí",
+            "rérí",
+            "reshi",
+            "rèsó",
+            "rèsêê",
+            "rèsésǒǒ",
+            "tóri",
+            "tósó",
+            "tósêê",
+            "tósésǒǒ",
+            "seeshí",
+            "sééshí",
+            "séérí",
+            "feshì",
+            "fésó",
+            "fésêê",
+            "fésésǒǒ",
+            "firi",
+            "fishí",
+            "firi",
+            "shopì",
+            "shóshí",
+            "shórì",
+        )
+
+        for ((expectedWord, originalWord) in expected.zip(exampleWords)) {
+            ch(originalWord) shouldBe expectedWord
+        }
+    }
+
     "Technomancer00's example should work with the new deromanizer/romanizer rules" {
         val ch = lsc(
             """
