@@ -48,6 +48,20 @@ class TestRepeaters : StringSpec({
 
         ch2("babgdo") shouldBe "babgda"
         ch2("ibabogago") shouldBe "ibabagago"
+
+        // Don't refuse to consume zero-length matches
+        val ch3 = lsc(
+            """
+                Class glide {w, j}
+                Class consonant {p, t, k, f, s, m, n, l}
+                Class vowel {a, e, i, o, u, ø, y}
+                
+                umlaut:
+                    {a, e, o, u} => {e, i, ø, y} / _ @glide? @consonant* j
+            """.trimIndent()
+        )
+
+        ch3("awtja") shouldBe "ewtja"
     }
 
     "We should be able to change repeaters into things" {

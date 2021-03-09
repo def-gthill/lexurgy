@@ -258,7 +258,9 @@ class RepeaterMatcher<I : Segment<I>>(
         var times = 0
         while (true) {
             val altBindings = bindings.copy()
-            if (followingMatcher?.claim(declarations, word, elementStart, altBindings) != null) break
+            if (followingMatcher?.claim(declarations, word, elementStart, altBindings)?.takeIf {
+                    it > elementStart
+            } != null) break
             elementStart = element.claim(declarations, word, elementStart, bindings) ?: break
             times++
             if (type.maxReps?.let { times >= it } == true) break
