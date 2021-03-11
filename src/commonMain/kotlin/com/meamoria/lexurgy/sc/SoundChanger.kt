@@ -48,11 +48,12 @@ class SoundChanger(
         debug: (String) -> Unit = ::println,
     ): Map<String?, List<String>> {
         val debugIndices = words.withIndex().filter { it.value in debugWords }.map { it.index }
+        val decomposedWords = words.map { it.normalizeDecompose() }
         val startWords =
             if (startAt == null) applyRule(
-                Phonetic, deromanizer, words, words.map(::PlainWord), debugIndices, debug
+                Phonetic, deromanizer, words, decomposedWords.map(::PlainWord), debugIndices, debug
             )
-            else words.map(declarations::parsePhonetic)
+            else decomposedWords.map(declarations::parsePhonetic)
 
         val result = mutableMapOf<String?, List<String>>()
 
@@ -67,7 +68,7 @@ class SoundChanger(
             intermediateRomanizers[ruleName]?.forEach { rom ->
                 result[rom.name] = applyRule(
                     Plain, maybeReplace(rom.romanizer), words, curWords, debugIndices, debug
-                ).map { it.string }
+                ).map { it.string.normalizeCompose() }
             }
         }
 
@@ -97,8 +98,8 @@ class SoundChanger(
 
         result[null] = if (stopBefore == null) applyRule(
             Plain, maybeReplace(romanizer), words, curWords, debugIndices, debug
-        ).map { it.string }
-        else curWords.map { it.string }
+        ).map { it.string.normalizeCompose() }
+        else curWords.map { it.string.normalizeCompose() }
 
         return result
     }
@@ -145,7 +146,7 @@ class SoundChanger(
 
         fun fromLsc(code: String): SoundChanger {
             val parser = LscInterpreter()
-            return (parser.parseFile(code) as LscWalker.SoundChangerNode).soundChanger
+            return (parser.parseFile(code.normalizeDecompose()) as LscWalker.SoundChangerNode).soundChanger
         }
     }
 

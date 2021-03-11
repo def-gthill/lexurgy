@@ -9,3 +9,7 @@ actual fun String.combiningCount(): Int =
         // Fallback for old browsers
         0
     }
+
+actual fun String.normalizeDecompose(): String = asDynamic().normalize("NFD") as String
+
+actual fun String.normalizeCompose(): String = asDynamic().normalize("NFC") as String

@@ -368,7 +368,7 @@ class TestFeatures : StringSpec({
             """.trimIndent()
         )
 
-        ch("fuba") shouldBe "fubà"
-        ch("kímataˈ") shouldBe "kímátaˈ"
+        ch("fuba") shouldBe "fubà"
+        ch("kímataˈ") shouldBe "kímátaˈ"
     }
 })

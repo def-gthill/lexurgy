@@ -374,10 +374,10 @@ class TestSoundChanger : StringSpec({
             """.trimIndent()
         )
 
-        ch("kaki") shouldBe "káki"
-        ch("putatu") shouldBe "pútatu"
-        ch("ichigaku") shouldBe "íchigaku"
-        ch("epistrefu") shouldBe "épistrefu"
+        ch("kaki") shouldBe "káki"
+        ch("putatu") shouldBe "pútatu"
+        ch("ichigaku") shouldBe "íchigaku"
+        ch("epistrefu") shouldBe "épistrefu"
     }
 
     "We should be able to write compact changes with alternative lists" {

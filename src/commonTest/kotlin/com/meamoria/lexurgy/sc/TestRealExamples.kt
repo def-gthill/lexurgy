@@ -1,5 +1,6 @@
 package com.meamoria.lexurgy.sc
 
+import com.meamoria.lexurgy.normalizeCompose
 import com.meamoria.mpp.kotest.StringSpec
 import com.meamoria.mpp.kotest.shouldBe
 
@@ -66,9 +67,9 @@ class TestRealExamples : StringSpec({
             """.trimIndent()
         )
 
-        ch("migomausis") shouldBe "mígomausis"
-        ch("egidhi") shouldBe "égdʱi"
-        ch("eefase") shouldBe "éːfse"
+        ch("migomausis") shouldBe "mígomausis"
+        ch("egidhi") shouldBe "égdʱi"
+        ch("eefase") shouldBe "éːfse"
     }
 
     "This version of the Nusyan sound changes should work consistently" {
@@ -439,7 +440,7 @@ class TestRealExamples : StringSpec({
             "shopì",
             "shóshí",
             "shórì",
-        )
+        ).map { it.normalizeCompose() }
 
         for ((expectedWord, originalWord) in expected.zip(exampleWords)) {
             ch(originalWord) shouldBe expectedWord
@@ -510,7 +511,7 @@ class TestRealExamples : StringSpec({
             """.trimIndent()
         )
 
-        ch("ta'ínki") shouldBe "t’'ínki"
+        ch("ta'ínki") shouldBe "t’'inki"
         ch("ta'an") shouldBe "t’'an"
     }
 

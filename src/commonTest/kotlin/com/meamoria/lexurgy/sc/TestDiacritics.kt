@@ -117,9 +117,9 @@ class TestDiacritics : StringSpec({
             """.trimIndent()
         )
 
-        ch("tˈewtáj") shouldBe "tˈuwtʃéj"
+        ch("tˈewtáj") shouldBe "tˈuwtʃéj"
         ch("tˈájtaj") shouldBe "tˈu̘jtʃej"
-        ch("tˈuitui") shouldBe "tˈútú"
+        ch("tˈuitui") shouldBe "tˈútú"
     }
 
     "Duplicate diacritic declarations should produce an LscDuplicateName" {
@@ -181,9 +181,9 @@ class TestDiacritics : StringSpec({
             """.trimIndent()
         )
 
-        ch("tˈewtáj") shouldBe "tˈuwtʃéj"
+        ch("tˈewtáj") shouldBe "tˈuwtʃéj"
         ch("tˈájtaj") shouldBe "tˈu̘jtʃej"
-        ch("tˈuitui") shouldBe "tˈútú"
+        ch("tˈuitui") shouldBe "tˈútú"
     }
 
     "Symbol literals with ! after them should force an exact match" {
@@ -209,6 +209,20 @@ class TestDiacritics : StringSpec({
         )
 
         ch("tˈewtew") shouldBe "tˈiwtaw"
-        ch("tájtaj") shouldBe "tájtej"
+        ch("tájtaj") shouldBe "tájtej"
+    }
+
+    "Diacritics should be normalized" {
+        val ch = lsc(
+            """
+                Feature +stress
+                Diacritic ́  (floating) [+stress]
+                vowel-shift:
+                    {e, o}&[+stress] => {i, u}
+            """.trimIndent()
+        )
+
+        ch("téta") shouldBe "títa"
+        ch("abódi") shouldBe "abúdi"
     }
 })

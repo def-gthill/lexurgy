@@ -66,8 +66,8 @@ class TestSoundChangerCombinations : StringSpec({
                     """.trimIndent()
                 )
 
-                ch("tasauni") shouldBe "tasáúni"
-                ch("tasainisia") shouldBe "tasenisía"
+                ch("tasauni") shouldBe "tasáúni"
+                ch("tasainisia") shouldBe "tasenisía"
             }
 
     "We should be able to transform a sequence to another sequence of a different length if the " +
@@ -105,7 +105,7 @@ class TestSoundChangerCombinations : StringSpec({
             """.trimIndent()
         )
 
-        ch("áuóikáuóináuói") shouldBe "áuóikáúóínáuói"
+        ch("áuóikáuóináuói") shouldBe "áuóikáúóínáuói"
     }
 
     "Transforming a non-sequence repeater to a sequence shouldn't repeat the sequence" {
@@ -145,7 +145,7 @@ class TestSoundChangerCombinations : StringSpec({
             """.trimIndent()
         )
 
-        ch("baaáááíííiiíáá") shouldBe "baaaaaííííííaa"
+        ch("baaáááíííiiíáá") shouldBe "baaaaaííííííaa"
     }
 
     "We should be able to lift sequences out of captures" {

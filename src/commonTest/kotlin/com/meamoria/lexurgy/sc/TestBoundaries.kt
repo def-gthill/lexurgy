@@ -1,5 +1,6 @@
 package com.meamoria.lexurgy.sc
 
+import com.meamoria.lexurgy.normalizeCompose
 import com.meamoria.mpp.kotest.StringSpec
 import com.meamoria.mpp.kotest.shouldBe
 import com.meamoria.mpp.kotest.shouldBeInstanceOf
@@ -42,10 +43,10 @@ class TestBoundaries : StringSpec({
             """.trimIndent()
         )
 
-        ch("pant") shouldBe "pãt"
-        ch("sen") shouldBe "sẽ"
-        ch("senon") shouldBe "senõ"
-        ch("senont") shouldBe "senõt"
+        ch("pant") shouldBe "pãt".normalizeCompose()
+        ch("sen") shouldBe "sẽ".normalizeCompose()
+        ch("senon") shouldBe "senõ".normalizeCompose()
+        ch("senont") shouldBe "senõt".normalizeCompose()
         ch("senonet") shouldBe "senonet"
 
         val ch2 = lsc(

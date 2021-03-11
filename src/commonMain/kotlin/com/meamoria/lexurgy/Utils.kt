@@ -74,6 +74,10 @@ fun String.padEndCombining(length: Int): String {
     return padEnd(length + combiningCount())
 }
 
+expect fun String.normalizeDecompose(): String
+
+expect fun String.normalizeCompose(): String
+
 /**
  * Puts the number in front of the word, with the word correctly marked for singular/plural.
  * For example:
