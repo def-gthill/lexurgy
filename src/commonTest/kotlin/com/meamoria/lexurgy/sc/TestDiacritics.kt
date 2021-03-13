@@ -225,4 +225,15 @@ class TestDiacritics : StringSpec({
         ch("téta") shouldBe "títa"
         ch("abódi") shouldBe "abúdi"
     }
+
+    "Letters with built-in diacritics should be treated as symbols even if not declared" {
+        val ch = lsc(
+            """
+                vowel-shift:
+                    e => i
+            """.trimIndent()
+        )
+
+        ch("téte") shouldBe "téti"
+    }
 })

@@ -1,9 +1,6 @@
 package com.meamoria.lexurgy.sc
 
-import com.meamoria.lexurgy.LscUserError
-import com.meamoria.lexurgy.PhoneticParser
-import com.meamoria.lexurgy.PhoneticSegment
-import com.meamoria.lexurgy.Word
+import com.meamoria.lexurgy.*
 
 class Declarations(
     val features: List<Feature>,
@@ -78,10 +75,10 @@ class Declarations(
         diacritics.filterNot { it.before }.map { it.name }
     )
 
-    fun parsePhonetic(text: String): Word<PhoneticSegment> =
+    fun parsePhonetic(text: String): PhoneticWord =
         phoneticParser.parse(text)
 
-    fun parsePhonetic(word: Word<PlainS>): Word<PhonS> = parsePhonetic(word.string)
+    fun parsePhonetic(word: Word<PlainS>): PhoneticWord = parsePhonetic(word.string)
 
     fun String.toFeature(): Feature =
         featureNameToFeatureMap[this] ?: throw LscUndefinedName("feature", this)

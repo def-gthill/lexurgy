@@ -48,12 +48,11 @@ class SoundChanger(
         debug: (String) -> Unit = ::println,
     ): Map<String?, List<String>> {
         val debugIndices = words.withIndex().filter { it.value in debugWords }.map { it.index }
-        val decomposedWords = words.map { it.normalizeDecompose() }
         val startWords =
             if (startAt == null) applyRule(
-                Phonetic, deromanizer, words, decomposedWords.map(::PlainWord), debugIndices, debug
+                Phonetic, deromanizer, words, words.map(::PlainWord), debugIndices, debug
             )
-            else decomposedWords.map(declarations::parsePhonetic)
+            else words.map(declarations::parsePhonetic)
 
         val result = mutableMapOf<String?, List<String>>()
 
@@ -68,7 +67,7 @@ class SoundChanger(
             intermediateRomanizers[ruleName]?.forEach { rom ->
                 result[rom.name] = applyRule(
                     Plain, maybeReplace(rom.romanizer), words, curWords, debugIndices, debug
-                ).map { it.string.normalizeCompose() }
+                ).map { it.string }
             }
         }
 
@@ -98,8 +97,8 @@ class SoundChanger(
 
         result[null] = if (stopBefore == null) applyRule(
             Plain, maybeReplace(romanizer), words, curWords, debugIndices, debug
-        ).map { it.string.normalizeCompose() }
-        else curWords.map { it.string.normalizeCompose() }
+        ).map { it.string }
+        else curWords.map { it.string }
 
         return result
     }
@@ -281,7 +280,7 @@ class Deromanizer(
         fun empty(declarations: Declarations): Deromanizer = Deromanizer(emptyList(), emptyList(), declarations)
 
         private fun defaultRuleFor(declarations: Declarations): (Word<PlainS>) -> Word<PhonS> =
-            declarations::parsePhonetic
+            { declarations.parsePhonetic(it).normalize() }
     }
 }
 
@@ -292,7 +291,10 @@ class Romanizer(
     override val name: String = "romanizer"
 
     val phoneticRules = ChangeRule(name, phoneticExpressions)
-    val romanizerRule = SimpleChangeRule(Phonetic, Plain, romanizerExpressions, { PlainWord(it.string) })
+    val romanizerRule = SimpleChangeRule(
+        Phonetic, Plain, romanizerExpressions,
+        { PlainWord(it.string.normalizeCompose()) }
+    )
 
     override fun invoke(words: List<Word<PhonS>>): List<Word<PlainS>> =
         romanizerRule.invoke(phoneticRules.invoke(words))

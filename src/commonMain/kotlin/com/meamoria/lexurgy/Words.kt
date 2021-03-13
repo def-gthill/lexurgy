@@ -162,8 +162,11 @@ interface StringSegmentType<S : StringSegment<S>> : SegmentType<S> {
 
 data class PhoneticWord(val phoneticSegments: List<String>) :
     StringSegmentWord<PhoneticSegment>(phoneticSegments) {
+
     override val type: StringSegmentType<PhoneticSegment>
         get() = Phonetic
+
+    fun normalize(): Word<PhoneticSegment> = PhoneticWord(phoneticSegments.map { it.normalizeDecompose() })
 }
 
 data class PhoneticSegment(override val string: String) : StringSegment<PhoneticSegment> {
