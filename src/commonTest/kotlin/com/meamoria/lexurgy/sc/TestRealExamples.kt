@@ -515,6 +515,171 @@ class TestRealExamples : StringSpec({
         ch("ta'an") shouldBe "t’'an"
     }
 
+    "Henlee Hall's example should work the way they originally tried it" {
+        val ch = lsc(
+            """
+            Feature type(*consonant, vowel)
+            Feature low, high
+            Feature front, back
+            Feature +round
+            Feature place(labial, alveolar, postalveolar, palatal, velar, glottal)
+            Feature manner(nasal, plosive, fricative, rhotic, liquid, approximant)
+            Feature +hightone
+            Diacritic ́  (floating) [+hightone]
+            
+            Symbol i [-low +high +front -back -round vowel]
+            Symbol u [-low +high -front +back +round vowel]
+            Symbol e [-low -high +front -back -round vowel]
+            Symbol o [-low -high -front +back +round vowel]
+            Symbol a [+low -high -front -back -round vowel]
+            Symbol ɯ [-low +high -front +back -round vowel]
+            Symbol m [labial nasal]
+            Symbol n [alveolar nasal]
+            Symbol ŋ [velar nasal]
+            Symbol p [labial plosive]
+            Symbol t [alveolar plosive]
+            Symbol c [palatal plosive]
+            Symbol k [velar plosive]
+            Symbol ʔ [glottal plosive]
+            Symbol ɸ [labial fricative]
+            Symbol s [alveolar fricative]
+            Symbol ʃ [postalveolar fricative]
+            Symbol ç [palatal fricative]
+            Symbol x [velar fricative]
+            Symbol h [glottal fricative]
+            Symbol ɾ [alveolar rhotic]
+            Symbol l [alveolar liquid]
+            Symbol ɭ [postalveolar liquid]
+            Symbol w [labial velar approximant]
+            Symbol j [palatal approximant]
+            
+            Class consonant {m, n, ŋ, p, t, c, k, ʔ, ɸ, s, ʃ, ç, x, h, ɾ, l, ɭ, w, j}
+            Class coda {m, n, ŋ, p, t, k, ʔ, l, ɭ}
+            Class vowel {i, u, e, o, a, ɯ}
+            Class nasal {m, n, ŋ}
+            Class plosive {p, t, c, k, ʔ}
+            Class fricative {ɸ, s, ʃ, ç, x}
+            Class liquid {ɾ, l, ɭ, j, w}
+            Class bilabial {m, p, ɸ}
+            Class alveolar {n, t, s, ɾ, l, ɭ}
+            Class palatal {ʃ, c, ç}
+            Class velar {ŋ, k, x}
+            Class front {i, e}
+            Class back {u, o, ɯ}
+            
+            vowel-breaking:
+                {ii, uu} => {ai, au}
+            #romanizer-old-language:
+                #unchanged
+            gemination:
+                ʔh => ʔ
+                then: @consonant${'$'}1 h => ${'$'}1 ${'$'}1
+                then: h => *
+            nasal-assimilation:
+                n => [${'$'}place] / _ [consonant ${'$'}place]
+                [nasal] => [${'$'}place] / _ @nasal&[${'$'}place]
+            palatalization:
+                {t, s, k, x} => {tʃ, ʃ, c, ç} / _ @front
+                t => ts / _ @back
+            weak-vowel-deletion:
+                {i, u} => * / @fricative _ // {${'$'} t? @fricative _ @consonant? ${'$'}, _ @consonant @consonant, @consonant _ @consonant ${'$'}, _ @fricative}
+                then: j => * / @palatal _
+                      i => * / @coda _ j
+                      u => * / @coda _ w
+            #romanizer-middle-language:
+                #unchanged
+            u-unrounding:
+                u => [-round] / @consonant _ ${'$'}
+            simplification:
+                [-low -high] => [+high]
+                aa => a / {@vowel _, _ @vowel}
+                kc => cc
+            rhotacism:
+                l => ɾ / {@consonant _, @vowel _ @vowel} // l _
+                l l => ɭ ɭ
+                l => ɭ / _ ${'$'}
+            """.trimIndent()
+        )
+
+        val exampleWords = listOf(
+            "lúulit",
+            "súuluk",
+            "nomóló",
+            "tal",
+            "xét",
+            "xát",
+            "té",
+            "tó",
+            "hat",
+            "pál",
+            "sén",
+            "káli",
+            "xetó",
+            "pitáaʔ",
+            "lúma",
+            "júki",
+            "satkíi",
+            "toŋtá",
+            "hélhan",
+            "nelíi",
+            "salíi",
+            "patíi",
+            "tepíi",
+            "kisíi",
+            "pósohal",
+            "ɸetók",
+            "kúuluŋ",
+            "tamlíi",
+            "katíi",
+            "taxeka",
+            "siɸúl",
+            "kuutóŋ",
+            "janínú",
+            "hósóta",
+        )
+
+        val expected = listOf(
+            "láuɾit",
+            "sáuɾuk",
+            "numúɾú",
+            "taɭ",
+            "çít",
+            "xát",
+            "tʃí",
+            "tsú",
+            "at",
+            "páɭ",
+            "ʃín",
+            "káɾi",
+            "çitsú",
+            "pitáaʔ",
+            "lúma",
+            "júci",
+            "satkái",
+            "tsuŋtá",
+            "íɭɭan",
+            "niɾái",
+            "saɾái",
+            "patái",
+            "tʃipái",
+            "cisái",
+            "púsuaɭ",
+            "ɸitsúk",
+            "káuɾuŋ",
+            "tamɾái",
+            "katái",
+            "taçika",
+            "ʃiɸúɭ",
+            "kautsúŋ",
+            "janínɯ́",
+            "úsúta",
+        )
+
+        for ((expectedWord, originalWord) in expected.zip(exampleWords)) {
+            ch(originalWord) shouldBe expectedWord
+        }
+    }
+
     "The echo vowel rule in Engala should work" {
         val ch = lsc(
             """
