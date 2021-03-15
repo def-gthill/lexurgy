@@ -76,7 +76,7 @@ class Declarations(
     )
 
     fun parsePhonetic(text: String): PhoneticWord =
-        phoneticParser.parse(text)
+        phoneticParser.parse(text).normalize()
 
     fun parsePhonetic(word: Word<PlainS>): PhoneticWord = parsePhonetic(word.string)
 

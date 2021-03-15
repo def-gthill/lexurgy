@@ -166,7 +166,7 @@ data class PhoneticWord(val phoneticSegments: List<String>) :
     override val type: StringSegmentType<PhoneticSegment>
         get() = Phonetic
 
-    fun normalize(): Word<PhoneticSegment> = PhoneticWord(phoneticSegments.map { it.normalizeDecompose() })
+    fun normalize(): PhoneticWord = PhoneticWord(phoneticSegments.map { it.normalizeDecompose() })
 }
 
 data class PhoneticSegment(override val string: String) : StringSegment<PhoneticSegment> {
@@ -256,9 +256,9 @@ class PhoneticParser(
                 if (cursor >= symbol.length) throw DanglingDiacritic(symbol, cursor - matchString.length, matchString)
             } else if (matchType == 0) {
                 // Core symbol
-                if (core != null) throw DanglingDiacritic(symbol, cursor, matchString)
+                if (after.isNotEmpty()) throw DanglingDiacritic(symbol, cursor - matchString.length, matchString)
                 cursor += matchString.length
-                core = matchString
+                core = (core ?: "") + matchString
             } else {
                 // After diacritic
                 if (core == null) throw DanglingDiacritic(symbol, cursor, matchString)

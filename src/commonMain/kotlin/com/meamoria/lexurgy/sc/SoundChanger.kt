@@ -145,7 +145,7 @@ class SoundChanger(
 
         fun fromLsc(code: String): SoundChanger {
             val parser = LscInterpreter()
-            return (parser.parseFile(code.normalizeDecompose()) as LscWalker.SoundChangerNode).soundChanger
+            return (parser.parseFile(code) as LscWalker.SoundChangerNode).soundChanger
         }
     }
 
@@ -280,7 +280,7 @@ class Deromanizer(
         fun empty(declarations: Declarations): Deromanizer = Deromanizer(emptyList(), emptyList(), declarations)
 
         private fun defaultRuleFor(declarations: Declarations): (Word<PlainS>) -> Word<PhonS> =
-            { declarations.parsePhonetic(it).normalize() }
+            { declarations.parsePhonetic(it) }
     }
 }
 
