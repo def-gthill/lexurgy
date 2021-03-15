@@ -72,6 +72,481 @@ class TestRealExamples : StringSpec({
         ch("eefase") shouldBe "éːfse"
     }
 
+    "This version of the Kharulian sound changes should work consistently" {
+        val ch = lsc(
+            """
+            Feature Type(*cons, vowel)
+
+            Feature Place(labial, alveolar, velar, glottal)
+            Feature Tightness(*loose, tight)
+            Feature Manner(stop, fricative, sibilant, nasal, lateral, rhotic)
+            Feature Voicing(unvoiced, voiced)
+
+            Feature Height(low, lowmid, mid, high)
+            Feature Depth(front, central, back)
+            Feature Schwa(*nonschwa, schwa)
+            Feature Length(*short, glide, long)
+            Feature Stress(*unstressed, stressed)
+
+            Diacritic ́  (floating) [stressed]
+            Diacritic ː (floating) [long]
+            Diacritic ʲ [tight]
+
+            Symbol p [unvoiced labial stop]
+            Symbol b [voiced labial stop]
+            Symbol t [unvoiced alveolar stop]
+            Symbol d [voiced alveolar stop]
+            Symbol tʃ [unvoiced alveolar tight stop]
+            Symbol dʒ [voiced alveolar tight stop]
+            Symbol k [unvoiced velar stop]
+            Symbol g [voiced velar stop]
+            Symbol c [unvoiced velar tight stop]
+            Symbol ɟ [voiced velar tight stop]
+            Symbol h [glottal]
+            Symbol ɸ [unvoiced labial fricative]
+            Symbol β [voiced labial fricative]
+            Symbol t͜s [unvoiced alveolar fricative]
+            Symbol d͜z [voiced alveolar fricative]
+            Symbol ç [unvoiced velar tight fricative]
+            Symbol ʝ [voiced velar tight fricative]
+            Symbol x [unvoiced velar fricative]
+            Symbol ɣ [voiced velar fricative]
+            Symbol s [unvoiced alveolar sibilant]
+            Symbol z [voiced alveolar sibilant]
+            Symbol ʃ [unvoiced alveolar tight sibilant]
+            Symbol ʒ [voiced alveolar tight sibilant]
+            Symbol m [voiced labial nasal]
+            Symbol n [voiced alveolar nasal]
+            Symbol ɲ [voiced alveolar tight nasal]
+            Symbol l [voiced alveolar lateral]
+            Symbol r [voiced alveolar rhotic]
+
+            Symbol a [vowel low central]
+            Symbol ə [vowel mid central schwa]
+            Symbol ɛ [vowel lowmid front]
+            Symbol e [vowel mid front]
+            Symbol i [vowel high front]
+            Symbol ɔ [vowel lowmid back]
+            Symbol o [vowel mid back]
+            Symbol u [vowel high back]
+            Symbol j [vowel high front glide]
+            Symbol w [vowel high back glide]
+
+            Class liquid {l, r, w, j}
+
+            Deromanizer:
+                x => ç
+                y => j
+                {e, é, o, ó} => {ɛ, e, ɔ, o}
+
+            # Find the surface form of the Proto-Kharulian word
+
+            glides:
+                [glide] => [long] / ${'$'} _ [glide] [vowel !glide]
+                [glide] => [long] / {[cons] _, ${'$'} [glide] _} // _ [vowel !glide]
+                [glide] => [long] / ${'$'} _ // _ [vowel]
+
+            glides-prop propagate:
+                [glide] => [long] / [vowel !glide] [glide] _
+
+            glides-cleanup:
+                [glide ${'$'}Depth] => * / [long ${'$'}Depth] _ ${'$'}
+
+            single-consonant:
+                * => ə / ${'$'} [cons] _ ${'$'}
+
+            break-up-clusters:
+                * => ə / {{[cons], [glide]} [cons] _ [cons], [vowel] {[cons], [glide]} _ [cons] ${'$'}}
+                Then:
+                * => ə / ${'$'} {[cons], [glide]} _ [cons]
+
+            voice-intervocalic:
+                [unvoiced] => [voiced] / [vowel !glide] _ [vowel !glide]
+
+            break-up-stops-and-h:
+                * => ə / [stop] _ [stop]
+                * => ə / {[cons] _ h, h _ [cons]}
+
+            long-vowels propagate:
+                [vowel ${'$'}Height ${'$'}Depth] [vowel ${'$'}Height ${'$'}Depth] => [long] *
+
+            stress:
+                [vowel nonschwa !glide] => [stressed] / _ {[cons], [glide]}* [vowel short] [vowel short] ${'$'}
+                Then:
+                [vowel nonschwa !glide] => [stressed] / ${'$'} [unstressed]* _ {[cons], [glide], [schwa]}* [vowel] ${'$'}
+                Then:
+                [vowel nonschwa !glide] => [stressed] / ${'$'} [unstressed]* _ {[cons], [glide], [schwa]}* ${'$'}
+
+            # Surface form of the Proto-Kharulian word
+            Romanizer-pksurface:
+                [long]${'$'}1 * => ${'$'}1 ${'$'}1
+                Then: [long] => [short]
+                Then:
+                {ç, ʝ} => {sh, zh}
+                j => y
+                {á, ɛ́, é, í, ɔ́, ó, ú} => {á, ê, é, í, ô, ó, ú}
+                {ɛ, e, ɔ, o} => {è, e, ò, o}
+                ə => ë
+
+            # Now start evolving it
+
+            metathesis:
+                {[rhotic], [lateral]}${'$'}1 {[stop], [fricative], [sibilant]}${'$'}2 => ${'$'}2 ${'$'}1
+                {[stop]}${'$'}1 {[fricative], [sibilant], [nasal]}${'$'}2 => ${'$'}2 ${'$'}1
+                {[fricative], [sibilant]}${'$'}1 [nasal]${'$'}2 => ${'$'}2 ${'$'}1
+                [nasal]${'$'}1 {[rhotic], [lateral]}${'$'}2 => ${'$'}2 ${'$'}1
+
+            echo-vowels [vowel]:
+                ə => [${'$'}Height ${'$'}Depth nonschwa] / [${'$'}Height ${'$'}Depth nonschwa !glide] [glide]* _
+
+            boundary-vowels [vowel]:
+                ə => a / {${'$'} _, _ ${'$'}}
+                Then: a => [stressed] / _ ${'$'}
+                Then: [stressed] => [unstressed] / [stressed] [unstressed]* _
+
+            schwa-loss:
+                ə => * / _ [cons] [nonschwa] // [cons] [cons] _
+
+            # Semiev
+
+            stress-movement [vowel !glide]:
+                [] => [stressed] / [unstressed] [unstressed] _ ${'$'}
+                Then:
+                [stressed] => [unstressed] / _ [unstressed]* [stressed]
+
+            cluster-reduction:
+                @liquid => * / {@liquid _ [cons], [cons] _ @liquid}
+                {ts, dz} => {t͜s, d͜z}
+                Then:
+                tl => tʃ
+
+            umlaut:
+                {a, ɛ, e} => {ɛ, e, i} / _ {[cons], [glide]}+ [high front]
+
+            # Old Kharulian, c. -1000
+            Romanizer-ok:
+                [stressed] => [unstressed] / {_ [cons]+ [vowel]* ${'$'}, ${'$'} {[cons], [glide]}* _ {[cons], [glide]}* ${'$'}}
+                Then: [long]${'$'}1 * => ${'$'}1 ${'$'}1
+                Then: [long] => [short]
+                Then:
+                {t͜s, d͜z} => {ts, dz}
+                tʃ => ch
+                {ç, ʝ} => {sh, zh}
+                j => y
+                {á, ɛ́, é, í, ɔ́, ó, ú} => {á, ê, é, í, ô, ó, ú}
+                {ɛ, e, ɔ, o} => {è, e, ò, o}
+                ə => ë
+
+            h-loss:
+                h => *
+
+            palatalization:
+                [cons loose] => [tight] / _ [cons]* [front]
+                {ç, ʝ} => {x, ɣ} / {_ [back high], _ [back] [vowel !back !glide]}
+                Then:
+                {t͜sʲ, d͜zʲ} => {tʃ, dʒ}
+
+            high-shift:
+                [high !long unstressed] => ə / {${'$'} [cons] _ [cons], [cons] [cons] _ [cons], [cons] _ [cons] ${'$'}, [cons] _ [cons] [cons]}
+                [high !long unstressed] => * / [cons] _
+                {[lowmid], [mid nonschwa]} => {[mid], [high]}
+
+            unstressed-first-vowel:
+                [vowel !low !long unstressed] => * / [cons] _ [vowel !glide]
+
+            frication:
+                # Reassert this so they don't revert to {ts, dz}
+                {tʃ, dʒ} => {tʃ, dʒ}
+                [stop] => [fricative] / {_ [low central], _ [stop]} // [cons] _
+
+            s-voicing:
+                {s, ʃ} => {z, ʒ} / {[vowel], [voiced]} _ {[vowel], [voiced]}
+
+            vowel-shortening:
+                [vowel long] => [short]
+
+            vowel-coalescence:
+                [vowel ${'$'}Height ${'$'}Depth] [vowel ${'$'}Height ${'$'}Depth stressed] => * [long]
+                [vowel ${'$'}Height ${'$'}Depth] [vowel ${'$'}Height ${'$'}Depth] => [long] *
+                Then: {{ei, ie}, {ou, uo}} => {iː, uː}
+                Then: {ae, ea, ao, oa} => aː
+                Then: {a i!, i! a, a u!, u! a} => {eː *, * eː, oː *, * oː}
+
+            high-vowel-gliding:
+                [vowel high short unstressed] => [glide] / [vowel !glide] _ // [vowel !glide] [vowel !glide] _
+
+            glide-fortition:
+                j => ʝ // _ [cons]
+                w => ɣ / _ [front]
+                w => β // _ [cons]
+
+            glide-coalescence:
+                {[low], [lowmid]} j => [front mid long] *
+                [vowel] j => [front high long] *
+                {[low], [lowmid], [front mid]} w => [back mid long] *
+                [vowel] w => [back high long] *
+
+            re-long-vowels propagate:
+                [vowel ${'$'}Height ${'$'}Depth] [vowel ${'$'}Height ${'$'}Depth] => [long] *
+
+            rhotacization:
+                z => r / [vowel] _ [vowel]
+
+            # Romanization designed to be reasonably friendly for
+            # English speakers, for use in stories and media.
+            Romanizer-friendly:
+                [stressed] => [unstressed] / {_ [cons]+ [vowel]* ${'$'}, ${'$'} [cons]* _ [cons]* ${'$'}}
+                Then: [long]${'$'}1 * => ${'$'}1 ${'$'}1
+                Then: [stressed] => [unstressed] / [stressed] _
+                Then: [long] => [short]
+                Then: * => w / {p, b, k, g, ɸ, β, x, ɣ, m, n, l, r} _ {[front], [tight]}
+                Then:
+                {pʲ, bʲ, ɸʲ, βʲ, mʲ} => {p, b, ɸ, β, m} / _ {[front], [tight]}
+                {pʲ, bʲ, c, ɟ, ɸʲ, βʲ, ç, ʝ, mʲ, ɲ, lʲ, rʲ} * => {p, b, k, g, ɸ, β, x, ɣ, m, n, l, r} y
+                Then:
+                {tʃ, dʒ} => {ch, dj}
+                {t͜s, d͜z} => {ts, dz}
+                {ɸ, β} => {f, v}
+                {ʃ, ʒ} => {sh, zh}
+                {x, ɣ} => {kh, gh}
+                {á, é, í, ó, ú} => {á, é, í, ó, ú}
+                y => * / {_ ${'$'}, _ [cons]}
+                yə => yi
+                wə => a
+                ə => i / {ʃ, ʒ} _
+                ə => yi / [tight] _
+                ə => a / [loose] _
+
+            # Romanizer for language documentation, which sacrifices
+            # some ease of use to more closely represent the phonetic
+            # structure
+            Romanizer:
+                [stressed] => [unstressed] / {_ {[cons], [schwa]}+ [vowel]* ${'$'}, ${'$'} {[cons], [schwa]}* _ {[cons], [schwa]}* ${'$'}}
+                Then: [long]${'$'}1 * => ${'$'}1 ${'$'}1
+                Then: [stressed] => [unstressed] / [stressed] _
+                Then: [long] => [short]
+                Then: * => w / [cons loose] _ {[front], [tight]}
+                Then:
+                [tight] => [loose] / _ {[front], [tight]}
+                [tight] * => [loose] y
+                Then:
+                {{i!}${'$'}1, {u!}${'$'}1} => {ï, ü} / [cons] _ [vowel] // _ ${'$'}1
+                Then:
+                {t͜s, d͜z} => {ts, dz}
+                {ɸ, β} => {f, v}
+                {x, ɣ} => {c, j}
+                {á, é, í, ó, ú} => {á, é, í, ó, ú}
+                {y, w} => {i, u} / _ [vowel nonschwa]
+                yə => y'
+                wə => w'
+                ə => '
+
+            """.trimIndent()
+        )
+
+        val exampleWords = listOf(
+            "aers",
+            "aerso",
+            "aersy",
+            "aersm",
+            "aersi",
+            "aersio",
+            "aersiy",
+            "aersim",
+            "am",
+            "amo",
+            "amy",
+            "amm",
+            "ami",
+            "amio",
+            "amiy",
+            "amim",
+            "amakt",
+            "amakto",
+            "amakty",
+            "amaktm",
+            "amakti",
+            "amaktio",
+            "amaktiy",
+            "amaktim",
+            "ekaw",
+            "ekawo",
+            "ekawy",
+            "ekawm",
+            "ekawi",
+            "ekawio",
+            "ekawiy",
+            "ekawim",
+            "et",
+            "eto",
+            "ety",
+            "etm",
+            "eti",
+            "etio",
+            "etiy",
+            "etim",
+            "éxuil",
+            "éxuilo",
+            "éxuily",
+            "éxuilm",
+            "éxuili",
+            "éxuilio",
+            "éxuiliy",
+            "éxuilim",
+            "hans",
+            "hanso",
+            "hansy",
+            "hansm",
+            "hansi",
+            "hansio",
+            "hansiy",
+            "hansim",
+            "haóht",
+            "haóhto",
+            "haóhty",
+            "haóhtm",
+            "haóhti",
+            "haóhtio",
+            "haóhtiy",
+            "haóhtim",
+            "hiaw",
+            "hiawo",
+            "hiawy",
+            "hiawm",
+            "hiawi",
+            "hiawio",
+            "hiawiy",
+            "hiawim",
+            "huwa",
+            "huwao",
+            "huway",
+            "huwam",
+            "huwai",
+            "huwaio",
+            "huwaiy",
+            "huwaim",
+            "huwasior",
+            "huwasioro",
+            "huwasiory",
+            "huwasiorm",
+            "huwasiori",
+            "huwasiorio",
+            "huwasioriy",
+            "huwasiorim",
+            "huwasiorni",
+            "huwasiornio",
+            "huwasiorniy",
+            "huwasiornim",
+            "huwasiornii",
+            "huwasiorniio",
+            "huwasiorniiy",
+            "huwasiorniim",
+        )
+
+        val expected = listOf(
+            "áares",
+            "aazro",
+            "aizri",
+            "áazrem",
+            "aizry",
+            "aizrio",
+            "aizri",
+            "eezrim",
+            "am",
+            "amo",
+            "emi",
+            "ámam",
+            "emy",
+            "emio",
+            "emi",
+            "emim",
+            "amájat",
+            "amácato",
+            "amáketi",
+            "amácatsam",
+            "amákety",
+            "amaketío",
+            "amáketi",
+            "amaketim",
+            "ejav",
+            "ejavo",
+            "egejui",
+            "ejávam",
+            "egejui",
+            "egejuio",
+            "egejui",
+            "egejuim",
+            "et",
+            "edo",
+            "idi",
+            "édem",
+            "idy",
+            "idio",
+            "idi",
+            "idim",
+            "ijuil",
+            "ijuilo",
+            "ijuili",
+            "ijuily'm",
+            "ijuily",
+            "ijuilio",
+            "ijuili",
+            "ijuilim",
+            "ánas",
+            "anzo",
+            "enzi",
+            "ánzam",
+            "ensy",
+            "enzio",
+            "enzi",
+            "enzim",
+            "auut",
+            "auuto",
+            "auuti",
+            "aúutsam",
+            "auuty",
+            "auutío",
+            "auuti",
+            "auutim",
+            "eev",
+            "eevo",
+            "iijui",
+            "éevam",
+            "iijui",
+            "iijuio",
+            "iijui",
+            "iijuim",
+            "úa",
+            "úaa",
+            "oojy",
+            "oom",
+            "úee",
+            "oojio",
+            "oojy",
+            "ooim",
+            "uezior",
+            "uezioro",
+            "ueziori",
+            "ueziórom",
+            "ueziory",
+            "ueziorio",
+            "ueziori",
+            "ueziorim",
+            "ueziorny",
+            "ueziornio",
+            "ueziorni",
+            "ueziornim",
+            "ueziorni",
+            "ueziornío",
+            "ueziorni",
+            "ueziornim",
+        )
+
+        for ((expectedWord, originalWord) in expected.zip(exampleWords)) {
+            ch(originalWord) shouldBe expectedWord
+        }
+    }
+
     "This version of the Nusyan sound changes should work consistently" {
         val ch = lsc(
             """
@@ -515,7 +990,7 @@ class TestRealExamples : StringSpec({
         ch("ta'an") shouldBe "t’'an"
     }
 
-    "Henlee Hall's example should work the way they originally tried it" {
+    "Henlee's example should work the way they originally tried it" {
         val ch = lsc(
             """
             Feature type(*consonant, vowel)
