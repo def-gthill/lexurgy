@@ -72,7 +72,7 @@ class TestRealExamples : StringSpec({
         ch("eefase") shouldBe "éːfse"
     }
 
-    "!This version of the Kharulian sound changes should work consistently" {
+    "This version of the Kharulian sound changes should work consistently" {
         val ch = lsc(
             """
             Feature Type(*cons, vowel)
@@ -173,7 +173,7 @@ class TestRealExamples : StringSpec({
             stress:
                 [vowel nonschwa !glide] => [stressed] / _ {[cons], [glide]}* [vowel short] [vowel short] ${'$'}
                 Then:
-                [vowel nonschwa !glide] => [stressed] / ${'$'} [unstressed]* _ {[cons], [glide], [schwa]}* [vowel] ${'$'}
+                [vowel nonschwa !glide] => [stressed] / ${'$'} [unstressed]* _ {[cons], [glide], [schwa]}* ([vowel] ${'$'})
                 Then:
                 [vowel nonschwa !glide] => [stressed] / ${'$'} [unstressed]* _ {[cons], [glide], [schwa]}* ${'$'}
 
