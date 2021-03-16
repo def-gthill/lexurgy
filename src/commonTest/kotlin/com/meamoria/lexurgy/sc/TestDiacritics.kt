@@ -236,4 +236,21 @@ class TestDiacritics : StringSpec({
 
         ch("téte") shouldBe "téti"
     }
+
+    "Letters with built-in diacritics, if declared as symbols, should be decomposed" {
+        val ch = lsc(
+            """
+                Feature foobar(foo, bar)
+                Feature +baz
+                Symbol á [foo]
+                Symbol ç [bar]
+                foobarize:
+                    [foo] => [bar]
+                    [bar] => *
+            """.trimIndent()
+        )
+
+        ch("banáná") shouldBe "bançnç"
+        ch("çanaç") shouldBe "ana"
+    }
 })
