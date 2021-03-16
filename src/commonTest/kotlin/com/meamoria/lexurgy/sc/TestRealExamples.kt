@@ -72,7 +72,7 @@ class TestRealExamples : StringSpec({
         ch("eefase") shouldBe "éːfse"
     }
 
-    "This version of the Kharulian sound changes should work consistently" {
+    "!This version of the Kharulian sound changes should work consistently" {
         val ch = lsc(
             """
             Feature Type(*cons, vowel)
