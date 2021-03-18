@@ -137,7 +137,7 @@ class TestRealExamples : StringSpec({
             Deromanizer:
                 x => ç
                 y => j
-                {e, é, o, ó} => {ɛ, e, ɔ, o}
+                {é, e, ó, o} => {e, ɛ, o, ɔ}
 
             # Find the surface form of the Proto-Kharulian word
 
@@ -321,7 +321,7 @@ class TestRealExamples : StringSpec({
             # some ease of use to more closely represent the phonetic
             # structure
             Romanizer:
-                [stressed] => [unstressed] / {_ {[cons], [schwa]}+ [vowel]* ${'$'}, ${'$'} {[cons], [schwa]}* _ {[cons], [schwa]}* ${'$'}}
+                [stressed] => [unstressed] / {_ {[cons], [schwa]}+ ([vowel]* ${'$'}), ${'$'} {[cons], [schwa]}* _ {[cons], [schwa]}* ${'$'}}
                 Then: [long]${'$'}1 * => ${'$'}1 ${'$'}1
                 Then: [stressed] => [unstressed] / [stressed] _
                 Then: [long] => [short]
