@@ -566,7 +566,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     ): ParseNode =
         SymbolDeclarationNode(
             text,
-            Symbol(symbol.normalizeDecompose(), (matrix as? MatrixNode)?.matrix),
+            Symbol(symbol, (matrix as? MatrixNode)?.matrix),
         )
 
     private fun walkDeromanizer(

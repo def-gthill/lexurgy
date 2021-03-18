@@ -244,13 +244,19 @@ class TestDiacritics : StringSpec({
                 Feature +baz
                 Symbol á [foo]
                 Symbol ç [bar]
+                Symbol éi [+baz]
+                Diacritic è [+baz]
                 foobarize:
                     [foo] => [bar]
                     [bar] => *
+                debazize:
+                    [+baz] => i
             """.trimIndent()
         )
 
         ch("banáná") shouldBe "bançnç"
         ch("çanaç") shouldBe "ana"
+        ch("béibéi") shouldBe "bibi"
+        ch("baèbaè") shouldBe "bibi"
     }
 })
