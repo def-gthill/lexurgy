@@ -1,6 +1,7 @@
 package com.meamoria.lexurgy.sc
 
 import com.meamoria.lexurgy.*
+import java.io.FileNotFoundException
 import java.nio.file.Path
 import kotlin.streams.toList
 import kotlin.time.ExperimentalTime
@@ -60,6 +61,14 @@ fun SoundChanger.changeFiles(
 
         val words = loadList(wordsPath, suffix = inSuffix)
 
+        val previous = if (compareVersions) {
+            try {
+                loadList(wordsPath, suffix = outSuffix)
+            } catch (e: FileNotFoundException) {
+                throw LscFileNotFound(suffixPath(wordsPath, outSuffix))
+            }
+        } else null
+
         val (wordListSequence, time) = if (intermediates) {
             val (stages, time) = measureTimedValue {
                 changeWithIntermediates(
@@ -105,8 +114,7 @@ fun SoundChanger.changeFiles(
 
         val versionCompare =
             if (compareVersions) {
-                val previous = loadList(wordsPath, suffix = outSuffix)
-                makeVersionComparisons(finalWords, previous, stageCompare)
+                makeVersionComparisons(finalWords, previous!!, stageCompare)
             } else stageCompare
 
         console(
@@ -144,3 +152,7 @@ private fun makeVersionComparisons(
 
 actual fun <T, U, R> Iterable<T>.fastZipMap(other: Iterable<U>, function: (T, U) -> R): List<R> =
     zip(other).parallelStream().map { function(it.first, it.second) }.toList()
+
+class LscFileNotFound(path: Path) : LscUserError(
+    "Can't compare output words to ${path.fileName}; the file doesn't exist"
+)
