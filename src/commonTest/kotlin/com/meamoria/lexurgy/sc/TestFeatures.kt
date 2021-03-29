@@ -303,6 +303,19 @@ class TestFeatures : StringSpec({
         ch("bumkin") shouldBe "bumpkin"
     }
 
+    "When a matrix is applied to a multi-segment literal, it should change all segments" {
+        val ch = lsc(
+            """
+                Feature +hightone
+                Diacritic ́  [+hightone]
+                diphthong-hightone:
+                    ie => [+hightone]
+            """.trimIndent()
+        )
+
+        ch("kiemei") shouldBe "kíémei"
+    }
+
     "Feature and value names should allow mixed case" {
         val ch = lsc(
             """

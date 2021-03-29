@@ -101,9 +101,14 @@ class MatrixEmitter(val matrix: Matrix) : ConditionalEmitter<PhonS, PhonS> {
             listOf(
                 with(declarations) {
                     val boundMatrix = matrix.bindVariables(bindings)
-                    val matchMatrix = original.softGet(0)?.toMatrix() ?: Matrix(emptyList())
-                    val resultMatrix = matchMatrix.update(boundMatrix)
-                    Phonetic.single(resultMatrix.toSymbol())
+                    if (original.isEmpty()) {
+                        Phonetic.single(boundMatrix.toSymbol())
+                    } else {
+                        val resultSegments = original.segments.map {
+                            it.toMatrix().update(boundMatrix).toSymbol()
+                        }
+                        Phonetic.fromSegments(resultSegments)
+                    }
                 }
             )
         }

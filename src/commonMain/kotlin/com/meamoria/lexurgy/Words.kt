@@ -17,6 +17,8 @@ interface Word<S : Segment<S>> : Comparable<Word<S>> {
     val segmentsAsWords: Iterable<Word<S>>
         get() = segments.map { seg -> type.single(seg) }
 
+    fun isEmpty(): Boolean = segments.isEmpty()
+
     fun reversed(): Word<S> = ReversedWord(this)
 
     operator fun iterator(): Iterator<S> = segments.iterator()
