@@ -25,7 +25,7 @@ fun main() {
 
     val traceWordCheckbox = document.getElementById("trace_word_enabled") as? HTMLInputElement
     val traceWordField = document.getElementById("trace_word") as? HTMLInputElement
-    val traceOutputField = document.getElementById("trace_output") as? HTMLInputElement
+    val traceOutputField = document.getElementById("trace_output") as? HTMLTextAreaElement
 
     fun output(element: HTMLTextAreaElement, text: String) {
         element.value = text
