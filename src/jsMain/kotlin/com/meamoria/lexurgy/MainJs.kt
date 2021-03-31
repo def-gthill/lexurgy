@@ -23,6 +23,10 @@ fun main() {
     val stopBeforeCheckbox = document.getElementById("stop_before_enabled") as? HTMLInputElement
     val stopBeforeField = document.getElementById("stop_before") as? HTMLInputElement
 
+    val traceWordCheckbox = document.getElementById("trace_word_enabled") as? HTMLInputElement
+    val traceWordField = document.getElementById("trace_word") as? HTMLInputElement
+    val traceOutputField = document.getElementById("trace_output") as? HTMLInputElement
+
     fun output(element: HTMLTextAreaElement, text: String) {
         element.value = text
         element.dispatchEvent(Event("input"))
@@ -30,6 +34,8 @@ fun main() {
 
     val button = document.getElementById("apply") as HTMLButtonElement
     button.addEventListener("click", {
+        val debugBuffer = StringBuilder()
+
         try {
             val inputWords = inputField.value.lines()
             val changes = changeField.value
@@ -41,6 +47,8 @@ fun main() {
                     inputWords,
                     startAt = startAtRule,
                     stopBefore = stopBeforeRule,
+                    debugWords = listOfNotNull(traceWordField?.value.takeIf { traceWordCheckbox?.checked == true }),
+                    debug = { debugBuffer.append(it + "\n") }
                 )
             val outputWords = stages.getValue(null)
             val intermediates = unpackIntermediates(inputWords, stages)
@@ -55,6 +63,7 @@ fun main() {
                 output(historyField, intermediates.joinToString("\n"))
                 output(outputField, outputWords.joinToString("\n"))
             }
+            traceOutputField?.value = debugBuffer.toString()
         } catch (e: Exception) {
             output(errorField ?: outputField, e.message.toString())
         }
