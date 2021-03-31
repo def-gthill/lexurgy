@@ -62,6 +62,40 @@ class TestFeatures : StringSpec({
         }
     }
 
+    "References to undefined features should produce an LscUndefinedName" {
+        shouldThrow<LscUndefinedName> {
+            lsc(
+                """
+                    Feature foo(baz)
+                    Symbol x [bar]
+                """.trimIndent()
+            )
+        }.also {
+            it.message shouldBe "The feature value \"bar\" is not defined"
+        }
+        shouldThrow<LscUndefinedName> {
+            lsc(
+                """
+                    Feature +baz
+                    Diacritic ˈ [+bar]
+                """.trimIndent()
+            )
+        }.also {
+            it.message shouldBe "The feature value \"+bar\" is not defined"
+        }
+//        shouldThrow<LscUndefinedName> {
+//            lsc(
+//                """
+//                    Feature foo(baz, qux)
+//                    silly:
+//                     [bar] => [qux]
+//                """.trimIndent()
+//            )
+//        }.also {
+//            it.message shouldBe "The feature value \"bar\" is not defined"
+//        }
+    }
+
     "Duplicate symbol declarations should produce an LscDuplicateName" {
         shouldThrow<LscDuplicateName> {
             lsc(

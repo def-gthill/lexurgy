@@ -22,6 +22,9 @@ class Declarations(
         it.name to (if (it in absents) valueToFeature.getValue(it).default else it)
     }
 
+    init {
+        checkUndefinedFeatures(diacritics.map { it.matrix })
+    }
     private val normalizedDiacritics = diacritics.map { it.normalize() }
     private val diacriticNameToDiacritic = normalizedDiacritics.associateByCheckingDuplicates(
         { listOf(it.name) },
@@ -35,6 +38,9 @@ class Declarations(
         )
     }
 
+    init {
+        checkUndefinedFeatures(symbols.map { it.matrix })
+    }
     private val normalizedSymbols = symbols.map { it.normalize() }
     private val symbolsAsComplexSymbols = normalizedSymbols.map { complexSymbol(it) }
     private val symbolNameToSymbol = normalizedSymbols.associateByCheckingDuplicates(
@@ -54,6 +60,12 @@ class Declarations(
     private val undeclaredSymbolCache = Cache<String, Symbol>()
 
     private val classNameToClass = classes.associateBy { it.name }
+
+    private fun checkUndefinedFeatures(matrices: List<Matrix>) {
+        for (value in matrices.flatMap { it.valueList }) {
+            (value as? SimpleValue)?.name?.toSimpleValue()
+        }
+    }
 
     private fun <T, K> Iterable<T>.associateByCheckingDuplicates(
         keySelector: (T) -> List<K>,
@@ -92,7 +104,7 @@ class Declarations(
         featureNameToFeatureMap[this] ?: throw LscUndefinedName("feature", this)
 
     fun String.toSimpleValue(): SimpleValue =
-        valueNameToSimpleValue[this] ?: throw LscUndefinedName("value", this)
+        valueNameToSimpleValue[this] ?: throw LscUndefinedName("feature value", this)
 
     fun String.toClass(): SegmentClass =
         classNameToClass[this] ?: throw LscUndefinedName("sound class", this)

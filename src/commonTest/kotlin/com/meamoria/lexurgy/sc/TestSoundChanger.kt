@@ -807,7 +807,8 @@ class TestSoundChanger : StringSpec({
         shouldThrow<DanglingDiacritic> {
             lsc(
                 """
-                    Diacritic ' [ejective]
+                    Feature +ejective
+                    Diacritic ' [+ejective]
                     Deromanizer:
                         ' => ʔ
                 """.trimIndent()
@@ -816,7 +817,8 @@ class TestSoundChanger : StringSpec({
         shouldThrow<DanglingDiacritic> {
             lsc(
                 """
-                    Diacritic ' [ejective]
+                    Feature +ejective
+                    Diacritic ' [+ejective]
                     Romanizer:
                         ʔ => '
                 """.trimIndent()
@@ -825,7 +827,8 @@ class TestSoundChanger : StringSpec({
         shouldThrow<DanglingDiacritic> {
             lsc(
                 """
-                    Diacritic ' [ejective]
+                    Feature +ejective
+                    Diacritic ' [+ejective]
                     Romanizer-foo:
                         ʔ => '
                 """.trimIndent()
@@ -836,7 +839,8 @@ class TestSoundChanger : StringSpec({
     "Deromanizers and romanizers marked 'literal' should ignore declarations" {
         val ch = lsc(
             """
-                Diacritic ' [ejective]
+                Feature +ejective
+                Diacritic ' [+ejective]
                 Deromanizer literal:
                     ' => ʔ
                 Romanizer literal:

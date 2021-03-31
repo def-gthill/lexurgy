@@ -10,8 +10,8 @@ class TestLscParse : StringSpec({
 
     val statements = listOf(
         "Feature Foo(foo, bar)",
-        "Diacritic ́  [stressed]",
-        "Symbol r̼ [silly]",
+        "Diacritic ́  [foo]",
+        "Symbol r̼",
         "Class bar {b, a, r}",
         "Deromanizer:\n{o, e} => {ɔ, ɛ}",
         "foobar:\no=>a",
@@ -31,7 +31,7 @@ class TestLscParse : StringSpec({
     }
 
     "Lsc file parsing should allow any of the statement types to be present or absent, with or without extra newlines" {
-        for (subset in statements.subsets()) {
+        for (subset in statements.filterNot {it.startsWith("Diacritic")}.subsets()) {
             tryParsing(subset.joinToString(separator = "\n", prefix = "\n"))
             tryParsing(subset.joinToString(separator = "\n", postfix = "\n"))
             tryParsing(subset.joinToString(separator = "\n\n"))
@@ -106,8 +106,8 @@ class TestLscParse : StringSpec({
         parser.parseFile(
             """
             feature Foo(foo, bar)
-            diacritic ́  (Before) (Floating) [stressed]
-            symbol r̼ [silly]
+            diacritic ́  (Before) (Floating) [foo]
+            symbol r̼ [bar]
             class bar {b, a, r}
             deromanizer:
                 {o, e} => {ɔ, ɛ}
