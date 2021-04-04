@@ -25,7 +25,11 @@ actual typealias ClassElementContext = LscParser.ClassElementContext
 
 actual typealias FeatureDeclContext = LscParser.FeatureDeclContext
 
-actual fun FeatureDeclContext.allValues(): List<ValueContext> = value()
+actual fun FeatureDeclContext.allPlusFeatures(): List<PlusFeatureContext> = plusFeature()
+
+actual fun FeatureDeclContext.allFeatureValues(): List<FeatureValueContext> = featureValue()
+
+actual typealias PlusFeatureContext = LscParser.PlusFeatureContext
 
 actual typealias NullAliasContext = LscParser.NullAliasContext
 
@@ -141,17 +145,14 @@ actual typealias RepeaterTypeContext = LscParser.RepeaterTypeContext
 
 actual typealias MatrixContext = LscParser.MatrixContext
 
-actual fun MatrixContext.allValues(): List<ValueContext> = value()
+actual fun MatrixContext.allMatrixValues(): List<MatrixValueContext> = matrixValue()
 
-actual typealias FeatureContext = LscParser.FeatureContext
+actual typealias MatrixValueContext = LscParser.MatrixValueContext
 
-actual typealias ValueContext = LscParser.ValueContext
+actual typealias PlusFeatureValueContext = LscParser.PlusFeatureValueContext
+
+actual typealias FeatureValueContext = LscParser.FeatureValueContext
+
+actual typealias NameContext = LscParser.NameContext
 
 actual typealias TextContext = LscParser.TextContext
-
-actual val LSC_NEWLINE: Int = LscParser.NEWLINE
-actual val LSC_FEATURE: Int = LscParser.FEATURE
-actual val LSC_VALUE: Int = LscParser.VALUE
-actual val LSC_RULE_START: Int = LscParser.RULE_START
-actual val LSC_PROPAGATE: Int = LscParser.PROPAGATE
-actual val LSC_O_PAREN: Int = LscParser.O_PAREN

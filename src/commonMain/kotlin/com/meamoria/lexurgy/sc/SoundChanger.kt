@@ -8,7 +8,7 @@ class SoundChanger(
     val deromanizer: Deromanizer,
     val romanizer: Romanizer,
     val intermediateRomanizers: Map<String?, List<IntermediateRomanizer>> = emptyMap()
-) : SoundChangerLscWalker.ParseNode {
+) {
     init {
         val duplicated = rules.groupBy { it.name }.filterValues { it.size > 1 }.keys.firstOrNull()
         if (duplicated != null) {
@@ -144,9 +144,8 @@ class SoundChanger(
         }
 
         fun fromLsc(code: String): SoundChanger {
-            val walker = SoundChangerLscWalker()
-            val parser = LscInterpreter(walker)
-            return parser.parseFile(code) as SoundChanger
+            val parser = LscInterpreter()
+            return (parser.parseFile(code) as LscWalker.SoundChangerNode).soundChanger
         }
     }
 
@@ -173,7 +172,7 @@ internal fun makeStageComparisons(wordListSequence: List<List<String>>): List<St
     return result
 }
 
-internal fun Iterable<String>.maxLength(): Int = map { it.length }.maxOrNull() ?: 0
+internal fun Iterable<String>.maxLength(): Int = map { it.lengthCombining() }.maxOrNull() ?: 0
 
 expect fun <T, U, R> Iterable<T>.fastZipMap(other: Iterable<U>, function: (T, U) -> R): List<R>
 
@@ -281,7 +280,7 @@ class Deromanizer(
         fun empty(declarations: Declarations): Deromanizer = Deromanizer(emptyList(), emptyList(), declarations)
 
         private fun defaultRuleFor(declarations: Declarations): (Word<PlainS>) -> Word<PhonS> =
-            declarations::parsePhonetic
+            { declarations.parsePhonetic(it) }
     }
 }
 
@@ -292,7 +291,10 @@ class Romanizer(
     override val name: String = "romanizer"
 
     val phoneticRules = ChangeRule(name, phoneticExpressions)
-    val romanizerRule = SimpleChangeRule(Phonetic, Plain, romanizerExpressions, { PlainWord(it.string) })
+    val romanizerRule = SimpleChangeRule(
+        Phonetic, Plain, romanizerExpressions,
+        { PlainWord(it.string.normalizeCompose()) }
+    )
 
     override fun invoke(words: List<Word<PhonS>>): List<Word<PlainS>> =
         romanizerRule.invoke(phoneticRules.invoke(words))
@@ -351,73 +353,13 @@ class RuleExpression<I : Segment<I>, O : Segment<O>>(
     val exclusion: List<Environment<I>>,
     val filtered: Boolean = false
 ) {
-    val transformer = makeTransformer(match, result)
+    val transformer = match.transformerTo(result, outType, filtered)
 
     private val realCondition =
-        if (condition.isEmpty()) listOf(Environment(NullMatcher(), NullMatcher()))
+        if (condition.isEmpty()) listOf(Environment(EmptyMatcher(), EmptyMatcher()))
         else condition.map { it.beforeReversed() }
 
     private val realExclusion = exclusion.map { it.beforeReversed() }
-
-    private fun makeTransformer(match: Matcher<I>, result: Emitter<I, O>): Transformer<I, O> {
-        if (filtered) {
-            if (match is NullMatcher) {
-                throw LscInvalidRuleExpression(
-                    match, result, "Asterisks aren't allowed on the match side of filtered rules"
-                )
-            } else if (match is AbstractTextMatcher && match.text.length > 1) {
-                throw LscInvalidRuleExpression(
-                    match, result, "Multi-segment matches aren't allowed on the match side of filtered rules"
-                )
-            }
-        }
-        return makeTransformerChecked(match, result)
-    }
-
-
-    private fun makeTransformerChecked(match: Matcher<I>, result: Emitter<I, O>): Transformer<I, O> =
-        if (match is IntersectionMatcher) {
-            IntersectionTransformer(makeTransformer(match.elements.first(), result), match.elements.drop(1))
-        } else if (match is ListMatcher) {
-            if (result is ListEmitter) {
-                if (match.elements.size == result.elements.size) {
-                    ListTransformer(match.elements.zip(result.elements, this::makeTransformer))
-                } else {
-                    mismatchedLengths(match, result, match.elements.size, result.elements.size)
-                }
-            } else {
-                ListTransformer(match.elements.map { makeTransformer(it, result) })
-            }
-        } else if (result is ListEmitter) {
-            mismatchedLengths(match, result, 1, result.elements.size)
-        } else if (match is SequenceMatcher) {
-            if (result is SequenceEmitter) {
-                if (match.elements.size == result.elements.size) {
-                    SequenceTransformer(outType, match.elements.zip(result.elements, this::makeTransformer))
-                } else {
-                    mismatchedLengths(match, result, match.elements.size, result.elements.size)
-                }
-            } else {
-                mismatchedLengths(match, result, match.elements.size, 1)
-            }
-        } else if (result is SequenceEmitter) {
-            mismatchedLengths(match, result, 1, result.elements.size)
-        } else if (match is SimpleMatcher && result is SimpleEmitter) {
-            if (result is MatrixEmitter && result.matrix.valueList.any { it is NegatedValue }) {
-                throw LscInvalidOutputMatrix(result.matrix, "negated feature")
-            }
-            SimpleTransformer(match, result)
-        } else {
-            throw IllegalArgumentException(
-                "Invalid element types: ${match::class.simpleName} and ${result::class.simpleName}"
-            )
-        }
-
-    private fun mismatchedLengths(
-        match: Matcher<I>, result: Emitter<I, O>, matchLength: Int, resultLength: Int
-    ): Nothing = throw LscInvalidRuleExpression(
-        match, result, "Found ${enpl(matchLength, "element")} on the left side but $resultLength on the right side"
-    )
 
     fun claim(expressionNumber: Int, words: List<Word<I>>): List<Transformation<O>> {
         var index = WordListIndex(0, 0)
@@ -500,11 +442,15 @@ class Environment<I : Segment<I>>(val before: Matcher<I>, val after: Matcher<I>)
     override fun toString(): String = "$before _ $after"
 }
 
-class LscRuleNotApplicable(val reason: UserError, val rule: String, val originalWord: String, val currentWord: String) :
-    LscUserError(
-        "Rule $rule could not be applied to word $currentWord (originally $originalWord)\nReason: ${reason.message}",
-        reason
-    )
+class LscRuleNotApplicable(
+    val reason: LscUserError,
+    val rule: String,
+    val originalWord: String,
+    val currentWord: String
+) : LscUserError(
+    "Rule $rule could not be applied to word $currentWord (originally $originalWord)\n${reason.message}",
+    reason
+)
 
 class LscRuleCrashed(val reason: Exception, val rule: String, val originalWord: String, val currentWord: String) :
     Exception(
@@ -513,7 +459,7 @@ class LscRuleCrashed(val reason: Exception, val rule: String, val originalWord: 
     )
 
 @Suppress("unused")
-class LscInvalidRuleExpression(
+class LscInvalidTransformation(
     val matcher: Matcher<*>, val emitter: Emitter<*, *>, message: String
 ) : LscUserError(message)
 
@@ -521,14 +467,13 @@ class LscInteriorWordBoundary(
     override val cause: LscInteriorWordBoundary?,
     sequence: String?,
     environment: String?
-) :
-    LscBadSequence(
-        cause,
-        "A word boundary",
-        sequence,
-        environment,
-        "needs to be at the beginning or end"
-    ) {
+) : LscBadSequence(
+    cause,
+    "A word boundary",
+    sequence,
+    environment,
+    "needs to be at the beginning or end"
+) {
 
     constructor() : this(null, null, null)
 
@@ -544,15 +489,14 @@ class LscPeripheralRepeater(
     val repeater: String,
     sequence: String?,
     environment: String?
-) :
-    LscBadSequence(
-        cause,
-        "The repeater \"$repeater\"",
-        sequence,
-        environment,
-        "is meaningless because it's at the edge of the environment; " +
-                peripheralRepeaterInstruction(repeater),
-    ) {
+) : LscBadSequence(
+    cause,
+    "The repeater \"$repeater\"",
+    sequence,
+    environment,
+    "is meaningless because it's at the edge of the environment; " +
+            peripheralRepeaterInstruction(repeater),
+) {
 
     constructor(repeater: String) : this(null, repeater, null, null)
 
@@ -572,15 +516,14 @@ abstract class LscBadSequence(
     val sequence: String?,
     val environment: String?,
     postfix: String
-) :
-    LscUserError(
-        interiorWordBoundaryMessage(
-            prefix,
-            sequence,
-            environment,
-            postfix,
-        ), cause
-    ) {
+) : LscUserError(
+    interiorWordBoundaryMessage(
+        prefix,
+        sequence,
+        environment,
+        postfix,
+    ), cause
+) {
 
     abstract fun initEnvironment(newEnvironment: String): LscBadSequence
 
@@ -605,9 +548,6 @@ class LscRuleNotFound(val ruleName: String, val attemptedAction: String) :
 
 class LscMatrixInPlain(val matrix: Matrix) :
     LscUserError("Feature matrix $matrix isn't allowed in a romanized context")
-
-class LscInvalidOutputMatrix(val matrix: Matrix, val invalidFeature: String) :
-    LscUserError("Feature matrix $matrix has a $invalidFeature, which isn't allowed in the output of a rule")
 
 class LscClassInPlain(val className: String) :
     LscUserError("Sound class $className isn't allowed in a romanized context")

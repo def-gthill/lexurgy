@@ -7,6 +7,15 @@ fun <T, R, S, V> Iterable<T>.zip3(
     transform(t, r, s)
 }
 
+fun <T, R> List<Iterable<T>>.zipAll(transform: (List<T>) -> R): List<R> {
+    val result = mutableListOf<R>()
+    val iters = map { it.iterator() }
+    while (iters.all { it.hasNext() }) {
+        result += transform(iters.map { it.next() })
+    }
+    return result
+}
+
 fun <T, R> Iterable<Iterable<T>>.nestedMap(transform: (T) -> R): List<List<R>> =
     map { it.map(transform) }
 
@@ -45,15 +54,29 @@ fun <T> Iterable<T>.subsets(): Sequence<List<T>> {
 fun <T> Iterable<T>.pairs(): Sequence<Pair<T, T>> = subsets().filter { it.size == 2 }.map { it[0] to it[1] }
 
 /**
+ * Returns the number of no-width combining characters in this string
+ */
+expect fun String.combiningCount(): Int
+
+/**
+ * Returns the width of this string in a monospaced font; this is the number
+ * of characters not including combining characters that don't take up
+ * horizontal space
+ */
+fun String.lengthCombining(): Int = length - combiningCount()
+
+/**
  * Adds spaces to pad this string to the specified length, but adding extra
  * spaces to compensate for combining characters that don't take up horizontal
  * space
  */
 fun String.padEndCombining(length: Int): String {
-    // \p{Mn} is the Unicode property for non-spacing marks
-    val combiningCount = Regex("\\p{Mn}").findAll(this).toList().size
-    return padEnd(length + combiningCount)
+    return padEnd(length + combiningCount())
 }
+
+expect fun String.normalizeDecompose(): String
+
+expect fun String.normalizeCompose(): String
 
 /**
  * Puts the number in front of the word, with the word correctly marked for singular/plural.

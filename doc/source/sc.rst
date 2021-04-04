@@ -11,7 +11,7 @@ Why Lexurgy SC?
 ----------------
 
 Conlangers rarely get things exactly right the first try, and sound
-changers are especially prone to revision. Lexurgy embraces this truth.
+changes are especially prone to revision. Lexurgy embraces this truth.
 It's designed around two main goals:
 
     - Rules are short, easy to read, and can have descriptive names.
@@ -24,7 +24,8 @@ It's designed around two main goals:
 Why not just use Rosenfelder's SCA?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Rosenfelder's SCA is a great tool, but it's pretty limited in power.
+Rosenfelder's `SCA <http://zompist.com/sca2.html>`_ is a great tool,
+but it's pretty limited in power.
 Certain kinds of rules, like stress-sensitive changes and assimilation,
 require convoluted sequences of rules, if they're possible at all.
 Lexurgy lets you do everything the "SCA way" if you want, but the
@@ -38,7 +39,8 @@ remember what L and Q stood for.
 Why not just use Phonix?
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Phonix is what I used for sound changes before I started working on
+`Phonix <https://gitlab.com/jaspax/phonix/blob/master/README.md>`_
+is what I used for sound changes before I started working on
 Lexurgy. Its distinctive feature paradigm is very powerful, and
 Lexurgy owes a great debt to it.
 
@@ -63,5 +65,6 @@ User Guide
     :maxdepth: 2
     :caption: Contents:
 
+    sc-tutorial
     sc-dsl
     sc-cli

@@ -17,6 +17,8 @@ interface Word<S : Segment<S>> : Comparable<Word<S>> {
     val segmentsAsWords: Iterable<Word<S>>
         get() = segments.map { seg -> type.single(seg) }
 
+    fun isEmpty(): Boolean = segments.isEmpty()
+
     fun reversed(): Word<S> = ReversedWord(this)
 
     operator fun iterator(): Iterator<S> = segments.iterator()
@@ -83,16 +85,17 @@ interface SegmentType<S : Segment<S>> {
 
     /**
      * Joins the last element of each sub-iterable to the first element of the
-     * next subiterable.
+     * next subiterable. Any empty sub-iterables are skipped.
      */
     fun joinEdgeWords(words: Iterable<Iterable<Word<S>>>): List<Word<S>> {
         val result = mutableListOf<Word<S>>()
         for (subList in words) {
+            val first = subList.firstOrNull() ?: continue
             if (result.isEmpty()) {
                 result += subList
             } else {
                 val last = result.removeLast()
-                result += join(listOf(last, subList.first()))
+                result += join(listOf(last, first))
                 result += subList.drop(1)
             }
         }
@@ -161,8 +164,11 @@ interface StringSegmentType<S : StringSegment<S>> : SegmentType<S> {
 
 data class PhoneticWord(val phoneticSegments: List<String>) :
     StringSegmentWord<PhoneticSegment>(phoneticSegments) {
+
     override val type: StringSegmentType<PhoneticSegment>
         get() = Phonetic
+
+    fun normalize(): PhoneticWord = PhoneticWord(phoneticSegments.map { it.normalizeDecompose() })
 }
 
 data class PhoneticSegment(override val string: String) : StringSegment<PhoneticSegment> {
@@ -252,9 +258,9 @@ class PhoneticParser(
                 if (cursor >= symbol.length) throw DanglingDiacritic(symbol, cursor - matchString.length, matchString)
             } else if (matchType == 0) {
                 // Core symbol
-                if (core != null) throw DanglingDiacritic(symbol, cursor, matchString)
+                if (after.isNotEmpty()) throw DanglingDiacritic(symbol, cursor - matchString.length, matchString)
                 cursor += matchString.length
-                core = matchString
+                core = (core ?: "") + matchString
             } else {
                 // After diacritic
                 if (core == null) throw DanglingDiacritic(symbol, cursor, matchString)

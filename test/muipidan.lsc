@@ -1,12 +1,12 @@
 Feature Type(*cons, vowel)
-Feature Place(lab, apic, vel, glot) => [cons]
-Feature Manner(stop, fric, sonor) => [cons]
-Feature Nasal(*unnas, nas) => [cons]
-Feature Breath(unvcd, vcd, aspir, eject) => [cons]
+Feature Place(lab, apic, vel, glot)
+Feature Manner(stop, fric, sonor)
+Feature Nasal(*unnas, nas)
+Feature Breath(unvcd, vcd, aspir, eject)
 Feature Height(high, low)
 Feature Depth(front, cent, back)
 Feature Rounding(*unrnd, rnd)
-Feature Stress(*unstr, str) => [vowel]
+Feature Stress(*unstr, str)
 
 Diacritic ˈ (before) [str]
 Diacritic ʼ [eject]

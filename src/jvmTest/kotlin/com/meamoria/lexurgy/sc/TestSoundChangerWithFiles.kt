@@ -2,6 +2,7 @@ package com.meamoria.lexurgy.sc
 
 import com.meamoria.lexurgy.dumpList
 import com.meamoria.lexurgy.loadList
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import java.nio.file.FileSystems
@@ -44,10 +45,20 @@ class TestSoundChangerWithFiles : StringSpec({
         listTo(listFrom("ptr_test_2_ev_previous.wli"), "ptr_test_2_ev.wli")
         changer.changeFiles(
             listOf(pathOf("ptr_test_1.wli"), pathOf("ptr_test_2.wli")),
-            compareVersions = true
+            compareVersions = true,
         )
         listFrom("ptr_test_1_ev.wlm") shouldBe listFrom("ptr_test_1_ev_versions.wlm")
         listFrom("ptr_test_2_ev.wlm") shouldBe listFrom("ptr_test_2_ev_versions.wlm")
+
+        shouldThrow<LscFileNotFound> {
+            changer.changeFiles(
+                listOf(pathOf("ptr_test_1.wli")),
+                outSuffix = "dne",
+                compareVersions = true,
+            )
+        }.also {
+            it.message shouldBe "Can't compare output words to ptr_test_1_dne.wli; the file doesn't exist"
+        }
     }
 
     "Compare versions and compare stages should work together" {

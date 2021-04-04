@@ -22,7 +22,7 @@ copyright = '2020, Graham Hill'
 author = 'Graham Hill'
 
 # The full version, including alpha/beta/rc tags
-release = '0.11.0'
+release = '0.13.2'
 
 
 # -- General configuration ---------------------------------------------------
