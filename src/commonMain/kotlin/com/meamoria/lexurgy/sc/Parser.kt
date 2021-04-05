@@ -1207,11 +1207,20 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             }
     }
 
-    private object BetweenWordsElement : BaseParseNode("$$"), ChameleonRuleElement {
+    private object BetweenWordsElement : BaseParseNode("$$"), ResultElement, ChameleonRuleElement {
         override val publicName: String = "a space between words"
 
         override fun <T : Segment<T>> link(context: RuleContext): Matcher<T> =
             BetweenWordsMatcher()
+
+        override fun inPhoneticEmitter(declarations: Declarations): Emitter<PhonS, PlainS> =
+            BetweenWordsEmitter(Plain)
+
+        override fun outPhoneticEmitter(declarations: Declarations): Emitter<PlainS, PhonS> =
+            BetweenWordsEmitter(Phonetic)
+
+        override fun phoneticEmitter(declarations: Declarations): Emitter<PhonS, PhonS> =
+            BetweenWordsEmitter(Phonetic)
     }
 
     private class SequenceElement(

@@ -77,6 +77,12 @@ interface ConditionalEmitter<I : Segment<I>, O : Segment<O>> : Emitter<I, O> {
     override fun isIndependent(): Boolean = false
 }
 
+class BetweenWordsEmitter<I : Segment<I>, O : Segment<O>>(val outType: SegmentType<O>) :
+    IndependentEmitter<I, O> {
+    override fun result(): UnboundResult<O> =
+        { listOf(outType.empty, outType.empty) }
+}
+
 class CaptureReferenceEmitter(val number: Int) : IndependentEmitter<PhonS, PhonS> {
     override fun result(): UnboundResult<PhonS> =
         { bindings ->

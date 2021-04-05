@@ -74,4 +74,23 @@ class TestMultiWord : StringSpec({
 
         ch("rumpa pum pum") shouldBe "rumpa bum pum"
     }
+
+    "We should be able to split words by turning elements into $$" {
+        val ch = lsc(
+            """
+                Feature height(high, mid, low)
+                Feature frontness(front, central, back)
+                Symbol a [low central]
+                Symbol e [mid front]
+                Symbol i [high front]
+                Symbol o [mid back]
+                Symbol u [high back]
+                
+                split-at-high:
+                    [high] => $$
+            """.trimIndent()
+        )
+
+        ch("haniatuma") shouldBe "han at ma"
+    }
 })
