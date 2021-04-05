@@ -1059,9 +1059,6 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             exclusion.map { it.phonetic(declarations) },
             filtered
         )
-
-        private fun castToResultElement(element: RuleElement): ResultElement =
-            element as? ResultElement ?: throw LscIllegalStructureInOutput(element.publicName, element.text)
     }
 
     private object DoNothingExpression : BaseParseNode("unchanged")
@@ -1158,6 +1155,9 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         fun phoneticEmitter(declarations: Declarations): Emitter<PhonS, PhonS>
     }
 
+    private fun castToResultElement(element: RuleElement): ResultElement =
+        element as? ResultElement ?: throw LscIllegalStructureInOutput(element.publicName, element.text)
+
     // Base class for elements whose only word type dependency is forwarding to sub-elements
     private abstract class ContainerResultElement(text: String) : BaseParseNode(text), ResultElement {
         override fun plain(context: RuleContext): Matcher<PlainS> =
@@ -1177,7 +1177,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
         abstract val elements: List<RuleElement>
 
-        val resultElements: List<ResultElement> by lazy { elements.map { it as ResultElement } }
+        val resultElements: List<ResultElement> by lazy { elements.map(::castToResultElement) }
 
         abstract fun <T : Segment<T>> matcher(elements: List<Matcher<T>>): Matcher<T>
 

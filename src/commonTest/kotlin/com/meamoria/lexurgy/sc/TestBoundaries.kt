@@ -34,6 +34,25 @@ class TestBoundaries : StringSpec({
         ch2("cat") shouldBe "cat"
     }
 
+    "Boundaries shouldn't be allowed in the output" {
+        shouldThrow<LscInvalidRuleExpression> {
+            lsc("bad:\na => $")
+        }.also {
+            it.message shouldBe """
+                Error in expression 1 ("a => $") of rule "bad"
+                A word boundary like "$" can't be used in the output of a rule
+            """.trimIndent()
+        }
+        shouldThrow<LscInvalidRuleExpression> {
+            lsc("bad-alternative:\n{p, t, k} => {b, d, $}")
+        }.also {
+            it.message shouldBe """
+                Error in expression 1 ("{p, t, k} => {b, d, $}") of rule "bad-alternative"
+                A word boundary like "$" can't be used in the output of a rule
+            """.trimIndent()
+        }
+    }
+
     "Word boundaries should work inside alternative lists" {
         val ch = lsc(
             """
