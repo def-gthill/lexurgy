@@ -92,5 +92,14 @@ class TestMultiWord : StringSpec({
         )
 
         ch("haniatuma") shouldBe "han at ma"
+
+        val ch2 = lsc(
+            """
+                split-between-a:
+                    * => $$ / a _ a
+            """.trimIndent()
+        )
+
+        ch2("knaan aardvark") shouldBe "kna an a ardvark"
     }
 })

@@ -905,10 +905,16 @@ represented by ``$$``::
     glomination:
         $$ => *
 
-.. warning::
+This can be conditioned on sounds in the neighbouring words. The following
+will only join words if the first word ends in a [t] or the second word
+starts with an [s]::
 
-    The ``$$`` feature is experimental. This simple rule works,
-    but anything more complicated, like trying to put conditions
-    on affixation or writing *sandhi* rules, likely won't work
-    correctly. Future versions of Lexurgy will have better support
-    for this!
+    selective-glomination:
+        $$ => * / t _
+        $$ => * / _ s
+
+Sandhi Rules
+*************
+
+Splitting
+***********
