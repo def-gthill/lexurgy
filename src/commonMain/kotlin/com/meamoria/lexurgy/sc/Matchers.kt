@@ -188,6 +188,19 @@ abstract class LiftingMatcher<I : Segment<I>> : BaseMatcher<I>() {
 }
 
 class SequenceMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : BaseMatcher<I>() {
+    override fun claim(
+        declarations: Declarations,
+        words: List<Word<I>>,
+        start: WordListIndex,
+        bindings: Bindings
+    ): WordListIndex? {
+        var elementStart = start
+        for (element in elements) {
+            elementStart = element.claim(declarations, words, elementStart, bindings) ?: return null
+        }
+        return elementStart
+    }
+
     override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int? {
         var elementStart = start
         for (element in elements) {
