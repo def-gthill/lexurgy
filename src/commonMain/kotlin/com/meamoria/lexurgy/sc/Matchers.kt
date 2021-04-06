@@ -20,7 +20,12 @@ interface Matcher<I : Segment<I>> {
         word: Word<I>,
         start: Int,
         bindings: Bindings
-    ): Int?
+    ): Int? =
+        claim(
+            declarations,
+            listOf(word),
+            WordListIndex(0, start), bindings
+        )?.segmentIndex
 
     fun reversed(): Matcher<I>
 
@@ -201,14 +206,6 @@ class SequenceMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : BaseMatc
         return elementStart
     }
 
-    override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int? {
-        var elementStart = start
-        for (element in elements) {
-            elementStart = element.claim(declarations, word, elementStart, bindings) ?: return null
-        }
-        return elementStart
-    }
-
     override fun reversed(): Matcher<I> = SequenceMatcher(elements.asReversed().map { it.reversed() })
 
     override fun toString(): String = elements.joinToString(separator = " ", prefix = "(", postfix = ")")
@@ -280,21 +277,6 @@ class RepeaterMatcher<I : Segment<I>>(
                     it > elementStart
                 } != null) break
             elementStart = element.claim(declarations, words, elementStart, bindings) ?: break
-            times++
-            if (type.maxReps?.let { times >= it } == true) break
-        }
-        return elementStart.takeIf { times >= type.minReps }
-    }
-
-    override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int? {
-        var elementStart = start
-        var times = 0
-        while (true) {
-            val altBindings = bindings.copy()
-            if (followingMatcher?.claim(declarations, word, elementStart, altBindings)?.takeIf {
-                    it > elementStart
-            } != null) break
-            elementStart = element.claim(declarations, word, elementStart, bindings) ?: break
             times++
             if (type.maxReps?.let { times >= it } == true) break
         }
