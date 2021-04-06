@@ -68,12 +68,24 @@ class TestMultiWord : StringSpec({
                 Class vowel {a, e, i, o, u}
                 
                 mutation:
-                    {p, t, k} => {b, d, g} / @vowel $$ _
+                    {p, t, k} => {b, d, g} / @vowel $$ _ @vowel
             """.trimIndent()
         )
 
         ch("rumpa pum pum") shouldBe "rumpa bum pum"
         ch("skupi tupi tu") shouldBe "skupi dupi du"
+
+        val ch2 = lsc(
+            """
+                Class vowel {a, e, i, o, u}
+                rebracketing:
+                    * => n / n $$ _ @vowel
+                    Then: n => * / _ $$ n
+            """.trimIndent()
+        )
+
+        ch2("an ewt") shouldBe "a newt"
+        ch2("an head") shouldBe "an head"
     }
 
     "We should be able to implement rules that apply within words *and* across word boundaries" {
@@ -82,7 +94,7 @@ class TestMultiWord : StringSpec({
                 Class vowel {a, e, i, o, u}
                 
                 lenition:
-                    {p, t, k} => {b, d, g} / @vowel $$? _
+                    {p, t, k} => {b, d, g} / @vowel $$? _ @vowel
             """.trimIndent()
         )
 
@@ -117,4 +129,44 @@ class TestMultiWord : StringSpec({
 
         ch2("knaan aardvark") shouldBe "kna an a ardvark"
     }
+
+    "We should be able to use $$ in alternative lists" {
+        val ch = lsc(
+            """
+                Class vowel {a, e, i, o, u}
+                
+                selective-lenition:
+                    {p, t, k} => {b, d, g} / {a $$, @vowel} _ @vowel
+            """.trimIndent()
+        )
+
+        ch("rumpa pum pum") shouldBe "rumpa bum pum"
+        ch("skupi tupi tu") shouldBe "skubi tubi tu"
+    }
+
+    "We should be able to transform sequences including word boundaries" {
+        val ch = lsc(
+            """
+                Class vowel {a, e, i, o, u}
+                
+                messy-glomination:
+                    @vowel? $$ h? => * / _ @vowel
+            """.trimIndent()
+        )
+
+        ch("ek ana eta hona") shouldBe "ekanetona"
+    }
+
+//    "We should be able to capture sequences containing word boundaries" {
+//        val ch = lsc(
+//            """
+//                Class vowel {a, e, i, o, u}
+//                Class consonant {p, t, k, s, n, l}
+//                goofy-swap:
+//                    (@consonant $$ @consonant)$1 @vowel$2 (@consonant $$ @consonant)$3 => $3 $2 $1
+//            """.trimIndent()
+//        )
+//
+//        ch("cat lap sore") shouldBe "cap sat lore"
+//    }
 })

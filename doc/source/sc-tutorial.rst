@@ -916,5 +916,11 @@ starts with an [s]::
 Sandhi Rules
 *************
 
-Splitting
-***********
+You can also condition *across* word boundaries, creating *sandhi* rules.
+For example, this rule implements initial consonant lenition, similar
+to how it works in Irish::
+
+    Class vowel {a, e, i, o, u}
+    lenition:
+        {p, t, k, b, d, g} => {f, h, x, v, j, ɣ} / @vowel $$ _ @vowel
+

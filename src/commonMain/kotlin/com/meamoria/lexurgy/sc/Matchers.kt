@@ -305,10 +305,15 @@ class RepeaterMatcher<I : Segment<I>>(
 }
 
 class AlternativeMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : BaseMatcher<I>() {
-    override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int? {
+    override fun claim(
+        declarations: Declarations,
+        words: List<Word<I>>,
+        start: WordListIndex,
+        bindings: Bindings
+    ): WordListIndex? {
         for (element in elements) {
             val altBindings = bindings.copy()
-            element.claim(declarations, word, start, altBindings)?.let {
+            element.claim(declarations, words, start, altBindings)?.let {
                 bindings.combine(altBindings)
                 return it
             }
