@@ -73,6 +73,21 @@ class TestMultiWord : StringSpec({
         )
 
         ch("rumpa pum pum") shouldBe "rumpa bum pum"
+        ch("skupi tupi tu") shouldBe "skupi dupi du"
+    }
+
+    "We should be able to implement rules that apply within words *and* across word boundaries" {
+        val ch = lsc(
+            """
+                Class vowel {a, e, i, o, u}
+                
+                lenition:
+                    {p, t, k} => {b, d, g} / @vowel $$? _
+            """.trimIndent()
+        )
+
+        ch("rumpa pum pum") shouldBe "rumpa bum pum"
+        ch("skupi tupi tu") shouldBe "skubi dubi du"
     }
 
     "We should be able to split words by turning elements into $$" {

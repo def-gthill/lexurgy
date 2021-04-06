@@ -266,6 +266,26 @@ class RepeaterMatcher<I : Segment<I>>(
     val precedingMatcher: Matcher<I>?,
     val followingMatcher: Matcher<I>?,
 ) : LiftingMatcher<I>() {
+    override fun claim(
+        declarations: Declarations,
+        words: List<Word<I>>,
+        start: WordListIndex,
+        bindings: Bindings
+    ): WordListIndex? {
+        var elementStart = start
+        var times = 0
+        while (true) {
+            val altBindings = bindings.copy()
+            if (followingMatcher?.claim(declarations, words, elementStart, altBindings)?.takeIf {
+                    it > elementStart
+                } != null) break
+            elementStart = element.claim(declarations, words, elementStart, bindings) ?: break
+            times++
+            if (type.maxReps?.let { times >= it } == true) break
+        }
+        return elementStart.takeIf { times >= type.minReps }
+    }
+
     override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int? {
         var elementStart = start
         var times = 0
