@@ -1,9 +1,6 @@
 package com.meamoria.lexurgy.sc
 
-import com.meamoria.mpp.kotest.StringSpec
-import com.meamoria.mpp.kotest.shouldBe
-import com.meamoria.mpp.kotest.shouldBeInstanceOf
-import com.meamoria.mpp.kotest.shouldThrow
+import com.meamoria.mpp.kotest.*
 
 @Suppress("unused")
 class TestRepeaters : StringSpec({
@@ -62,6 +59,42 @@ class TestRepeaters : StringSpec({
         )
 
         ch3("awtja") shouldBe "ewtja"
+    }
+
+    "Repeaters should backtrack if the rest of the rule can't match" {
+        val ch = lsc(
+            """
+                backtrack-optional:
+                    b => c / _ a? a d
+                backtrack-repeater:
+                    f => g / _ e+ e h
+            """.trimIndent()
+        )
+
+        ch("bad") shouldBe "cad"
+        ch("baad") shouldBe "caad"
+        ch("baaad") shouldBe "baaad"
+        ch("feh") shouldBe "feh"
+        ch("feeh") shouldBe "geeh"
+        ch("feeeeeh") shouldBe "geeeeeh"
+        ch("fh") shouldBe "fh"
+    }
+
+    "Only captures in a successful match should be bound" {
+        fail("Not yet!")
+    }
+
+    "Backtracking should work between the input and after environment" {
+        val ch = lsc(
+            """
+                Class vowel {a, e, i, o, u}
+                
+                messy-glomination:
+                    @vowel? $$ @vowel? => * / _ @vowel
+            """.trimIndent()
+        )
+
+        ch("ek ana eta iona") shouldBe "ekanetona"
     }
 
     "We should be able to change repeaters into things" {
