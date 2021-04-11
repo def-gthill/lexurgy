@@ -915,7 +915,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             return map {
                 try {
                     linker(it).also { expressionNumber++ }
-                } catch (e: LscUserError) {
+                } catch (e: UserError) {
                     throw LscInvalidRuleExpression(e, ruleName, it.toString(), expressionNumber)
                 }
             }
@@ -929,7 +929,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             return nestedMap {
                 try {
                     linker(it).also { expressionNumber++ }
-                } catch (e: LscUserError) {
+                } catch (e: UserError) {
                     throw LscInvalidRuleExpression(e, ruleName, it.toString(), expressionNumber)
                 }
             }
@@ -1505,7 +1505,7 @@ private class LscErrorListener : CommonAntlrErrorListener() {
 }
 
 class LscInvalidRuleExpression(
-    val reason: LscUserError,
+    val reason: UserError,
     val rule: String,
     val expression: String,
     val expressionNumber: Int,

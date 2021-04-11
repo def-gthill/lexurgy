@@ -115,7 +115,7 @@ class SoundChanger(
             try {
                 outType.joinWithSpaces(rule(curWord.split()))
             } catch (e: Exception) {
-                if (e is LscUserError) throw LscRuleNotApplicable(e, rule.name, word, curWord.string)
+                if (e is UserError) throw LscRuleNotApplicable(e, rule.name, word, curWord.string)
                 else throw LscRuleCrashed(e, rule.name, word, curWord.string)
             }
         }.also { newWords ->
@@ -443,7 +443,7 @@ class Environment<I : Segment<I>>(val before: Matcher<I>, val after: Matcher<I>)
 }
 
 class LscRuleNotApplicable(
-    val reason: LscUserError,
+    val reason: UserError,
     val rule: String,
     val originalWord: String,
     val currentWord: String

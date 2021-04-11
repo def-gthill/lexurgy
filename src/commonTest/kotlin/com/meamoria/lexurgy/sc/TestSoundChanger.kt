@@ -804,7 +804,7 @@ class TestSoundChanger : StringSpec({
     }
 
     "Deromanizers and romanizers should default to all-phonetic" {
-        shouldThrow<DanglingDiacritic> {
+        shouldThrow<LscInvalidRuleExpression> {
             lsc(
                 """
                     Feature +ejective
@@ -813,8 +813,8 @@ class TestSoundChanger : StringSpec({
                         ' => ʔ
                 """.trimIndent()
             )
-        }
-        shouldThrow<DanglingDiacritic> {
+        }.also { it.reason.shouldBeInstanceOf<DanglingDiacritic>() }
+        shouldThrow<LscInvalidRuleExpression> {
             lsc(
                 """
                     Feature +ejective
@@ -823,8 +823,8 @@ class TestSoundChanger : StringSpec({
                         ʔ => '
                 """.trimIndent()
             )
-        }
-        shouldThrow<DanglingDiacritic> {
+        }.also { it.reason.shouldBeInstanceOf<DanglingDiacritic>() }
+        shouldThrow<LscInvalidRuleExpression> {
             lsc(
                 """
                     Feature +ejective
@@ -833,7 +833,7 @@ class TestSoundChanger : StringSpec({
                         ʔ => '
                 """.trimIndent()
             )
-        }
+        }.also { it.reason.shouldBeInstanceOf<DanglingDiacritic>() }
     }
 
     "Deromanizers and romanizers marked 'literal' should ignore declarations" {
