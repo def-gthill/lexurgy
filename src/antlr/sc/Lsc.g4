@@ -15,8 +15,11 @@ featureDecl:
 plusFeature: AT_LEAST_ONE? name;
 nullAlias: NULL featureValue;
 diacriticDecl:
-    DIACRITIC WHITESPACE text WHITESPACE
-    (diacriticModifier WHITESPACE)* matrix (WHITESPACE diacriticModifier)*;
+    DIACRITIC WHITESPACE diacriticName (
+        (SEP diacriticName (WHITESPACE diacriticModifier)*)* |
+        WHITESPACE (diacriticModifier WHITESPACE)* matrix (WHITESPACE diacriticModifier)*
+    );
+diacriticName: text;
 diacriticModifier: DIA_BEFORE | DIA_FLOATING;
 symbolDecl: SYMBOL WHITESPACE symbolName ((SEP symbolName)* | WHITESPACE matrix);
 symbolName: text;

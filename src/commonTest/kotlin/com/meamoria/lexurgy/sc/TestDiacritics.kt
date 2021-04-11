@@ -1,6 +1,8 @@
 package com.meamoria.lexurgy.sc
 
+import com.meamoria.lexurgy.normalizeDecompose
 import com.meamoria.mpp.kotest.StringSpec
+import com.meamoria.mpp.kotest.fail
 import com.meamoria.mpp.kotest.shouldBe
 import com.meamoria.mpp.kotest.shouldThrow
 
@@ -258,5 +260,82 @@ class TestDiacritics : StringSpec({
         ch("çanaç") shouldBe "ana"
         ch("béibéi") shouldBe "bibi"
         ch("baèbaè") shouldBe "bibi"
+    }
+
+    "We should be able to declare diacritics with no matrix, which just affect segmentation" {
+        val ch = lsc(
+            """
+                Diacritic ʰ, ⁿ (before), ˈ (floating)
+                changes:
+                 t => d
+                 d => ð
+                 a => eə
+            """.trimIndent()
+        )
+
+        ch("tadaˈ") shouldBe "teəðeˈəˈ"
+        ch("tʰaⁿdaˈ") shouldBe "tʰeəⁿdeˈəˈ"
+    }
+
+    "We should be able to declare \"first\" diacritics that always attach after the first character of a segment" {
+        fail("Not yet!")
+    }
+
+    "Characters classified as Unicode combining diacritics should act like diacritics without being declared" {
+        val ch = lsc(
+            """
+                breaking:
+                    a => eə
+            """.trimIndent()
+        )
+
+        ch("tadá") shouldBe "teədá"
+
+        val ch2 = lsc(
+            """
+                Feature +stress
+                Diacritic ˈ (floating) [+stress]
+                nasalization:
+                  a => ã
+            """.trimIndent()
+        )
+
+        ch2("aˈnne") shouldBe "ãˈnne"
+    }
+
+    "This diacritic-laden rule should work regardless of diacritic order" {
+        val ch = lsc(
+            """
+                Feature +short
+                Feature +stress
+                
+                Diacritic ̆  [+short]
+                Diacritic ˈ (floating) [+stress]
+                
+                shortening:
+                 o͡ʊ => ŏ͡ʊ
+                follow-up:
+                 a => b
+            """.trimIndent()
+        )
+
+        ch("ko͡ʊst") shouldBe "kŏ͡ʊst"
+
+        val ch2 = lsc(
+            """
+                Feature +short
+                Feature +stress
+                
+                Diacritic ̆  [+short]
+                Diacritic ˈ (floating) [+stress] # Necessary to trigger reparsing
+                
+                shortening:
+                 o͡ʊ => ŏ͡ʊ
+                follow-up:
+                 a => b
+            """.trimIndent()
+        )
+
+        ch2("ko͡ʊst") shouldBe "kŏ͡ʊst"
     }
 })
