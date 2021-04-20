@@ -28,7 +28,8 @@ interRomanizer: ROMANIZER HYPHEN ruleName (WHITESPACE LITERAL)? RULE_START NEWLI
 changeRule: ruleName (WHITESPACE changeRuleModifier)* RULE_START? NEWLINE+ subrules;
 changeRuleModifier: filter | PROPAGATE;
 filter: classRef | fancyMatrix;
-subrules: subrule (NEWLINE+ SUBRULE RULE_START (WHITESPACE | NEWLINE+) subrule)*;
+subrules: subrule (NEWLINE+ subruleType RULE_START (WHITESPACE | NEWLINE+) subrule)*;
+subruleType: ALL_MATCHING | FIRST_MATCHING;
 subrule: expression (NEWLINE+ expression)*;
 ruleName: NAME (HYPHEN (NAME | NUMBER))*;
 
@@ -107,7 +108,8 @@ DIA_FLOATING: '(Floating)' | '(floating)';
 SYMBOL: 'Symbol' | 'symbol';
 DEROMANIZER: 'Deromanizer' | 'deromanizer';
 ROMANIZER: 'Romanizer' | 'romanizer';
-SUBRULE: 'Then' | 'then';
+ALL_MATCHING: 'Then' | 'then';
+FIRST_MATCHING: 'Else' | 'else';
 PROPAGATE: 'Propagate' | 'propagate';
 LITERAL: 'Literal' | 'literal';
 UNCHANGED: 'Unchanged' | 'unchanged';

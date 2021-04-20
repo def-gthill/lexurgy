@@ -4,7 +4,7 @@ import com.meamoria.lexurgy.*
 
 class SoundChanger(
     val declarations: Declarations,
-    val rules: List<ChangeRule>,
+    val rules: List<PhoneticChangeRule>,
     val deromanizer: Deromanizer,
     val romanizer: Romanizer,
     val intermediateRomanizers: Map<String?, List<IntermediateRomanizer>> = emptyMap()
@@ -176,10 +176,26 @@ internal fun Iterable<String>.maxLength(): Int = map { it.lengthCombining() }.ma
 
 expect fun <T, U, R> Iterable<T>.fastZipMap(other: Iterable<U>, function: (T, U) -> R): List<R>
 
-interface NamedRule<I : Segment<I>, O : Segment<O>> {
+interface ChangeRule<I : Segment<I>, O : Segment<O>> {
+    /**
+     * Applies the rule to the specified words.
+     *
+     * Returns null if the rule wasn't applicable to the words at all,
+     * i.e. none of the conditions matched. If
+     * rules matched but happened not to change the words,
+     * this method returns a list equal to ``words`` rather than null.
+     */
+    operator fun invoke(words: List<Word<I>>): List<Word<O>>?
+}
+
+class EmptyRule<T : Segment<T>> : ChangeRule<T, T> {
+    override fun invoke(words: List<Word<T>>): List<Word<T>> = words
+}
+
+interface NamedRule<I : Segment<I>, O : Segment<O>> : ChangeRule<I, O> {
     val name: String
 
-    operator fun invoke(words: List<Word<I>>): List<Word<O>>
+    override operator fun invoke(words: List<Word<I>>): List<Word<O>>
 }
 
 class SimpleChangeRule<I : Segment<I>, O : Segment<O>>(
@@ -188,8 +204,8 @@ class SimpleChangeRule<I : Segment<I>, O : Segment<O>>(
     val expressions: List<RuleExpression<I, O>>,
     val defaultRule: (Word<I>) -> Word<O>,
     val filter: ((I) -> Boolean)? = null
-) {
-    operator fun invoke(words: List<Word<I>>): List<Word<O>> {
+) : ChangeRule<I, O> {
+    override operator fun invoke(words: List<Word<I>>): List<Word<O>> {
         val (filteredWords, filterMaps) =
             if (filter == null) words to null else words.map(::filterWord).unzip()
         val allTransformations = expressions.mapIndexed { i, expr -> expr.claim(i, filteredWords) }.flatten()
@@ -265,19 +281,20 @@ typealias PlainS = PlainSegment
 
 class Deromanizer(
     deromanizerExpressions: List<RuleExpression<PlainS, PhonS>>,
-    phoneticExpressions: List<List<RuleExpression<PhonS, PhonS>>>,
+    phoneticRule: ChangeRule<PhonS, PhonS>,
     declarations: Declarations
 ) : NamedRule<PlainS, PhonS> {
     override val name: String = "deromanizer"
 
     val deromanizerRule = SimpleChangeRule(Plain, Phonetic, deromanizerExpressions, defaultRuleFor(declarations))
-    val phoneticRules = ChangeRule(name, phoneticExpressions)
+    val phoneticRules = PhoneticChangeRule(name, phoneticRule)
 
     override fun invoke(words: List<Word<PlainS>>): List<Word<PhonS>> =
         phoneticRules.invoke(deromanizerRule.invoke(words))
 
     companion object {
-        fun empty(declarations: Declarations): Deromanizer = Deromanizer(emptyList(), emptyList(), declarations)
+        fun empty(declarations: Declarations): Deromanizer =
+            Deromanizer(emptyList(), EmptyRule(), declarations)
 
         private fun defaultRuleFor(declarations: Declarations): (Word<PlainS>) -> Word<PhonS> =
             { declarations.parsePhonetic(it) }
@@ -285,12 +302,12 @@ class Deromanizer(
 }
 
 class Romanizer(
-    phoneticExpressions: List<List<RuleExpression<PhonS, PhonS>>>,
+    phoneticRule: ChangeRule<PhonS, PhonS>,
     romanizerExpressions: List<RuleExpression<PhonS, PlainS>>
 ) : NamedRule<PhonS, PlainS> {
     override val name: String = "romanizer"
 
-    val phoneticRules = ChangeRule(name, phoneticExpressions)
+    val phoneticRules = PhoneticChangeRule(name, phoneticRule)
     val romanizerRule = SimpleChangeRule(
         Phonetic, Plain, romanizerExpressions,
         { PlainWord(it.string.normalizeCompose()) }
@@ -300,27 +317,24 @@ class Romanizer(
         romanizerRule.invoke(phoneticRules.invoke(words))
 
     companion object {
-        fun empty(): Romanizer = Romanizer(emptyList(), emptyList())
+        fun empty(): Romanizer = Romanizer(EmptyRule(), emptyList())
     }
 }
 
-class ChangeRule(
+class PhoneticChangeRule(
     override val name: String,
-    expressions: List<List<RuleExpression<PhonS, PhonS>>>,
+    val mainBlock: ChangeRule<PhonS, PhonS>,
     val filter: ((PhoneticSegment) -> Boolean)? = null,
     val propagate: Boolean = false
 ) : NamedRule<PhonS, PhonS> {
     private val maxPropagateSteps = 100
-
-    val subrules: List<SimpleChangeRule<PhonS, PhonS>> =
-        expressions.map { SimpleChangeRule(Phonetic, Phonetic, it, { x -> x }, filter) }
 
     override operator fun invoke(words: List<Word<PhonS>>): List<Word<PhonS>> {
         if (propagate) {
             var curWords = words
             val steps = mutableSetOf(curWords)
             for (i in 1..maxPropagateSteps) {
-                val newWord = applyOnce(curWords)
+                val newWord = mainBlock(curWords) ?: curWords
                 if (newWord == curWords) return newWord
                 if (newWord in steps) throw LscDivergingPropagation(this, words.string, steps.map { it.string })
                 steps += newWord
@@ -328,19 +342,64 @@ class ChangeRule(
             }
             throw LscDivergingPropagation(this, words.string, steps.map { it.string }.takeLast(5))
         } else {
-            return applyOnce(words)
+            return mainBlock(words) ?: words
         }
     }
 
-    private fun applyOnce(words: List<Word<PhonS>>): List<Word<PhonS>> {
-        var curWord = words
-        for (subrule in subrules) curWord = subrule(curWord)
-        return curWord
-    }
+    override fun toString(): String = "Rule $name: $mainBlock"
+}
 
-    override fun toString(): String = subrules.joinToString(
-        separator = " then ", prefix = "Rule $name: "
-    )
+class SimultaneousBlock<I : Segment<I>, O : Segment<O>>(
+    val subrules: List<ChangeRule<I, O>>
+) : ChangeRule<I, O> {
+    override fun invoke(words: List<Word<I>>): List<Word<O>>? {
+        TODO("Not yet implemented")
+    }
+}
+
+/**
+ * A rule block that executes all its subrules one after the other
+ */
+class SequentialBlock<T : Segment<T>>(
+    val subrules: List<ChangeRule<T, T>>
+) : ChangeRule<T, T> {
+    override fun invoke(words: List<Word<T>>): List<Word<T>>? {
+        var somethingMatched = false
+        var curWords = words
+        for (subrule in subrules) {
+            curWords = subrule(curWords)?.also { somethingMatched = true } ?: curWords
+        }
+        return curWords.takeIf { somethingMatched }
+    }
+}
+
+/**
+ * A rule block that executes only the first subrule that matches
+ */
+class FirstMatchingBlock(
+    val subrules: List<ChangeRule<PhonS, PhonS>>
+) : ChangeRule<PhonS, PhonS> {
+    override fun invoke(words: List<Word<PhonS>>): List<Word<PhonS>>? {
+        for (subrule in subrules) {
+            subrule(words)?.let { return it }
+        }
+        return null
+    }
+}
+
+/**
+ * A rule block that executes rules separately for each word
+ */
+class WithinWordBlock(
+    val subrule: ChangeRule<PhonS, PhonS>
+) : ChangeRule<PhonS, PhonS> {
+    override fun invoke(words: List<Word<PhonS>>): List<Word<PhonS>>? {
+        var somethingMatched = false
+        val result = words.map {
+            subrule(listOf(it))?.single()?.also { somethingMatched = true } ?: it
+        }
+        return result.takeIf { somethingMatched }
+    }
 }
 
 class RuleExpression<I : Segment<I>, O : Segment<O>>(
@@ -558,7 +617,7 @@ class LscCaptureInPlain(val number: Int) :
 class LscIntersectionInOutput(val elements: List<Emitter<*, *>>) :
     LscUserError("Multiple criteria ${elements.joinToString()} aren't allowed in the output of a rule")
 
-class LscDivergingPropagation(val rule: ChangeRule, val initialWord: String, val wordsAtAbort: List<String>) :
+class LscDivergingPropagation(val rule: PhoneticChangeRule, val initialWord: String, val wordsAtAbort: List<String>) :
     LscUserError(
         "Propagating rule $rule applied to rule $initialWord appears " +
                 "not to settle on a result; the last few versions of the word were ${wordsAtAbort.joinToString(" -> ")}"

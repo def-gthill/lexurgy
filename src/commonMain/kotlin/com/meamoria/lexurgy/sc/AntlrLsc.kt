@@ -164,7 +164,11 @@ expect class FilterContext : ParserRuleContext
 
 expect class SubrulesContext : ParserRuleContext
 
+expect fun SubrulesContext.allSubruleTypes(): List<SubruleTypeContext>
+
 expect fun SubrulesContext.allSubrules(): List<SubruleContext>
+
+expect class SubruleTypeContext : ParserRuleContext
 
 expect class SubruleContext : ParserRuleContext
 

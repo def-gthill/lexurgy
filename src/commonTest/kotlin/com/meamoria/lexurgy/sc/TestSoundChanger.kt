@@ -567,34 +567,6 @@ class TestSoundChanger : StringSpec({
         ch("vietuu") shouldBe "vetuu"
     }
 
-    "We should be able to sequence rule expressions rather than having them all happen at once" {
-        val chain = lsc(
-            """
-                Symbol ts
-                chain:
-                t => ts
-                ts => s
-                s => h
-                h => *
-            """.trimIndent()
-        )
-
-        val nonchain = lsc(
-            """
-                Symbol ts
-                not-a-chain:
-                t => ts
-                Then: ts => s
-                Then:
-                s => h
-                h => *
-            """.trimIndent()
-        )
-
-        chain("tatsasaha") shouldBe "tsasahaa"
-        nonchain("tatsasaha") shouldBe "hahahaa"
-    }
-
     "A rule with a filter should only operate on sounds that pass the filter" {
         val ch = lsc(
             """
