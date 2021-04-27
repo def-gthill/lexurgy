@@ -349,14 +349,6 @@ class PhoneticChangeRule(
     override fun toString(): String = "Rule $name: $mainBlock"
 }
 
-class SimultaneousBlock<I : Segment<I>, O : Segment<O>>(
-    val subrules: List<ChangeRule<I, O>>
-) : ChangeRule<I, O> {
-    override fun invoke(words: List<Word<I>>): List<Word<O>>? {
-        TODO("Not yet implemented")
-    }
-}
-
 /**
  * A rule block that executes all its subrules one after the other
  */
@@ -376,10 +368,10 @@ class SequentialBlock<T : Segment<T>>(
 /**
  * A rule block that executes only the first subrule that matches
  */
-class FirstMatchingBlock(
-    val subrules: List<ChangeRule<PhonS, PhonS>>
-) : ChangeRule<PhonS, PhonS> {
-    override fun invoke(words: List<Word<PhonS>>): List<Word<PhonS>>? {
+class FirstMatchingBlock<I : Segment<I>, O : Segment<O>>(
+    val subrules: List<ChangeRule<I, O>>
+) : ChangeRule<I, O> {
+    override fun invoke(words: List<Word<I>>): List<Word<O>>? {
         for (subrule in subrules) {
             subrule(words)?.let { return it }
         }
@@ -390,10 +382,10 @@ class FirstMatchingBlock(
 /**
  * A rule block that executes rules separately for each word
  */
-class WithinWordBlock(
-    val subrule: ChangeRule<PhonS, PhonS>
-) : ChangeRule<PhonS, PhonS> {
-    override fun invoke(words: List<Word<PhonS>>): List<Word<PhonS>>? {
+class WithinWordBlock<T : Segment<T>>(
+    val subrule: ChangeRule<T, T>
+) : ChangeRule<T, T> {
+    override fun invoke(words: List<Word<T>>): List<Word<T>>? {
         var somethingMatched = false
         val result = words.map {
             subrule(listOf(it))?.single()?.also { somethingMatched = true } ?: it

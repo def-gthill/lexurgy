@@ -909,28 +909,53 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     private interface UnlinkedRule : ParseNode {
         val numExpressions: Int
 
-        fun inPhonetic(declarations: Declarations): ChangeRule<PhonS, PlainS>
+        fun <I : Segment<I>, O : Segment<O>> link(
+            firstExpressionNumber: Int, declarations: Declarations,
+            inType: SegmentType<I>, outType: SegmentType<O>,
+        ): ChangeRule<I, O>
     }
 
-    private abstract class BaseUnlinkedRule<I : Segment<I>, O : Segment<O>>(
-        text: String, subrules: List<UnlinkedRule<*, *>>
-    ) : BaseParseNode(text), UnlinkedRule<I, O> {
+    private abstract class BaseUnlinkedRule(
+        text: String, val subrules: List<UnlinkedRule>
+    ) : BaseParseNode(text), UnlinkedRule {
 
         val cumulativeNumExpressions: List<Int> =
             subrules.scan(0) { acc, cur -> acc + cur.numExpressions }
         override val numExpressions: Int = cumulativeNumExpressions.last()
 
-        @JvmName("linkAllList")
-        fun <II : Segment<II>, OO : Segment<OO>> List<UnlinkedRule<II, OO>>.linkAll(
-            ruleName: String, firstExpressionNumber: Int, linker: (UnlinkedRuleExpression) -> RuleExpression<I, O>
-        ): List<UnlinkedRule<II, OO>> {
-            var expressionNumber = firstExpressionNumber
-            return map {
-                try {
-                    linker(it).also { expressionNumber++ }
-                } catch (e: UserError) {
-                    throw LscInvalidRuleExpression(e, ruleName, it.toString(), expressionNumber)
-                }
+        fun <I : Segment<I>, O : Segment<O>> linkedSubrules(
+            ruleName: String,
+            firstExpressionNumber: Int, declarations: Declarations,
+            inType: SegmentType<I>, outType: SegmentType<O>,
+        ): List<ChangeRule<I, O>> {
+            return subrules.mapIndexed { index, subrule ->
+                val expressionNumber = cumulativeNumExpressions[index]
+                val subFirstExpressionNumber = firstExpressionNumber + expressionNumber
+                subrule.link(
+                    subFirstExpressionNumber,
+                    declarations,
+                    inType, outType,
+                )
+            }
+        }
+    }
+
+    private class UnlinkedSimpleChangeRule(
+        override val text: String,
+        expressions: List<UnlinkedRuleExpression>,
+    ) : UnlinkedRule {
+        override val numExpressions: Int = expressions.size
+
+        override fun <I : Segment<I>, O : Segment<O>> link(
+            firstExpressionNumber: Int,
+            declarations: Declarations,
+            inType: SegmentType<I>,
+            outType: SegmentType<O>
+        ): ChangeRule<I, O> {
+            try {
+
+            } catch (e: UserError) {
+                throw LscInvalidRuleExpression(e, ruleName, subrule.text, expressionNumber)
             }
         }
     }
@@ -1045,8 +1070,8 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         val result: RuleElement,
         val condition: List<UnlinkedEnvironment>,
         val exclusion: List<UnlinkedEnvironment>,
-    ) : BaseParseNode(text), UnlinkedRule {
-        override fun inPhonetic(declarations: Declarations): RuleExpression<PhonS, PlainS> = RuleExpression(
+    ) : BaseParseNode(text) {
+        fun inPhonetic(declarations: Declarations): RuleExpression<PhonS, PlainS> = RuleExpression(
             Phonetic, Plain, declarations,
             match.phonetic(RuleContext.aloneInMain(), declarations),
             castToResultElement(result).inPhoneticEmitter(declarations),
