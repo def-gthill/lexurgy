@@ -909,10 +909,12 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     private interface UnlinkedRule : ParseNode {
         val numExpressions: Int
 
-        fun <I : Segment<I>, O : Segment<O>> link(
-            firstExpressionNumber: Int, declarations: Declarations,
-            inType: SegmentType<I>, outType: SegmentType<O>,
-        ): ChangeRule<I, O>
+        // Special case of a rule whose input and output types
+        // are the same
+        fun link(
+            firstExpressionNumber: Int,
+            declarations: Declarations,
+        ): ChangeRule
     }
 
     private abstract class BaseUnlinkedRule(
@@ -942,7 +944,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     private class UnlinkedSimpleChangeRule(
         override val text: String,
-        expressions: List<UnlinkedRuleExpression>,
+        val expressions: List<UnlinkedRuleExpression>,
     ) : UnlinkedRule {
         override val numExpressions: Int = expressions.size
 
@@ -950,14 +952,15 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             firstExpressionNumber: Int,
             declarations: Declarations,
             inType: SegmentType<I>,
-            outType: SegmentType<O>
-        ): ChangeRule<I, O> {
-            try {
-
-            } catch (e: UserError) {
-                throw LscInvalidRuleExpression(e, ruleName, subrule.text, expressionNumber)
-            }
-        }
+            outType: SegmentType<O>,
+            defaultRule: (Word<I>) -> Word<O>
+        ): ChangeRule<I, O> =
+            SimpleChangeRule(
+                inType,
+                outType,
+                expressions.map { it.link(declarations, inType, outType) },
+                defaultRule,
+            )
     }
 
     private class UnlinkedDeromanizer(
@@ -1071,29 +1074,16 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         val condition: List<UnlinkedEnvironment>,
         val exclusion: List<UnlinkedEnvironment>,
     ) : BaseParseNode(text) {
-        fun inPhonetic(declarations: Declarations): RuleExpression<PhonS, PlainS> = RuleExpression(
-            Phonetic, Plain, declarations,
-            match.phonetic(RuleContext.aloneInMain(), declarations),
-            castToResultElement(result).inPhoneticEmitter(declarations),
-            condition.map { it.phonetic(declarations) },
-            exclusion.map { it.phonetic(declarations) }
-        )
-
-        fun outPhonetic(declarations: Declarations): RuleExpression<PlainS, PhonS> = RuleExpression(
-            Plain, Phonetic, declarations,
-            match.plain(RuleContext.aloneInMain()),
-            castToResultElement(result).outPhoneticEmitter(declarations),
-            condition.map { it.plain() },
-            exclusion.map { it.plain() }
-        )
-
-        fun phonetic(declarations: Declarations, filtered: Boolean): RuleExpression<PhonS, PhonS> = RuleExpression(
-            Phonetic, Phonetic, declarations,
-            match.phonetic(RuleContext.aloneInMain(), declarations),
-            castToResultElement(result).phoneticEmitter(declarations),
-            condition.map { it.phonetic(declarations) },
-            exclusion.map { it.phonetic(declarations) },
-            filtered
+        fun link(
+            declarations: Declarations,
+            filtered: Boolean,
+        ): RuleExpression = RuleExpression(
+            declarations,
+            match.matcher(RuleContext.aloneInMain(), declarations),
+            castToResultElement(result).emitter(declarations),
+            condition.map { it.link(declarations) },
+            exclusion.map { it.link(declarations) },
+            filtered,
         )
     }
 
@@ -1104,19 +1094,11 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         val before: RuleElement?,
         val after: RuleElement?,
     ) : BaseParseNode(text) {
-        fun plain(): Environment<PlainS> = try {
-            Environment(
-                before?.plain(RuleContext.rightBeforeAnchor()) ?: EmptyMatcher(),
-                after?.plain(RuleContext.rightAfterAnchor()) ?: EmptyMatcher()
-            )
-        } catch (e: LscBadSequence) {
-            throw e.initEnvironment(text)
-        }
 
-        fun phonetic(declarations: Declarations): Environment<PhonS> = try {
+        fun link(declarations: Declarations): Environment = try {
             Environment(
-                before?.phonetic(RuleContext.rightBeforeAnchor(), declarations) ?: EmptyMatcher(),
-                after?.phonetic(RuleContext.rightAfterAnchor(), declarations) ?: EmptyMatcher()
+                before?.matcher(RuleContext.rightBeforeAnchor(), declarations) ?: EmptyMatcher,
+                after?.matcher(RuleContext.rightAfterAnchor(), declarations) ?: EmptyMatcher
             )
         } catch (e: LscBadSequence) {
             throw e.initEnvironment(text)
@@ -1126,9 +1108,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     internal interface RuleElement : ParseNode {
         val publicName: String
 
-        fun plain(context: RuleContext): Matcher<PlainS>
-
-        fun phonetic(context: RuleContext, declarations: Declarations): Matcher<PhonS>
+        fun matcher(context: RuleContext, declarations: Declarations): Matcher
     }
 
     internal data class RuleContext(
@@ -1165,30 +1145,8 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         internal data class Some(val element: RuleElement) : ContextElement()
     }
 
-    // Base class for elements that don't need to use different logic depending on the word type
-    private interface ChameleonRuleElement : RuleElement {
-        override fun plain(context: RuleContext): Matcher<PlainS> = link(context)
-
-        override fun phonetic(context: RuleContext, declarations: Declarations): Matcher<PhonS> = link(context)
-
-        fun <T : Segment<T>> link(context: RuleContext): Matcher<T>
-    }
-
-    private abstract class PhoneticOnlyRuleElement(text: String) :
-        BaseParseNode(text),
-        RuleElement {
-        override fun plain(context: RuleContext): Matcher<PlainS> = foundInPlain()
-
-        // Throw the desired exception
-        abstract fun foundInPlain(): Nothing
-    }
-
     private interface ResultElement : RuleElement {
-        fun inPhoneticEmitter(declarations: Declarations): Emitter<PhonS, PlainS>
-
-        fun outPhoneticEmitter(declarations: Declarations): Emitter<PlainS, PhonS>
-
-        fun phoneticEmitter(declarations: Declarations): Emitter<PhonS, PhonS>
+        fun emitter(declarations: Declarations): Emitter
     }
 
     private fun castToResultElement(element: RuleElement): ResultElement =
@@ -1196,67 +1154,41 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     // Base class for elements whose only word type dependency is forwarding to sub-elements
     private abstract class ContainerResultElement(text: String) : BaseParseNode(text), ResultElement {
-        override fun plain(context: RuleContext): Matcher<PlainS> =
-            matcher(elements.map { it.plain(context) })
+        override fun matcher(context: RuleContext, declarations: Declarations): Matcher =
+            combineMatchers(elements.map { it.matcher(context, declarations) })
 
-        override fun phonetic(context: RuleContext, declarations: Declarations): Matcher<PhonS> =
-            matcher(elements.map { it.phonetic(context, declarations) })
-
-        override fun inPhoneticEmitter(declarations: Declarations): Emitter<PhonS, PlainS> =
-            emitter(resultElements.map { it.inPhoneticEmitter(declarations) })
-
-        override fun outPhoneticEmitter(declarations: Declarations): Emitter<PlainS, PhonS> =
-            emitter(resultElements.map { it.outPhoneticEmitter(declarations) })
-
-        override fun phoneticEmitter(declarations: Declarations): Emitter<PhonS, PhonS> =
-            emitter(resultElements.map { it.phoneticEmitter(declarations) })
+        override fun emitter(declarations: Declarations): Emitter =
+            combineEmitters(resultElements.map { it.emitter(declarations) })
 
         abstract val elements: List<RuleElement>
 
         val resultElements: List<ResultElement> by lazy { elements.map(::castToResultElement) }
 
-        abstract fun <T : Segment<T>> matcher(elements: List<Matcher<T>>): Matcher<T>
+        abstract fun combineMatchers(elements: List<Matcher>): Matcher
 
-        abstract fun <I : Segment<I>, O : Segment<O>> emitter(elements: List<Emitter<I, O>>): Emitter<I, O>
+        abstract fun combineEmitters(elements: List<Emitter>): Emitter
     }
 
-    // Base class for elements that are invalid in plain context, and throw an exception indicating this
-    private abstract class PhoneticOnlyResultElement(text: String) :
-        PhoneticOnlyRuleElement(text),
-        ResultElement {
-        override fun inPhoneticEmitter(declarations: Declarations): Emitter<PhonS, PlainS> =
-            foundInPlain()
-
-        override fun outPhoneticEmitter(declarations: Declarations): Emitter<PlainS, PhonS> =
-            foundInPlain()
-    }
-
-    private object WordBoundaryElement : BaseParseNode("$"), ChameleonRuleElement {
+    private object WordBoundaryElement : BaseParseNode("$"), RuleElement {
         override val publicName: String = "a word boundary"
 
-        override fun <T : Segment<T>> link(context: RuleContext): Matcher<T> =
+        override fun matcher(context: RuleContext, declarations: Declarations): Matcher =
             when {
                 context.section == RuleSection.MAIN -> throw LscIllegalStructureInInput(publicName, text)
-                context.precedingElement is ContextElement.None -> WordStartMatcher()
-                context.followingElement is ContextElement.None -> WordEndMatcher()
+                context.precedingElement is ContextElement.None -> WordStartMatcher
+                context.followingElement is ContextElement.None -> WordEndMatcher
                 else -> throw LscInteriorWordBoundary()
             }
     }
 
-    private object BetweenWordsElement : BaseParseNode("$$"), ResultElement, ChameleonRuleElement {
+    private object BetweenWordsElement : BaseParseNode("$$"), ResultElement, RuleElement {
         override val publicName: String = "a space between words"
 
-        override fun <T : Segment<T>> link(context: RuleContext): Matcher<T> =
-            BetweenWordsMatcher()
+        override fun matcher(context: RuleContext, declarations: Declarations): Matcher =
+            BetweenWordsMatcher
 
-        override fun inPhoneticEmitter(declarations: Declarations): Emitter<PhonS, PlainS> =
-            BetweenWordsEmitter(Plain)
-
-        override fun outPhoneticEmitter(declarations: Declarations): Emitter<PlainS, PhonS> =
-            BetweenWordsEmitter(Phonetic)
-
-        override fun phoneticEmitter(declarations: Declarations): Emitter<PhonS, PhonS> =
-            BetweenWordsEmitter(Phonetic)
+        override fun emitter(declarations: Declarations): Emitter =
+            BetweenWordsEmitter
     }
 
     private class SequenceElement(
@@ -1265,25 +1197,17 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     ) : ContainerResultElement(text) {
         override val publicName: String = "a sequence"
 
-        override fun plain(context: RuleContext): Matcher<PlainS> =
-            link(context) { plain(it) }
-
-        override fun phonetic(context: RuleContext, declarations: Declarations): Matcher<PhonS> =
-            link(context) { phonetic(it, declarations) }
-
-        private fun <T : Segment<T>> link(
-            context: RuleContext,
-            linker: RuleElement.(RuleContext) -> Matcher<T>,
-        ): Matcher<T> =
+        override fun matcher(context: RuleContext, declarations: Declarations): Matcher =
             try {
-                SequenceMatcher(
+                combineMatchers(
                     (listOf<RuleElement?>(null) + elements + listOf(null)).windowed(3) { window ->
                         val (preceding, current, following) = window
-                        current!!.linker(
+                        current!!.matcher(
                             context.copy(
                                 precedingElement = preceding?.let { ContextElement.Some(it) } ?: context.precedingElement,
                                 followingElement = following?.let { ContextElement.Some(it) } ?: context.followingElement,
-                            )
+                            ),
+                            declarations,
                         )
                     }
                 )
@@ -1291,23 +1215,20 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                 throw e.initSequence(text)
             }
 
-        override fun <T : Segment<T>> matcher(elements: List<Matcher<T>>): Matcher<T> = SequenceMatcher(elements)
+        override fun combineMatchers(elements: List<Matcher>): Matcher = SequenceMatcher(elements)
 
-        override fun <I : Segment<I>, O : Segment<O>> emitter(elements: List<Emitter<I, O>>): Emitter<I, O> =
-            SequenceEmitter(elements)
+        override fun combineEmitters(elements: List<Emitter>): Emitter = SequenceEmitter(elements)
     }
 
     private class CaptureElement(
         text: String,
         val element: RuleElement,
         val capture: CaptureReferenceElement,
-    ) : PhoneticOnlyRuleElement(text) {
+    ) : BaseParseNode(text), RuleElement {
         override val publicName: String = "a capture"
 
-        override fun phonetic(context: RuleContext, declarations: Declarations): Matcher<PhonS> =
-            CaptureMatcher(element.phonetic(context, declarations), capture.number)
-
-        override fun foundInPlain(): Nothing = throw LscCaptureInPlain(capture.number)
+        override fun matcher(context: RuleContext, declarations: Declarations): Matcher =
+            CaptureMatcher(element.matcher(context, declarations), capture.number)
     }
 
     private class RepeaterElement(
@@ -1320,23 +1241,13 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             else -> "a repeater"
         }
 
-        override fun plain(context: RuleContext): Matcher<PlainS> {
+        override fun matcher(context: RuleContext, declarations: Declarations): Matcher {
             checkContext(context)
             return RepeaterMatcher(
-                element.plain(context),
+                element.matcher(context, declarations),
                 repeaterType.type,
-                removeAnchor(context.precedingElement)?.plain(RuleContext.nowhere()),
-                removeAnchor(context.followingElement)?.plain(RuleContext.nowhere()),
-            )
-        }
-
-        override fun phonetic(context: RuleContext, declarations: Declarations): Matcher<PhonS> {
-            checkContext(context)
-            return RepeaterMatcher(
-                element.phonetic(context, declarations),
-                repeaterType.type,
-                removeAnchor(context.precedingElement)?.phonetic(RuleContext.nowhere(), declarations),
-                removeAnchor(context.followingElement)?.phonetic(RuleContext.nowhere(), declarations),
+                removeAnchor(context.precedingElement)?.matcher(RuleContext.nowhere(), declarations),
+                removeAnchor(context.followingElement)?.matcher(RuleContext.nowhere(), declarations),
             )
         }
 
@@ -1362,9 +1273,10 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     ) : ContainerResultElement(text) {
         override val publicName: String = "an alternative list"
 
-        override fun <T : Segment<T>> matcher(elements: List<Matcher<T>>): Matcher<T> = AlternativeMatcher(elements)
+        override fun combineMatchers(elements: List<Matcher>): Matcher =
+            AlternativeMatcher(elements)
 
-        override fun <I : Segment<I>, O : Segment<O>> emitter(elements: List<Emitter<I, O>>): Emitter<I, O> =
+        override fun combineEmitters(elements: List<Emitter>): Emitter =
             AlternativeEmitter(elements)
     }
 
@@ -1374,9 +1286,10 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     ) : ContainerResultElement(text) {
         override val publicName: String = "an intersection"
 
-        override fun <T : Segment<T>> matcher(elements: List<Matcher<T>>): Matcher<T> = IntersectionMatcher(elements)
+        override fun combineMatchers(elements: List<Matcher>): Matcher =
+            IntersectionMatcher(elements)
 
-        override fun <I : Segment<I>, O : Segment<O>> emitter(elements: List<Emitter<I, O>>): Emitter<I, O> =
+        override fun combineEmitters(elements: List<Emitter>): Emitter =
             throw LscIntersectionInOutput(elements)
     }
 
@@ -1387,22 +1300,12 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     ) : BaseParseNode(text), ResultElement {
         override val publicName: String = "literal text"
 
-        override fun plain(context: RuleContext): Matcher<PlainS> = TextMatcher(PlainWord(literalText))
-
-        override fun phonetic(context: RuleContext, declarations: Declarations): Matcher<PhonS> =
+        override fun matcher(context: RuleContext, declarations: Declarations): Matcher =
             declarations.parsePhonetic(literalText).let {
                 if (exact) TextMatcher(it) else SymbolMatcher(it)
             }
 
-        override fun inPhoneticEmitter(declarations: Declarations): Emitter<PhonS, PlainS> =
-            TextEmitter(PlainWord(literalText))
-
-        override fun outPhoneticEmitter(declarations: Declarations): Emitter<PlainS, PhonS> =
-            declarations.parsePhonetic(literalText).let {
-                if (exact) TextEmitter(it) else SymbolEmitter(it)
-            }
-
-        override fun phoneticEmitter(declarations: Declarations): Emitter<PhonS, PhonS> =
+        override fun emitter(declarations: Declarations): Emitter =
             declarations.parsePhonetic(literalText).let {
                 if (exact) TextEmitter(it) else SymbolEmitter(it)
             }
@@ -1411,15 +1314,13 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     private class MatrixElement(
         text: String,
         val matrix: Matrix,
-    ) : PhoneticOnlyResultElement(text) {
+    ) : BaseParseNode(text), ResultElement {
         override val publicName: String = "a matrix"
 
-        override fun phonetic(context: RuleContext, declarations: Declarations): Matcher<PhonS> =
+        override fun matcher(context: RuleContext, declarations: Declarations): Matcher =
             MatrixMatcher(matrix)
 
-        override fun phoneticEmitter(declarations: Declarations): Emitter<PhonS, PhonS> = MatrixEmitter(matrix)
-
-        override fun foundInPlain(): Nothing = throw LscMatrixInPlain(matrix)
+        override fun emitter(declarations: Declarations): Emitter = MatrixEmitter(matrix)
     }
 
     private class NegatedElement(
@@ -1428,62 +1329,51 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     ) : BaseParseNode(text), RuleElement {
         override val publicName: String = "a negated element"
 
-        override fun plain(context: RuleContext): Matcher<PlainS> = NegatedMatcher(element.plain(context))
-
-        override fun phonetic(context: RuleContext, declarations: Declarations): Matcher<PhonS> =
-            NegatedMatcher(element.phonetic(context, declarations))
+        override fun matcher(context: RuleContext, declarations: Declarations): Matcher =
+            NegatedMatcher(element.matcher(context, declarations))
     }
 
     private object EmptyElement : BaseParseNode("*"), ResultElement {
         override val publicName: String = "an empty element"
 
-        override fun plain(context: RuleContext): Matcher<PlainS> = EmptyMatcher()
+        override fun matcher(context: RuleContext, declarations: Declarations): Matcher =
+            EmptyMatcher
 
-        override fun phonetic(context: RuleContext, declarations: Declarations): Matcher<PhonS> = EmptyMatcher()
-
-        override fun inPhoneticEmitter(declarations: Declarations): Emitter<PhonS, PlainS> = EmptyEmitter(Plain)
-
-        override fun outPhoneticEmitter(declarations: Declarations): Emitter<PlainS, PhonS> = EmptyEmitter(Phonetic)
-
-        override fun phoneticEmitter(declarations: Declarations): Emitter<PhonS, PhonS> = EmptyEmitter(Phonetic)
+        override fun emitter(declarations: Declarations): Emitter = EmptyEmitter
     }
 
     private class ClassReferenceElement(
         text: String,
         val name: String,
-    ) : PhoneticOnlyResultElement(text) {
+    ) : BaseParseNode(text), ResultElement {
         override val publicName: String = "a class reference"
 
-        override fun phonetic(context: RuleContext, declarations: Declarations): Matcher<PhonS> =
+        override fun matcher(context: RuleContext, declarations: Declarations): Matcher =
             with(declarations) {
                 AlternativeMatcher(name.toClass().sounds.map {
-                    TextElement(it, it).phonetic(context, this)
+                    TextElement(it, it).matcher(context, this)
                 })
             }
 
-        override fun phoneticEmitter(declarations: Declarations): Emitter<PhonS, PhonS> =
+        override fun emitter(declarations: Declarations): Emitter =
             with(declarations) {
                 AlternativeEmitter(name.toClass().sounds.map {
-                    TextElement(it, it).phoneticEmitter(this)
+                    TextElement(it, it).emitter(this)
                 })
             }
-
-        override fun foundInPlain(): Nothing = throw LscClassInPlain(name)
     }
 
     private class CaptureReferenceElement(
         text: String,
         val number: Int,
-    ) : PhoneticOnlyResultElement(text) {
+    ) : BaseParseNode(text), ResultElement {
         override val publicName: String = "a capture reference"
 
-        override fun phonetic(context: RuleContext, declarations: Declarations): Matcher<PhonS> =
+        override fun matcher(context: RuleContext, declarations: Declarations): Matcher =
             CaptureReferenceMatcher(number)
 
-        override fun phoneticEmitter(declarations: Declarations): Emitter<PhonS, PhonS> =
+        override fun emitter(declarations: Declarations): Emitter =
             CaptureReferenceEmitter(number)
-
-        override fun foundInPlain(): Nothing = throw LscCaptureInPlain(number)
     }
 
     private class RepeaterTypeNode(

@@ -54,9 +54,9 @@ class Declarations(
 
     private val matrixFullValueSetCache = Cache<Matrix, Set<MatrixValue>>()
     private val matrixSimpleValueCache = Cache<Matrix, Set<SimpleValue>>()
-    private val matrixToSymbolCache = Cache<Matrix, PhoneticSegment>()
-    private val phoneticSegmentToComplexSymbolCache = Cache<PhoneticSegment, ComplexSymbol>()
-    private val phoneticSegmentMatchCache = Cache<Pair<PhoneticSegment, PhoneticSegment>, Boolean>()
+    private val matrixToSymbolCache = Cache<Matrix, Segment>()
+    private val phoneticSegmentToComplexSymbolCache = Cache<Segment, ComplexSymbol>()
+    private val phoneticSegmentMatchCache = Cache<Pair<Segment, Segment>, Boolean>()
     private val undeclaredSymbolCache = Cache<String, Symbol>()
 
     private val classNameToClass = classes.associateBy { it.name }
@@ -95,10 +95,10 @@ class Declarations(
         normalizedDiacritics.filterNot { it.before }.map { it.name },
     )
 
-    fun parsePhonetic(text: String): PhoneticWord =
+    fun parsePhonetic(text: String): Word =
         phoneticParser.parse(text).normalize()
 
-    fun parsePhonetic(word: Word<PlainS>): PhoneticWord = parsePhonetic(word.string)
+    fun parsePhonetic(word: Word): Word = parsePhonetic(word.string)
 
     fun String.toFeature(): Feature =
         featureNameToFeatureMap[this] ?: throw LscUndefinedName("feature", this)
@@ -116,7 +116,7 @@ class Declarations(
      * Checks if this segment is the same as the specified pattern plus
      * any number of floating diacritics.
      */
-    fun PhoneticSegment.matches(pattern: PhoneticSegment): Boolean {
+    fun Segment.matches(pattern: Segment): Boolean {
         phoneticSegmentMatchCache[this to pattern]?.let { return it }
 
         if (floatingDiacritics.isEmpty()) return this == pattern
@@ -134,7 +134,7 @@ class Declarations(
      * Tries to match the specified matrix to this phonetic symbol.
      * Returns true if the matrix matched, false otherwise. Binds variables.
      */
-    fun PhoneticSegment.matches(matrix: Matrix, bindings: Bindings): Boolean {
+    fun Segment.matches(matrix: Matrix, bindings: Bindings): Boolean {
         val complexSymbolMatrix = (toMatrix())
         for (value in matrix.valueList) {
             if (!value.matches(complexSymbolMatrix, bindings)) return false
@@ -146,9 +146,9 @@ class Declarations(
 
     private fun MatrixValue.isAbsent(): Boolean = this in absents
 
-    fun PhoneticSegment.withFloatingDiacriticsFrom(
-        other: PhoneticSegment, excluding: PhoneticSegment? = null
-    ): PhoneticSegment {
+    fun Segment.withFloatingDiacriticsFrom(
+        other: Segment, excluding: Segment? = null
+    ): Segment {
         if (floatingDiacritics.isEmpty()) return this
         val excludingDiacritics = excluding?.toComplexSymbol()?.diacritics ?: listOf()
         val otherSymbol = other.toComplexSymbol()
@@ -164,7 +164,7 @@ class Declarations(
         return result.toPhoneticSegment()
     }
 
-    fun PhoneticSegment.toComplexSymbol(): ComplexSymbol {
+    fun Segment.toComplexSymbol(): ComplexSymbol {
         phoneticSegmentToComplexSymbolCache[this]?.let { return it }
 
         val (core, before, after) = normalizedPhoneticParser.breakDiacritics(string)
@@ -175,9 +175,9 @@ class Declarations(
         }
     }
 
-    fun PhoneticSegment.toMatrix(): Matrix = toComplexSymbol().toMatrix()
+    fun Segment.toMatrix(): Matrix = toComplexSymbol().toMatrix()
 
-    fun Symbol.toPhoneticSegment(): PhoneticSegment = PhoneticSegment(name)
+    fun Symbol.toPhoneticSegment(): Segment = Segment(name)
 
     val Symbol.matrix: Matrix
         get() = declaredMatrix ?: Matrix(listOf(UndeclaredSymbolValue(name)))
@@ -199,7 +199,7 @@ class Declarations(
         return result
     }
 
-    fun ComplexSymbol.toPhoneticSegment(): PhoneticSegment = PhoneticSegment(string)
+    fun ComplexSymbol.toPhoneticSegment(): Segment = Segment(string)
 
     val Matrix.fullValueList: List<MatrixValue>
         get() {
@@ -223,7 +223,7 @@ class Declarations(
             }
         }
 
-    fun Matrix.toSymbol(): PhoneticSegment {
+    fun Matrix.toSymbol(): Segment {
         matrixToSymbolCache[this]?.let { return it }
 
         val matrix = removeExplicitDefaults()

@@ -5,7 +5,7 @@ import com.meamoria.lexurgy.Word
 
 class Bindings {
     val features: MutableMap<Feature, SimpleValue> = mutableMapOf()
-    val captures: MutableMap<Int, Word<PhonS>> = mutableMapOf()
+    val captures: MutableMap<Int, Word> = mutableMapOf()
 
     fun copy(): Bindings = Bindings().also {
         it.features += this.features
