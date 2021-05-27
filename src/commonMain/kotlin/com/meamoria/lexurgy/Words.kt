@@ -286,6 +286,9 @@ class Phrase(val words: List<Word>) : Iterable<Word> {
     fun fullyReversed(): Phrase =
         Phrase(reversed().map { it.reversed() })
 
+    /**
+     * Joins this Phrase's words together with space to form a Word
+     */
     fun toWord(): Word = StandardWord.joinWithSpaces(words)
 
     companion object {

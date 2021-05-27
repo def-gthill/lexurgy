@@ -4,9 +4,7 @@ import com.meamoria.lexurgy.*
 
 class SoundChanger(
     val declarations: Declarations,
-    val rules: List<PhoneticChangeRule>,
-    val deromanizer: Deromanizer,
-    val romanizer: Romanizer,
+    val rules: List<NamedRule>,
     val intermediateRomanizers: Map<String?, List<IntermediateRomanizer>> = emptyMap()
 ) {
     init {
@@ -48,11 +46,7 @@ class SoundChanger(
         debug: (String) -> Unit = ::println,
     ): Map<String?, List<String>> {
         val debugIndices = words.withIndex().filter { it.value in debugWords }.map { it.index }
-        val startWords =
-            if (startAt == null) applyRule(
-                deromanizer, words, words.map(declarations::parsePhonetic), debugIndices, debug
-            )
-            else words.map(declarations::parsePhonetic)
+        val startWords = words.map(declarations::parsePhonetic)
 
         val result = mutableMapOf<String?, List<String>>()
 
@@ -60,8 +54,8 @@ class SoundChanger(
         var started = false
         var stopped = false
 
-        fun maybeReplace(realRomanizer: Romanizer): Romanizer =
-            if (romanize) realRomanizer else Romanizer.empty()
+        fun maybeReplace(realRomanizer: NamedRule): NamedRule =
+            if (romanize) realRomanizer else StandardNamedRule("fake-romanizer", EmptyRule)
 
         fun runIntermediateRomanizers(ruleName: String?) {
             intermediateRomanizers[ruleName]?.forEach { rom ->
@@ -95,10 +89,7 @@ class SoundChanger(
             throw LscRuleNotFound(startAt, "start at")
         }
 
-        result[null] = if (stopBefore == null) applyRule(
-            maybeReplace(romanizer), words, curWords, debugIndices, debug
-        ).map { it.string }
-        else curWords.map { it.string }
+        result[null] = curWords.map { it.string }
 
         return result
     }
@@ -148,11 +139,11 @@ class SoundChanger(
         }
     }
 
-    override fun toString(): String = (listOf(deromanizer) + rules + romanizer).joinToString(
+    override fun toString(): String = rules.joinToString(
         separator = "; ", prefix = "SoundChanger(", postfix = ")"
     )
 
-    data class IntermediateRomanizer(val name: String, val romanizer: Romanizer)
+    data class IntermediateRomanizer(val name: String, val romanizer: NamedRule)
 }
 
 internal fun makeStageComparisons(wordListSequence: List<List<String>>): List<String> {
@@ -187,10 +178,6 @@ interface ChangeRule {
     operator fun invoke(phrase: Phrase): Phrase?
 }
 
-class EmptyRule : ChangeRule {
-    override fun invoke(phrase: Phrase): Phrase = phrase
-}
-
 /**
  * A rule at the top level (i.e. one with a name).
  * Named rules must return a new phrase; they can't
@@ -200,6 +187,41 @@ interface NamedRule : ChangeRule {
     val name: String
 
     override fun invoke(phrase: Phrase): Phrase
+}
+
+class StandardNamedRule(
+    override val name: String,
+    val mainBlock: ChangeRule,
+    val filter: ((Segment) -> Boolean)? = null,
+    val propagate: Boolean = false
+) : NamedRule {
+    private val maxPropagateSteps = 100
+
+    override operator fun invoke(phrase: Phrase): Phrase {
+        if (propagate) {
+            var curPhrase = phrase
+            val steps = mutableSetOf(curPhrase)
+            for (i in 1..maxPropagateSteps) {
+                val newWord = mainBlock(curPhrase) ?: curPhrase
+                if (newWord == curPhrase) return newWord
+                if (newWord in steps) throw LscDivergingPropagation(this, phrase.string, steps.map { it.string })
+                steps += newWord
+                curPhrase = newWord
+            }
+            throw LscDivergingPropagation(this, phrase.string, steps.map { it.string }.takeLast(5))
+        } else {
+            return mainBlock(phrase) ?: phrase
+        }
+    }
+
+    override fun toString(): String = "Rule $name: $mainBlock"
+}
+
+/**
+ * A rule that never matches its input.
+ */
+object EmptyRule : ChangeRule {
+    override fun invoke(phrase: Phrase): Phrase? = null
 }
 
 /**
@@ -246,7 +268,7 @@ class SimpleChangeRule(
 
     // Strips out transformations that would try to change something that's already being changed.
     // Assumes the transformations argument is already sorted in precedence order.
-    private fun filterOverlappingClaims(transformations: List<Transformation>): List<Transformation<O>> {
+    private fun filterOverlappingClaims(transformations: List<Transformation>): List<Transformation> {
         val claimed = mutableListOf<ClosedRange<PhraseIndex>>()
         val result = mutableListOf<Transformation>()
         for (transformation in transformations) {
@@ -282,101 +304,40 @@ class SimpleChangeRule(
     override fun toString(): String = expressions.joinToString().ifBlank { "<no changes>" }
 }
 
-class Deromanizer(
-    deromanizerExpressions: List<RuleExpression>,
-    phoneticRule: ChangeRule,
-    declarations: Declarations
-) : NamedRule {
-    override val name: String = "deromanizer"
-
-    val deromanizerRule = SimpleChangeRule(deromanizerExpressions, defaultRuleFor(declarations))
-    val phoneticRules = PhoneticChangeRule(name, phoneticRule)
-
+/**
+ * A change rule that imposes new declarations by
+ * re-parsing the input phrase to match the new declarations
+ */
+class Redeclaration(val newDeclarations: Declarations) : ChangeRule {
     override fun invoke(phrase: Phrase): Phrase =
-        phoneticRules.invoke(deromanizerRule.invoke(phrase))
-
-    companion object {
-        fun empty(declarations: Declarations): Deromanizer =
-            Deromanizer(emptyList(), EmptyRule(), declarations)
-
-        private fun defaultRuleFor(declarations: Declarations): (Word) -> Word =
-            { declarations.parsePhonetic(it) }
-    }
-}
-
-class Romanizer(
-    phoneticRule: ChangeRule<PhonS, PhonS>,
-    romanizerExpressions: List<RuleExpression<PhonS, PlainS>>
-) : NamedRule<PhonS, PlainS> {
-    override val name: String = "romanizer"
-
-    val phoneticRules = PhoneticChangeRule(name, phoneticRule)
-    val romanizerRule = SimpleChangeRule(
-        Phonetic, Plain, romanizerExpressions,
-        { PlainWord(it.string.normalizeCompose()) }
-    )
-
-    override fun invoke(words: List<Word<PhonS>>): List<Word<PlainS>> =
-        romanizerRule.invoke(phoneticRules.invoke(words))
-
-    companion object {
-        fun empty(): Romanizer = Romanizer(EmptyRule(), emptyList())
-    }
-}
-
-class PhoneticChangeRule(
-    override val name: String,
-    val mainBlock: ChangeRule<PhonS, PhonS>,
-    val filter: ((PhoneticSegment) -> Boolean)? = null,
-    val propagate: Boolean = false
-) : NamedRule<PhonS, PhonS> {
-    private val maxPropagateSteps = 100
-
-    override operator fun invoke(words: List<Word<PhonS>>): List<Word<PhonS>> {
-        if (propagate) {
-            var curWords = words
-            val steps = mutableSetOf(curWords)
-            for (i in 1..maxPropagateSteps) {
-                val newWord = mainBlock(curWords) ?: curWords
-                if (newWord == curWords) return newWord
-                if (newWord in steps) throw LscDivergingPropagation(this, words.string, steps.map { it.string })
-                steps += newWord
-                curWords = newWord
-            }
-            throw LscDivergingPropagation(this, words.string, steps.map { it.string }.takeLast(5))
-        } else {
-            return mainBlock(words) ?: words
-        }
-    }
-
-    override fun toString(): String = "Rule $name: $mainBlock"
+        Phrase(phrase.map(newDeclarations::parsePhonetic))
 }
 
 /**
  * A rule block that executes all its subrules one after the other
  */
-class SequentialBlock<T : Segment<T>>(
-    val subrules: List<ChangeRule<T, T>>
-) : ChangeRule<T, T> {
-    override fun invoke(words: List<Word<T>>): List<Word<T>>? {
+class SequentialBlock(
+    val subrules: List<ChangeRule>
+) : ChangeRule {
+    override fun invoke(phrase: Phrase): Phrase? {
         var somethingMatched = false
-        var curWords = words
+        var curPhrase = phrase
         for (subrule in subrules) {
-            curWords = subrule(curWords)?.also { somethingMatched = true } ?: curWords
+            curPhrase = subrule(curPhrase)?.also { somethingMatched = true } ?: curPhrase
         }
-        return curWords.takeIf { somethingMatched }
+        return curPhrase.takeIf { somethingMatched }
     }
 }
 
 /**
  * A rule block that executes only the first subrule that matches
  */
-class FirstMatchingBlock<I : Segment<I>, O : Segment<O>>(
-    val subrules: List<ChangeRule<I, O>>
-) : ChangeRule<I, O> {
-    override fun invoke(words: List<Word<I>>): List<Word<O>>? {
+class FirstMatchingBlock(
+    val subrules: List<ChangeRule>
+) : ChangeRule {
+    override fun invoke(phrase: Phrase): Phrase? {
         for (subrule in subrules) {
-            subrule(words)?.let { return it }
+            subrule(phrase)?.let { return it }
         }
         return null
     }
@@ -385,15 +346,15 @@ class FirstMatchingBlock<I : Segment<I>, O : Segment<O>>(
 /**
  * A rule block that executes rules separately for each word
  */
-class WithinWordBlock<T : Segment<T>>(
-    val subrule: ChangeRule<T, T>
-) : ChangeRule<T, T> {
-    override fun invoke(words: List<Word<T>>): List<Word<T>>? {
+class WithinWordBlock(
+    val subrule: ChangeRule
+) : ChangeRule {
+    override fun invoke(phrase: Phrase): Phrase? {
         var somethingMatched = false
-        val result = words.map {
-            subrule(listOf(it))?.single()?.also { somethingMatched = true } ?: it
+        val result = phrase.map {
+            subrule(Phrase(it))?.single()?.also { somethingMatched = true } ?: it
         }
-        return result.takeIf { somethingMatched }
+        return Phrase(result).takeIf { somethingMatched }
     }
 }
 
@@ -405,10 +366,10 @@ class RuleExpression(
     val exclusion: List<Environment>,
     val filtered: Boolean = false
 ) {
-    val transformer = match.transformerTo(result, outType, filtered)
+    val transformer = match.transformerTo(result, filtered)
 
     private val realCondition =
-        if (condition.isEmpty()) listOf(Environment(EmptyMatcher(), EmptyMatcher()))
+        if (condition.isEmpty()) listOf(Environment(EmptyMatcher, EmptyMatcher))
         else condition.map { it.beforeReversed() }
 
     private val realExclusion = exclusion.map { it.beforeReversed() }
@@ -424,31 +385,31 @@ class RuleExpression(
         }
 
         index = PhraseIndex(0, 0)
-        val result = mutableListOf<Transformation<O>>()
+        val result = mutableListOf<Transformation>()
 
         while (true) {
-            val transformation = claimNext(expressionNumber, words, index) ?: break
+            val transformation = claimNext(expressionNumber, phrase, index) ?: break
             if (transformation.start !in exclusions)
                 result += transformation
-            index = words.advance(transformation.start)
+            index = phrase.advance(transformation.start)
         }
 
         return result
     }
 
-    private fun claimNext(expressionNumber: Int, words: List<Word<I>>, start: PhraseIndex): Transformation<O>? {
-        val reversedWords = words.fullyReversed()
-        for (matchStart in words.iterateFrom(start)) {
+    private fun claimNext(expressionNumber: Int, phrase: Phrase, start: PhraseIndex): Transformation? {
+        val reversedWords = phrase.fullyReversed()
+        for (matchStart in phrase.iterateFrom(start)) {
             for (environment in realCondition) {
                 val bindings = Bindings()
                 environment.before.claim(
-                    declarations, reversedWords, words.reversedIndex(matchStart), bindings
+                    declarations, reversedWords, phrase.reversedIndex(matchStart), bindings
                 ) ?: continue
                 val transformation = transformer.transform(
-                    expressionNumber, declarations, words, matchStart, bindings
+                    expressionNumber, declarations, phrase, matchStart, bindings
                 ) ?: continue
                 environment.after.claim(
-                    declarations, words, transformation.end, bindings
+                    declarations, phrase, transformation.end, bindings
                 ) ?: continue
                 return transformation.bindVariables(bindings)
             }
@@ -610,7 +571,7 @@ class LscCaptureInPlain(val number: Int) :
 class LscIntersectionInOutput(val elements: List<Emitter>) :
     LscUserError("Multiple criteria ${elements.joinToString()} aren't allowed in the output of a rule")
 
-class LscDivergingPropagation(val rule: PhoneticChangeRule, val initialWord: String, val wordsAtAbort: List<String>) :
+class LscDivergingPropagation(val rule: ChangeRule, val initialWord: String, val wordsAtAbort: List<String>) :
     LscUserError(
         "Propagating rule $rule applied to rule $initialWord appears " +
                 "not to settle on a result; the last few versions of the word were ${wordsAtAbort.joinToString(" -> ")}"

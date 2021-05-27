@@ -909,13 +909,16 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     private interface UnlinkedRule : ParseNode {
         val numExpressions: Int
 
-        // Special case of a rule whose input and output types
-        // are the same
         fun link(
             firstExpressionNumber: Int,
             declarations: Declarations,
+            inherited: InheritedRuleProperties,
         ): ChangeRule
     }
+
+    data class InheritedRuleProperties(
+        val filter: ((Segment) -> Boolean)?
+    )
 
     private abstract class BaseUnlinkedRule(
         text: String, val subrules: List<UnlinkedRule>
@@ -925,18 +928,18 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             subrules.scan(0) { acc, cur -> acc + cur.numExpressions }
         override val numExpressions: Int = cumulativeNumExpressions.last()
 
-        fun <I : Segment<I>, O : Segment<O>> linkedSubrules(
-            ruleName: String,
-            firstExpressionNumber: Int, declarations: Declarations,
-            inType: SegmentType<I>, outType: SegmentType<O>,
-        ): List<ChangeRule<I, O>> {
+        fun linkedSubrules(
+            firstExpressionNumber: Int,
+            declarations: Declarations,
+            inherited: InheritedRuleProperties,
+        ): List<ChangeRule> {
             return subrules.mapIndexed { index, subrule ->
                 val expressionNumber = cumulativeNumExpressions[index]
                 val subFirstExpressionNumber = firstExpressionNumber + expressionNumber
                 subrule.link(
                     subFirstExpressionNumber,
                     declarations,
-                    inType, outType,
+                    inherited,
                 )
             }
         }
@@ -948,47 +951,45 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     ) : UnlinkedRule {
         override val numExpressions: Int = expressions.size
 
-        override fun <I : Segment<I>, O : Segment<O>> link(
+        override fun link(
             firstExpressionNumber: Int,
             declarations: Declarations,
-            inType: SegmentType<I>,
-            outType: SegmentType<O>,
-            defaultRule: (Word<I>) -> Word<O>
-        ): ChangeRule<I, O> =
+            inherited: InheritedRuleProperties,
+        ): ChangeRule =
             SimpleChangeRule(
-                inType,
-                outType,
-                expressions.map { it.link(declarations, inType, outType) },
-                defaultRule,
+                expressions.map { it.link(declarations) },
+                inherited.filter,
             )
     }
 
     private class UnlinkedDeromanizer(
         text: String,
-        val expressions: List<List<UnlinkedRuleExpression>>,
+        subrules: List<UnlinkedRule>,
         val literal: Boolean,
         val name: String = "Deromanizer",
-    ) : BaseUnlinkedRule(text) {
-        fun link(declarations: Declarations): Deromanizer =
-            if (literal) {
-                Deromanizer(
-                    expressions.first().linkAll(name, 1) {
-                        it.outPhonetic(declarations)
-                    },
-                    expressions.drop(1).linkAll(name, 2) {
-                        it.phonetic(declarations, false)
-                    },
-                    declarations,
+    ) : BaseUnlinkedRule(text, subrules) {
+
+        override fun link(
+            firstExpressionNumber: Int,
+            declarations: Declarations,
+            inherited: InheritedRuleProperties,
+        ): ChangeRule {
+            val subrules = linkedSubrules(
+                firstExpressionNumber,
+                declarations,
+                inherited
+            )
+            return if (literal) {
+                StandardNamedRule(
+                    name,
+                    SequentialBlock(
+
+                    )
                 )
             } else {
-                Deromanizer(
-                    emptyList(),
-                    expressions.linkAll(name, 1) {
-                        it.phonetic(declarations, false)
-                    },
-                    declarations,
-                )
+                StandardNamedRule(name, SequentialBlock(subrules))
             }
+        }
     }
 
     private class UnlinkedRomanizer(
