@@ -28,7 +28,7 @@ class TestCore : StringSpec({
 
         val parser = PhoneticParser(segments, beforeDiacritics, afterDiacritics)
 
-        parser.parse("ⁿdapʰi") shouldBe PhoneticWord(listOf("ⁿd", "a", "pʰ", "i"))
+        parser.parse("ⁿdapʰi") shouldBe StandardWord(listOf("ⁿd", "a", "pʰ", "i"))
         shouldThrow<DanglingDiacritic> { parser.parse("ʰana") }
         shouldThrow<DanglingDiacritic> { parser.parse("anaˈ") }
     }

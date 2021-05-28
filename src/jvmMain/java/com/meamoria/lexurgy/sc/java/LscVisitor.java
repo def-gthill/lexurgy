@@ -119,6 +119,12 @@ public interface LscVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitSubrules(LscParser.SubrulesContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link LscParser#subruleType}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitSubruleType(LscParser.SubruleTypeContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link LscParser#subrule}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

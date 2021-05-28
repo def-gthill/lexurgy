@@ -63,7 +63,11 @@ actual typealias FilterContext = LscParser.FilterContext
 
 actual typealias SubrulesContext = LscParser.SubrulesContext
 
+actual fun SubrulesContext.allSubruleTypes(): List<SubruleTypeContext> = subruleType()
+
 actual fun SubrulesContext.allSubrules(): List<SubruleContext> = subrule()
+
+actual typealias SubruleTypeContext = LscParser.SubruleTypeContext
 
 actual typealias SubruleContext = LscParser.SubruleContext
 

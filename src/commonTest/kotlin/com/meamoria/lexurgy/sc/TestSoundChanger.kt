@@ -567,34 +567,6 @@ class TestSoundChanger : StringSpec({
         ch("vietuu") shouldBe "vetuu"
     }
 
-    "We should be able to sequence rule expressions rather than having them all happen at once" {
-        val chain = lsc(
-            """
-                Symbol ts
-                chain:
-                t => ts
-                ts => s
-                s => h
-                h => *
-            """.trimIndent()
-        )
-
-        val nonchain = lsc(
-            """
-                Symbol ts
-                not-a-chain:
-                t => ts
-                Then: ts => s
-                Then:
-                s => h
-                h => *
-            """.trimIndent()
-        )
-
-        chain("tatsasaha") shouldBe "tsasahaa"
-        nonchain("tatsasaha") shouldBe "hahahaa"
-    }
-
     "A rule with a filter should only operate on sounds that pass the filter" {
         val ch = lsc(
             """
@@ -955,6 +927,29 @@ class TestSoundChanger : StringSpec({
             "a" to listOf("shashi", "vaneshak"),
             "b" to listOf("xaxi", "vanexak"),
             null to listOf("siäsii", "vänesiäk"),
+        )
+    }
+
+    "Setting romanize = false should make all romanizers dump phonetic forms" {
+        val ch = lsc(
+            """
+                Deromanizer:
+                ch => tʃ
+                change:
+                tʃ => ʃ
+                Romanizer-a:
+                ʃ => sh
+                Romanizer-b:
+                ʃ => x
+                Romanizer:
+                ʃ => si
+            """.trimIndent()
+        )
+
+        ch.changeWithIntermediates(listOf("chachi", "vanechak"), romanize = false) shouldBe mapOf(
+            "a" to listOf("ʃaʃi", "vaneʃak"),
+            "b" to listOf("ʃaʃi", "vaneʃak"),
+            null to listOf("ʃaʃi", "vaneʃak"),
         )
     }
 

@@ -164,7 +164,14 @@ expect class FilterContext : ParserRuleContext
 
 expect class SubrulesContext : ParserRuleContext
 
+expect fun SubrulesContext.allSubruleTypes(): List<SubruleTypeContext>
+
 expect fun SubrulesContext.allSubrules(): List<SubruleContext>
+
+expect class SubruleTypeContext : ParserRuleContext {
+    fun ALL_MATCHING(): TerminalNode?
+    fun FIRST_MATCHING(): TerminalNode?
+}
 
 expect class SubruleContext : ParserRuleContext
 

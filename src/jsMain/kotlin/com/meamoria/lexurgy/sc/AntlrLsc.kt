@@ -105,10 +105,16 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
 
     class SubrulesContext : ParserRuleContext {
         fun subrule(): Array<SubruleContext>
+        fun subruleType(): Array<SubruleTypeContext>
     }
 
     class SubruleContext : ParserRuleContext {
         fun expression(): Array<ExpressionContext>
+    }
+
+    class SubruleTypeContext : ParserRuleContext {
+        fun ALL_MATCHING(): TerminalNode?
+        fun FIRST_MATCHING(): TerminalNode?
     }
 
     class RuleNameContext : ParserRuleContext
@@ -421,7 +427,11 @@ actual typealias FilterContext = LscParser.FilterContext
 
 actual typealias SubrulesContext = LscParser.SubrulesContext
 
+actual fun SubrulesContext.allSubruleTypes(): List<SubruleTypeContext> = subruleType().toList()
+
 actual fun SubrulesContext.allSubrules(): List<SubruleContext> = subrule().toList()
+
+actual typealias SubruleTypeContext = LscParser.SubruleTypeContext
 
 actual typealias SubruleContext = LscParser.SubruleContext
 

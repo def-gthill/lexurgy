@@ -120,6 +120,12 @@ LscVisitor.prototype.visitSubrules = function(ctx) {
 };
 
 
+// Visit a parse tree produced by LscParser#subruleType.
+LscVisitor.prototype.visitSubruleType = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
 // Visit a parse tree produced by LscParser#subrule.
 LscVisitor.prototype.visitSubrule = function(ctx) {
   return this.visitChildren(ctx);
