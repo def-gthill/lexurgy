@@ -967,10 +967,11 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     }
 
     data class InheritedRuleProperties(
+        val name: String?,
         val filter: ((Segment) -> Boolean)?
     ) {
         companion object {
-            val none: InheritedRuleProperties = InheritedRuleProperties(null)
+            val none: InheritedRuleProperties = InheritedRuleProperties(null, null)
         }
     }
 
@@ -1010,7 +1011,14 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             inherited: InheritedRuleProperties,
         ): ChangeRule =
             SimpleChangeRule(
-                expressions.map { it.link(declarations, inherited.filter != null) },
+                expressions.mapIndexed { index, expression ->
+                    expression.link(
+                        inherited.name!!,
+                        firstExpressionNumber + index,
+                        declarations,
+                        inherited.filter != null,
+                    )
+                },
                 inherited.filter,
             )
     }
@@ -1028,12 +1036,12 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             inherited: InheritedRuleProperties,
         ): ChangeRule {
             val subrules = linkedSubrules(
-                firstExpressionNumber
+                firstExpressionNumber,
             ) { index, subrule, subFirstExpressionNumber ->
                 if (literal && index == 0) {
-                    subrule.link(subFirstExpressionNumber, Declarations.empty, inherited)
+                    subrule.link(subFirstExpressionNumber, Declarations.empty, inherited.copy(name = name))
                 } else {
-                    subrule.link(subFirstExpressionNumber, declarations, inherited)
+                    subrule.link(subFirstExpressionNumber, declarations, inherited.copy(name = name))
                 }
             }
             return if (literal) {
@@ -1059,12 +1067,12 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             inherited: InheritedRuleProperties
         ): ChangeRule {
             val subrules = linkedSubrules(
-                firstExpressionNumber
+                firstExpressionNumber,
             ) { index, subrule, subFirstExpressionNumber ->
                 if (literal && index == subrules.size - 1) {
-                    subrule.link(subFirstExpressionNumber, Declarations.empty, inherited)
+                    subrule.link(subFirstExpressionNumber, Declarations.empty, inherited.copy(name = name))
                 } else {
-                    subrule.link(subFirstExpressionNumber, declarations, inherited)
+                    subrule.link(subFirstExpressionNumber, declarations, inherited.copy(name = name))
                 }
             }
             return if (literal) {
@@ -1083,8 +1091,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         val mainBlock: UnlinkedRule,
         val ruleFilter: RuleElement?,
         val propagate: Boolean,
-    ) : BaseParseNode(text), UnlinkedRule {
-        override val numExpressions: Int = mainBlock.numExpressions
+    ) : BaseUnlinkedRule(text, listOf(mainBlock)) {
 
         override fun link(
             firstExpressionNumber: Int,
@@ -1100,7 +1107,15 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             }
             return StandardNamedRule(
                 name,
-                mainBlock.link(firstExpressionNumber, declarations, inherited.copy(filter = filter)),
+                linkedSubrules(
+                    firstExpressionNumber,
+                ) { _, subrule, subFirstExpressionNumber ->
+                    subrule.link(
+                        subFirstExpressionNumber,
+                        declarations,
+                        inherited.copy(name = name, filter = filter)
+                    )
+                }.single(),
                 filter,
                 propagate,
             )
@@ -1118,7 +1133,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         ): ChangeRule =
             SequentialBlock(
                 linkedSubrules(
-                    firstExpressionNumber
+                    firstExpressionNumber,
                 ) { _, subrule, subFirstExpressionNumber ->
                     subrule.link(subFirstExpressionNumber, declarations, inherited)
                 }
@@ -1136,7 +1151,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         ): ChangeRule =
             FirstMatchingBlock(
                 linkedSubrules(
-                    firstExpressionNumber
+                    firstExpressionNumber,
                 ) { _, subrule, subFirstExpressionNumber ->
                     subrule.link(subFirstExpressionNumber, declarations, inherited)
                 }
@@ -1151,16 +1166,22 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         val exclusion: List<UnlinkedEnvironment>,
     ) : BaseParseNode(text) {
         fun link(
+            ruleName: String,
+            expressionNumber: Int,
             declarations: Declarations,
             filtered: Boolean,
-        ): RuleExpression = RuleExpression(
-            declarations,
-            match.matcher(RuleContext.aloneInMain(), declarations),
-            castToResultElement(result).emitter(declarations),
-            condition.map { it.link(declarations) },
-            exclusion.map { it.link(declarations) },
-            filtered,
-        )
+        ): RuleExpression = try {
+            RuleExpression(
+                declarations,
+                match.matcher(RuleContext.aloneInMain(), declarations),
+                castToResultElement(result).emitter(declarations),
+                condition.map { it.link(declarations) },
+                exclusion.map { it.link(declarations) },
+                filtered,
+            )
+        } catch (e: LscUserError) {
+            throw LscInvalidRuleExpression(e, ruleName, text, expressionNumber)
+        }
     }
 
     private class UnlinkedEnvironment(
