@@ -248,13 +248,14 @@ class SimpleChangeRule(
     val expressions: List<RuleExpression>,
     val filter: ((Segment) -> Boolean)? = null
 ) : ChangeRule {
-    override operator fun invoke(phrase: Phrase): Phrase {
+    override operator fun invoke(phrase: Phrase): Phrase? {
         val (filteredWords, filterMaps) =
             if (filter == null) phrase to null else phrase.map(::filterWord).unzip()
         val filteredPhrase = Phrase(filteredWords.toList())
         val allTransformations = expressions.mapIndexed { i, expr -> expr.claim(i, filteredPhrase) }.flatten()
         val validTransformations = filterOverlappingClaims(allTransformations)
         val realTransformations = unfilterTransformations(phrase, filterMaps, validTransformations)
+        if (realTransformations.isEmpty()) return null
 
         val bits = mutableListOf<Phrase>()
         var cursor = PhraseIndex(0, 0)

@@ -309,6 +309,8 @@ class Phrase(val words: List<Word>) : Iterable<Word> {
         return words.hashCode()
     }
 
+    override fun toString(): String = string
+
     companion object {
         fun splitWord(word: Word): Phrase = Phrase(word.split())
 
