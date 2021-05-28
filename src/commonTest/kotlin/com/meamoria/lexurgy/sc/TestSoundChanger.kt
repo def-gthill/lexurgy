@@ -930,7 +930,7 @@ class TestSoundChanger : StringSpec({
         )
     }
 
-    "Setting romanize = false should turn off the final romanizer" {
+    "Setting romanize = false should make all romanizers dump phonetic forms" {
         val ch = lsc(
             """
                 Deromanizer:
@@ -947,8 +947,8 @@ class TestSoundChanger : StringSpec({
         )
 
         ch.changeWithIntermediates(listOf("chachi", "vanechak"), romanize = false) shouldBe mapOf(
-            "a" to listOf("shashi", "vaneshak"),
-            "b" to listOf("xaxi", "vanexak"),
+            "a" to listOf("ʃaʃi", "vaneʃak"),
+            "b" to listOf("ʃaʃi", "vaneʃak"),
             null to listOf("ʃaʃi", "vaneʃak"),
         )
     }

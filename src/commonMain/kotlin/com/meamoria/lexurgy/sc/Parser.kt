@@ -1047,9 +1047,11 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             return if (literal) {
                 val subrulesWithRedeclaration =
                     listOf(subrules.first()) + Redeclaration(declarations) + subrules.drop(1)
-                return StandardNamedRule(name, SequentialBlock(subrulesWithRedeclaration))
+                return StandardNamedRule(
+                    name, SequentialBlock(subrulesWithRedeclaration), ruleType = RuleType.DEROMANIZER
+                )
             } else {
-                StandardNamedRule(name, SequentialBlock(subrules))
+                StandardNamedRule(name, SequentialBlock(subrules), ruleType = RuleType.DEROMANIZER)
             }
         }
     }
@@ -1078,9 +1080,13 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             return if (literal) {
                 val subrulesWithRedeclaration =
                     subrules.dropLast(1) + Redeclaration(Declarations.empty) + subrules.last()
-                return StandardNamedRule(name, SequentialBlock(subrulesWithRedeclaration))
+                return StandardNamedRule(
+                    name, SequentialBlock(subrulesWithRedeclaration), ruleType = RuleType.ROMANIZER
+                )
             } else {
-                StandardNamedRule(name, SequentialBlock(subrules))
+                StandardNamedRule(
+                    name, SequentialBlock(subrules), ruleType = RuleType.ROMANIZER
+                )
             }
         }
     }
@@ -1116,8 +1122,8 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                         inherited.copy(name = name, filter = filter)
                     )
                 }.single(),
-                filter,
-                propagate,
+                filter = filter,
+                propagate = propagate,
             )
         }
     }

@@ -70,17 +70,26 @@ class SoundChanger(
                 stopped = true
                 break
             }
-            runIntermediateRomanizers(rule.name)
+            if (rule.ruleType == RuleType.ROMANIZER) {
+                runIntermediateRomanizers(null)
+            } else {
+                runIntermediateRomanizers(rule.name)
+            }
             if (!started && (startAt == null || rule.name == startAt)) {
                 started = true
             }
             if (started) {
-                curWords = applyRule(
-                    rule, words, curWords, debugIndices, debug
-                )
+                if (romanize || rule.ruleType != RuleType.ROMANIZER) {
+                    curWords = applyRule(
+                        rule, words, curWords, debugIndices, debug
+                    )
+                }
             }
         }
-        runIntermediateRomanizers(null)
+
+        if (rules.lastOrNull()?.ruleType != RuleType.ROMANIZER) {
+            runIntermediateRomanizers(null)
+        }
 
         if (stopBefore != null && !stopped) {
             throw LscRuleNotFound(stopBefore, "stop before")
@@ -184,14 +193,23 @@ interface ChangeRule {
 interface NamedRule : ChangeRule {
     val name: String
 
+    val ruleType: RuleType
+
     override fun invoke(phrase: Phrase): Phrase
+}
+
+enum class RuleType {
+    NORMAL,
+    DEROMANIZER,
+    ROMANIZER,
 }
 
 class StandardNamedRule(
     override val name: String,
     val mainBlock: ChangeRule,
+    override val ruleType: RuleType = RuleType.NORMAL,
     val filter: ((Segment) -> Boolean)? = null,
-    val propagate: Boolean = false
+    val propagate: Boolean = false,
 ) : NamedRule {
     private val maxPropagateSteps = 100
 
