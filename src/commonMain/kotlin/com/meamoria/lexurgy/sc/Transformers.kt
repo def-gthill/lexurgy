@@ -2,8 +2,6 @@ package com.meamoria.lexurgy.sc
 
 import com.meamoria.lexurgy.Phrase
 import com.meamoria.lexurgy.PhraseIndex
-import com.meamoria.lexurgy.Segment
-import com.meamoria.lexurgy.Word
 
 interface Transformer {
     fun transform(
@@ -32,14 +30,14 @@ class SequenceTransformer(
     override fun transform(
         order: Int,
         declarations: Declarations,
-        words: Phrase,
+        phrase: Phrase,
         start: PhraseIndex,
         bindings: Bindings,
     ): UnboundTransformation? {
         var elementStart = start
         val resultBits = mutableListOf<UnboundTransformation>()
         for (element in elements) {
-            val transformation = element.transform(order, declarations, words, elementStart, bindings) ?: return null
+            val transformation = element.transform(order, declarations, phrase, elementStart, bindings) ?: return null
             elementStart = transformation.end
             resultBits += transformation
         }

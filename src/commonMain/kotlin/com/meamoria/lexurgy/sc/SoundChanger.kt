@@ -5,7 +5,7 @@ import com.meamoria.lexurgy.*
 class SoundChanger(
     val declarations: Declarations,
     val rules: List<NamedRule>,
-    val intermediateRomanizers: Map<String?, List<IntermediateRomanizer>> = emptyMap()
+    val intermediateRomanizers: Map<String?, List<NamedRule>> = emptyMap()
 ) {
     init {
         val duplicated = rules.groupBy { it.name }.filterValues { it.size > 1 }.keys.firstOrNull()
@@ -60,7 +60,7 @@ class SoundChanger(
         fun runIntermediateRomanizers(ruleName: String?) {
             intermediateRomanizers[ruleName]?.forEach { rom ->
                 result[rom.name] = applyRule(
-                    maybeReplace(rom.romanizer), words, curWords, debugIndices, debug
+                    maybeReplace(rom), words, curWords, debugIndices, debug
                 ).map { it.string }
             }
         }
@@ -142,8 +142,6 @@ class SoundChanger(
     override fun toString(): String = rules.joinToString(
         separator = "; ", prefix = "SoundChanger(", postfix = ")"
     )
-
-    data class IntermediateRomanizer(val name: String, val romanizer: NamedRule)
 }
 
 internal fun makeStageComparisons(wordListSequence: List<List<String>>): List<String> {
@@ -558,15 +556,6 @@ private fun interiorWordBoundaryMessage(
 
 class LscRuleNotFound(val ruleName: String, val attemptedAction: String) :
     LscUserError("Can't $attemptedAction rule $ruleName; there is no rule with that name")
-
-class LscMatrixInPlain(val matrix: Matrix) :
-    LscUserError("Feature matrix $matrix isn't allowed in a romanized context")
-
-class LscClassInPlain(val className: String) :
-    LscUserError("Sound class $className isn't allowed in a romanized context")
-
-class LscCaptureInPlain(val number: Int) :
-    LscUserError("Capture $number isn't allowed in a romanized context")
 
 class LscIntersectionInOutput(val elements: List<Emitter>) :
     LscUserError("Multiple criteria ${elements.joinToString()} aren't allowed in the output of a rule")

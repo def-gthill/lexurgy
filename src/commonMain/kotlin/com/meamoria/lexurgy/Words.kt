@@ -75,6 +75,14 @@ class StandardWord(private val stringSegments: List<String>) : Word {
     override fun toString(): String =
         stringSegments.joinToString(separator = "/")
 
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is StandardWord) return false
+        return stringSegments == other.stringSegments
+    }
+
+    override fun hashCode(): Int = stringSegments.hashCode()
+
     override fun compareTo(other: Word): Int {
         for ((thisSegment, otherSegment) in stringSegments.zip(other.segments.map { it.string })) {
             if (thisSegment < otherSegment) return -1

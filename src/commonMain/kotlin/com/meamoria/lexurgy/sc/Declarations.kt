@@ -296,6 +296,10 @@ class Declarations(
 
     fun MatrixValue.matches(matrix: Matrix, bindings: Bindings): Boolean =
         matches(this@Declarations, matrix, bindings)
+
+    companion object {
+        val empty: Declarations = Declarations(emptyList(), emptyList(), emptyList(), emptyList())
+    }
 }
 
 expect class Cache<K, V>() : MutableMap<K, V>

@@ -112,7 +112,10 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
         fun expression(): Array<ExpressionContext>
     }
 
-    class SubruleTypeContext : ParserRuleContext
+    class SubruleTypeContext : ParserRuleContext {
+        fun ALL_MATCHING(): TerminalNode?
+        fun FIRST_MATCHING(): TerminalNode?
+    }
 
     class RuleNameContext : ParserRuleContext
 

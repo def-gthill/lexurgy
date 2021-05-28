@@ -240,7 +240,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         return walkChangeRule(
             ctx.getText(),
             ruleName,
-            unpackParseNodeList(visit(ctx.subrules())),
+            visit(ctx.subrules()),
             optionalVisit(filter),
             propagate,
         )
@@ -268,8 +268,28 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     override fun visitFilter(ctx: FilterContext): ParseNode =
         visit(ctx.getChild(0))
 
-    override fun visitSubrules(ctx: SubrulesContext): ParseNode =
-        ParseNodeList(listVisit(ctx.allSubrules()))
+    override fun visitSubrules(ctx: SubrulesContext): ParseNode {
+        val blockType = checkUniformBlockType(ctx.allSubruleTypes())
+        return walkBlock(ctx.getText(), blockType, listVisit(ctx.allSubrules()))
+    }
+
+    private fun checkUniformBlockType(blockCtxs: List<SubruleTypeContext>): BlockType {
+        val blockType = getBlockType(blockCtxs.first())
+        for (laterBlockCtx in blockCtxs.drop(1)) {
+            val laterBlockType = getBlockType(laterBlockCtx)
+            if (laterBlockType != blockType) {
+                throw LscMixedBlock(blockType, laterBlockType)
+            }
+        }
+        return blockType
+    }
+
+    private fun getBlockType(ctx: SubruleTypeContext) =
+        when {
+            ctx.ALL_MATCHING() != null -> BlockType.SEQUENTIAL
+            ctx.FIRST_MATCHING() != null -> BlockType.FIRST_MATCHING
+            else -> throw AssertionError("Block has no block type")
+        }
 
     override fun visitSubrule(ctx: SubruleContext): ParseNode =
         walkSubrule(listVisit(ctx.allExpressions()))
@@ -575,7 +595,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     ): ParseNode =
         UnlinkedDeromanizer(
             text,
-            subrules.convert(),
+            subrules.map { it as UnlinkedRule },
             literal
         )
 
@@ -586,7 +606,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     ): ParseNode =
         UnlinkedRomanizer(
             text,
-            subrules.convert(),
+            subrules.map { it as UnlinkedRule },
             literal
         )
 
@@ -596,23 +616,23 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         subrules: List<ParseNode>,
         literal: Boolean
     ): ParseNode =
-        UnlinkedIntermediateRomanizer(
+        UnlinkedRomanizer(
             text,
-            ruleName,
-            subrules.convert(),
-            literal
+            subrules.map { it as UnlinkedRule },
+            literal,
+            name = ruleName,
         )
 
     private fun walkChangeRule(
         text: String,
         ruleName: String,
-        subrules: List<ParseNode>,
+        mainBlock: ParseNode,
         ruleFilter: ParseNode?,
         propagate: Boolean
-    ): ParseNode = UnlinkedPhoneticRule(
+    ): ParseNode = UnlinkedStandardRule(
         text,
         ruleName,
-        subrules.convert(),
+        mainBlock as UnlinkedRule,
         when (ruleFilter) {
             is MatrixNode -> MatrixElement(ruleFilter.text, ruleFilter.matrix)
             else -> ruleFilter as RuleElement?
@@ -620,9 +640,20 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         propagate
     )
 
-    private fun List<ParseNode>.convert(): List<List<UnlinkedRuleExpression>> =
-        map { subrule ->
-            (subrule as ParseNodeList).elements.filterIsInstance<UnlinkedRuleExpression>()
+    private fun walkBlock(
+        text: String,
+        blockType: BlockType,
+        subrules: List<ParseNode>
+    ): ParseNode =
+        when (blockType) {
+            BlockType.SEQUENTIAL -> UnlinkedSequentialBlock(
+                text,
+                subrules.map { it as UnlinkedRule }
+            )
+            BlockType.FIRST_MATCHING -> UnlinkedSequentialBlock(
+                text,
+                subrules.map { it as UnlinkedRule }
+            )
         }
 
     private fun walkSubrule(expressions: List<ParseNode>): ParseNode = ParseNodeList(expressions)
@@ -865,23 +896,28 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             },
             resolveClasses(classDeclarations)
         )
-        private val linkedRules = changeRules.map { (it as UnlinkedPhoneticRule).link(declarations) }
-        private val linkedDeromanizer =
-            (deromanizer as UnlinkedDeromanizer?)?.link(declarations) ?: Deromanizer.empty(declarations)
-        private val linkedRomanizer =
-            (romanizer as UnlinkedRomanizer?)?.link(declarations) ?: Romanizer.empty()
+        val allRules = listOfNotNull(deromanizer as UnlinkedRule?) +
+                changeRules.map { it as UnlinkedRule } +
+                listOfNotNull(romanizer as UnlinkedRule?)
+        private val linkedRules = allRules.map {
+            it.link(
+                1, declarations, InheritedRuleProperties.none
+            ) as NamedRule
+        }
         private val linkedIntermediateRomanizers = intermediateRomanizers.groupBy {
-            (it.rule as UnlinkedPhoneticRule?)?.name
+            (it.rule as UnlinkedStandardRule?)?.name
         }.mapValues { (_, value) ->
-            value.map { (it.romanizer as UnlinkedIntermediateRomanizer).link(declarations) }
+            value.map {
+                (it.romanizer as UnlinkedRomanizer).link(
+                    1, declarations, InheritedRuleProperties.none
+                ) as NamedRule
+            }
         }
 
         override val soundChanger = SoundChanger(
             declarations,
             linkedRules,
-            linkedDeromanizer,
-            linkedRomanizer,
-            linkedIntermediateRomanizers
+            linkedIntermediateRomanizers,
         )
     }
 
@@ -918,7 +954,11 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     data class InheritedRuleProperties(
         val filter: ((Segment) -> Boolean)?
-    )
+    ) {
+        companion object {
+            val none: InheritedRuleProperties = InheritedRuleProperties(null)
+        }
+    }
 
     private abstract class BaseUnlinkedRule(
         text: String, val subrules: List<UnlinkedRule>
@@ -930,16 +970,15 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
         fun linkedSubrules(
             firstExpressionNumber: Int,
-            declarations: Declarations,
-            inherited: InheritedRuleProperties,
+            linker: (Int, UnlinkedRule, Int) -> ChangeRule,
         ): List<ChangeRule> {
             return subrules.mapIndexed { index, subrule ->
                 val expressionNumber = cumulativeNumExpressions[index]
                 val subFirstExpressionNumber = firstExpressionNumber + expressionNumber
-                subrule.link(
+                linker(
+                    index,
+                    subrule,
                     subFirstExpressionNumber,
-                    declarations,
-                    inherited,
                 )
             }
         }
@@ -957,7 +996,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             inherited: InheritedRuleProperties,
         ): ChangeRule =
             SimpleChangeRule(
-                expressions.map { it.link(declarations) },
+                expressions.map { it.link(declarations, inherited.filter != null) },
                 inherited.filter,
             )
     }
@@ -975,17 +1014,18 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             inherited: InheritedRuleProperties,
         ): ChangeRule {
             val subrules = linkedSubrules(
-                firstExpressionNumber,
-                declarations,
-                inherited
-            )
+                firstExpressionNumber
+            ) { index, subrule, subFirstExpressionNumber ->
+                if (literal && index == 0) {
+                    subrule.link(subFirstExpressionNumber, Declarations.empty, inherited)
+                } else {
+                    subrule.link(subFirstExpressionNumber, declarations, inherited)
+                }
+            }
             return if (literal) {
-                StandardNamedRule(
-                    name,
-                    SequentialBlock(
-
-                    )
-                )
+                val subrulesWithRedeclaration =
+                    listOf(subrules.first()) + Redeclaration(declarations) + subrules.drop(1)
+                return StandardNamedRule(name, SequentialBlock(subrulesWithRedeclaration))
             } else {
                 StandardNamedRule(name, SequentialBlock(subrules))
             }
@@ -994,76 +1034,97 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     private class UnlinkedRomanizer(
         text: String,
-        val expressions: List<List<UnlinkedRuleExpression>>,
+        subrules: List<UnlinkedRule>,
         val literal: Boolean,
         val name: String = "Romanizer",
-    ) : BaseUnlinkedRule(text) {
-        fun link(declarations: Declarations): Romanizer =
-            if (literal) {
-                Romanizer(
-                    expressions.dropLast(1).linkAll(name, 1) {
-                        it.phonetic(declarations, false)
-                    },
-                    expressions.last().linkAll(name, expressions.size) {
-                        it.inPhonetic(declarations)
-                    },
-                )
-            } else {
-                Romanizer(
-                    expressions.linkAll(name, 1) {
-                        it.phonetic(declarations, false)
-                    },
-                    emptyList(),
-                )
+    ) : BaseUnlinkedRule(text, subrules) {
+
+        override fun link(
+            firstExpressionNumber: Int,
+            declarations: Declarations,
+            inherited: InheritedRuleProperties
+        ): ChangeRule {
+            val subrules = linkedSubrules(
+                firstExpressionNumber
+            ) { index, subrule, subFirstExpressionNumber ->
+                if (literal && index == subrules.size - 1) {
+                    subrule.link(subFirstExpressionNumber, Declarations.empty, inherited)
+                } else {
+                    subrule.link(subFirstExpressionNumber, declarations, inherited)
+                }
             }
+            return if (literal) {
+                val subrulesWithRedeclaration =
+                    subrules.dropLast(1) + Redeclaration(Declarations.empty) + subrules.last()
+                return StandardNamedRule(name, SequentialBlock(subrulesWithRedeclaration))
+            } else {
+                StandardNamedRule(name, SequentialBlock(subrules))
+            }
+        }
     }
 
-    private class UnlinkedIntermediateRomanizer(
+    private class UnlinkedStandardRule(
         text: String,
         val name: String,
-        val expressions: List<List<UnlinkedRuleExpression>>,
-        val literal: Boolean,
-    ) : BaseParseNode(text) {
-        private val internalRomanizer = UnlinkedRomanizer(text, expressions, literal, name)
-
-        fun link(declarations: Declarations): SoundChanger.IntermediateRomanizer =
-            SoundChanger.IntermediateRomanizer(
-                name, internalRomanizer.link(declarations)
-            )
-    }
-
-    private class UnlinkedPhoneticRule(
-        text: String,
-        val name: String,
-        val expressions: List<List<UnlinkedRuleExpression>>,
+        val mainBlock: UnlinkedRule,
         val ruleFilter: RuleElement?,
         val propagate: Boolean,
-    ) : BaseUnlinkedRule(text) {
-        fun link(declarations: Declarations): PhoneticChangeRule =
-            PhoneticChangeRule(
+    ) : BaseParseNode(text), UnlinkedRule {
+        override val numExpressions: Int = mainBlock.numExpressions
+
+        override fun link(
+            firstExpressionNumber: Int,
+            declarations: Declarations,
+            inherited: InheritedRuleProperties
+        ): ChangeRule {
+            val filter = ruleFilter?.let { filter ->
+                { segment: Segment ->
+                    filter.matcher(RuleContext.aloneInMain(), declarations).claim(
+                        declarations, StandardWord.single(segment), 0, Bindings()
+                    ) == 1
+                }
+            }
+            return StandardNamedRule(
                 name,
-                expressions.linkAll(name, 1) {
-                    it.phonetic(declarations, ruleFilter != null)
-                },
-                ruleFilter?.let { filter ->
-                    { segment: PhoneticSegment ->
-                        filter.phonetic(RuleContext.aloneInMain(), declarations).claim(
-                            declarations, Phonetic.single(segment), 0, Bindings()
-                        ) == 1
-                    }
-                },
-                propagate
+                mainBlock.link(firstExpressionNumber, declarations, inherited.copy(filter = filter)),
+                filter,
+                propagate,
+            )
+        }
+    }
+
+    private class UnlinkedSequentialBlock(
+        text: String,
+        subrules: List<UnlinkedRule>,
+    ) : BaseUnlinkedRule(text, subrules) {
+        override fun link(
+            firstExpressionNumber: Int,
+            declarations: Declarations,
+            inherited: InheritedRuleProperties,
+        ): ChangeRule =
+            SequentialBlock(
+                linkedSubrules(
+                    firstExpressionNumber
+                ) { _, subrule, subFirstExpressionNumber ->
+                    subrule.link(subFirstExpressionNumber, declarations, inherited)
+                }
             )
     }
 
-    private class UnlinkedAllMatchingBlock(
+    private class UnlinkedFirstMatchingBlock(
         text: String,
-        val subrules: List<UnlinkedRule>,
-    ) : BaseUnlinkedRule(text) {
-        override fun link(declarations: Declarations, firstExpressionNumber: Int): AllMatchingBlock =
-            AllMatchingBlock(
-                subrules.mapIndexed { index, subrule ->
-                    subrule.link(declarations, firstExpressionNumber + index)
+        subrules: List<UnlinkedRule>,
+    ) : BaseUnlinkedRule(text, subrules) {
+        override fun link(
+            firstExpressionNumber: Int,
+            declarations: Declarations,
+            inherited: InheritedRuleProperties,
+        ): ChangeRule =
+            FirstMatchingBlock(
+                linkedSubrules(
+                    firstExpressionNumber
+                ) { _, subrule, subFirstExpressionNumber ->
+                    subrule.link(subFirstExpressionNumber, declarations, inherited)
                 }
             )
     }
@@ -1413,6 +1474,11 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     private fun optionalVisit(node: ParseTree?): ParseNode? = node?.let { visit(it) }
 }
 
+enum class BlockType(val text: String) {
+    SEQUENTIAL("Then"),
+    FIRST_MATCHING("Else"),
+}
+
 private class LscErrorListener : CommonAntlrErrorListener() {
     override fun handleSyntaxError(
         offendingSymbol: Any?,
@@ -1453,6 +1519,13 @@ class LscIllegalStructureInOutput(
     val invalidNode: String,
 ) : LscUserError(
     "${invalidNodeType.capitalize()} like \"$invalidNode\" can't be used in the output of a rule"
+)
+
+class LscMixedBlock(
+    val firstBlockType: BlockType,
+    val conflictingBlockType: BlockType,
+) : LscUserError(
+    "Can't mix ${firstBlockType.text} and ${conflictingBlockType.text} at the same level"
 )
 
 class LscNotParsable(val line: Int, val column: Int, val offendingSymbol: String, val customMessage: String) :
