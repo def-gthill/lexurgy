@@ -113,23 +113,29 @@ public interface LscVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitFilter(LscParser.FilterContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link LscParser#subrules}.
+	 * Visit a parse tree produced by {@link LscParser#block}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitSubrules(LscParser.SubrulesContext ctx);
+	T visitBlock(LscParser.BlockContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link LscParser#subruleType}.
+	 * Visit a parse tree produced by {@link LscParser#blockElement}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitSubruleType(LscParser.SubruleTypeContext ctx);
+	T visitBlockElement(LscParser.BlockElementContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link LscParser#subrule}.
+	 * Visit a parse tree produced by {@link LscParser#blockType}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitSubrule(LscParser.SubruleContext ctx);
+	T visitBlockType(LscParser.BlockTypeContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link LscParser#expressionList}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitExpressionList(LscParser.ExpressionListContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link LscParser#ruleName}.
 	 * @param ctx the parse tree

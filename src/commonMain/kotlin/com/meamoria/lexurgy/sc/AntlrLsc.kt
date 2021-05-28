@@ -35,8 +35,9 @@ expect open class LscBaseVisitor<T>() {
     open fun visitInterRomanizer(ctx: InterRomanizerContext): T
     open fun visitChangeRule(ctx: ChangeRuleContext): T
     open fun visitFilter(ctx: FilterContext): T
-    open fun visitSubrules(ctx: SubrulesContext): T
-    open fun visitSubrule(ctx: SubruleContext): T
+    open fun visitBlock(ctx: BlockContext): T
+    open fun visitBlockElement(ctx: BlockElementContext): T
+    open fun visitExpressionList(ctx: ExpressionListContext): T
     open fun visitRuleName(ctx: RuleNameContext): T
     open fun visitExpression(ctx: ExpressionContext): T
     open fun visitCondition(ctx: ConditionContext): T
@@ -131,24 +132,24 @@ expect class SymbolNameContext : ParserRuleContext
 
 expect class DeromanizerContext : ParserRuleContext {
     fun LITERAL(): TerminalNode?
-    fun subrules(): SubrulesContext
+    fun block(): BlockContext
 }
 
 expect class RomanizerContext : ParserRuleContext {
     fun LITERAL(): TerminalNode?
-    fun subrules(): SubrulesContext
+    fun block(): BlockContext
 }
 
 expect class InterRomanizerContext : ParserRuleContext {
     fun LITERAL(): TerminalNode?
     fun ruleName(): RuleNameContext
-    fun subrules(): SubrulesContext
+    fun block(): BlockContext
 }
 
 expect class ChangeRuleContext : ParserRuleContext {
     fun ruleName(): RuleNameContext
     fun RULE_START(): TerminalNode?
-    fun subrules(): SubrulesContext
+    fun block(): BlockContext
 }
 
 expect fun ChangeRuleContext.allChangeRuleModifiers(): List<ChangeRuleModifierContext>
@@ -162,20 +163,25 @@ expect class ChangeRuleModifierContext : ParserRuleContext {
 
 expect class FilterContext : ParserRuleContext
 
-expect class SubrulesContext : ParserRuleContext
+expect class BlockContext : ParserRuleContext
 
-expect fun SubrulesContext.allSubruleTypes(): List<SubruleTypeContext>
+expect fun BlockContext.allBlockTypes(): List<BlockTypeContext>
 
-expect fun SubrulesContext.allSubrules(): List<SubruleContext>
+expect fun BlockContext.allBlockElements(): List<BlockElementContext>
 
-expect class SubruleTypeContext : ParserRuleContext {
+expect class BlockElementContext : ParserRuleContext {
+    fun block(): BlockContext?
+    fun expressionList(): ExpressionListContext?
+}
+
+expect class BlockTypeContext : ParserRuleContext {
     fun ALL_MATCHING(): TerminalNode?
     fun FIRST_MATCHING(): TerminalNode?
 }
 
-expect class SubruleContext : ParserRuleContext
+expect class ExpressionListContext : ParserRuleContext
 
-expect fun SubruleContext.allExpressions(): List<ExpressionContext>
+expect fun ExpressionListContext.allExpressions(): List<ExpressionContext>
 
 expect class RuleNameContext : ParserRuleContext
 

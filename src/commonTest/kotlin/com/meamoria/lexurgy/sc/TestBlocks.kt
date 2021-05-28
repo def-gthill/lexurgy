@@ -3,6 +3,7 @@ package com.meamoria.lexurgy.sc
 import com.meamoria.mpp.kotest.StringSpec
 import com.meamoria.mpp.kotest.fail
 import com.meamoria.mpp.kotest.shouldBe
+import com.meamoria.mpp.kotest.shouldThrow
 
 @Suppress("unused")
 class TestBlocks : StringSpec({
@@ -63,14 +64,59 @@ class TestBlocks : StringSpec({
     }
 
     "We should be able to group Then's within an Else or vice versa using parens" {
-        fail("Not yet!")
+        val ch = lsc(
+            """
+                foo:
+                    (a => b
+                    Then: b => c
+                    )
+                    Else: (
+                        d => e
+                        Then: e => f)
+            """.trimIndent()
+        )
+
+        ch("ababa") shouldBe "ccccc"
+        ch("abade") shouldBe "cccde"
+        ch("ikide") shouldBe "ikiff"
     }
 
     "Flat Then-Else combinations should raise an error" {
-        fail("Not yet!")
+        shouldThrow<LscMixedBlock> {
+            lsc(
+                """
+                    foo:
+                        a => b
+                        Then: c => d
+                        Else: e => f
+                """.trimIndent()
+            )
+        }
     }
 
     "Elses should independently apply rules to each word" {
-        fail("Not yet!")
+        val ch = lsc(
+            """
+                Feature type(cons, vowel)
+                Feature ab(a, b)
+                Feature +stress, +long
+                Symbol a [vowel a]
+                Symbol i [vowel b]
+                Symbol t [cons a]
+                Symbol n [cons b]
+                Diacritic ˈ [+stress]
+                Diacritic ː [+long]
+                assign-stress:
+                    [+long] => [+stress] / _ {[cons], [-long vowel]}* $
+                    Else: [vowel] => [+stress] / _ [cons]+ ([cons] [-stress vowel])* $
+                    Else: [vowel] => [+stress] / _ [cons]* $
+            """.trimIndent()
+        )
+
+        ch("taːti naːti") shouldBe "taˈːti naˈːti"
+        ch("taːti nanti") shouldBe "taˈːti naˈnti"
+        ch("tantinan ti") shouldBe "tantinaˈn tiˈ"
+        ch("tan tinati") shouldBe "taˈn tinatiˈ"
+        ch("tati nati") shouldBe "tatiˈ natiˈ"
     }
 })

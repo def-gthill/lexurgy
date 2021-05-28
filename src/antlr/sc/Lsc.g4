@@ -21,16 +21,17 @@ diacriticModifier: DIA_BEFORE | DIA_FLOATING;
 symbolDecl: SYMBOL WHITESPACE symbolName ((SEP symbolName)* | WHITESPACE matrix);
 symbolName: text;
 
-deromanizer: DEROMANIZER (WHITESPACE LITERAL)? RULE_START NEWLINE+ subrules;
-romanizer: ROMANIZER (WHITESPACE LITERAL)? RULE_START NEWLINE+ subrules;
-interRomanizer: ROMANIZER HYPHEN ruleName (WHITESPACE LITERAL)? RULE_START NEWLINE+ subrules;
+deromanizer: DEROMANIZER (WHITESPACE LITERAL)? RULE_START NEWLINE+ block;
+romanizer: ROMANIZER (WHITESPACE LITERAL)? RULE_START NEWLINE+ block;
+interRomanizer: ROMANIZER HYPHEN ruleName (WHITESPACE LITERAL)? RULE_START NEWLINE+ block;
 
-changeRule: ruleName (WHITESPACE changeRuleModifier)* RULE_START? NEWLINE+ subrules;
+changeRule: ruleName (WHITESPACE changeRuleModifier)* RULE_START? NEWLINE+ block;
 changeRuleModifier: filter | PROPAGATE;
 filter: classRef | fancyMatrix;
-subrules: subrule (NEWLINE+ subruleType RULE_START (WHITESPACE | NEWLINE+) subrule)*;
-subruleType: ALL_MATCHING | FIRST_MATCHING;
-subrule: expression (NEWLINE+ expression)*;
+block: blockElement (NEWLINE+ blockType RULE_START (WHITESPACE | NEWLINE+) blockElement)*;
+blockElement: expressionList | O_PAREN NEWLINE* block NEWLINE* C_PAREN;
+blockType: ALL_MATCHING | FIRST_MATCHING;
+expressionList: expression (NEWLINE+ expression)*;
 ruleName: NAME (HYPHEN (NAME | NUMBER))*;
 
 expression: UNCHANGED | (from CHANGE to (CONDITION condition)? (EXCLUSION exclusion)?);

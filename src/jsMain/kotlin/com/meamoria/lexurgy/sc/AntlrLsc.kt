@@ -74,25 +74,25 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
 
     class DeromanizerContext : ParserRuleContext {
         fun LITERAL(): TerminalNode?
-        fun subrules(): SubrulesContext
+        fun block(): BlockContext
     }
 
     class RomanizerContext : ParserRuleContext {
         fun LITERAL(): TerminalNode?
-        fun subrules(): SubrulesContext
+        fun block(): BlockContext
     }
 
     class InterRomanizerContext : ParserRuleContext {
         fun LITERAL(): TerminalNode?
         fun ruleName(): RuleNameContext
-        fun subrules(): SubrulesContext
+        fun block(): BlockContext
     }
 
     class ChangeRuleContext : ParserRuleContext {
         fun ruleName(): RuleNameContext
         fun RULE_START(): TerminalNode?
         fun NEWLINE(): Array<TerminalNode>
-        fun subrules(): SubrulesContext
+        fun block(): BlockContext
         fun changeRuleModifier(): Array<ChangeRuleModifierContext>
     }
 
@@ -103,18 +103,23 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
 
     class FilterContext : ParserRuleContext
 
-    class SubrulesContext : ParserRuleContext {
-        fun subrule(): Array<SubruleContext>
-        fun subruleType(): Array<SubruleTypeContext>
+    class BlockContext : ParserRuleContext {
+        fun blockType(): Array<BlockTypeContext>
+        fun blockElement(): Array<BlockElementContext>
     }
 
-    class SubruleContext : ParserRuleContext {
-        fun expression(): Array<ExpressionContext>
+    class BlockElementContext : ParserRuleContext {
+        fun block(): BlockContext?
+        fun expressionList(): ExpressionListContext?
     }
 
-    class SubruleTypeContext : ParserRuleContext {
+    class BlockTypeContext : ParserRuleContext {
         fun ALL_MATCHING(): TerminalNode?
         fun FIRST_MATCHING(): TerminalNode?
+    }
+
+    class ExpressionListContext : ParserRuleContext {
+        fun expression(): Array<ExpressionContext>
     }
 
     class RuleNameContext : ParserRuleContext
@@ -292,9 +297,11 @@ open external class LscVisitor<T> {
 
     open fun visitFilter(ctx: FilterContext): T
 
-    open fun visitSubrules(ctx: SubrulesContext): T
+    open fun visitBlock(ctx: BlockContext): T
 
-    open fun visitSubrule(ctx: SubruleContext): T
+    open fun visitBlockElement(ctx: BlockElementContext): T
+
+    open fun visitExpressionList(ctx: ExpressionListContext): T
 
     open fun visitRuleName(ctx: RuleNameContext): T
 
@@ -425,17 +432,19 @@ actual typealias ChangeRuleModifierContext = LscParser.ChangeRuleModifierContext
 
 actual typealias FilterContext = LscParser.FilterContext
 
-actual typealias SubrulesContext = LscParser.SubrulesContext
+actual typealias BlockContext = LscParser.BlockContext
 
-actual fun SubrulesContext.allSubruleTypes(): List<SubruleTypeContext> = subruleType().toList()
+actual fun BlockContext.allBlockTypes(): List<BlockTypeContext> = blockType().toList()
 
-actual fun SubrulesContext.allSubrules(): List<SubruleContext> = subrule().toList()
+actual fun BlockContext.allBlockElements(): List<BlockElementContext> = blockElement().toList()
 
-actual typealias SubruleTypeContext = LscParser.SubruleTypeContext
+actual typealias BlockElementContext = LscParser.BlockElementContext
 
-actual typealias SubruleContext = LscParser.SubruleContext
+actual typealias BlockTypeContext = LscParser.BlockTypeContext
 
-actual fun SubruleContext.allExpressions(): List<ExpressionContext> = expression().toList()
+actual typealias ExpressionListContext = LscParser.ExpressionListContext
+
+actual fun ExpressionListContext.allExpressions(): List<ExpressionContext> = expression().toList()
 
 actual typealias RuleNameContext = LscParser.RuleNameContext
 

@@ -114,20 +114,26 @@ LscVisitor.prototype.visitFilter = function(ctx) {
 };
 
 
-// Visit a parse tree produced by LscParser#subrules.
-LscVisitor.prototype.visitSubrules = function(ctx) {
+// Visit a parse tree produced by LscParser#block.
+LscVisitor.prototype.visitBlock = function(ctx) {
   return this.visitChildren(ctx);
 };
 
 
-// Visit a parse tree produced by LscParser#subruleType.
-LscVisitor.prototype.visitSubruleType = function(ctx) {
+// Visit a parse tree produced by LscParser#blockElement.
+LscVisitor.prototype.visitBlockElement = function(ctx) {
   return this.visitChildren(ctx);
 };
 
 
-// Visit a parse tree produced by LscParser#subrule.
-LscVisitor.prototype.visitSubrule = function(ctx) {
+// Visit a parse tree produced by LscParser#blockType.
+LscVisitor.prototype.visitBlockType = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
+// Visit a parse tree produced by LscParser#expressionList.
+LscVisitor.prototype.visitExpressionList = function(ctx) {
   return this.visitChildren(ctx);
 };
 

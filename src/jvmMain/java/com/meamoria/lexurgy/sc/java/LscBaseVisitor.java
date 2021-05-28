@@ -136,21 +136,28 @@ public class LscBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements Ls
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitSubrules(LscParser.SubrulesContext ctx) { return visitChildren(ctx); }
+	@Override public T visitBlock(LscParser.BlockContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitSubruleType(LscParser.SubruleTypeContext ctx) { return visitChildren(ctx); }
+	@Override public T visitBlockElement(LscParser.BlockElementContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitSubrule(LscParser.SubruleContext ctx) { return visitChildren(ctx); }
+	@Override public T visitBlockType(LscParser.BlockTypeContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public T visitExpressionList(LscParser.ExpressionListContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *

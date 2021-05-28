@@ -206,14 +206,14 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     override fun visitDeromanizer(ctx: DeromanizerContext): ParseNode =
         walkDeromanizer(
             ctx.getText(),
-            unpackSubrules(visit(ctx.subrules())),
+            unpackBlock(visit(ctx.block())),
             ctx.LITERAL() != null
         )
 
     override fun visitRomanizer(ctx: RomanizerContext): ParseNode =
         walkRomanizer(
             ctx.getText(),
-            unpackSubrules(visit(ctx.subrules())),
+            unpackBlock(visit(ctx.block())),
             ctx.LITERAL() != null
         )
 
@@ -221,14 +221,14 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         walkIntermediateRomanizer(
             ctx.getText(),
             ctx.ruleName().getText(),
-            unpackSubrules(visit(ctx.subrules())),
+            unpackBlock(visit(ctx.block())),
             ctx.LITERAL() != null
         )
 
-    private fun unpackSubrules(subrules: ParseNode): List<ParseNode> =
-        when (subrules) {
-            is UnlinkedSequentialBlock -> subrules.subrules
-            else -> listOf(subrules)
+    private fun unpackBlock(block: ParseNode): List<ParseNode> =
+        when (block) {
+            is UnlinkedSequentialBlock -> block.subrules
+            else -> listOf(block)
         }
 
     override fun visitChangeRule(ctx: ChangeRuleContext): ParseNode {
@@ -245,7 +245,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         return walkChangeRule(
             ctx.getText(),
             ruleName,
-            visit(ctx.subrules()),
+            visit(ctx.block()),
             optionalVisit(filter),
             propagate,
         )
@@ -273,14 +273,14 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     override fun visitFilter(ctx: FilterContext): ParseNode =
         visit(ctx.getChild(0))
 
-    override fun visitSubrules(ctx: SubrulesContext): ParseNode {
-        val subruleTypes = ctx.allSubruleTypes()
-        if (subruleTypes.isEmpty()) return visit(ctx.allSubrules().single())
-        val blockType = checkUniformBlockType(subruleTypes)
-        return walkBlock(ctx.getText(), blockType, listVisit(ctx.allSubrules()))
+    override fun visitBlock(ctx: BlockContext): ParseNode {
+        val blockTypes = ctx.allBlockTypes()
+        if (blockTypes.isEmpty()) return visit(ctx.allBlockElements().single())
+        val blockType = checkUniformBlockType(blockTypes)
+        return walkBlock(ctx.getText(), blockType, listVisit(ctx.allBlockElements()))
     }
 
-    private fun checkUniformBlockType(blockCtxs: List<SubruleTypeContext>): BlockType {
+    private fun checkUniformBlockType(blockCtxs: List<BlockTypeContext>): BlockType {
         val blockType = getBlockType(blockCtxs.first())
         for (laterBlockCtx in blockCtxs.drop(1)) {
             val laterBlockType = getBlockType(laterBlockCtx)
@@ -291,15 +291,18 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         return blockType
     }
 
-    private fun getBlockType(ctx: SubruleTypeContext) =
+    private fun getBlockType(ctx: BlockTypeContext) =
         when {
             ctx.ALL_MATCHING() != null -> BlockType.SEQUENTIAL
             ctx.FIRST_MATCHING() != null -> BlockType.FIRST_MATCHING
             else -> throw AssertionError("Block has no block type")
         }
 
-    override fun visitSubrule(ctx: SubruleContext): ParseNode =
-        walkSubrule(ctx.getText(), listVisit(ctx.allExpressions()))
+    override fun visitBlockElement(ctx: BlockElementContext): ParseNode =
+        if (ctx.block() != null) visit(ctx.block()!!) else visit(ctx.expressionList()!!)
+
+    override fun visitExpressionList(ctx: ExpressionListContext): ParseNode =
+        walkExpressionList(ctx.getText(), listVisit(ctx.allExpressions()))
 
     override fun visitExpression(ctx: ExpressionContext): ParseNode =
         if (ctx.UNCHANGED() == null) {
@@ -664,7 +667,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             )
         }
 
-    private fun walkSubrule(text: String, expressions: List<ParseNode>): ParseNode =
+    private fun walkExpressionList(text: String, expressions: List<ParseNode>): ParseNode =
         UnlinkedSimpleChangeRule(text, expressions.map { it as UnlinkedRuleExpression })
 
     private fun walkRuleExpression(
@@ -1155,12 +1158,14 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             declarations: Declarations,
             inherited: InheritedRuleProperties,
         ): ChangeRule =
-            FirstMatchingBlock(
-                linkedSubrules(
-                    firstExpressionNumber,
-                ) { _, subrule, subFirstExpressionNumber ->
-                    subrule.link(subFirstExpressionNumber, declarations, inherited)
-                }
+            WithinWordBlock(
+                FirstMatchingBlock(
+                    linkedSubrules(
+                        firstExpressionNumber,
+                    ) { _, subrule, subFirstExpressionNumber ->
+                        subrule.link(subFirstExpressionNumber, declarations, inherited)
+                    }
+                )
             )
     }
 

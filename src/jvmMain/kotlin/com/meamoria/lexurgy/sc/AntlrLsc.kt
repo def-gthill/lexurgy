@@ -61,17 +61,19 @@ actual typealias ChangeRuleModifierContext = LscParser.ChangeRuleModifierContext
 
 actual typealias FilterContext = LscParser.FilterContext
 
-actual typealias SubrulesContext = LscParser.SubrulesContext
+actual typealias BlockContext = LscParser.BlockContext
 
-actual fun SubrulesContext.allSubruleTypes(): List<SubruleTypeContext> = subruleType()
+actual fun BlockContext.allBlockTypes(): List<BlockTypeContext> = blockType()
 
-actual fun SubrulesContext.allSubrules(): List<SubruleContext> = subrule()
+actual fun BlockContext.allBlockElements(): List<BlockElementContext> = blockElement()
 
-actual typealias SubruleTypeContext = LscParser.SubruleTypeContext
+actual typealias BlockElementContext = LscParser.BlockElementContext
 
-actual typealias SubruleContext = LscParser.SubruleContext
+actual typealias BlockTypeContext = LscParser.BlockTypeContext
 
-actual fun SubruleContext.allExpressions(): List<ExpressionContext> = expression()
+actual typealias ExpressionListContext = LscParser.ExpressionListContext
+
+actual fun ExpressionListContext.allExpressions(): List<ExpressionContext> = expression()
 
 actual typealias RuleNameContext = LscParser.RuleNameContext
 
