@@ -299,6 +299,16 @@ class Phrase(val words: List<Word>) : Iterable<Word> {
      */
     fun toWord(): Word = StandardWord.joinWithSpaces(words)
 
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is Phrase) return false
+        return words == other.words
+    }
+
+    override fun hashCode(): Int {
+        return words.hashCode()
+    }
+
     companion object {
         fun splitWord(word: Word): Phrase = Phrase(word.split())
 

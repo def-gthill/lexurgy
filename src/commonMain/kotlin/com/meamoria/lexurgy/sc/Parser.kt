@@ -2,7 +2,6 @@ package com.meamoria.lexurgy.sc
 
 import com.meamoria.lexurgy.*
 import com.meamoria.mpp.antlr.*
-import kotlin.jvm.JvmName
 import kotlin.reflect.KClass
 
 class LscInterpreter {
@@ -207,14 +206,14 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     override fun visitDeromanizer(ctx: DeromanizerContext): ParseNode =
         walkDeromanizer(
             ctx.getText(),
-            unpackParseNodeList(visit(ctx.subrules())),
+            unpackSubrules(visit(ctx.subrules())),
             ctx.LITERAL() != null
         )
 
     override fun visitRomanizer(ctx: RomanizerContext): ParseNode =
         walkRomanizer(
             ctx.getText(),
-            unpackParseNodeList(visit(ctx.subrules())),
+            unpackSubrules(visit(ctx.subrules())),
             ctx.LITERAL() != null
         )
 
@@ -222,9 +221,15 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         walkIntermediateRomanizer(
             ctx.getText(),
             ctx.ruleName().getText(),
-            unpackParseNodeList(visit(ctx.subrules())),
+            unpackSubrules(visit(ctx.subrules())),
             ctx.LITERAL() != null
         )
+
+    private fun unpackSubrules(subrules: ParseNode): List<ParseNode> =
+        when (subrules) {
+            is UnlinkedSequentialBlock -> subrules.subrules
+            else -> listOf(subrules)
+        }
 
     override fun visitChangeRule(ctx: ChangeRuleContext): ParseNode {
         val ruleName = ctx.ruleName().getText()
@@ -269,7 +274,9 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         visit(ctx.getChild(0))
 
     override fun visitSubrules(ctx: SubrulesContext): ParseNode {
-        val blockType = checkUniformBlockType(ctx.allSubruleTypes())
+        val subruleTypes = ctx.allSubruleTypes()
+        if (subruleTypes.isEmpty()) return visit(ctx.allSubrules().single())
+        val blockType = checkUniformBlockType(subruleTypes)
         return walkBlock(ctx.getText(), blockType, listVisit(ctx.allSubrules()))
     }
 
@@ -292,7 +299,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         }
 
     override fun visitSubrule(ctx: SubruleContext): ParseNode =
-        walkSubrule(listVisit(ctx.allExpressions()))
+        walkSubrule(ctx.getText(), listVisit(ctx.allExpressions()))
 
     override fun visitExpression(ctx: ExpressionContext): ParseNode =
         if (ctx.UNCHANGED() == null) {
@@ -591,7 +598,8 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     private fun walkDeromanizer(
         text: String,
-        subrules: List<ParseNode>, literal: Boolean
+        subrules: List<ParseNode>,
+        literal: Boolean,
     ): ParseNode =
         UnlinkedDeromanizer(
             text,
@@ -650,13 +658,14 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                 text,
                 subrules.map { it as UnlinkedRule }
             )
-            BlockType.FIRST_MATCHING -> UnlinkedSequentialBlock(
+            BlockType.FIRST_MATCHING -> UnlinkedFirstMatchingBlock(
                 text,
                 subrules.map { it as UnlinkedRule }
             )
         }
 
-    private fun walkSubrule(expressions: List<ParseNode>): ParseNode = ParseNodeList(expressions)
+    private fun walkSubrule(text: String, expressions: List<ParseNode>): ParseNode =
+        UnlinkedSimpleChangeRule(text, expressions.map { it as UnlinkedRuleExpression })
 
     private fun walkRuleExpression(
         text: String,
@@ -680,7 +689,14 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         }
     )
 
-    private fun walkDoNothingExpression(): ParseNode = DoNothingExpression
+    private fun walkDoNothingExpression(): ParseNode =
+        UnlinkedRuleExpression(
+            "unchanged",
+            DoNothingElement,
+            DoNothingElement,
+            emptyList(),
+            emptyList(),
+        )
 
     private fun walkRuleEnvironment(
         text: String,
@@ -857,8 +873,6 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     private data class ParseNodeList(
         val elements: List<ParseNode>
     ) : BaseParseNode(elements.joinToString())
-
-    private fun unpackParseNodeList(node: ParseNode): List<ParseNode> = (node as ParseNodeList).elements
 
     interface ParseNode {
         /**
@@ -1149,8 +1163,6 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         )
     }
 
-    private object DoNothingExpression : BaseParseNode("unchanged")
-
     private class UnlinkedEnvironment(
         text: String,
         val before: RuleElement?,
@@ -1229,6 +1241,16 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         abstract fun combineMatchers(elements: List<Matcher>): Matcher
 
         abstract fun combineEmitters(elements: List<Emitter>): Emitter
+    }
+
+    private object DoNothingElement : BaseParseNode("unchanged"), ResultElement {
+        override val publicName: String = "an \"unchanged\" element"
+
+        override fun matcher(context: RuleContext, declarations: Declarations): Matcher =
+            NeverMatcher
+
+        override fun emitter(declarations: Declarations): Emitter =
+            NeverEmitter
     }
 
     private object WordBoundaryElement : BaseParseNode("$"), RuleElement {

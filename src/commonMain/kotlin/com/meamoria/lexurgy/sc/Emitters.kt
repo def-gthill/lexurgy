@@ -184,5 +184,11 @@ object EmptyEmitter : IndependentEmitter {
     override fun toString(): String = "*"
 }
 
+object NeverEmitter : IndependentEmitter {
+    override fun result(): UnboundResult = throw AssertionError("A never-emitter can't emit")
+
+    override fun toString(): String = "N/A"
+}
+
 class LscInvalidOutputMatrix(val matrix: Matrix, val invalidFeature: String) :
     LscUserError("Feature matrix $matrix has a $invalidFeature, which isn't allowed in the output of a rule")

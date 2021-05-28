@@ -200,11 +200,11 @@ class StandardNamedRule(
             var curPhrase = phrase
             val steps = mutableSetOf(curPhrase)
             for (i in 1..maxPropagateSteps) {
-                val newWord = mainBlock(curPhrase) ?: curPhrase
-                if (newWord == curPhrase) return newWord
-                if (newWord in steps) throw LscDivergingPropagation(this, phrase.string, steps.map { it.string })
-                steps += newWord
-                curPhrase = newWord
+                val newPhrase = mainBlock(curPhrase) ?: curPhrase
+                if (newPhrase == curPhrase) return newPhrase
+                if (newPhrase in steps) throw LscDivergingPropagation(this, phrase.string, steps.map { it.string })
+                steps += newPhrase
+                curPhrase = newPhrase
             }
             throw LscDivergingPropagation(this, phrase.string, steps.map { it.string }.takeLast(5))
         } else {

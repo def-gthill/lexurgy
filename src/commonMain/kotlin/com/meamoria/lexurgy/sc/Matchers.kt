@@ -543,3 +543,16 @@ object EmptyMatcher : SimpleMatcher() {
 
     override fun toString(): String = "*"
 }
+
+/**
+ * A matcher that doesn't match anything
+ */
+object NeverMatcher : SimpleMatcher() {
+    override fun claim(
+        declarations: Declarations, word: Word, start: Int, bindings: Bindings
+    ): Int? = null
+
+    override fun reversed(): Matcher = this
+
+    override fun toString(): String = "N/A"
+}
