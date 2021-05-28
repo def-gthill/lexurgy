@@ -89,7 +89,7 @@ class SoundChanger(
             throw LscRuleNotFound(startAt, "start at")
         }
 
-        result[null] = curWords.map { it.string }
+        result[null] = curWords.map { it.string.normalizeCompose() }
 
         return result
     }
@@ -325,6 +325,8 @@ class SequentialBlock(
         }
         return curPhrase.takeIf { somethingMatched }
     }
+
+    override fun toString(): String = subrules.joinToString("\nThen:\n")
 }
 
 /**
@@ -339,6 +341,8 @@ class FirstMatchingBlock(
         }
         return null
     }
+
+    override fun toString(): String = subrules.joinToString("\nElse:\n")
 }
 
 /**

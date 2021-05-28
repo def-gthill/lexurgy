@@ -1179,7 +1179,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                 exclusion.map { it.link(declarations) },
                 filtered,
             )
-        } catch (e: LscUserError) {
+        } catch (e: UserError) {
             throw LscInvalidRuleExpression(e, ruleName, text, expressionNumber)
         }
     }

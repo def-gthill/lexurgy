@@ -930,6 +930,29 @@ class TestSoundChanger : StringSpec({
         )
     }
 
+    "Setting romanize = false should turn off the final romanizer" {
+        val ch = lsc(
+            """
+                Deromanizer:
+                ch => tʃ
+                change:
+                tʃ => ʃ
+                Romanizer-a:
+                ʃ => sh
+                Romanizer-b:
+                ʃ => x
+                Romanizer:
+                ʃ => si
+            """.trimIndent()
+        )
+
+        ch.changeWithIntermediates(listOf("chachi", "vanechak"), romanize = false) shouldBe mapOf(
+            "a" to listOf("shashi", "vaneshak"),
+            "b" to listOf("xaxi", "vanexak"),
+            null to listOf("ʃaʃi", "vaneʃak"),
+        )
+    }
+
     "The special rule 'unchanged' should do nothing" {
         val ch = lsc(
             """
