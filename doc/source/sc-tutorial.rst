@@ -750,6 +750,83 @@ stand out.
 Advanced Structures
 --------------------
 
+Hierarchical Rules
+~~~~~~~~~~~~~~~~~~~
+
+Some kinds of sound changes are best expressed as a hierarchy of rules, where
+only the first condition that matches matters. The classic example
+of this is stress rules. For example, a language might have the following stress
+rule: a word is stressed on the last long vowel if one exists; *otherwise*
+on the last closed syllable if one exists; *otherwise* on the last syllable.
+To do this with the structures seen so far, you'd have to write something like this::
+
+    Feature +stress, +long
+    Diacritic ˈ (floating) [+stress]
+    Diacritic ː (floating) [+long]
+    Class vowel {a, e, i, o, u}
+    Class cons {p, t, k, s, m, n, l}
+    assign-stress:
+        [+long] => [+stress] / _ [-long]* $
+        Then:
+        @vowel => [+stress] / $ [-stress]* _ @cons (@cons? @vowel&[-stress])* $
+        Then:
+        @vowel => [+stress] / $ [-stress]* _ @cons* $
+
+We have to awkwardly tell the second and third expressions not to apply
+if there's already stress somewhere else in the word. Otherwise, a
+word like ``teːpunsa`` will trigger all three expressions in different
+syllables, leading to all three syllables being stressed. Not helpfulǃ
+
+Fortunately, there's a better way. Just use ``Else:`` instead of ``Then:``::
+
+    Feature +stress, +long
+    Diacritic ˈ (floating) [+stress]
+    Diacritic ː (floating) [+long]
+    Class vowel {a, e, i, o, u}
+    Class cons {p, t, k, s, m, n, l}
+    assign-stress:
+        [+long] => [+stress] / _ [-long]* $
+        Else:
+        @vowel => [+stress] / _ @cons (@cons? @vowel)* $
+        Else:
+        @vowel => [+stress] / _ @cons* $
+
+Now we don't have to include the extra ``[-stress]`` conditions.
+When this rule is applied to a word like ``teːpunsa``, then as
+soon as the first expression matches the [eː], that one sound is
+changed and then the whole rule exits, so nothing else gets stressed.
+If the first vowel is short, though, then the first expression doesn't
+match anything, so the second expression gets a chance to apply, putting
+stress on the [u]. In general, subsequent ``Else:`` rules are
+only applied if all the previous ones didn't match the word.
+
+If you need to use ``Then:`` and ``Else:`` in the same rule, use
+parentheses to indicate whether the ``Then:`` is inside the ``Else:``
+or vice versa. Here's a variation on the above rule that restricts
+stress to one of the last three syllables using a temporary diacritic::
+
+    Feature +stress, +long, +lastThree
+    Diacritic ˈ (floating) [+stress]
+    Diacritic ː (floating) [+long]
+    Diacritic ³ (floating) [+lastThree]
+    Class vowel {a, e, i, o, u}
+    Class cons {p, t, k, s, m, n, l}
+    assign-stress:
+        @vowel => [+lastThree] / _ @cons* @vowel? @cons* @vowel? @cons* $
+        Then: (
+            [+long +lastThree] => [+stress] / _ [-long]* $
+            Else:
+            [+lastThree] => [+stress] / _ @cons (@cons? @vowel)* $
+            Else:
+            [+lastThree] => [+stress] / _ @cons* $
+        )
+        Then:
+            [+lastThree] => [-lastThree]
+
+Here, the parentheses indicate that the ``[+lastThree]`` is added
+before the entire ``Else:`` block, and removed after the entire
+``Else:`` block.
+
 .. _sc-gemination:
 
 Gemination and Metathesis
