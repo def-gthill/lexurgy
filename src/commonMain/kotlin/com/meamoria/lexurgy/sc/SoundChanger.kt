@@ -397,21 +397,11 @@ class RuleExpression(
 
     fun claim(expressionNumber: Int, phrase: Phrase): List<Transformation> {
         var index = PhraseIndex(0, 0)
-        val exclusions = mutableSetOf<PhraseIndex>()
-
-        while (true) {
-            val exclusionStart = claimNextExclusion(phrase, index) ?: break
-            exclusions.add(exclusionStart)
-            index = phrase.advance(exclusionStart)
-        }
-
-        index = PhraseIndex(0, 0)
         val result = mutableListOf<Transformation>()
 
         while (true) {
             val transformation = claimNext(expressionNumber, phrase, index) ?: break
-            if (transformation.start !in exclusions)
-                result += transformation
+            result += transformation
             index = phrase.advance(transformation.start)
         }
 
@@ -419,40 +409,34 @@ class RuleExpression(
     }
 
     private fun claimNext(expressionNumber: Int, phrase: Phrase, start: PhraseIndex): Transformation? {
-        val reversedWords = phrase.fullyReversed()
-        for (matchStart in phrase.iterateFrom(start)) {
-            for (environment in realCondition) {
-                val bindings = Bindings()
-                environment.before.claim(
-                    declarations, reversedWords, phrase.reversedIndex(matchStart), bindings
-                ) ?: continue
-                val transformation = transformer.transform(
-                    expressionNumber, declarations, phrase, matchStart, bindings
-                ) ?: continue
-                environment.after.claim(
-                    declarations, phrase, transformation.end, bindings
-                ) ?: continue
-                return transformation.bindVariables(bindings)
-            }
-        }
-        return null
-    }
-
-    private fun claimNextExclusion(phrase: Phrase, start: PhraseIndex): PhraseIndex? {
         val reversedPhrase = phrase.fullyReversed()
         for (matchStart in phrase.iterateFrom(start)) {
+            val bindings = Bindings()
+            val transformation = transformer.transform(
+                expressionNumber, declarations, phrase, matchStart, bindings
+            ) ?: continue
+            var excluded = false
             for (environment in realExclusion) {
-                val bindings = Bindings()
+                val exclusionBindings = bindings.copy()
                 environment.before.claim(
-                    declarations, reversedPhrase, phrase.reversedIndex(matchStart), bindings
-                ) ?: continue
-                val matchEnd = match.claim(
-                    declarations, phrase, matchStart, bindings
+                    declarations, reversedPhrase, phrase.reversedIndex(matchStart), exclusionBindings
                 ) ?: continue
                 environment.after.claim(
-                    declarations, phrase, matchEnd, bindings
+                    declarations, phrase, transformation.end, exclusionBindings
                 ) ?: continue
-                return matchStart
+                excluded = true
+                break
+            }
+            if (excluded) continue
+            for (environment in realCondition) {
+                val conditionBindings = bindings.copy()
+                environment.before.claim(
+                    declarations, reversedPhrase, phrase.reversedIndex(matchStart), conditionBindings
+                ) ?: continue
+                environment.after.claim(
+                    declarations, phrase, transformation.end, conditionBindings
+                ) ?: continue
+                return transformation.bindVariables(conditionBindings)
             }
         }
         return null
