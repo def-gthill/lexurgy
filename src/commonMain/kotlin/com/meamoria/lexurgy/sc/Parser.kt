@@ -119,6 +119,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         DiacriticDeclContext::class to 10,
         SymbolDeclContext::class to 10,
         ClassDeclContext::class to 30,
+        SyllableDeclContext::class to 35,
         DeromanizerContext::class to 40,
         ChangeRuleContext::class to 50,
         InterRomanizerContext::class to 50,

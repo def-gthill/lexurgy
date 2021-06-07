@@ -77,6 +77,12 @@ public interface LscVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitSymbolName(LscParser.SymbolNameContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link LscParser#syllableDecl}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitSyllableDecl(LscParser.SyllableDeclContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link LscParser#deromanizer}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

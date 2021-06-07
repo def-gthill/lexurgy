@@ -45,6 +45,8 @@ actual fun SymbolDeclContext.allSymbolNames(): List<SymbolNameContext> = symbolN
 
 actual typealias SymbolNameContext = LscParser.SymbolNameContext
 
+actual typealias SyllableDeclContext = LscParser.SyllableDeclContext
+
 actual typealias DeromanizerContext = LscParser.DeromanizerContext
 
 actual typealias RomanizerContext = LscParser.RomanizerContext

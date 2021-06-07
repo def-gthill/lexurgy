@@ -130,6 +130,8 @@ expect fun SymbolDeclContext.allSymbolNames(): List<SymbolNameContext>
 
 expect class SymbolNameContext : ParserRuleContext
 
+expect class SyllableDeclContext : ParserRuleContext
+
 expect class DeromanizerContext : ParserRuleContext {
     fun LITERAL(): TerminalNode?
     fun block(): BlockContext

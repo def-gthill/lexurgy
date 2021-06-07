@@ -72,6 +72,8 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
 
     class SymbolNameContext : ParserRuleContext
 
+    class SyllableDeclContext : ParserRuleContext
+
     class DeromanizerContext : ParserRuleContext {
         fun LITERAL(): TerminalNode?
         fun block(): BlockContext
@@ -415,6 +417,8 @@ actual typealias SymbolDeclContext = LscParser.SymbolDeclContext
 actual fun SymbolDeclContext.allSymbolNames(): List<SymbolNameContext> = symbolName().toList()
 
 actual typealias SymbolNameContext = LscParser.SymbolNameContext
+
+actual typealias SyllableDeclContext = LscParser.SyllableDeclContext
 
 actual typealias DeromanizerContext = LscParser.DeromanizerContext
 

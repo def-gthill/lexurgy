@@ -12,6 +12,8 @@ interface Word : Comparable<Word> {
     val length: Int
         get() = segments.size
 
+    fun normalize(): Word
+
     val segmentsAsWords: Iterable<Word>
         get() = segments.map { seg -> StandardWord.fromSegments(listOf(seg)) }
 
@@ -57,6 +59,8 @@ private class ReversedWord(val inner: Word) : Word {
     override val segments: List<Segment>
         get() = inner.segments.asReversed()
 
+    override fun normalize(): Word = ReversedWord(inner.normalize())
+
     override fun toString(): String =
         segments.joinToString(separator = "/") { it.string } + " (reversed)"
 
@@ -67,10 +71,15 @@ private class ReversedWord(val inner: Word) : Word {
     override fun reversed(): Word = inner
 }
 
-class StandardWord(private val stringSegments: List<String>) : Word {
+class StandardWord(
+    private val stringSegments: List<String>,
+) : Word {
     override val string: String = stringSegments.joinToString("")
 
     override val segments: List<Segment> = stringSegments.map(::Segment)
+
+    override fun normalize(): Word =
+        StandardWord(stringSegments.map { it.normalizeDecompose() })
 
     override fun toString(): String =
         stringSegments.joinToString(separator = "/")
@@ -92,8 +101,6 @@ class StandardWord(private val stringSegments: List<String>) : Word {
         if (stringSegments.size > other.segments.size) return 1
         return 0
     }
-
-    fun normalize(): StandardWord = StandardWord(stringSegments.map { it.normalizeDecompose() })
 
     companion object {
         val empty: StandardWord = StandardWord(emptyList())
@@ -117,8 +124,50 @@ data class Segment(val string: String) {
     }
 }
 
+class SyllabifiedWord(
+    private val stringSegments: List<String>,
+    private val syllables: List<Syllable>,
+) : Word {
+    override val string: String = syllablesAsWords.joinToString(".") { it.string }
+
+    override val segments: List<Segment> = stringSegments.map(::Segment)
+
+    val syllablesAsWords: List<Word>
+        get() = syllables.map {
+            StandardWord(stringSegments.slice(it.startIndex until it.endIndex))
+        }
+
+    override fun normalize(): Word =
+        SyllabifiedWord(
+            stringSegments.map { it.normalizeDecompose() }, syllables
+        )
+
+    override fun toString(): String =
+        syllablesAsWords.joinToString("//")
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is SyllabifiedWord) return false
+        return stringSegments == other.stringSegments &&
+                syllables == other.syllables
+    }
+
+    override fun hashCode(): Int {
+        var result = stringSegments.hashCode()
+        result = 31 * result + syllables.hashCode()
+        return result
+    }
+
+    override fun compareTo(other: Word): Int = 0
+}
+
+data class Syllable(val startIndex: Int, val endIndex: Int)
+
 class PhoneticParser(
-    val segments: List<String>, val beforeDiacritics: List<String>, val afterDiacritics: List<String>
+    val segments: List<String>,
+    val beforeDiacritics: List<String>,
+    val afterDiacritics: List<String>,
+    val syllableSeparator: String? = null,
 ) {
     private val fullDict = segments.associateWith { 0 } +
             beforeDiacritics.associateWith { -1 } +
@@ -126,18 +175,38 @@ class PhoneticParser(
 
     private val tree = SegmentTree(fullDict)
 
-    fun parse(word: String): StandardWord {
+    fun parse(word: String): Word {
         var segStart = 0
         var cursor = 0
         var coreFound = false
         val parsedSegments = mutableListOf<String>()
+        var syllableStart = 0
+        var syllableOffset = 0
+        val syllables = mutableListOf<Syllable>()
 
         fun doneSegment() {
             parsedSegments += word.substring(segStart, cursor)
             segStart = cursor
         }
 
+        fun doneSyllable() {
+            val syllableEnd = cursor - syllableOffset
+            syllables += Syllable(syllableStart, syllableEnd)
+            syllableStart = syllableEnd
+        }
+
         while (cursor < word.length) {
+            if (syllableSeparator != null) {
+                if (word.drop(cursor).startsWith(syllableSeparator)) {
+                    if (coreFound) doneSegment()
+                    coreFound = false
+                    doneSyllable()
+                    cursor += syllableSeparator.length
+                    segStart += syllableSeparator.length
+                    syllableOffset += syllableSeparator.length
+                    continue
+                }
+            }
             val match = tree.tryMatch(word.drop(cursor))
             if (match == null) {
                 if (coreFound) doneSegment()
@@ -166,7 +235,12 @@ class PhoneticParser(
         }
 
         if (cursor > segStart) doneSegment()
-        return StandardWord(parsedSegments)
+        return if (syllableSeparator == null) {
+            StandardWord(parsedSegments)
+        } else {
+            doneSyllable()
+            SyllabifiedWord(parsedSegments, syllables)
+        }
     }
 
     fun breakDiacritics(symbol: String): DiacriticBreakdown {

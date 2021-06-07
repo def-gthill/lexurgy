@@ -87,12 +87,14 @@ class Declarations(
         symbols.map { it.name },
         diacritics.filter { it.before }.map { it.name },
         diacritics.filterNot { it.before }.map { it.name },
+        syllableSeparator = ".",
     )
 
     private val normalizedPhoneticParser = PhoneticParser(
         normalizedSymbols.map { it.name },
         normalizedDiacritics.filter { it.before }.map { it.name },
         normalizedDiacritics.filterNot { it.before }.map { it.name },
+        syllableSeparator = ".",
     )
 
     fun parsePhonetic(text: String): Word =

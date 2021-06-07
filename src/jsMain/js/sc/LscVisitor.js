@@ -78,6 +78,12 @@ LscVisitor.prototype.visitSymbolName = function(ctx) {
 };
 
 
+// Visit a parse tree produced by LscParser#syllableDecl.
+LscVisitor.prototype.visitSyllableDecl = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
 // Visit a parse tree produced by LscParser#deromanizer.
 LscVisitor.prototype.visitDeromanizer = function(ctx) {
   return this.visitChildren(ctx);

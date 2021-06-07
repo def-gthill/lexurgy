@@ -2,7 +2,7 @@ grammar Lsc;
 
 lscFile: WHITESPACE | NEWLINE* statement? (NEWLINE+ statement)* NEWLINE* EOF;
 statement:
-    featureDecl | diacriticDecl | symbolDecl | classDecl |
+    featureDecl | diacriticDecl | symbolDecl | classDecl | syllableDecl |
     deromanizer | changeRule | interRomanizer | romanizer;
 
 classDecl: CLASS_DECL WHITESPACE name WHITESPACE LIST_START classElement (SEP classElement)* LIST_END;
@@ -20,6 +20,7 @@ diacriticDecl:
 diacriticModifier: DIA_BEFORE | DIA_FLOATING;
 symbolDecl: SYMBOL WHITESPACE symbolName ((SEP symbolName)* | WHITESPACE matrix);
 symbolName: text;
+syllableDecl: SYLLABLE_DECL RULE_START NEWLINE+ 'default';
 
 deromanizer: DEROMANIZER (WHITESPACE LITERAL)? RULE_START NEWLINE+ block;
 romanizer: ROMANIZER (WHITESPACE LITERAL)? RULE_START NEWLINE+ block;
@@ -107,6 +108,7 @@ DIACRITIC: 'Diacritic' | 'diacritic';
 DIA_BEFORE: '(Before)' | '(before)';
 DIA_FLOATING: '(Floating)' | '(floating)';
 SYMBOL: 'Symbol' | 'symbol';
+SYLLABLE_DECL: 'Syllables';
 DEROMANIZER: 'Deromanizer' | 'deromanizer';
 ROMANIZER: 'Romanizer' | 'romanizer';
 ALL_MATCHING: 'Then' | 'then';
