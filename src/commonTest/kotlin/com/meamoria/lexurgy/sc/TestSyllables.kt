@@ -18,6 +18,8 @@ class TestSyllables : StringSpec({
             """.trimIndent()
         )
 
+        ch("ko.li.mo") shouldBe "ko.li.mo"
+        ch("k.opi.mo") shouldBe "k.obi.mo"
         ch("ko.pi.ko") shouldBe "ko.bi.go"
     }
 })

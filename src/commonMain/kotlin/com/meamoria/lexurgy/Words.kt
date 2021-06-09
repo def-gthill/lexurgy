@@ -1,5 +1,7 @@
 package com.meamoria.lexurgy
 
+import kotlin.math.max
+
 interface Word : Comparable<Word> {
     /**
      * The word represented by this ``Word`` as a plain string. This is distinct from calling ``toString()``, which
@@ -14,20 +16,24 @@ interface Word : Comparable<Word> {
 
     fun normalize(): Word
 
-    val segmentsAsWords: Iterable<Word>
-        get() = segments.map { seg -> StandardWord.fromSegments(listOf(seg)) }
-
     fun isEmpty(): Boolean = segments.isEmpty()
 
+    /**
+     * Returns a reversed view of this word
+     */
     fun reversed(): Word = ReversedWord(this)
+
+    /**
+     * Returns a copy of this word with its
+     * segments reversed
+     */
+    fun forceReversed(): Word
 
     operator fun iterator(): Iterator<Segment> = segments.iterator()
 
     operator fun get(index: Int): Segment = segments[index]
 
-    fun softGet(index: Int): Segment? = if (index in 0 until length) this[index] else null
-
-    fun slice(indices: IntRange): Word = StandardWord.fromSegments(segments.slice(indices))
+    fun slice(indices: IntRange): Word
 
     fun sliceSegments(indices: IntRange): Iterable<Segment> = object : Iterable<Segment> {
         override fun iterator(): Iterator<Segment> = object : Iterator<Segment> {
@@ -39,16 +45,42 @@ interface Word : Comparable<Word> {
         }
     }
 
-    fun take(n: Int): Word = StandardWord.fromSegments(segments.take(n))
+    fun take(n: Int): Word = slice(0 until n)
 
-    fun drop(n: Int): Word = StandardWord.fromSegments(segments.drop(n))
+    fun drop(n: Int): Word = slice(n until length)
 
     /**
      * Splits the word at spaces
      */
-    fun split(): List<Word> = segments.split(Segment.space).map { StandardWord.fromSegments(it) }
+    fun split(): List<Word> =
+        (listOf(0) + segments.allIndicesOf(Segment.space).map { it + 1 } + length).zipWithNext {
+            start, end -> slice(start until end)
+        }
 
-    operator fun plus(other: Word): Word = StandardWord.fromSegments(segments + other.segments)
+    operator fun plus(other: Word): Word
+
+    companion object {
+        fun join(words: List<Word>): Word =
+            if (words.isEmpty()) StandardWord.empty
+            else {
+                var result = words.first()
+                for (word in words.drop(1)) {
+                    result += word
+                }
+                result
+            }
+
+        fun joinWithSpaces(words: List<Word>): Word =
+            if (words.isEmpty()) StandardWord.empty
+            else {
+                var result = words.first()
+                for (word in words.drop(1)) {
+                    result += StandardWord.single(Segment.space)
+                    result += word
+                }
+                result
+            }
+    }
 }
 
 // A reversed view of a word
@@ -61,14 +93,27 @@ private class ReversedWord(val inner: Word) : Word {
 
     override fun normalize(): Word = ReversedWord(inner.normalize())
 
+    override fun reversed(): Word = inner
+
+    override fun forceReversed(): Word = inner
+
+    override fun slice(indices: IntRange): Word =
+        ReversedWord(
+            inner.slice(inner.length - indices.last .. inner.length - indices.first)
+        )
+
+    override fun plus(other: Word): Word =
+        when(other) {
+            is ReversedWord -> ReversedWord(other.inner + this.inner)
+            else -> forceReversed() + other
+        }
+
     override fun toString(): String =
         segments.joinToString(separator = "/") { it.string } + " (reversed)"
 
     override fun compareTo(other: Word): Int = force().compareTo(other)
 
-    private fun force(): Word = StandardWord.fromSegments(segments)
-
-    override fun reversed(): Word = inner
+    private fun force(): Word = inner.forceReversed()
 }
 
 class StandardWord(
@@ -80,6 +125,15 @@ class StandardWord(
 
     override fun normalize(): Word =
         StandardWord(stringSegments.map { it.normalizeDecompose() })
+
+    override fun forceReversed(): Word =
+        StandardWord(stringSegments.reversed())
+
+    override fun slice(indices: IntRange): Word =
+        StandardWord(stringSegments.slice(indices))
+
+    override fun plus(other: Word): Word =
+        StandardWord(stringSegments + other.segments.map { it.string })
 
     override fun toString(): String =
         stringSegments.joinToString(separator = "/")
@@ -109,12 +163,6 @@ class StandardWord(
 
         fun fromSegments(segments: List<Segment>): StandardWord =
             StandardWord(segments.map { it.string })
-
-        fun join(words: List<Word>): StandardWord =
-            fromSegments(words.flatMap { it.segments })
-
-        fun joinWithSpaces(words: List<Word>): StandardWord =
-            fromSegments(words.map { it.segments }.join(Segment.space))
     }
 }
 
@@ -142,6 +190,42 @@ class SyllabifiedWord(
             stringSegments.map { it.normalizeDecompose() }, syllables
         )
 
+    override fun forceReversed(): Word =
+        SyllabifiedWord(
+            stringSegments.reversed(),
+            syllables.reversed().map {
+                Syllable(length - it.endIndex, length - it.startIndex)
+            }
+        )
+
+    override fun slice(indices: IntRange): Word =
+        SyllabifiedWord(
+            stringSegments.slice(indices),
+            syllables.filter {
+                it.endIndex > indices.first &&
+                        it.startIndex < indices.last
+            }.map {
+                it - indices.first
+            }
+        )
+
+    override fun plus(other: Word): Word =
+        when (other) {
+            is SyllabifiedWord -> {
+                val otherSyllables = other.syllables.map { it + length }
+                SyllabifiedWord(
+                    stringSegments + other.stringSegments,
+                    syllables.dropLast(1) +
+                            Syllable(syllables.last().startIndex, otherSyllables.first().endIndex) +
+                            otherSyllables.drop(1)
+                )
+            }
+            else -> SyllabifiedWord(
+                stringSegments + other.segments.map { it.string },
+                syllables.dropLast(1) + Syllable(syllables.last().startIndex, length)
+            )
+        }
+
     override fun toString(): String =
         syllablesAsWords.joinToString("//")
 
@@ -161,7 +245,15 @@ class SyllabifiedWord(
     override fun compareTo(other: Word): Int = 0
 }
 
-data class Syllable(val startIndex: Int, val endIndex: Int)
+data class Syllable(val startIndex: Int, val endIndex: Int) {
+    operator fun plus(offset: Int) = Syllable(
+        startIndex + offset, endIndex + offset
+    )
+
+    operator fun minus(offset: Int) = Syllable(
+        max(startIndex - offset, 0), endIndex - offset
+    )
+}
 
 class PhoneticParser(
     val segments: List<String>,
@@ -371,7 +463,7 @@ class Phrase(val words: List<Word>) : Iterable<Word> {
     /**
      * Joins this Phrase's words together with space to form a Word
      */
-    fun toWord(): Word = StandardWord.joinWithSpaces(words)
+    fun toWord(): Word = Word.joinWithSpaces(words)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -396,7 +488,7 @@ class Phrase(val words: List<Word>) : Iterable<Word> {
                     result += phrase
                 } else {
                     val last = result.removeLast()
-                    result += StandardWord.join(listOf(last, first))
+                    result += Word.join(listOf(last, first))
                     result += phrase.drop(1)
                 }
             }

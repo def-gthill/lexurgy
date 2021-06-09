@@ -20,6 +20,20 @@ fun <T, R> Iterable<Iterable<T>>.nestedMap(transform: (T) -> R): List<List<R>> =
     map { it.map(transform) }
 
 /**
+ * Finds the indices of every occurrence of the specified
+ * element in the specified iterable
+ */
+fun <T> Iterable<T>.allIndicesOf(element: T): List<Int> {
+    val result = mutableListOf<Int>()
+    for ((index, itElement) in this.withIndex()) {
+        if (itElement == element) {
+            result += index
+        }
+    }
+    return result
+}
+
+/**
  * Splits the iterable at copies of the specified separator.
  * The separator is not part of any of the returned lists.
  */
