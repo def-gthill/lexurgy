@@ -1,8 +1,5 @@
 package com.meamoria.lexurgy
 
-import kotlin.math.max
-import kotlin.math.min
-
 interface Word : Comparable<Word> {
     /**
      * The word represented by this ``Word`` as a plain string. This is distinct from calling ``toString()``, which
@@ -189,7 +186,7 @@ data class Segment(val string: String) {
 
 class SyllabifiedWord(
     private val stringSegments: List<String>,
-    private val syllables: List<Syllable>,
+    private val syllableBreaks: List<Int>,
 ) : Word {
     override val string: String
         get() = syllablesAsWords.joinToString(".") { it.string }
@@ -198,48 +195,54 @@ class SyllabifiedWord(
         get() = stringSegments.map(::Segment)
 
     val syllablesAsWords: List<Word>
-        get() = syllables.map {
-            StandardWord(stringSegments.slice(it.startIndex until it.endIndex))
+        get() = syllableBreaksAndBoundaries.zipWithNext { startIndex, endIndex ->
+            StandardWord(stringSegments.slice(startIndex until endIndex))
         }
+
+    private val syllableBreaksAndBoundaries =
+        syllableBreaks.addStart().addEnd()
+
+    private fun List<Int>.addStart() =
+        if (firstOrNull() == 0) this else listOf(0) + this
+
+    private fun List<Int>.addEnd() =
+        if (last() == length) this else this + length
 
     override fun normalize(): Word =
         SyllabifiedWord(
-            stringSegments.map { it.normalizeDecompose() }, syllables
+            stringSegments.map { it.normalizeDecompose() }, syllableBreaks
         )
 
     override fun forceReversed(): Word =
         SyllabifiedWord(
             stringSegments.reversed(),
-            syllables.reversed().map {
-                Syllable(length - it.endIndex, length - it.startIndex)
-            }
+            syllableBreaks.reversed().map { length - it }
         )
 
     override fun slice(indices: IntRange): Word =
         SyllabifiedWord(
             stringSegments.slice(indices),
-            syllables.filter {
-                it.endIndex > indices.first &&
-                        it.startIndex <= indices.last
-            }.map {
-                (it.forceEnd(indices.last + 1) - indices.first)
-            }
+            syllableBreaks.filter {
+                it >= indices.first &&
+                        it <= indices.last + 1
+            }.map { it - indices.first }
         )
 
     override fun plus(other: Word): Word =
         when (other) {
             is SyllabifiedWord -> {
-                val otherSyllables = other.syllables.map { it + length }
+                val otherSyllableBreaks = other.syllableBreaks.map { it + length }
                 SyllabifiedWord(
                     stringSegments + other.stringSegments,
-                    syllables.dropLast(1) +
-                            Syllable(syllables.last().startIndex, otherSyllables.first().endIndex) +
-                            otherSyllables.drop(1)
+                    syllableBreaks +
+                            if (syllableBreaks.last() == otherSyllableBreaks.first()) {
+                                otherSyllableBreaks.drop(1)
+                            } else otherSyllableBreaks
                 )
             }
             else -> SyllabifiedWord(
                 stringSegments + other.segments.map { it.string },
-                syllables.dropLast(1) + Syllable(syllables.last().startIndex, length)
+                syllableBreaks,
             )
         }
 
@@ -252,34 +255,16 @@ class SyllabifiedWord(
         if (this === other) return true
         if (other !is SyllabifiedWord) return false
         return stringSegments == other.stringSegments &&
-                syllables == other.syllables
+                syllableBreaks == other.syllableBreaks
     }
 
     override fun hashCode(): Int {
         var result = stringSegments.hashCode()
-        result = 31 * result + syllables.hashCode()
+        result = 31 * result + syllableBreaks.hashCode()
         return result
     }
 
     override fun compareTo(other: Word): Int = 0
-}
-
-data class Syllable(val startIndex: Int, val endIndex: Int) {
-    operator fun plus(offset: Int) = Syllable(
-        startIndex + offset, endIndex + offset
-    )
-
-    operator fun minus(offset: Int) = Syllable(
-        max(startIndex - offset, 0), endIndex - offset
-    )
-
-    /**
-     * Forces the syllable to end no later than the
-     * specified index
-     */
-    fun forceEnd(maximum: Int) = Syllable(
-        startIndex, min(endIndex, maximum)
-    )
 }
 
 class PhoneticParser(
@@ -299,9 +284,8 @@ class PhoneticParser(
         var cursor = 0
         var coreFound = false
         val parsedSegments = mutableListOf<String>()
-        var syllableStart = 0
         var syllableOffset = 0
-        val syllables = mutableListOf<Syllable>()
+        val syllableBreaks = mutableListOf<Int>()
 
         fun doneSegment() {
             parsedSegments += word.substring(segStart, cursor)
@@ -309,9 +293,7 @@ class PhoneticParser(
         }
 
         fun doneSyllable() {
-            val syllableEnd = cursor - syllableOffset
-            syllables += Syllable(syllableStart, syllableEnd)
-            syllableStart = syllableEnd
+            syllableBreaks += cursor - syllableOffset
         }
 
         while (cursor < word.length) {
@@ -358,7 +340,7 @@ class PhoneticParser(
             StandardWord(parsedSegments)
         } else {
             doneSyllable()
-            SyllabifiedWord(parsedSegments, syllables)
+            SyllabifiedWord(parsedSegments, syllableBreaks)
         }
     }
 
