@@ -1,6 +1,7 @@
 package com.meamoria.lexurgy
 
 import kotlin.math.max
+import kotlin.math.min
 
 interface Word : Comparable<Word> {
     /**
@@ -59,6 +60,12 @@ interface Word : Comparable<Word> {
 
     operator fun plus(other: Word): Word
 
+    /**
+     * Returns a word with the same segments as ``other``,
+     * but the same additional structures as this word.
+     */
+    fun recoverStructure(other: Word): Word
+
     companion object {
         fun join(words: List<Word>): Word =
             if (words.isEmpty()) StandardWord.empty
@@ -108,6 +115,12 @@ private class ReversedWord(val inner: Word) : Word {
             else -> forceReversed() + other
         }
 
+    override fun recoverStructure(other: Word): Word =
+        when(other) {
+            is ReversedWord -> ReversedWord(inner.recoverStructure(other.inner))
+            else -> inner.forceReversed().recoverStructure(other)
+        }
+
     override fun toString(): String =
         segments.joinToString(separator = "/") { it.string } + " (reversed)"
 
@@ -134,6 +147,8 @@ class StandardWord(
 
     override fun plus(other: Word): Word =
         StandardWord(stringSegments + other.segments.map { it.string })
+
+    override fun recoverStructure(other: Word): Word = other
 
     override fun toString(): String =
         stringSegments.joinToString(separator = "/")
@@ -176,9 +191,11 @@ class SyllabifiedWord(
     private val stringSegments: List<String>,
     private val syllables: List<Syllable>,
 ) : Word {
-    override val string: String = syllablesAsWords.joinToString(".") { it.string }
+    override val string: String
+        get() = syllablesAsWords.joinToString(".") { it.string }
 
-    override val segments: List<Segment> = stringSegments.map(::Segment)
+    override val segments: List<Segment>
+        get() = stringSegments.map(::Segment)
 
     val syllablesAsWords: List<Word>
         get() = syllables.map {
@@ -203,9 +220,9 @@ class SyllabifiedWord(
             stringSegments.slice(indices),
             syllables.filter {
                 it.endIndex > indices.first &&
-                        it.startIndex < indices.last
+                        it.startIndex <= indices.last
             }.map {
-                it - indices.first
+                (it.forceEnd(indices.last + 1) - indices.first)
             }
         )
 
@@ -225,6 +242,8 @@ class SyllabifiedWord(
                 syllables.dropLast(1) + Syllable(syllables.last().startIndex, length)
             )
         }
+
+    override fun recoverStructure(other: Word): Word = other
 
     override fun toString(): String =
         syllablesAsWords.joinToString("//")
@@ -252,6 +271,14 @@ data class Syllable(val startIndex: Int, val endIndex: Int) {
 
     operator fun minus(offset: Int) = Syllable(
         max(startIndex - offset, 0), endIndex - offset
+    )
+
+    /**
+     * Forces the syllable to end no later than the
+     * specified index
+     */
+    fun forceEnd(maximum: Int) = Syllable(
+        startIndex, min(endIndex, maximum)
     )
 }
 

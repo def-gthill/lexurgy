@@ -131,35 +131,41 @@ class SymbolEmitter(val text: Word) :
 
     override fun result(
         declarations: Declarations, matcher: SimpleMatcher, original: Word
-    ): UnboundResult {
-        if (
-            matcher is SymbolMatcher
-        ) {
-            val result = with(declarations) {
-                if (matcher.text.length == text.length && original.length == text.length) {
-                    matcher.text.segments.zip3(
-                        original.segments, text.segments
-                    ) { matcherSegment, originalSegment, textSegment ->
-                        textSegment.withFloatingDiacriticsFrom(originalSegment, excluding = matcherSegment)
-                    }
-                } else if (matcher.text.length == original.length && text.length == 1) {
-                    var newText = text.segments.first()
-                    matcher.text.segments.zip(original.segments).forEach { (matcherSegment, originalSegment) ->
-                        newText = newText.withFloatingDiacriticsFrom(originalSegment, excluding = matcherSegment)
-                    }
-                    listOf(newText)
-                } else if (matcher.text.length == 1 && original.length == 1) {
-                    val matcherSegment = matcher.text.segments.first()
-                    val originalSegment = original.segments.first()
-                    text.segments.map {
-                        it.withFloatingDiacriticsFrom(originalSegment, excluding = matcherSegment)
-                    }
-                } else text.segments
-            }
-            return { Phrase(StandardWord.fromSegments(result)) }
-        } else {
-            return { Phrase(text) }
+    ): UnboundResult = {
+        Phrase(
+            original.recoverStructure(
+                if (matcher is SymbolMatcher) {
+                    resultFromSymbolMatcher(declarations, matcher, original)
+                } else text
+            )
+        )
+    }
+
+    private fun resultFromSymbolMatcher(
+        declarations: Declarations, matcher: SymbolMatcher, original: Word
+    ): Word {
+        val result = with(declarations) {
+            if (matcher.text.length == text.length && original.length == text.length) {
+                matcher.text.segments.zip3(
+                    original.segments, text.segments
+                ) { matcherSegment, originalSegment, textSegment ->
+                    textSegment.withFloatingDiacriticsFrom(originalSegment, excluding = matcherSegment)
+                }
+            } else if (matcher.text.length == original.length && text.length == 1) {
+                var newText = text.segments.first()
+                matcher.text.segments.zip(original.segments).forEach { (matcherSegment, originalSegment) ->
+                    newText = newText.withFloatingDiacriticsFrom(originalSegment, excluding = matcherSegment)
+                }
+                listOf(newText)
+            } else if (matcher.text.length == 1 && original.length == 1) {
+                val matcherSegment = matcher.text.segments.first()
+                val originalSegment = original.segments.first()
+                text.segments.map {
+                    it.withFloatingDiacriticsFrom(originalSegment, excluding = matcherSegment)
+                }
+            } else text.segments
         }
+        return StandardWord.fromSegments(result)
     }
 
     override fun toString(): String = text.string.ifEmpty { "*" }
