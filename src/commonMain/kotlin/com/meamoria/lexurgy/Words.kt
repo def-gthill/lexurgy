@@ -59,7 +59,8 @@ interface Word : Comparable<Word> {
 
     /**
      * Returns a word with the same segments as ``other``,
-     * but the same additional structures as this word.
+     * but structures copied from this word if those structures
+     * are missing in ``other``.
      */
     fun recoverStructure(other: Word): Word
 
@@ -231,13 +232,14 @@ class SyllabifiedWord(
     override fun plus(other: Word): Word =
         when (other) {
             is SyllabifiedWord -> {
-                val otherSyllableBreaks = other.syllableBreaks.map { it + length }
+                var otherSyllableBreaks = other.syllableBreaks.map { it + length }
+                if (syllableBreaks.isNotEmpty() &&
+                        syllableBreaks.last() == otherSyllableBreaks.firstOrNull()) {
+                    otherSyllableBreaks = otherSyllableBreaks.drop(1)
+                }
                 SyllabifiedWord(
                     stringSegments + other.stringSegments,
-                    syllableBreaks +
-                            if (syllableBreaks.last() == otherSyllableBreaks.first()) {
-                                otherSyllableBreaks.drop(1)
-                            } else otherSyllableBreaks
+                    syllableBreaks + otherSyllableBreaks
                 )
             }
             else -> SyllabifiedWord(
@@ -246,7 +248,14 @@ class SyllabifiedWord(
             )
         }
 
-    override fun recoverStructure(other: Word): Word = other
+    override fun recoverStructure(other: Word): Word =
+        when (other) {
+            is SyllabifiedWord -> other
+            else -> SyllabifiedWord(
+                other.segments.map { it.string },
+                syllableBreaks.filter { it <= other.length }
+            )
+        }
 
     override fun toString(): String =
         syllablesAsWords.joinToString("//")

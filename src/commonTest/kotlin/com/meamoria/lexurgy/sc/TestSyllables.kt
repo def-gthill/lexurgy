@@ -13,13 +13,16 @@ class TestSyllables : StringSpec({
                 Class vowel {a, e, i, o, u}
                 Syllables:
                     default
-                intervocalic:
+                intervocalic-voicing:
                     {p, t, k} => {b, d, g} / @vowel _ @vowel
+                t-assimilation:
+                    {pt, kt} => tt
             """.trimIndent()
         )
 
         ch("ko.li.mo") shouldBe "ko.li.mo"
         ch("k.opi.mo") shouldBe "k.obi.mo"
         ch("ko.pi.ko") shouldBe "ko.bi.go"
+        ch("kop.tik.to") shouldBe "kot.tit.to"
     }
 })
