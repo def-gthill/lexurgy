@@ -84,6 +84,18 @@ LscVisitor.prototype.visitSyllableDecl = function(ctx) {
 };
 
 
+// Visit a parse tree produced by LscParser#syllablePattern.
+LscVisitor.prototype.visitSyllablePattern = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
+// Visit a parse tree produced by LscParser#syllableElement.
+LscVisitor.prototype.visitSyllableElement = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
 // Visit a parse tree produced by LscParser#deromanizer.
 LscVisitor.prototype.visitDeromanizer = function(ctx) {
   return this.visitChildren(ctx);

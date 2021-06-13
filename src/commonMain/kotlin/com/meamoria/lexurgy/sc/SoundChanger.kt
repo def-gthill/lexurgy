@@ -46,7 +46,7 @@ class SoundChanger(
         debug: (String) -> Unit = ::println,
     ): Map<String?, List<String>> {
         val debugIndices = words.withIndex().filter { it.value in debugWords }.map { it.index }
-        val startWords = words.map(declarations::parsePhonetic)
+        val startWords = words.map(declarations::parsePhonetic).map(declarations::syllabify)
 
         val result = mutableMapOf<String?, List<String>>()
 

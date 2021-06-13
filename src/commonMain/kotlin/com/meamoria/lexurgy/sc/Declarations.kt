@@ -6,7 +6,8 @@ class Declarations(
     val features: List<Feature>,
     val diacritics: List<Diacritic>,
     val symbols: List<Symbol>,
-    val classes: List<SegmentClass>
+    val classes: List<SegmentClass>,
+    val syllabifier: Syllabifier? = null,
 ) {
     private val featureNameToFeatureMap = features.associateByCheckingDuplicates(
         { listOf(it.name) },
@@ -97,10 +98,30 @@ class Declarations(
         syllableSeparator = ".",
     )
 
+    fun withSyllabifier(syllabifier: Syllabifier?): Declarations =
+        copy(syllabifier = syllabifier)
+
+    fun copy(
+        features: List<Feature>? = null,
+        diacritics: List<Diacritic>? = null,
+        symbols: List<Symbol>? = null,
+        classes: List<SegmentClass>? = null,
+        syllabifier: Syllabifier? = null,
+    ): Declarations = Declarations(
+        features ?: this.features,
+        diacritics ?: this.diacritics,
+        symbols ?: this.symbols,
+        classes ?: this.classes,
+        syllabifier ?: this.syllabifier,
+    )
+
     fun parsePhonetic(text: String): Word =
         phoneticParser.parse(text).normalize()
 
     fun parsePhonetic(word: Word): Word = parsePhonetic(word.string)
+
+    fun syllabify(word: Word): Word =
+        syllabifier?.syllabify(word) ?: word
 
     fun String.toFeature(): Feature =
         featureNameToFeatureMap[this] ?: throw LscUndefinedName("feature", this)

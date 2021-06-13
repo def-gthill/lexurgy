@@ -20,7 +20,10 @@ diacriticDecl:
 diacriticModifier: DIA_BEFORE | DIA_FLOATING;
 symbolDecl: SYMBOL WHITESPACE symbolName ((SEP symbolName)* | WHITESPACE matrix);
 symbolName: text;
-syllableDecl: SYLLABLE_DECL RULE_START NEWLINE+ 'default';
+
+syllableDecl: SYLLABLE_DECL RULE_START (NEWLINE+ EXPLICIT_SYLLABLES | (NEWLINE+ syllablePattern)+);
+syllablePattern: syllableElement (WHITESPACE syllableElement)*;
+syllableElement: classRef;
 
 deromanizer: DEROMANIZER (WHITESPACE LITERAL)? RULE_START NEWLINE+ block;
 romanizer: ROMANIZER (WHITESPACE LITERAL)? RULE_START NEWLINE+ block;
@@ -109,6 +112,7 @@ DIA_BEFORE: '(Before)' | '(before)';
 DIA_FLOATING: '(Floating)' | '(floating)';
 SYMBOL: 'Symbol' | 'symbol';
 SYLLABLE_DECL: 'Syllables';
+EXPLICIT_SYLLABLES: 'explicit';
 DEROMANIZER: 'Deromanizer' | 'deromanizer';
 ROMANIZER: 'Romanizer' | 'romanizer';
 ALL_MATCHING: 'Then' | 'then';

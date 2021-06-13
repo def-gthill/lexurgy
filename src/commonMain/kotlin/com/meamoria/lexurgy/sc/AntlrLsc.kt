@@ -30,6 +30,9 @@ expect open class LscBaseVisitor<T>() {
     open fun visitDiacriticDecl(ctx: DiacriticDeclContext): T
     open fun visitSymbolDecl(ctx: SymbolDeclContext): T
     open fun visitSymbolName(ctx: SymbolNameContext): T
+    open fun visitSyllableDecl(ctx: SyllableDeclContext): T
+    open fun visitSyllablePattern(ctx: SyllablePatternContext): T
+    open fun visitSyllableElement(ctx: SyllableElementContext): T
     open fun visitDeromanizer(ctx: DeromanizerContext): T
     open fun visitRomanizer(ctx: RomanizerContext): T
     open fun visitInterRomanizer(ctx: InterRomanizerContext): T
@@ -131,6 +134,14 @@ expect fun SymbolDeclContext.allSymbolNames(): List<SymbolNameContext>
 expect class SymbolNameContext : ParserRuleContext
 
 expect class SyllableDeclContext : ParserRuleContext
+
+expect fun SyllableDeclContext.allSyllablePatterns(): List<SyllablePatternContext>
+
+expect class SyllablePatternContext : ParserRuleContext
+
+expect fun SyllablePatternContext.allSyllableElements(): List<SyllableElementContext>
+
+expect class SyllableElementContext : ParserRuleContext
 
 expect class DeromanizerContext : ParserRuleContext {
     fun LITERAL(): TerminalNode?

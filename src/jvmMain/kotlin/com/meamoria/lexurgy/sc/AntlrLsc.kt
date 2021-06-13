@@ -47,6 +47,14 @@ actual typealias SymbolNameContext = LscParser.SymbolNameContext
 
 actual typealias SyllableDeclContext = LscParser.SyllableDeclContext
 
+actual fun SyllableDeclContext.allSyllablePatterns(): List<SyllablePatternContext> = syllablePattern()
+
+actual typealias SyllablePatternContext = LscParser.SyllablePatternContext
+
+actual fun SyllablePatternContext.allSyllableElements(): List<SyllableElementContext> = syllableElement()
+
+actual typealias SyllableElementContext = LscParser.SyllableElementContext
+
 actual typealias DeromanizerContext = LscParser.DeromanizerContext
 
 actual typealias RomanizerContext = LscParser.RomanizerContext

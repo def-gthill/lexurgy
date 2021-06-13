@@ -64,6 +64,14 @@ interface Word : Comparable<Word> {
      */
     fun recoverStructure(other: Word): Word
 
+    /**
+     * Returns the word represented by this ``Word`` as
+     * a plain string (as per ``string``) but with the
+     * specified segment made prominent
+     */
+    fun highlightSegment(index: Int): String =
+        take(index).string + "(" + this[index].string + ")" + drop(index + 1).string
+
     companion object {
         fun join(words: List<Word>): Word =
             if (words.isEmpty()) StandardWord.empty
@@ -189,6 +197,10 @@ class SyllabifiedWord(
     private val stringSegments: List<String>,
     private val syllableBreaks: List<Int>,
 ) : Word {
+
+    constructor(word: Word, syllableBreaks: List<Int>) :
+            this(word.segments.map { it.string }, syllableBreaks)
+
     override val string: String
         get() = syllablesAsWords.joinToString(".") { it.string }
 
@@ -395,6 +407,12 @@ data class DiacriticBreakdown(
 
 class DanglingDiacritic(word: String, position: Int, diacritic: String) :
     UserError("The diacritic $diacritic at position $position in $word isn't attached to a symbol")
+
+class SyllableStructureViolated(word: Word, position: Int) :
+    UserError(
+        "The segment \"${word[position].string}\" in \"${word.highlightSegment(position)}\" " +
+                "doesn't fit the syllable structure"
+    )
 
 data class PhraseIndex(val wordIndex: Int, val segmentIndex: Int) : Comparable<PhraseIndex> {
     override fun compareTo(other: PhraseIndex): Int =

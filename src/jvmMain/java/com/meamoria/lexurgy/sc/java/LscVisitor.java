@@ -83,6 +83,18 @@ public interface LscVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitSyllableDecl(LscParser.SyllableDeclContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link LscParser#syllablePattern}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitSyllablePattern(LscParser.SyllablePatternContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link LscParser#syllableElement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitSyllableElement(LscParser.SyllableElementContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link LscParser#deromanizer}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

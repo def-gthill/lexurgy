@@ -74,6 +74,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             diacriticDeclarations = listVisit(statementContexts.filterIsInstance<DiacriticDeclContext>()),
             symbolDeclarations = listVisit(statementContexts.filterIsInstance<SymbolDeclContext>()),
             classDeclarations = listVisit(statementContexts.filterIsInstance<ClassDeclContext>()),
+            syllableStructure = optionalVisit(statementContexts.filterIsInstance<SyllableDeclContext>().singleOrNull()),
             deromanizer = optionalVisit(statementContexts.filterIsInstance<DeromanizerContext>().singleOrNull()),
             changeRules = changeRules,
             romanizer = optionalVisit(statementContexts.filterIsInstance<RomanizerContext>().singleOrNull()),
@@ -203,6 +204,21 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             listOf(walkSymbolDeclaration(ctx.getText(), symbolNames.single(), visit(matrix)))
         )
     }
+
+    override fun visitSyllableDecl(ctx: SyllableDeclContext): ParseNode =
+        walkSyllableDecl(
+            ctx.getText(),
+            listVisit(ctx.allSyllablePatterns()),
+        )
+
+    override fun visitSyllablePattern(ctx: SyllablePatternContext): ParseNode =
+        walkRuleSequence(
+            ctx.getText(),
+            listVisit(ctx.allSyllableElements()),
+        )
+
+    override fun visitSyllableElement(ctx: SyllableElementContext): ParseNode =
+        walkSimpleElement(visit(ctx.getChild(0)))
 
     override fun visitDeromanizer(ctx: DeromanizerContext): ParseNode =
         walkDeromanizer(
@@ -503,6 +519,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         diacriticDeclarations: List<ParseNode>,
         symbolDeclarations: List<ParseNode>,
         classDeclarations: List<ParseNode>,
+        syllableStructure: ParseNode?,
         deromanizer: ParseNode?,
         changeRules: List<ParseNode>,
         romanizer: ParseNode?,
@@ -513,6 +530,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         diacriticDeclarations,
         symbolDeclarations,
         classDeclarations,
+        syllableStructure,
         deromanizer,
         changeRules,
         romanizer,
@@ -599,6 +617,12 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             text,
             Symbol(symbol, (matrix as? MatrixNode)?.matrix),
         )
+
+    private fun walkSyllableDecl(
+        text: String,
+        patterns: List<ParseNode>,
+    ): ParseNode =
+        SyllableStructureNode(text, patterns)
 
     private fun walkDeromanizer(
         text: String,
@@ -899,6 +923,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         private val diacriticDeclarations: List<ParseNode>,
         private val symbolDeclarations: List<ParseNode>,
         private val classDeclarations: List<ParseNode>,
+        private val syllableStructure: ParseNode?,
         private val deromanizer: ParseNode?,
         private val changeRules: List<ParseNode>,
         private val romanizer: ParseNode?,
@@ -912,8 +937,12 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             symbolDeclarations.flatMap { sublist ->
                 (sublist as ParseNodeList).elements.map { (it as SymbolDeclarationNode).symbol }
             },
-            resolveClasses(classDeclarations)
-        )
+            resolveClasses(classDeclarations),
+        ).let {
+            it.withSyllabifier(
+                (syllableStructure as SyllableStructureNode?)?.syllabifier(it),
+            )
+        }
         val allRules = listOfNotNull(deromanizer as UnlinkedRule?) +
                 changeRules.map { it as UnlinkedRule } +
                 listOfNotNull(romanizer as UnlinkedRule?)
@@ -959,6 +988,19 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         val name: String,
         val elements: List<ParseNode>,
     ) : BaseParseNode(text)
+
+    private class SyllableStructureNode(
+        text: String,
+        val patterns: List<ParseNode>,
+    ) : BaseParseNode(text) {
+        fun syllabifier(declarations: Declarations): Syllabifier =
+            Syllabifier(
+                declarations,
+                patterns.map {
+                    (it as RuleElement).matcher(RuleContext.aloneInMain(), declarations)
+                }
+            )
+    }
 
     private interface UnlinkedRule : ParseNode {
         val numExpressions: Int

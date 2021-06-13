@@ -72,7 +72,15 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
 
     class SymbolNameContext : ParserRuleContext
 
-    class SyllableDeclContext : ParserRuleContext
+    class SyllableDeclContext : ParserRuleContext {
+        fun syllablePattern(): Array<SyllablePatternContext>
+    }
+
+    class SyllablePatternContext : ParserRuleContext {
+        fun syllableElement(): Array<SyllableElementContext>
+    }
+
+    class SyllableElementContext : ParserRuleContext
 
     class DeromanizerContext : ParserRuleContext {
         fun LITERAL(): TerminalNode?
@@ -289,6 +297,12 @@ open external class LscVisitor<T> {
 
     open fun visitSymbolName(ctx: SymbolNameContext): T
 
+    open fun visitSyllableDecl(ctx: SyllableDeclContext): T
+
+    open fun visitSyllablePattern(ctx: SyllablePatternContext): T
+
+    open fun visitSyllableElement(ctx: SyllableElementContext): T
+
     open fun visitDeromanizer(ctx: DeromanizerContext): T
 
     open fun visitRomanizer(ctx: RomanizerContext): T
@@ -419,6 +433,16 @@ actual fun SymbolDeclContext.allSymbolNames(): List<SymbolNameContext> = symbolN
 actual typealias SymbolNameContext = LscParser.SymbolNameContext
 
 actual typealias SyllableDeclContext = LscParser.SyllableDeclContext
+
+actual fun SyllableDeclContext.allSyllablePatterns(): List<SyllablePatternContext> =
+    syllablePattern().toList()
+
+actual typealias SyllablePatternContext = LscParser.SyllablePatternContext
+
+actual fun SyllablePatternContext.allSyllableElements(): List<SyllableElementContext> =
+    syllableElement().toList()
+
+actual typealias SyllableElementContext = LscParser.SyllableElementContext
 
 actual typealias DeromanizerContext = LscParser.DeromanizerContext
 
