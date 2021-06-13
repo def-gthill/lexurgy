@@ -108,6 +108,33 @@ class TestVariables : StringSpec({
         ch("nanna") shouldBe "nanna"
     }
 
+    "We should be able to bind a variable before and reference after" {
+        val ch = lsc(
+            """
+                Class stop {p, t, k}
+                Class vowel {a, e, i, o, u}
+                drop-between-identical-stops:
+                    @vowel => * / @stop$1 _ $1
+            """.trimIndent()
+        )
+
+        ch("natata") shouldBe "natta"
+        ch("napata") shouldBe "napata"
+    }
+
+    "We should be able to bind character sequences without the reversing causing trouble" {
+        val ch = lsc(
+            """
+                silly:
+                    a => * / {tr, cl}$1 _ $1
+            """.trimIndent()
+        )
+
+        ch("atratra") shouldBe "atrtra"
+        ch("aclacla") shouldBe "aclcla"
+        ch("atrarta") shouldBe "atrarta"
+    }
+
     "Different environments should keep different variables" {
         val ch = lsc(
             """

@@ -43,16 +43,16 @@ interface Word : Comparable<Word> {
         }
     }
 
-    fun take(n: Int): Word = slice(0 until n)
+    fun take(n: Int): Word
 
-    fun drop(n: Int): Word = slice(n until length)
+    fun drop(n: Int): Word
 
     /**
      * Splits the word at spaces
      */
     fun split(): List<Word> =
-        (listOf(0) + segments.allIndicesOf(Segment.space).map { it + 1 } + length).zipWithNext {
-            start, end -> slice(start until end)
+        (listOf(-1) + segments.allIndicesOf(Segment.space).map { it } + length).zipWithNext {
+            start, end -> slice(start + 1 until end)
         }
 
     operator fun plus(other: Word): Word
@@ -112,7 +112,20 @@ private class ReversedWord(val inner: Word) : Word {
 
     override fun slice(indices: IntRange): Word =
         ReversedWord(
-            inner.slice(inner.length - indices.last .. inner.length - indices.first)
+            inner.slice(
+                inner.length - indices.last - 1 until
+                        inner.length - indices.first
+            )
+        )
+
+    override fun take(n: Int): Word =
+        ReversedWord(
+            inner.drop(inner.length - n)
+        )
+
+    override fun drop(n: Int): Word =
+        ReversedWord(
+            inner.take(inner.length - n)
         )
 
     override fun plus(other: Word): Word =
@@ -129,6 +142,16 @@ private class ReversedWord(val inner: Word) : Word {
 
     override fun toString(): String =
         segments.joinToString(separator = "/") { it.string } + " (reversed)"
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is ReversedWord) return false
+        return inner == other.inner
+    }
+
+    override fun hashCode(): Int {
+        return inner.hashCode()
+    }
 
     override fun compareTo(other: Word): Int = force().compareTo(other)
 
@@ -150,6 +173,12 @@ class StandardWord(
 
     override fun slice(indices: IntRange): Word =
         StandardWord(stringSegments.slice(indices))
+
+    override fun take(n: Int): Word =
+        StandardWord(stringSegments.take(n))
+
+    override fun drop(n: Int): Word =
+        StandardWord(stringSegments.drop(n))
 
     override fun plus(other: Word): Word =
         StandardWord(stringSegments + other.segments.map { it.string })
@@ -184,6 +213,13 @@ class StandardWord(
 
         fun fromSegments(segments: List<Segment>): StandardWord =
             StandardWord(segments.map { it.string })
+
+        /**
+         * Creates a word with a segment for each character
+         * in the string.
+         */
+        fun fromString(string: String): StandardWord =
+            StandardWord(string.toList().map { it.toString() })
     }
 }
 
@@ -239,6 +275,18 @@ class SyllabifiedWord(
                 it >= indices.first &&
                         it <= indices.last + 1
             }.map { it - indices.first }
+        )
+
+    override fun take(n: Int): Word =
+        SyllabifiedWord(
+            stringSegments.take(n),
+            syllableBreaks.filter { it <= n }
+        )
+
+    override fun drop(n: Int): Word =
+        SyllabifiedWord(
+            stringSegments.drop(n),
+            syllableBreaks.filter { it >= n }.map { it - n }
         )
 
     override fun plus(other: Word): Word =

@@ -88,14 +88,14 @@ class Declarations(
         symbols.map { it.name },
         diacritics.filter { it.before }.map { it.name },
         diacritics.filterNot { it.before }.map { it.name },
-        syllableSeparator = ".",
+        syllableSeparator = syllabifier?.let { "." },
     )
 
     private val normalizedPhoneticParser = PhoneticParser(
         normalizedSymbols.map { it.name },
         normalizedDiacritics.filter { it.before }.map { it.name },
         normalizedDiacritics.filterNot { it.before }.map { it.name },
-        syllableSeparator = ".",
+        syllableSeparator = syllabifier?.let { "." },
     )
 
     fun withSyllabifier(syllabifier: Syllabifier?): Declarations =

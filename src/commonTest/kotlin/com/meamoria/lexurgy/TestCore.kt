@@ -6,6 +6,18 @@ import com.meamoria.mpp.kotest.shouldThrow
 
 @Suppress("unused")
 class TestCore : StringSpec({
+    "We should be able to split words on spaces" {
+        StandardWord.fromString("foo bar").split() shouldBe
+                listOf(StandardWord.fromString("foo"), StandardWord.fromString("bar"))
+    }
+
+    "We should be able extract sub-words between specified indices" {
+        StandardWord.fromString("foobar").slice(1 .. 3) shouldBe
+                StandardWord.fromString("oob")
+        StandardWord.fromString("foobar").reversed().slice(1 .. 3) shouldBe
+                StandardWord.fromString("oba").reversed()
+    }
+
     "We should be able to create a SegmentTree from a Map" {
         val treeMap = mapOf(
             "d" to 1,
