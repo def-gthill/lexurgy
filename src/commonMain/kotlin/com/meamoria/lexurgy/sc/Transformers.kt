@@ -13,6 +13,32 @@ interface Transformer {
     ): UnboundTransformation?
 }
 
+class EnvironmentTransformer(
+    val element: Transformer,
+    val environment: CompoundEnvironment,
+) : Transformer {
+    override fun transform(
+        order: Int,
+        declarations: Declarations,
+        phrase: Phrase,
+        start: PhraseIndex,
+        bindings: Bindings
+    ): UnboundTransformation? {
+        val transformation = element.transform(
+            order, declarations, phrase, start, bindings
+        ) ?: return null
+        if (
+            !environment.check(
+                declarations, phrase, start, transformation.end, bindings
+            )
+        ) return null
+        return transformation
+    }
+
+    override fun toString(): String =
+        "$element$environment"
+}
+
 class SequenceTransformer(
     val elements: List<Transformer>
 ) : Transformer {

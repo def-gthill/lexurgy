@@ -184,6 +184,114 @@ abstract class LiftingMatcher : BaseMatcher() {
     ): Transformer
 }
 
+class EnvironmentMatcher(
+    val element: Matcher,
+    val environment: CompoundEnvironment,
+) : LiftingMatcher() {
+    override fun claim(
+        declarations: Declarations,
+        phrase: Phrase,
+        start: PhraseIndex,
+        bindings: Bindings
+    ): PhraseIndex? {
+        val claimEnd = element.claim(declarations, phrase, start, bindings) ?: return null
+        if (!environment.check(declarations, phrase, start, claimEnd, bindings)) return null
+        return claimEnd
+    }
+
+    override fun reversed(): Matcher =
+        EnvironmentMatcher(element.reversed(), environment.reversed())
+
+    override fun toString(): String = "$element$environment"
+
+    override fun liftingTransformerTo(result: Emitter, filtered: Boolean): Transformer =
+        EnvironmentTransformer(element.transformerTo(result, filtered), environment)
+}
+
+/**
+ * A lookahead/lookbehind condition that tests whether the material
+ * before and after a match fits the specified criteria.
+ * The check passes if at least one of the ``positive`` environments
+ * is satisfied (or the list is empty), and if none of the ``negative``
+ * environments are satisfied.
+ */
+class CompoundEnvironment(val positive: List<Environment>, val negative: List<Environment>) {
+
+    private val realPositive =
+        if (positive.isEmpty()) listOf(Environment(EmptyMatcher, EmptyMatcher))
+        else positive.map { it.beforeReversed() }
+
+    private val realNegative = negative.map { it.beforeReversed() }
+
+    fun check(
+        declarations: Declarations,
+        phrase: Phrase,
+        matchStart: PhraseIndex,
+        matchEnd: PhraseIndex,
+        bindings: Bindings,
+    ): Boolean {
+        for (environment in realNegative) {
+            if (
+                environment.check(
+                    declarations, phrase, matchStart, matchEnd, bindings
+                )
+            ) return false
+        }
+        for (environment in realPositive) {
+            if (
+                environment.check(
+                    declarations, phrase, matchStart, matchEnd, bindings
+                )
+            ) return true
+        }
+        return false
+    }
+
+    fun reversed(): CompoundEnvironment =
+        CompoundEnvironment(
+            positive.map { it.reversed() },
+            negative.map { it.reversed() }
+        )
+
+    override fun toString(): String =
+        "${environtext("/", positive)}${environtext("//", negative)}"
+
+    private fun environtext(sep: String, environ: List<Environment>) =
+        when (environ.size) {
+            0 -> ""
+            1 -> " $sep ${environ.single()}"
+            else -> " $sep ${environ.joinToString(prefix = "{", postfix = "}")}"
+        }
+}
+
+class Environment(val before: Matcher, val after: Matcher) {
+    fun check(
+        declarations: Declarations,
+        phrase: Phrase,
+        matchStart: PhraseIndex,
+        matchEnd: PhraseIndex,
+        bindings: Bindings,
+    ): Boolean {
+        val reversedPhrase = phrase.fullyReversed()
+        val environmentBindings = bindings.copy()
+        before.claim(
+            declarations, reversedPhrase, phrase.reversedIndex(matchStart), environmentBindings
+        ) ?: return false
+        after.claim(
+            declarations, phrase, matchEnd, environmentBindings
+        ) ?: return false
+        bindings.combine(environmentBindings)
+        return true
+    }
+
+    fun beforeReversed(): Environment = Environment(before.reversed(), after)
+
+    fun reversed(): Environment =
+        Environment(after.reversed(), before.reversed())
+
+    override fun toString(): String = "$before _ $after"
+}
+
 class SequenceMatcher(val elements: List<Matcher>) : BaseMatcher() {
     override fun claim(
         declarations: Declarations,

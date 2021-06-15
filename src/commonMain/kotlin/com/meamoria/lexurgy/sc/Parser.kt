@@ -1227,11 +1227,16 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         ): RuleExpression = try {
             RuleExpression(
                 declarations,
-                match.matcher(RuleContext.aloneInMain(), declarations),
-                castToResultElement(result).emitter(declarations),
-                condition.map { it.link(declarations) },
-                exclusion.map { it.link(declarations) },
-                filtered,
+                EnvironmentMatcher(
+                    match.matcher(RuleContext.aloneInMain(), declarations),
+                    CompoundEnvironment(
+                        condition.map { it.link(declarations) },
+                        exclusion.map { it.link(declarations) },
+                    )
+                ).transformerTo(
+                    castToResultElement(result).emitter(declarations),
+                    filtered,
+                )
             )
         } catch (e: UserError) {
             throw LscInvalidRuleExpression(e, ruleName, text, expressionNumber)

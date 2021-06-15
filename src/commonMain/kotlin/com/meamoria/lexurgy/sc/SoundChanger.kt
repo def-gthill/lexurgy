@@ -381,20 +381,8 @@ class WithinWordBlock(
 
 class RuleExpression(
     val declarations: Declarations,
-    val match: Matcher,
-    val result: Emitter,
-    val condition: List<Environment>,
-    val exclusion: List<Environment>,
-    val filtered: Boolean = false
+    val transformer: Transformer,
 ) {
-    val transformer = match.transformerTo(result, filtered)
-
-    private val realCondition =
-        if (condition.isEmpty()) listOf(Environment(EmptyMatcher, EmptyMatcher))
-        else condition.map { it.beforeReversed() }
-
-    private val realExclusion = exclusion.map { it.beforeReversed() }
-
     fun claim(expressionNumber: Int, phrase: Phrase): List<Transformation> {
         var index = PhraseIndex(0, 0)
         val result = mutableListOf<Transformation>()
@@ -409,55 +397,17 @@ class RuleExpression(
     }
 
     private fun claimNext(expressionNumber: Int, phrase: Phrase, start: PhraseIndex): Transformation? {
-        val reversedPhrase = phrase.fullyReversed()
         for (matchStart in phrase.iterateFrom(start)) {
             val bindings = Bindings()
             val transformation = transformer.transform(
                 expressionNumber, declarations, phrase, matchStart, bindings
             ) ?: continue
-            var excluded = false
-            for (environment in realExclusion) {
-                val exclusionBindings = bindings.copy()
-                environment.before.claim(
-                    declarations, reversedPhrase, phrase.reversedIndex(matchStart), exclusionBindings
-                ) ?: continue
-                environment.after.claim(
-                    declarations, phrase, transformation.end, exclusionBindings
-                ) ?: continue
-                excluded = true
-                break
-            }
-            if (excluded) continue
-            for (environment in realCondition) {
-                val conditionBindings = bindings.copy()
-                environment.before.claim(
-                    declarations, reversedPhrase, phrase.reversedIndex(matchStart), conditionBindings
-                ) ?: continue
-                environment.after.claim(
-                    declarations, phrase, transformation.end, conditionBindings
-                ) ?: continue
-                return transformation.bindVariables(conditionBindings)
-            }
+            return transformation.bindVariables(bindings)
         }
         return null
     }
 
-    override fun toString(): String {
-        fun environtext(sep: String, environ: List<Environment>) =
-            when (environ.size) {
-                0 -> ""
-                1 -> " $sep ${environ.single()}"
-                else -> " $sep ${environ.joinToString(prefix = "{", postfix = "}")}"
-            }
-
-        return "$match => $result${environtext("/", condition)}${environtext("//", exclusion)}"
-    }
-}
-
-class Environment(val before: Matcher, val after: Matcher) {
-    fun beforeReversed(): Environment = Environment(before.reversed(), after)
-
-    override fun toString(): String = "$before _ $after"
+    override fun toString(): String = "$transformer"
 }
 
 class LscRuleNotApplicable(
