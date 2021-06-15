@@ -363,7 +363,7 @@ class IntersectionMatcher(val elements: List<Matcher>) : LiftingMatcher() {
 class CaptureMatcher(
     val element: Matcher,
     val number: Int,
-    val reversed: Boolean = false,
+    val isReversed: Boolean = false,
 ) : LiftingMatcher() {
     override fun claim(declarations: Declarations, word: Word, start: Int, bindings: Bindings): Int? =
         if (number in bindings.captures) {
@@ -372,12 +372,12 @@ class CaptureMatcher(
             element.claim(declarations, word, start, bindings)?.also { end ->
                 val capture = word.slice(start until end)
                 bindings.captures[number] =
-                    if (reversed) capture.reversed() else capture
+                    if (isReversed) capture.reversed() else capture
             }
         }
 
     override fun reversed(): Matcher =
-        CaptureMatcher(element.reversed(), number, !reversed)
+        CaptureMatcher(element.reversed(), number, !isReversed)
 
     override fun toString(): String = "$element$$number"
 
@@ -456,16 +456,16 @@ object WordEndMatcher : SimpleMatcher() {
     override fun toString(): String = "$"
 }
 
-class CaptureReferenceMatcher(val number: Int, val reversed: Boolean = false) : SimpleMatcher() {
+class CaptureReferenceMatcher(val number: Int, val isReversed: Boolean = false) : SimpleMatcher() {
     override fun claim(declarations: Declarations, word: Word, start: Int, bindings: Bindings): Int? =
         bindings.captures[number]?.let { capturedText ->
-            val orientedCapturedText = if (reversed) capturedText.reversed() else capturedText
+            val orientedCapturedText = if (isReversed) capturedText.reversed() else capturedText
             return (start + capturedText.length).takeIf { end ->
                 word.drop(start).take(end - start) == orientedCapturedText
             }
         } ?: throw LscUnboundCapture(number)
 
-    override fun reversed(): Matcher = CaptureReferenceMatcher(number, !reversed)
+    override fun reversed(): Matcher = CaptureReferenceMatcher(number, !isReversed)
 
     override fun toString(): String = "$$number"
 }
