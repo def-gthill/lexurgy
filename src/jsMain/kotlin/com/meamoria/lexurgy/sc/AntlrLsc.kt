@@ -167,7 +167,10 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
         fun freeElement(): Array<FreeElementContext>
     }
 
-    class LookaroundContext : ParserRuleContext
+    class LookaroundContext : ParserRuleContext {
+        fun freeElement(): FreeElementContext
+        fun compoundEnvironment(): CompoundEnvironmentContext
+    }
 
     class FreeElementContext : ParserRuleContext
 
