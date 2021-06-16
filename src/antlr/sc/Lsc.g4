@@ -38,11 +38,36 @@ blockType: ALL_MATCHING | FIRST_MATCHING;
 expressionList: expression (NEWLINE+ expression)*;
 ruleName: NAME (HYPHEN (NAME | NUMBER))*;
 
-expression: UNCHANGED | (from CHANGE to (CONDITION condition)? (EXCLUSION exclusion)?);
-condition: environment | environmentList;
-exclusion: environment | environmentList;
+expression: UNCHANGED | (from CHANGE to compoundEnvironment);
 from: ruleElement;
 to: ruleElement;
+
+//ruleElement: capture | repeater | group | list | intersection | simple | sequence;
+//sequence: sequenceElement (WHITESPACE sequenceElement)+;
+//sequenceElement: capture | repeater | group | list | intersection | simple;
+//capture: (group | list | negated | classRef | fancyMatrix) captureRef;
+//repeater: (group | list | simple) repeaterType;
+//group: O_PAREN ruleElement C_PAREN;
+//list: LIST_START ruleElement (SEP ruleElement)* LIST_END;
+//intersection: intersectionElement (INTERSECTION intersectionElement)+;
+//intersectionElement: capture | repeater | group | list | simple;
+//simple: negated | classRef | captureRef | fancyMatrix | empty | boundary | betweenWords | text;
+//negated: NEGATION (classRef | captureRef | text);
+
+ruleElement: bounded | interfix | prefix | postfix | simple | free;
+
+bounded: group | list;
+group: O_PAREN ruleElement C_PAREN;
+list: LIST_START ruleElement (SEP ruleElement)* LIST_END;
+
+free: sequence | lookaround;
+sequence: freeElement (WHITESPACE freeElement)+;
+lookaround: freeElement compoundEnvironment;
+freeElement: bounded | interfix | prefix | postfix | simple;
+
+compoundEnvironment: (CONDITION condition)? (EXCLUSION exclusion)?;
+condition: environment | environmentList;
+exclusion: environment | environmentList;
 environmentList: LIST_START environment (SEP environment)* LIST_END;
 environment:
     (environmentBefore WHITESPACE)? ANCHOR (WHITESPACE environmentAfter)?
@@ -50,17 +75,18 @@ environment:
 environmentBefore: ruleElement;
 environmentAfter: ruleElement;
 
-ruleElement: capture | repeater | group | list | intersection | simple | sequence;
-sequence: sequenceElement (WHITESPACE sequenceElement)+;
-sequenceElement: capture | repeater | group | list | intersection | simple;
-capture: (group | list | negated | classRef | fancyMatrix) captureRef;
-repeater: (group | list | simple) repeaterType;
-group: O_PAREN ruleElement C_PAREN;
-list: LIST_START ruleElement (SEP ruleElement)* LIST_END;
-intersection: intersectionElement (INTERSECTION intersectionElement)+;
-intersectionElement: capture | repeater | group | list | simple;
-simple: negated | classRef | captureRef | fancyMatrix | empty | boundary | betweenWords | text;
-negated: NEGATION (classRef | captureRef | text);
+interfix: intersection;
+intersection: interfixElement (INTERSECTION interfixElement)+;
+interfixElement: bounded | prefix | postfix | simple;
+
+prefix: negated;
+negated: NEGATION simple;
+
+postfix: capture | repeater;
+capture: (bounded | prefix | simple) captureRef;
+repeater: (bounded | simple) repeaterType;
+
+simple: classRef | captureRef | fancyMatrix | empty | boundary | betweenWords | text;
 classRef: CLASSREF name;
 captureRef: WORD_BOUNDARY NUMBER;
 

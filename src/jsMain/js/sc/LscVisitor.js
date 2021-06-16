@@ -168,18 +168,6 @@ LscVisitor.prototype.visitExpression = function(ctx) {
 };
 
 
-// Visit a parse tree produced by LscParser#condition.
-LscVisitor.prototype.visitCondition = function(ctx) {
-  return this.visitChildren(ctx);
-};
-
-
-// Visit a parse tree produced by LscParser#exclusion.
-LscVisitor.prototype.visitExclusion = function(ctx) {
-  return this.visitChildren(ctx);
-};
-
-
 // Visit a parse tree produced by LscParser#from.
 LscVisitor.prototype.visitFrom = function(ctx) {
   return this.visitChildren(ctx);
@@ -188,6 +176,72 @@ LscVisitor.prototype.visitFrom = function(ctx) {
 
 // Visit a parse tree produced by LscParser#to.
 LscVisitor.prototype.visitTo = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
+// Visit a parse tree produced by LscParser#ruleElement.
+LscVisitor.prototype.visitRuleElement = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
+// Visit a parse tree produced by LscParser#bounded.
+LscVisitor.prototype.visitBounded = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
+// Visit a parse tree produced by LscParser#group.
+LscVisitor.prototype.visitGroup = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
+// Visit a parse tree produced by LscParser#list.
+LscVisitor.prototype.visitList = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
+// Visit a parse tree produced by LscParser#free.
+LscVisitor.prototype.visitFree = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
+// Visit a parse tree produced by LscParser#sequence.
+LscVisitor.prototype.visitSequence = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
+// Visit a parse tree produced by LscParser#lookaround.
+LscVisitor.prototype.visitLookaround = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
+// Visit a parse tree produced by LscParser#freeElement.
+LscVisitor.prototype.visitFreeElement = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
+// Visit a parse tree produced by LscParser#compoundEnvironment.
+LscVisitor.prototype.visitCompoundEnvironment = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
+// Visit a parse tree produced by LscParser#condition.
+LscVisitor.prototype.visitCondition = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
+// Visit a parse tree produced by LscParser#exclusion.
+LscVisitor.prototype.visitExclusion = function(ctx) {
   return this.visitChildren(ctx);
 };
 
@@ -216,20 +270,38 @@ LscVisitor.prototype.visitEnvironmentAfter = function(ctx) {
 };
 
 
-// Visit a parse tree produced by LscParser#ruleElement.
-LscVisitor.prototype.visitRuleElement = function(ctx) {
+// Visit a parse tree produced by LscParser#interfix.
+LscVisitor.prototype.visitInterfix = function(ctx) {
   return this.visitChildren(ctx);
 };
 
 
-// Visit a parse tree produced by LscParser#sequence.
-LscVisitor.prototype.visitSequence = function(ctx) {
+// Visit a parse tree produced by LscParser#intersection.
+LscVisitor.prototype.visitIntersection = function(ctx) {
   return this.visitChildren(ctx);
 };
 
 
-// Visit a parse tree produced by LscParser#sequenceElement.
-LscVisitor.prototype.visitSequenceElement = function(ctx) {
+// Visit a parse tree produced by LscParser#interfixElement.
+LscVisitor.prototype.visitInterfixElement = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
+// Visit a parse tree produced by LscParser#prefix.
+LscVisitor.prototype.visitPrefix = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
+// Visit a parse tree produced by LscParser#negated.
+LscVisitor.prototype.visitNegated = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
+// Visit a parse tree produced by LscParser#postfix.
+LscVisitor.prototype.visitPostfix = function(ctx) {
   return this.visitChildren(ctx);
 };
 
@@ -246,38 +318,8 @@ LscVisitor.prototype.visitRepeater = function(ctx) {
 };
 
 
-// Visit a parse tree produced by LscParser#group.
-LscVisitor.prototype.visitGroup = function(ctx) {
-  return this.visitChildren(ctx);
-};
-
-
-// Visit a parse tree produced by LscParser#list.
-LscVisitor.prototype.visitList = function(ctx) {
-  return this.visitChildren(ctx);
-};
-
-
-// Visit a parse tree produced by LscParser#intersection.
-LscVisitor.prototype.visitIntersection = function(ctx) {
-  return this.visitChildren(ctx);
-};
-
-
-// Visit a parse tree produced by LscParser#intersectionElement.
-LscVisitor.prototype.visitIntersectionElement = function(ctx) {
-  return this.visitChildren(ctx);
-};
-
-
 // Visit a parse tree produced by LscParser#simple.
 LscVisitor.prototype.visitSimple = function(ctx) {
-  return this.visitChildren(ctx);
-};
-
-
-// Visit a parse tree produced by LscParser#negated.
-LscVisitor.prototype.visitNegated = function(ctx) {
   return this.visitChildren(ctx);
 };
 

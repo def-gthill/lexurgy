@@ -167,18 +167,6 @@ public interface LscVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitExpression(LscParser.ExpressionContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link LscParser#condition}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitCondition(LscParser.ConditionContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link LscParser#exclusion}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitExclusion(LscParser.ExclusionContext ctx);
-	/**
 	 * Visit a parse tree produced by {@link LscParser#from}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -190,6 +178,72 @@ public interface LscVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitTo(LscParser.ToContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link LscParser#ruleElement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitRuleElement(LscParser.RuleElementContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link LscParser#bounded}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitBounded(LscParser.BoundedContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link LscParser#group}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitGroup(LscParser.GroupContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link LscParser#list}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitList(LscParser.ListContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link LscParser#free}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFree(LscParser.FreeContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link LscParser#sequence}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitSequence(LscParser.SequenceContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link LscParser#lookaround}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitLookaround(LscParser.LookaroundContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link LscParser#freeElement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFreeElement(LscParser.FreeElementContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link LscParser#compoundEnvironment}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitCompoundEnvironment(LscParser.CompoundEnvironmentContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link LscParser#condition}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitCondition(LscParser.ConditionContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link LscParser#exclusion}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitExclusion(LscParser.ExclusionContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link LscParser#environmentList}.
 	 * @param ctx the parse tree
@@ -215,23 +269,41 @@ public interface LscVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitEnvironmentAfter(LscParser.EnvironmentAfterContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link LscParser#ruleElement}.
+	 * Visit a parse tree produced by {@link LscParser#interfix}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitRuleElement(LscParser.RuleElementContext ctx);
+	T visitInterfix(LscParser.InterfixContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link LscParser#sequence}.
+	 * Visit a parse tree produced by {@link LscParser#intersection}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitSequence(LscParser.SequenceContext ctx);
+	T visitIntersection(LscParser.IntersectionContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link LscParser#sequenceElement}.
+	 * Visit a parse tree produced by {@link LscParser#interfixElement}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitSequenceElement(LscParser.SequenceElementContext ctx);
+	T visitInterfixElement(LscParser.InterfixElementContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link LscParser#prefix}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitPrefix(LscParser.PrefixContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link LscParser#negated}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitNegated(LscParser.NegatedContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link LscParser#postfix}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitPostfix(LscParser.PostfixContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link LscParser#capture}.
 	 * @param ctx the parse tree
@@ -245,41 +317,11 @@ public interface LscVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitRepeater(LscParser.RepeaterContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link LscParser#group}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitGroup(LscParser.GroupContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link LscParser#list}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitList(LscParser.ListContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link LscParser#intersection}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitIntersection(LscParser.IntersectionContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link LscParser#intersectionElement}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitIntersectionElement(LscParser.IntersectionElementContext ctx);
-	/**
 	 * Visit a parse tree produced by {@link LscParser#simple}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitSimple(LscParser.SimpleContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link LscParser#negated}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitNegated(LscParser.NegatedContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link LscParser#classRef}.
 	 * @param ctx the parse tree
