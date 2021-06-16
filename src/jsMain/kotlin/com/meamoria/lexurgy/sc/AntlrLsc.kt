@@ -138,13 +138,8 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
         fun UNCHANGED(): TerminalNode?
         fun from(): FromContext?
         fun to(): ToContext?
-        fun condition(): ConditionContext?
-        fun exclusion(): ExclusionContext?
+        fun compoundEnvironment(): CompoundEnvironmentContext
     }
-
-    class ConditionContext : ParserRuleContext
-
-    class ExclusionContext : ParserRuleContext
 
     class FromContext : ParserRuleContext {
         fun ruleElement(): RuleElementContext
@@ -154,45 +149,9 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
         fun ruleElement(): RuleElementContext
     }
 
-    class EnvironmentListContext : ParserRuleContext {
-        fun environment(): Array<EnvironmentContext>
-    }
-
-    class EnvironmentContext : ParserRuleContext {
-        fun environmentBefore(): EnvironmentBeforeContext?
-        fun environmentAfter(): EnvironmentAfterContext?
-        fun ANCHOR(): TerminalNode?
-        fun boundaryBefore(): BoundaryBeforeContext?
-        fun boundaryAfter(): BoundaryAfterContext?
-    }
-
-    class BoundaryBeforeContext : ParserRuleContext
-
-    class BoundaryAfterContext : ParserRuleContext
-
-    class EnvironmentBeforeContext : ParserRuleContext {
-        fun ruleElement(): RuleElementContext
-    }
-
-    class EnvironmentAfterContext : ParserRuleContext {
-        fun ruleElement(): RuleElementContext
-    }
-
     class RuleElementContext : ParserRuleContext
 
-    class SequenceContext : ParserRuleContext {
-        fun sequenceElement(): Array<SequenceElementContext>
-    }
-
-    class SequenceElementContext : ParserRuleContext
-
-    class CaptureContext : ParserRuleContext {
-        fun captureRef(): CaptureRefContext
-    }
-
-    class RepeaterContext : ParserRuleContext {
-        fun repeaterType(): RepeaterTypeContext
-    }
+    class BoundedContext : ParserRuleContext
 
     class GroupContext : ParserRuleContext {
         fun ruleElement(): RuleElementContext
@@ -202,15 +161,66 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
         fun ruleElement(): Array<RuleElementContext>
     }
 
-    class IntersectionContext : ParserRuleContext {
-        fun intersectionElement(): Array<IntersectionElementContext>
+    class FreeContext : ParserRuleContext
+
+    class SequenceContext : ParserRuleContext {
+        fun freeElement(): Array<FreeElementContext>
     }
 
-    class IntersectionElementContext : ParserRuleContext
+    class LookaroundContext : ParserRuleContext
 
-    class SimpleContext : ParserRuleContext
+    class FreeElementContext : ParserRuleContext
+
+    class CompoundEnvironmentContext : ParserRuleContext {
+        fun condition(): ConditionContext?
+        fun exclusion(): ExclusionContext?
+    }
+
+    class ConditionContext : ParserRuleContext
+
+    class ExclusionContext : ParserRuleContext
+
+    class EnvironmentListContext : ParserRuleContext {
+        fun environment(): Array<EnvironmentContext>
+    }
+
+    class EnvironmentContext : ParserRuleContext {
+        fun environmentBefore(): EnvironmentBeforeContext?
+        fun environmentAfter(): EnvironmentAfterContext?
+        fun ANCHOR(): TerminalNode?
+    }
+
+    class EnvironmentBeforeContext : ParserRuleContext {
+        fun ruleElement(): RuleElementContext
+    }
+
+    class EnvironmentAfterContext : ParserRuleContext {
+        fun ruleElement(): RuleElementContext
+    }
+
+    class InterfixContext : ParserRuleContext
+
+    class IntersectionContext : ParserRuleContext {
+        fun interfixElement(): Array<InterfixElementContext>
+    }
+
+    class InterfixElementContext : ParserRuleContext
+
+    class PrefixContext : ParserRuleContext
 
     class NegatedContext : ParserRuleContext
+
+    class PostfixContext : ParserRuleContext
+
+    class CaptureContext : ParserRuleContext {
+        fun captureRef(): CaptureRefContext
+    }
+
+    class RepeaterContext : ParserRuleContext {
+        fun repeaterType(): RepeaterTypeContext
+    }
+
+    class SimpleContext : ParserRuleContext
 
     class ClassRefContext : ParserRuleContext {
         fun name(): NameContext
@@ -323,13 +333,31 @@ open external class LscVisitor<T> {
 
     open fun visitExpression(ctx: ExpressionContext): T
 
-    open fun visitCondition(ctx: ConditionContext): T
-
-    open fun visitExclusion(ctx: ExclusionContext): T
-
     open fun visitFrom(ctx: FromContext): T
 
     open fun visitTo(ctx: ToContext): T
+
+    open fun visitRuleElement(ctx: RuleElementContext): T
+
+    open fun visitBounded(ctx: BoundedContext): T
+
+    open fun visitGroup(ctx: GroupContext): T
+
+    open fun visitList(ctx: ListContext): T
+
+    open fun visitFree(ctx: FreeContext): T
+
+    open fun visitSequence(ctx: SequenceContext): T
+
+    open fun visitLookaround(ctx: LookaroundContext): T
+
+    open fun visitFreeElement(ctx: FreeElementContext): T
+
+    open fun visitCompoundEnvironment(ctx: CompoundEnvironmentContext): T
+
+    open fun visitCondition(ctx: ConditionContext): T
+
+    open fun visitExclusion(ctx: ExclusionContext): T
 
     open fun visitEnvironmentList(ctx: EnvironmentListContext): T
 
@@ -339,27 +367,23 @@ open external class LscVisitor<T> {
 
     open fun visitEnvironmentAfter(ctx: EnvironmentAfterContext): T
 
-    open fun visitRuleElement(ctx: RuleElementContext): T
+    open fun visitInterfix(ctx: InterfixContext): T
 
-    open fun visitSequence(ctx: SequenceContext): T
+    open fun visitIntersection(ctx: IntersectionContext): T
 
-    open fun visitSequenceElement(ctx: SequenceElementContext): T
+    open fun visitInterfixElement(ctx: InterfixElementContext): T
+
+    open fun visitPrefix(ctx: PrefixContext): T
+
+    open fun visitNegated(ctx: NegatedContext): T
+
+    open fun visitPostfix(ctx: PostfixContext): T
 
     open fun visitCapture(ctx: CaptureContext): T
 
     open fun visitRepeater(ctx: RepeaterContext): T
 
-    open fun visitGroup(ctx: GroupContext): T
-
-    open fun visitList(ctx: ListContext): T
-
-    open fun visitIntersection(ctx: IntersectionContext): T
-
-    open fun visitIntersectionElement(ctx: IntersectionElementContext): T
-
     open fun visitSimple(ctx: SimpleContext): T
-
-    open fun visitNegated(ctx: NegatedContext): T
 
     open fun visitClassRef(ctx: ClassRefContext): T
 
@@ -478,13 +502,35 @@ actual typealias RuleNameContext = LscParser.RuleNameContext
 
 actual typealias ExpressionContext = LscParser.ExpressionContext
 
-actual typealias ConditionContext = LscParser.ConditionContext
-
-actual typealias ExclusionContext = LscParser.ExclusionContext
-
 actual typealias FromContext = LscParser.FromContext
 
 actual typealias ToContext = LscParser.ToContext
+
+actual typealias RuleElementContext = LscParser.RuleElementContext
+
+actual typealias BoundedContext = LscParser.BoundedContext
+
+actual typealias GroupContext = LscParser.GroupContext
+
+actual typealias ListContext = LscParser.ListContext
+
+actual fun ListContext.allRuleElements(): List<RuleElementContext> = ruleElement().toList()
+
+actual typealias FreeContext = LscParser.FreeContext
+
+actual typealias SequenceContext = LscParser.SequenceContext
+
+actual fun SequenceContext.allFreeElements(): List<FreeElementContext> = freeElement().toList()
+
+actual typealias LookaroundContext = LscParser.LookaroundContext
+
+actual typealias FreeElementContext = LscParser.FreeElementContext
+
+actual typealias CompoundEnvironmentContext = LscParser.CompoundEnvironmentContext
+
+actual typealias ConditionContext = LscParser.ConditionContext
+
+actual typealias ExclusionContext = LscParser.ExclusionContext
 
 actual typealias EnvironmentListContext = LscParser.EnvironmentListContext
 
@@ -496,34 +542,26 @@ actual typealias EnvironmentBeforeContext = LscParser.EnvironmentBeforeContext
 
 actual typealias EnvironmentAfterContext = LscParser.EnvironmentAfterContext
 
-actual typealias RuleElementContext = LscParser.RuleElementContext
+actual typealias InterfixContext = LscParser.InterfixContext
 
-actual typealias SequenceContext = LscParser.SequenceContext
+actual typealias IntersectionContext = LscParser.IntersectionContext
 
-actual fun SequenceContext.allSequenceElements(): List<SequenceElementContext> = sequenceElement().toList()
+actual fun IntersectionContext.allInterfixElements(): List<InterfixElementContext> =
+    interfixElement().toList()
 
-actual typealias SequenceElementContext = LscParser.SequenceElementContext
+actual typealias InterfixElementContext = LscParser.InterfixElementContext
+
+actual typealias PrefixContext = LscParser.PrefixContext
+
+actual typealias NegatedContext = LscParser.NegatedContext
+
+actual typealias PostfixContext = LscParser.PostfixContext
 
 actual typealias CaptureContext = LscParser.CaptureContext
 
 actual typealias RepeaterContext = LscParser.RepeaterContext
 
-actual typealias GroupContext = LscParser.GroupContext
-
-actual typealias ListContext = LscParser.ListContext
-
-actual fun ListContext.allRuleElements(): List<RuleElementContext> = ruleElement().toList()
-
-actual typealias IntersectionContext = LscParser.IntersectionContext
-
-actual fun IntersectionContext.allIntersectionElements(): List<IntersectionElementContext> =
-    intersectionElement().toList()
-
-actual typealias IntersectionElementContext = LscParser.IntersectionElementContext
-
 actual typealias SimpleContext = LscParser.SimpleContext
-
-actual typealias NegatedContext = LscParser.NegatedContext
 
 actual typealias ClassRefContext = LscParser.ClassRefContext
 

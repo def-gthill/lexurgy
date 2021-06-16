@@ -89,13 +89,35 @@ actual typealias RuleNameContext = LscParser.RuleNameContext
 
 actual typealias ExpressionContext = LscParser.ExpressionContext
 
-actual typealias ConditionContext = LscParser.ConditionContext
-
-actual typealias ExclusionContext = LscParser.ExclusionContext
-
 actual typealias FromContext = LscParser.FromContext
 
 actual typealias ToContext = LscParser.ToContext
+
+actual typealias RuleElementContext = LscParser.RuleElementContext
+
+actual typealias BoundedContext = LscParser.BoundedContext
+
+actual typealias GroupContext = LscParser.GroupContext
+
+actual typealias ListContext = LscParser.ListContext
+
+actual fun ListContext.allRuleElements(): List<RuleElementContext> = ruleElement()
+
+actual typealias FreeContext = LscParser.FreeContext
+
+actual typealias SequenceContext = LscParser.SequenceContext
+
+actual fun SequenceContext.allFreeElements(): List<FreeElementContext> = freeElement()
+
+actual typealias LookaroundContext = LscParser.LookaroundContext
+
+actual typealias CompoundEnvironmentContext = LscParser.CompoundEnvironmentContext
+
+actual typealias FreeElementContext = LscParser.FreeElementContext
+
+actual typealias ConditionContext = LscParser.ConditionContext
+
+actual typealias ExclusionContext = LscParser.ExclusionContext
 
 actual typealias EnvironmentListContext = LscParser.EnvironmentListContext
 
@@ -107,33 +129,25 @@ actual typealias EnvironmentBeforeContext = LscParser.EnvironmentBeforeContext
 
 actual typealias EnvironmentAfterContext = LscParser.EnvironmentAfterContext
 
-actual typealias RuleElementContext = LscParser.RuleElementContext
+actual typealias InterfixContext = LscParser.InterfixContext
 
-actual typealias SequenceContext = LscParser.SequenceContext
+actual typealias IntersectionContext = LscParser.IntersectionContext
 
-actual fun SequenceContext.allSequenceElements(): List<SequenceElementContext> = sequenceElement()
+actual fun IntersectionContext.allInterfixElements(): List<InterfixElementContext> = interfixElement()
 
-actual typealias SequenceElementContext = LscParser.SequenceElementContext
+actual typealias InterfixElementContext = LscParser.InterfixElementContext
+
+actual typealias PrefixContext = LscParser.PrefixContext
+
+actual typealias NegatedContext = LscParser.NegatedContext
+
+actual typealias PostfixContext = LscParser.PostfixContext
 
 actual typealias CaptureContext = LscParser.CaptureContext
 
 actual typealias RepeaterContext = LscParser.RepeaterContext
 
-actual typealias GroupContext = LscParser.GroupContext
-
-actual typealias ListContext = LscParser.ListContext
-
-actual fun ListContext.allRuleElements(): List<RuleElementContext> = ruleElement()
-
-actual typealias IntersectionContext = LscParser.IntersectionContext
-
-actual fun IntersectionContext.allIntersectionElements(): List<IntersectionElementContext> = intersectionElement()
-
-actual typealias IntersectionElementContext = LscParser.IntersectionElementContext
-
 actual typealias SimpleContext = LscParser.SimpleContext
-
-actual typealias NegatedContext = LscParser.NegatedContext
 
 actual typealias ClassRefContext = LscParser.ClassRefContext
 

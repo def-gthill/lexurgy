@@ -43,25 +43,32 @@ expect open class LscBaseVisitor<T>() {
     open fun visitExpressionList(ctx: ExpressionListContext): T
     open fun visitRuleName(ctx: RuleNameContext): T
     open fun visitExpression(ctx: ExpressionContext): T
-    open fun visitCondition(ctx: ConditionContext): T
-    open fun visitExclusion(ctx: ExclusionContext): T
     open fun visitFrom(ctx: FromContext): T
     open fun visitTo(ctx: ToContext): T
+    open fun visitRuleElement(ctx: RuleElementContext): T
+    open fun visitBounded(ctx: BoundedContext): T
+    open fun visitGroup(ctx: GroupContext): T
+    open fun visitList(ctx: ListContext): T
+    open fun visitFree(ctx: FreeContext): T
+    open fun visitSequence(ctx: SequenceContext): T
+    open fun visitLookaround(ctx: LookaroundContext): T
+    open fun visitFreeElement(ctx: FreeElementContext): T
+    open fun visitCompoundEnvironment(ctx: CompoundEnvironmentContext): T
+    open fun visitCondition(ctx: ConditionContext): T
+    open fun visitExclusion(ctx: ExclusionContext): T
     open fun visitEnvironmentList(ctx: EnvironmentListContext): T
     open fun visitEnvironment(ctx: EnvironmentContext): T
     open fun visitEnvironmentBefore(ctx: EnvironmentBeforeContext): T
     open fun visitEnvironmentAfter(ctx: EnvironmentAfterContext): T
-    open fun visitRuleElement(ctx: RuleElementContext): T
-    open fun visitSequence(ctx: SequenceContext): T
-    open fun visitSequenceElement(ctx: SequenceElementContext): T
+    open fun visitInterfix(ctx: InterfixContext): T
+    open fun visitIntersection(ctx : IntersectionContext): T
+    open fun visitInterfixElement(ctx : InterfixElementContext): T
+    open fun visitPrefix(ctx: PrefixContext): T
+    open fun visitNegated(ctx: NegatedContext): T
+    open fun visitPostfix(ctx: PostfixContext): T
     open fun visitCapture(ctx: CaptureContext): T
     open fun visitRepeater(ctx: RepeaterContext): T
-    open fun visitGroup(ctx: GroupContext): T
-    open fun visitList(ctx: ListContext): T
-    open fun visitIntersection(ctx : IntersectionContext): T
-    open fun visitIntersectionElement(ctx : IntersectionElementContext): T
     open fun visitSimple(ctx: SimpleContext): T
-    open fun visitNegated(ctx: NegatedContext): T
     open fun visitClassRef(ctx: ClassRefContext): T
     open fun visitCaptureRef(ctx: CaptureRefContext): T
     open fun visitFancyMatrix(ctx: FancyMatrixContext): T
@@ -202,13 +209,8 @@ expect class ExpressionContext : ParserRuleContext {
     fun UNCHANGED(): TerminalNode?
     fun from(): FromContext?
     fun to(): ToContext?
-    fun condition(): ConditionContext?
-    fun exclusion(): ExclusionContext?
+    fun compoundEnvironment(): CompoundEnvironmentContext
 }
-
-expect class ConditionContext : ParserRuleContext
-
-expect class ExclusionContext : ParserRuleContext
 
 expect class FromContext : ParserRuleContext {
     fun ruleElement(): RuleElementContext
@@ -217,6 +219,40 @@ expect class FromContext : ParserRuleContext {
 expect class ToContext : ParserRuleContext {
     fun ruleElement(): RuleElementContext
 }
+
+expect class RuleElementContext : ParserRuleContext
+
+expect class BoundedContext : ParserRuleContext
+
+expect class GroupContext : ParserRuleContext {
+    fun ruleElement(): RuleElementContext
+}
+
+expect class ListContext : ParserRuleContext
+
+expect fun ListContext.allRuleElements(): List<RuleElementContext>
+
+expect class FreeContext : ParserRuleContext
+
+expect class SequenceContext : ParserRuleContext
+
+expect fun SequenceContext.allFreeElements(): List<FreeElementContext>
+
+expect class LookaroundContext : ParserRuleContext {
+    fun freeElement(): FreeElementContext
+    fun compoundEnvironment(): CompoundEnvironmentContext
+}
+
+expect class FreeElementContext : ParserRuleContext
+
+expect class CompoundEnvironmentContext : ParserRuleContext {
+    fun condition(): ConditionContext?
+    fun exclusion(): ExclusionContext?
+}
+
+expect class ConditionContext : ParserRuleContext
+
+expect class ExclusionContext : ParserRuleContext
 
 expect class EnvironmentListContext : ParserRuleContext
 
@@ -236,13 +272,19 @@ expect class EnvironmentAfterContext : ParserRuleContext {
     fun ruleElement(): RuleElementContext
 }
 
-expect class RuleElementContext : ParserRuleContext
+expect class InterfixContext : ParserRuleContext
 
-expect class SequenceContext : ParserRuleContext
+expect class IntersectionContext : ParserRuleContext
 
-expect fun SequenceContext.allSequenceElements(): List<SequenceElementContext>
+expect fun IntersectionContext.allInterfixElements(): List<InterfixElementContext>
 
-expect class SequenceElementContext : ParserRuleContext
+expect class InterfixElementContext : ParserRuleContext
+
+expect class PrefixContext : ParserRuleContext
+
+expect class NegatedContext : ParserRuleContext
+
+expect class PostfixContext : ParserRuleContext
 
 expect class CaptureContext : ParserRuleContext {
     fun captureRef(): CaptureRefContext
@@ -252,23 +294,7 @@ expect class RepeaterContext : ParserRuleContext {
     fun repeaterType(): RepeaterTypeContext
 }
 
-expect class GroupContext : ParserRuleContext {
-    fun ruleElement(): RuleElementContext
-}
-
-expect class ListContext : ParserRuleContext
-
-expect fun ListContext.allRuleElements(): List<RuleElementContext>
-
-expect class IntersectionContext : ParserRuleContext
-
-expect fun IntersectionContext.allIntersectionElements(): List<IntersectionElementContext>
-
-expect class IntersectionElementContext : ParserRuleContext
-
 expect class SimpleContext : ParserRuleContext
-
-expect class NegatedContext : ParserRuleContext
 
 expect class ClassRefContext : ParserRuleContext {
     fun name(): NameContext

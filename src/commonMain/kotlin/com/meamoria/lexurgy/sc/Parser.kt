@@ -327,24 +327,54 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                 ctx.getText(),
                 visit(ctx.from()!!),
                 visit(ctx.to()!!),
-                optionalVisit(ctx.condition()),
-                optionalVisit(ctx.exclusion()),
+                visit(ctx.compoundEnvironment()),
             )
         } else {
             walkDoNothingExpression()
         }
-
-    override fun visitCondition(ctx: ConditionContext): ParseNode =
-        visit(ctx.getChild(0))
-
-    override fun visitExclusion(ctx: ExclusionContext): ParseNode =
-        visit(ctx.getChild(0))
 
     override fun visitFrom(ctx: FromContext): ParseNode =
         visit(ctx.ruleElement())
 
     override fun visitTo(ctx: ToContext): ParseNode =
         visit(ctx.ruleElement())
+
+    override fun visitRuleElement(ctx: RuleElementContext): ParseNode = visit(ctx.getChild(0))
+
+    override fun visitGroup(ctx: GroupContext): ParseNode =
+        visit(ctx.ruleElement())
+
+    override fun visitList(ctx: ListContext): ParseNode =
+        walkRuleList(
+            ctx.getText(),
+            listVisit(ctx.allRuleElements()),
+        )
+
+    override fun visitSequence(ctx: SequenceContext): ParseNode =
+        walkRuleSequence(ctx.getText(), listVisit(ctx.allFreeElements()))
+
+    override fun visitLookaround(ctx: LookaroundContext): ParseNode =
+        walkLookaround(
+            ctx.getText(),
+            visit(ctx.freeElement()),
+            visit(ctx.compoundEnvironment())
+        )
+
+    override fun visitFreeElement(ctx: FreeElementContext): ParseNode =
+        visit(ctx.getChild(0))
+
+    override fun visitCompoundEnvironment(ctx: CompoundEnvironmentContext): ParseNode =
+        walkCompoundEnvironment(
+            ctx.getText(),
+            optionalVisit(ctx.condition()),
+            optionalVisit(ctx.exclusion()),
+        )
+
+    override fun visitCondition(ctx: ConditionContext): ParseNode =
+        visit(ctx.getChild(0))
+
+    override fun visitExclusion(ctx: ExclusionContext): ParseNode =
+        visit(ctx.getChild(0))
 
     override fun visitEnvironmentList(ctx: EnvironmentListContext): ParseNode =
         ParseNodeList(listVisit(ctx.allEnvironments()))
@@ -368,39 +398,13 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     override fun visitEnvironmentAfter(ctx: EnvironmentAfterContext): ParseNode = visit(ctx.ruleElement())
 
-    override fun visitRuleElement(ctx: RuleElementContext): ParseNode = visit(ctx.getChild(0))
-
-    override fun visitSequence(ctx: SequenceContext): ParseNode =
-        walkRuleSequence(ctx.getText(), listVisit(ctx.allSequenceElements()))
-
-    override fun visitSequenceElement(ctx: SequenceElementContext): ParseNode = visit(ctx.getChild(0))
-
-    override fun visitCapture(ctx: CaptureContext): ParseNode =
-        walkRuleCapture(
-            ctx.getText(),
-            visit(ctx.getChild(0)),
-            visit(ctx.captureRef()),
-        )
-
-    override fun visitRepeater(ctx: RepeaterContext): ParseNode =
-        walkRuleRepeater(ctx.getText(), visit(ctx.getChild(0)), visit(ctx.repeaterType()))
-
-    override fun visitGroup(ctx: GroupContext): ParseNode =
-        visit(ctx.ruleElement())
-
-    override fun visitList(ctx: ListContext): ParseNode =
-        walkRuleList(
-            ctx.getText(),
-            listVisit(ctx.allRuleElements()),
-        )
-
     override fun visitIntersection(ctx: IntersectionContext): ParseNode =
         walkIntersection(
             ctx.getText(),
-            listVisit(ctx.allIntersectionElements()),
+            listVisit(ctx.allInterfixElements()),
         )
 
-    override fun visitIntersectionElement(ctx: IntersectionElementContext): ParseNode =
+    override fun visitInterfixElement(ctx: InterfixElementContext): ParseNode =
         visit(ctx.getChild(0))
 
     override fun visitSimple(ctx: SimpleContext): ParseNode =
@@ -411,6 +415,16 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             ctx.getText(),
             visit(ctx.getChild(1)),
         )
+
+    override fun visitCapture(ctx: CaptureContext): ParseNode =
+        walkRuleCapture(
+            ctx.getText(),
+            visit(ctx.getChild(0)),
+            visit(ctx.captureRef()),
+        )
+
+    override fun visitRepeater(ctx: RepeaterContext): ParseNode =
+        walkRuleRepeater(ctx.getText(), visit(ctx.getChild(0)), visit(ctx.repeaterType()))
 
     override fun visitClassRef(ctx: ClassRefContext): ParseNode =
         walkClassReference(
@@ -699,22 +713,12 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         text: String,
         ruleFrom: ParseNode,
         ruleTo: ParseNode,
-        condition: ParseNode?,
-        exclusion: ParseNode?
+        compoundEnvironment: ParseNode,
     ): ParseNode = UnlinkedRuleExpression(
         text,
         ruleFrom as RuleElement,
         ruleTo as RuleElement,
-        when (condition) {
-            is ParseNodeList -> condition.elements.map { it as UnlinkedEnvironment }
-            is UnlinkedEnvironment -> listOf(condition)
-            else -> emptyList()
-        },
-        when (exclusion) {
-            is ParseNodeList -> exclusion.elements.map { it as UnlinkedEnvironment }
-            is UnlinkedEnvironment -> listOf(exclusion)
-            else -> emptyList()
-        }
+        compoundEnvironment as UnlinkedCompoundEnvironment,
     )
 
     private fun walkDoNothingExpression(): ParseNode =
@@ -722,8 +726,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             "unchanged",
             DoNothingElement,
             DoNothingElement,
-            emptyList(),
-            emptyList(),
+            UnlinkedCompoundEnvironment("", emptyList(), emptyList())
         )
 
     private fun walkRuleEnvironment(
@@ -744,6 +747,36 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             text,
             items.map { it as RuleElement }
         )
+
+    private fun walkLookaround(
+        text: String,
+        element: ParseNode,
+        environment: ParseNode,
+    ): ParseNode =
+        EnvironmentElement(
+            text,
+            element as RuleElement,
+            environment as UnlinkedCompoundEnvironment,
+        )
+
+    private fun walkCompoundEnvironment(
+        text: String,
+        positive: ParseNode?,
+        negative: ParseNode?,
+    ): ParseNode =
+        UnlinkedCompoundEnvironment(
+            text,
+            walkEnvironmentOrEnvironmentList(positive),
+            walkEnvironmentOrEnvironmentList(negative),
+        )
+
+    private fun walkEnvironmentOrEnvironmentList(node: ParseNode?): List<UnlinkedEnvironment> =
+        when (node) {
+            null -> emptyList()
+            is UnlinkedEnvironment -> listOf(node)
+            is ParseNodeList -> node.elements.map { it as UnlinkedEnvironment }
+            else -> throw AssertionError()
+        }
 
     private fun walkRuleCapture(
         text: String,
@@ -1216,8 +1249,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         text: String,
         val match: RuleElement,
         val result: RuleElement,
-        val condition: List<UnlinkedEnvironment>,
-        val exclusion: List<UnlinkedEnvironment>,
+        val compoundEnvironment: UnlinkedCompoundEnvironment,
     ) : BaseParseNode(text) {
         fun link(
             ruleName: String,
@@ -1229,10 +1261,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                 declarations,
                 EnvironmentMatcher(
                     match.matcher(RuleContext.aloneInMain(), declarations),
-                    CompoundEnvironment(
-                        condition.map { it.link(declarations) },
-                        exclusion.map { it.link(declarations) },
-                    )
+                    compoundEnvironment.link(declarations),
                 ).transformerTo(
                     castToResultElement(result).emitter(declarations),
                     filtered,
@@ -1241,6 +1270,18 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         } catch (e: UserError) {
             throw LscInvalidRuleExpression(e, ruleName, text, expressionNumber)
         }
+    }
+
+    private class UnlinkedCompoundEnvironment(
+        text: String,
+        val positive: List<UnlinkedEnvironment>,
+        val negative: List<UnlinkedEnvironment>,
+    ) : BaseParseNode(text) {
+        fun link(declarations: Declarations): CompoundEnvironment =
+            CompoundEnvironment(
+                positive.map { it.link(declarations) },
+                negative.map { it.link(declarations) },
+            )
     }
 
     private class UnlinkedEnvironment(
@@ -1353,6 +1394,20 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
         override fun emitter(declarations: Declarations): Emitter =
             BetweenWordsEmitter
+    }
+
+    private class EnvironmentElement(
+        text: String,
+        val element: RuleElement,
+        val environment: UnlinkedCompoundEnvironment,
+    ) : BaseParseNode(text), RuleElement {
+        override val publicName: String = "a nested environment"
+
+        override fun matcher(context: RuleContext, declarations: Declarations): Matcher =
+            EnvironmentMatcher(
+                element.matcher(context, declarations),
+                environment.link(declarations),
+            )
     }
 
     private class SequenceElement(

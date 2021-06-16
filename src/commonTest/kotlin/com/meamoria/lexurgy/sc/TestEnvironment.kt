@@ -94,7 +94,7 @@ class TestEnvironment : StringSpec({
         ch2("tentaklop") shouldBe "tentsaklop"
     }
 
-    "!We should be able to nest environments (i.e. lookahead/lookbehind) inside other structures" {
+    "We should be able to nest environments (i.e. lookahead/lookbehind) inside other structures" {
         val ch = lsc(
             """
                 Feature +hitone
@@ -104,14 +104,24 @@ class TestEnvironment : StringSpec({
                 Class vstop {b, d, g}
                 Class cons {@uvstop, @vstop, s, m, n, l}
                 coda-tone:
-                    vowel (@cons*)$1 {@uvstop / @cons _, @uvstop} => [+hitone] $1 {*, @vstop}
+                    @vowel (@cons*)$1 {@uvstop / @cons _, @uvstop} => [+hitone] $1 {*, @vstop}
             """.trimIndent()
         )
 
-        ch("anast") shouldBe "anás"
-        ch("anat") shouldBe "anád"
-        ch("analski") shouldBe "análsi"
-        ch("anaki") shouldBe "anági"
+        ch("anast") shouldBe "anás"
+        ch("anat") shouldBe "anád"
+        ch("analski") shouldBe "análsi"
+        ch("anaki") shouldBe "anági"
         ch("anals") shouldBe "anals"
+
+        val ch2 = lsc(
+            """
+                partial-condition:
+                    {{b, d, g} / _ $, {pʰ, tʰ, kʰ}} => {p, t, k}
+            """.trimIndent()
+        )
+
+        ch2("pʰotatʰo") shouldBe "potato"
+        ch2("aragog") shouldBe "aragok"
     }
 })

@@ -426,7 +426,11 @@ class AlternativeMatcher(val elements: List<Matcher>) : BaseMatcher() {
     ): Transformer = if (elements.size == result.elements.size) {
         AlternativeTransformer(elements, result.elements, filtered)
     } else {
-        mismatchedLengths(this, result, elements, result.elements)
+        try {
+            AlternativeTransformer(elements, result, filtered)
+        } catch (_: LscInvalidTransformation) {
+            mismatchedLengths(this, result, elements, result.elements)
+        }
     }
 
     override fun transformerToSequence(
