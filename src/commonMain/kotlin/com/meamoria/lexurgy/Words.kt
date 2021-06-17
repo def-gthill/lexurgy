@@ -541,8 +541,10 @@ class Phrase(val words: List<Word>) : Iterable<Word> {
             )
         }
 
-    fun fullyReversed(): Phrase =
-        Phrase(reversed().map { it.reversed() })
+    private val fullyReversed: Phrase by lazy { Phrase(reversed().map { it.reversed() }) }
+
+    fun fullyReversed(): Phrase = fullyReversed
+
 
     /**
      * Joins this Phrase's words together with space to form a Word
