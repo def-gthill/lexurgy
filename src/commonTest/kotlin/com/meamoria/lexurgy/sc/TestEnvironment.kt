@@ -104,7 +104,7 @@ class TestEnvironment : StringSpec({
                 Class vstop {b, d, g}
                 Class cons {@uvstop, @vstop, s, m, n, l}
                 coda-tone:
-                    @vowel (@cons*)$1 {@uvstop / @cons _, @uvstop} => [+hitone] $1 {*, @vstop}
+                    @vowel (@cons*)$1 {(@uvstop / @cons _), @uvstop} => [+hitone] $1 {*, @vstop}
             """.trimIndent()
         )
 
@@ -117,7 +117,7 @@ class TestEnvironment : StringSpec({
         val ch2 = lsc(
             """
                 partial-condition:
-                    {{b, d, g} / _ $, {pʰ, tʰ, kʰ}} => {p, t, k}
+                    {({b, d, g} / _ $), {pʰ, tʰ, kʰ}} => {p, t, k}
             """.trimIndent()
         )
 

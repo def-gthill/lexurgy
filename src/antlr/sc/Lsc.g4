@@ -62,7 +62,7 @@ list: LIST_START ruleElement (SEP ruleElement)* LIST_END;
 
 // "Free" elements have sub-elements floating free amid whitespace
 sequence: freeElement (WHITESPACE freeElement)+;
-lookaround: freeElement compoundEnvironment;
+lookaround: O_PAREN freeElement compoundEnvironment C_PAREN;
 freeElement: group | list | intersection | negated | capture | repeater | simple;
 
 compoundEnvironment: (CONDITION condition)? (EXCLUSION exclusion)?;
