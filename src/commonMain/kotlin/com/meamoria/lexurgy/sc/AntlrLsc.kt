@@ -46,10 +46,8 @@ expect open class LscBaseVisitor<T>() {
     open fun visitFrom(ctx: FromContext): T
     open fun visitTo(ctx: ToContext): T
     open fun visitRuleElement(ctx: RuleElementContext): T
-    open fun visitBounded(ctx: BoundedContext): T
     open fun visitGroup(ctx: GroupContext): T
     open fun visitList(ctx: ListContext): T
-    open fun visitFree(ctx: FreeContext): T
     open fun visitSequence(ctx: SequenceContext): T
     open fun visitLookaround(ctx: LookaroundContext): T
     open fun visitFreeElement(ctx: FreeElementContext): T
@@ -60,12 +58,9 @@ expect open class LscBaseVisitor<T>() {
     open fun visitEnvironment(ctx: EnvironmentContext): T
     open fun visitEnvironmentBefore(ctx: EnvironmentBeforeContext): T
     open fun visitEnvironmentAfter(ctx: EnvironmentAfterContext): T
-    open fun visitInterfix(ctx: InterfixContext): T
     open fun visitIntersection(ctx : IntersectionContext): T
     open fun visitInterfixElement(ctx : InterfixElementContext): T
-    open fun visitPrefix(ctx: PrefixContext): T
     open fun visitNegated(ctx: NegatedContext): T
-    open fun visitPostfix(ctx: PostfixContext): T
     open fun visitCapture(ctx: CaptureContext): T
     open fun visitRepeater(ctx: RepeaterContext): T
     open fun visitSimple(ctx: SimpleContext): T
@@ -222,8 +217,6 @@ expect class ToContext : ParserRuleContext {
 
 expect class RuleElementContext : ParserRuleContext
 
-expect class BoundedContext : ParserRuleContext
-
 expect class GroupContext : ParserRuleContext {
     fun ruleElement(): RuleElementContext
 }
@@ -231,8 +224,6 @@ expect class GroupContext : ParserRuleContext {
 expect class ListContext : ParserRuleContext
 
 expect fun ListContext.allRuleElements(): List<RuleElementContext>
-
-expect class FreeContext : ParserRuleContext
 
 expect class SequenceContext : ParserRuleContext
 
@@ -272,19 +263,13 @@ expect class EnvironmentAfterContext : ParserRuleContext {
     fun ruleElement(): RuleElementContext
 }
 
-expect class InterfixContext : ParserRuleContext
-
 expect class IntersectionContext : ParserRuleContext
 
 expect fun IntersectionContext.allInterfixElements(): List<InterfixElementContext>
 
 expect class InterfixElementContext : ParserRuleContext
 
-expect class PrefixContext : ParserRuleContext
-
 expect class NegatedContext : ParserRuleContext
-
-expect class PostfixContext : ParserRuleContext
 
 expect class CaptureContext : ParserRuleContext {
     fun captureRef(): CaptureRefContext

@@ -341,8 +341,6 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     override fun visitRuleElement(ctx: RuleElementContext): ParseNode = visit(ctx.getChild(0))
 
-    override fun visitBounded(ctx: BoundedContext): ParseNode = visit(ctx.getChild(0))
-
     override fun visitGroup(ctx: GroupContext): ParseNode =
         visit(ctx.ruleElement())
 
@@ -351,8 +349,6 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             ctx.getText(),
             listVisit(ctx.allRuleElements()),
         )
-
-    override fun visitFree(ctx: FreeContext): ParseNode = visit(ctx.getChild(0))
 
     override fun visitSequence(ctx: SequenceContext): ParseNode =
         walkRuleSequence(ctx.getText(), listVisit(ctx.allFreeElements()))
@@ -402,8 +398,6 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     override fun visitEnvironmentAfter(ctx: EnvironmentAfterContext): ParseNode = visit(ctx.ruleElement())
 
-    override fun visitInterfix(ctx: InterfixContext): ParseNode = visit(ctx.getChild(0))
-
     override fun visitIntersection(ctx: IntersectionContext): ParseNode =
         walkIntersection(
             ctx.getText(),
@@ -413,15 +407,11 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     override fun visitInterfixElement(ctx: InterfixElementContext): ParseNode =
         visit(ctx.getChild(0))
 
-    override fun visitPrefix(ctx: PrefixContext): ParseNode = visit(ctx.getChild(0))
-
     override fun visitNegated(ctx: NegatedContext): ParseNode =
         walkNegatedElement(
             ctx.getText(),
             visit(ctx.getChild(1)),
         )
-
-    override fun visitPostfix(ctx: PostfixContext): ParseNode = visit(ctx.getChild(0))
 
     override fun visitCapture(ctx: CaptureContext): ParseNode =
         walkRuleCapture(

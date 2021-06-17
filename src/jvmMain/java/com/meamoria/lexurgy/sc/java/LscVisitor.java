@@ -185,12 +185,6 @@ public interface LscVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitRuleElement(LscParser.RuleElementContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link LscParser#bounded}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitBounded(LscParser.BoundedContext ctx);
-	/**
 	 * Visit a parse tree produced by {@link LscParser#group}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -202,12 +196,6 @@ public interface LscVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitList(LscParser.ListContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link LscParser#free}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitFree(LscParser.FreeContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link LscParser#sequence}.
 	 * @param ctx the parse tree
@@ -269,12 +257,6 @@ public interface LscVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitEnvironmentAfter(LscParser.EnvironmentAfterContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link LscParser#interfix}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitInterfix(LscParser.InterfixContext ctx);
-	/**
 	 * Visit a parse tree produced by {@link LscParser#intersection}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -287,23 +269,11 @@ public interface LscVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitInterfixElement(LscParser.InterfixElementContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link LscParser#prefix}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitPrefix(LscParser.PrefixContext ctx);
-	/**
 	 * Visit a parse tree produced by {@link LscParser#negated}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitNegated(LscParser.NegatedContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link LscParser#postfix}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitPostfix(LscParser.PostfixContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link LscParser#capture}.
 	 * @param ctx the parse tree

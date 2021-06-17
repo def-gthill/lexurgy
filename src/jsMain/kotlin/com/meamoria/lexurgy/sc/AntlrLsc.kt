@@ -151,8 +151,6 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
 
     class RuleElementContext : ParserRuleContext
 
-    class BoundedContext : ParserRuleContext
-
     class GroupContext : ParserRuleContext {
         fun ruleElement(): RuleElementContext
     }
@@ -160,8 +158,6 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     class ListContext : ParserRuleContext {
         fun ruleElement(): Array<RuleElementContext>
     }
-
-    class FreeContext : ParserRuleContext
 
     class SequenceContext : ParserRuleContext {
         fun freeElement(): Array<FreeElementContext>
@@ -201,19 +197,13 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
         fun ruleElement(): RuleElementContext
     }
 
-    class InterfixContext : ParserRuleContext
-
     class IntersectionContext : ParserRuleContext {
         fun interfixElement(): Array<InterfixElementContext>
     }
 
     class InterfixElementContext : ParserRuleContext
 
-    class PrefixContext : ParserRuleContext
-
     class NegatedContext : ParserRuleContext
-
-    class PostfixContext : ParserRuleContext
 
     class CaptureContext : ParserRuleContext {
         fun captureRef(): CaptureRefContext
@@ -342,13 +332,9 @@ open external class LscVisitor<T> {
 
     open fun visitRuleElement(ctx: RuleElementContext): T
 
-    open fun visitBounded(ctx: BoundedContext): T
-
     open fun visitGroup(ctx: GroupContext): T
 
     open fun visitList(ctx: ListContext): T
-
-    open fun visitFree(ctx: FreeContext): T
 
     open fun visitSequence(ctx: SequenceContext): T
 
@@ -370,17 +356,11 @@ open external class LscVisitor<T> {
 
     open fun visitEnvironmentAfter(ctx: EnvironmentAfterContext): T
 
-    open fun visitInterfix(ctx: InterfixContext): T
-
     open fun visitIntersection(ctx: IntersectionContext): T
 
     open fun visitInterfixElement(ctx: InterfixElementContext): T
 
-    open fun visitPrefix(ctx: PrefixContext): T
-
     open fun visitNegated(ctx: NegatedContext): T
-
-    open fun visitPostfix(ctx: PostfixContext): T
 
     open fun visitCapture(ctx: CaptureContext): T
 
@@ -511,15 +491,11 @@ actual typealias ToContext = LscParser.ToContext
 
 actual typealias RuleElementContext = LscParser.RuleElementContext
 
-actual typealias BoundedContext = LscParser.BoundedContext
-
 actual typealias GroupContext = LscParser.GroupContext
 
 actual typealias ListContext = LscParser.ListContext
 
 actual fun ListContext.allRuleElements(): List<RuleElementContext> = ruleElement().toList()
-
-actual typealias FreeContext = LscParser.FreeContext
 
 actual typealias SequenceContext = LscParser.SequenceContext
 
@@ -545,8 +521,6 @@ actual typealias EnvironmentBeforeContext = LscParser.EnvironmentBeforeContext
 
 actual typealias EnvironmentAfterContext = LscParser.EnvironmentAfterContext
 
-actual typealias InterfixContext = LscParser.InterfixContext
-
 actual typealias IntersectionContext = LscParser.IntersectionContext
 
 actual fun IntersectionContext.allInterfixElements(): List<InterfixElementContext> =
@@ -554,11 +528,7 @@ actual fun IntersectionContext.allInterfixElements(): List<InterfixElementContex
 
 actual typealias InterfixElementContext = LscParser.InterfixElementContext
 
-actual typealias PrefixContext = LscParser.PrefixContext
-
 actual typealias NegatedContext = LscParser.NegatedContext
-
-actual typealias PostfixContext = LscParser.PostfixContext
 
 actual typealias CaptureContext = LscParser.CaptureContext
 

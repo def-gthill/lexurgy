@@ -186,12 +186,6 @@ LscVisitor.prototype.visitRuleElement = function(ctx) {
 };
 
 
-// Visit a parse tree produced by LscParser#bounded.
-LscVisitor.prototype.visitBounded = function(ctx) {
-  return this.visitChildren(ctx);
-};
-
-
 // Visit a parse tree produced by LscParser#group.
 LscVisitor.prototype.visitGroup = function(ctx) {
   return this.visitChildren(ctx);
@@ -200,12 +194,6 @@ LscVisitor.prototype.visitGroup = function(ctx) {
 
 // Visit a parse tree produced by LscParser#list.
 LscVisitor.prototype.visitList = function(ctx) {
-  return this.visitChildren(ctx);
-};
-
-
-// Visit a parse tree produced by LscParser#free.
-LscVisitor.prototype.visitFree = function(ctx) {
   return this.visitChildren(ctx);
 };
 
@@ -270,12 +258,6 @@ LscVisitor.prototype.visitEnvironmentAfter = function(ctx) {
 };
 
 
-// Visit a parse tree produced by LscParser#interfix.
-LscVisitor.prototype.visitInterfix = function(ctx) {
-  return this.visitChildren(ctx);
-};
-
-
 // Visit a parse tree produced by LscParser#intersection.
 LscVisitor.prototype.visitIntersection = function(ctx) {
   return this.visitChildren(ctx);
@@ -288,20 +270,8 @@ LscVisitor.prototype.visitInterfixElement = function(ctx) {
 };
 
 
-// Visit a parse tree produced by LscParser#prefix.
-LscVisitor.prototype.visitPrefix = function(ctx) {
-  return this.visitChildren(ctx);
-};
-
-
 // Visit a parse tree produced by LscParser#negated.
 LscVisitor.prototype.visitNegated = function(ctx) {
-  return this.visitChildren(ctx);
-};
-
-
-// Visit a parse tree produced by LscParser#postfix.
-LscVisitor.prototype.visitPostfix = function(ctx) {
   return this.visitChildren(ctx);
 };
 

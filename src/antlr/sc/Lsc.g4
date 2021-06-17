@@ -54,16 +54,16 @@ to: ruleElement;
 //simple: negated | classRef | captureRef | fancyMatrix | empty | boundary | betweenWords | text;
 //negated: NEGATION (classRef | captureRef | text);
 
-ruleElement: bounded | interfix | prefix | postfix | simple | free;
+ruleElement: group | list | intersection | negated | capture | repeater | simple | sequence | lookaround;
 
-bounded: group | list;
+// "Bounded" elements have a clear start and end symbol
 group: O_PAREN ruleElement C_PAREN;
 list: LIST_START ruleElement (SEP ruleElement)* LIST_END;
 
-free: sequence | lookaround;
+// "Free" elements have sub-elements floating free amid whitespace
 sequence: freeElement (WHITESPACE freeElement)+;
 lookaround: freeElement compoundEnvironment;
-freeElement: bounded | interfix | prefix | postfix | simple;
+freeElement: group | list | intersection | negated | capture | repeater | simple;
 
 compoundEnvironment: (CONDITION condition)? (EXCLUSION exclusion)?;
 condition: environment | environmentList;
@@ -75,17 +75,18 @@ environment:
 environmentBefore: ruleElement;
 environmentAfter: ruleElement;
 
-interfix: intersection;
+// "Interfix" elements use a delimiter but no whitespace or boundary marker
 intersection: interfixElement (INTERSECTION interfixElement)+;
-interfixElement: bounded | prefix | postfix | simple;
+interfixElement: group | list | negated | capture | repeater | simple;
 
-prefix: negated;
+// "Prefix" elements use a prefix operator
 negated: NEGATION simple;
 
-postfix: capture | repeater;
-capture: (bounded | prefix | simple) captureRef;
-repeater: (bounded | simple) repeaterType;
+// "Postfix" elements use a postfix operator
+capture: (group | list | negated | simple) captureRef;
+repeater: (group | list | simple) repeaterType;
 
+// "Simple" elements can't have other elements inside them
 simple: classRef | captureRef | fancyMatrix | empty | boundary | betweenWords | text;
 classRef: CLASSREF name;
 captureRef: WORD_BOUNDARY NUMBER;
