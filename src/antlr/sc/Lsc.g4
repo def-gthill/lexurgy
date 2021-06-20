@@ -1,5 +1,5 @@
 grammar Lsc;
-
+// Pointless comment 2
 lscFile: WHITESPACE | NEWLINE* statement? (NEWLINE+ statement)* NEWLINE* EOF;
 statement:
     featureDecl | diacriticDecl | symbolDecl | classDecl | syllableDecl |

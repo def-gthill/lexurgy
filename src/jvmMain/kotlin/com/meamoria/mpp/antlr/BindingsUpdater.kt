@@ -72,21 +72,22 @@ class BindingsUpdater(private val inputFilePath: String) {
         val outputJs = File("src/jsMain/$outputPath")
         val jsText = listOf(
             dontModify,
-            suppress("FunctionName", "unused", "PropertyName"),
+            suppress("FunctionName", "unused", "PropertyName", "RemoveEmptyClassBody"),
             packageDeclaration,
             antlrImport,
             "actual external class ${outGrammarName}Lexer actual constructor(input: CharStream): Lexer",
             "actual external class ${outGrammarName}Parser actual constructor(input: TokenStream) : Parser {\n    " +
-                    grammar.forEachRule("actual fun #lower#(): #upper#Context").joinToString("\n    ") +
+                    grammar.forEachRule("actual fun #lower#(): #upper#Context").joinToString("\n    ") + "\n\n    " +
                     grammar.forEachRule(
-                        "class #upper#FileContext : ParserRuleContext {#elements#}",
+                        "class #upper#Context : ParserRuleContext {\n        #elements#\n    }",
                         terminalTemplate = "fun #name#(): TerminalNode?",
                         singleTemplate = "fun #lower#(): #upper#Context",
                         optionalTemplate = "fun #lower#(): #upper#Context?",
                         listTemplate = "fun #lower#(): Array<#upper#Context>",
-                    ) +
+                        separator = "\n        ",
+                    ).joinToString("\n\n    ") +
                     "\n}",
-            "open external class ${outGrammarName}Visitor<T>(){\n    fun visit(tree: ParseTree): T\n\n    " +
+            "open external class ${outGrammarName}Visitor<T>{\n    fun visit(tree: ParseTree): T\n\n    " +
                     grammar.forEachRule("open fun visit#upper#(ctx: #upper#Context): T").joinToString("\n    ") +
                     "\n}",
             "actual typealias ${outGrammarName}BaseVisitor<T> = ${outGrammarName}Visitor<T>",
@@ -120,18 +121,42 @@ object MetaWalker : MetaBaseVisitor<MetaWalker.ParseNode>() {
     override fun visitAntlrRule(ctx: MetaParser.AntlrRuleContext): ParseNode =
         AntlrRule(
             ctx.ruleName().text,
-            collectElements(visit(ctx.expression()) as Expression),
+            (visit(ctx.expression()) as Expression).collectElements(),
         )
 
-    fun collectElements(expression: Expression): List<Element> =
-        when (expression) {
-            is Group -> collectElements(expression.expression)
-            is Repeater -> when (expression.repeaterType) {
-                RepeaterType.OPTIONAL -> collectElements(expression.expression).map { it.makeOptional() }
-                else -> collectElements(expression.expression).map { it.makeList() }
-            }
-            is SequenceExpression -> expression.collectElements()
-            is AltExpressions -> expression.collectElements()
+    override fun visitExpression(ctx: MetaParser.ExpressionContext): ParseNode =
+        visit(ctx.getChild(0))
+
+    override fun visitSequence(ctx: MetaParser.SequenceContext): ParseNode =
+        SequenceExpression(listVisit(ctx.sequenceElement()).map { it as Expression })
+
+    override fun visitSequenceElement(ctx: MetaParser.SequenceElementContext): ParseNode =
+        visit(ctx.getChild(0))
+
+    override fun visitAlts(ctx: MetaParser.AltsContext): ParseNode =
+        AltExpression(listVisit(ctx.altElement()).map { it as Expression })
+
+    override fun visitAltElement(ctx: MetaParser.AltElementContext): ParseNode =
+        visit(ctx.getChild(0))
+
+    override fun visitGroup(ctx: MetaParser.GroupContext): ParseNode =
+        visit(ctx.expression())
+
+    override fun visitRepeater(ctx: MetaParser.RepeaterContext): ParseNode =
+        Repeater(visit(ctx.getChild(0)) as Expression, visit(ctx.repeaterType()) as RepeaterType)
+
+    override fun visitRepeaterType(ctx: MetaParser.RepeaterTypeContext): ParseNode =
+        when {
+            ctx.AT_LEAST_ONE() != null -> RepeaterType.AT_LEAST_ONE
+            ctx.ANY_NUMBER() != null -> RepeaterType.ANY_NUMBER
+            ctx.OPTIONAL() != null -> RepeaterType.OPTIONAL
+            else -> throw AssertionError()
+        }
+
+    override fun visitSimple(ctx: MetaParser.SimpleContext): ParseNode =
+        when {
+            ctx.ruleName() != null -> Rule(ctx.text)
+            ctx.tokenName() != null -> Token(ctx.text)
             else -> throw AssertionError()
         }
 
@@ -147,6 +172,7 @@ object MetaWalker : MetaBaseVisitor<MetaWalker.ParseNode>() {
             singleTemplate: String? = null,
             optionalTemplate: String? = null,
             listTemplate: String? = null,
+            separator: String? = null,
         ): List<String> =
             rules.map {
                 template.replaceLowerUpper(it.name)
@@ -156,6 +182,7 @@ object MetaWalker : MetaBaseVisitor<MetaWalker.ParseNode>() {
                         singleTemplate,
                         optionalTemplate,
                         listTemplate,
+                        separator,
                     ))
             }
 
@@ -165,57 +192,77 @@ object MetaWalker : MetaBaseVisitor<MetaWalker.ParseNode>() {
             singleTemplate: String?,
             optionalTemplate: String?,
             listTemplate: String?,
+            separator: String?,
         ): String =
             rule.elements.mapNotNull {
                 when (it) {
-                    is TokenName -> terminalTemplate?.replace("name", it.name)
-                    is SingleElement -> singleTemplate?.replaceLowerUpper(it.name)
-                    is OptionalElement -> optionalTemplate?.replaceLowerUpper(it.name)
-                    is ListElement -> listTemplate?.replaceLowerUpper(it.name)
-                    else -> throw AssertionError()
+                    is OptionalToken -> terminalTemplate?.replace("#name#", it.name)
+                    is SingleRule -> singleTemplate?.replaceLowerUpper(it.name)
+                    is OptionalRule -> optionalTemplate?.replaceLowerUpper(it.name)
+                    is ListRule -> listTemplate?.replaceLowerUpper(it.name)
+                    else -> null
                 }
-            }.joinToString("\n")
+            }.joinToString(separator ?: "\n")
 
         fun String.replaceLowerUpper(replacement: String): String =
-            replace("#lower#", replacement).replace("#upper#", replacement)
+            replace("#lower#", replacement).replace("#upper#", replacement.capitalize())
     }
 
     class AntlrRule(val name: String, val elements: List<Element>) : ParseNode
 
-    interface Expression
+    interface Expression : ParseNode {
+        fun collectElements(): List<Element>
+    }
 
-    class Group(val expression: Expression) : Expression
+    class Rule(val name: String) : Expression {
+        override fun collectElements(): List<Element> = listOf(SingleRule(name))
+    }
 
-    class Repeater(val expression: Expression, val repeaterType: RepeaterType) : Expression
+    class Token(val name: String) : Expression {
+        override fun collectElements(): List<Element> = listOf(SingleToken(name))
+    }
+
+    class Repeater(val expression: Expression, val repeaterType: RepeaterType) : Expression {
+        override fun collectElements(): List<Element> =
+            when (repeaterType) {
+                RepeaterType.OPTIONAL -> expression.collectElements().map { it.makeOptional() }
+                else -> expression.collectElements().map { it.makeList() }
+            }
+    }
 
     class SequenceExpression(val expressions: List<Expression>) : Expression {
-        fun collectElements(): List<Element> =
-            expressions.map { collectElements(it) }.matchNames { a, b -> a.sum(b) }
+        override fun collectElements(): List<Element> =
+            expressions.map { it.collectElements() }.matchNames({ a, b -> a.sum(b) })
     }
 
-    class AltExpressions(val expressions: List<Expression>) : Expression {
-        fun collectElements(): List<Element> =
-            expressions.map { collectElements() }.matchNames { a, b -> a.max(b) }
+    class AltExpression(val expressions: List<Expression>) : Expression {
+        override fun collectElements(): List<Element> =
+            expressions.map { it.collectElements() }.matchNames(
+                { a, b -> a.max(b) }, { e -> e.makeOptional()}
+            )
     }
 
-    fun List<List<Element>>.matchNames(combiner: (Element, Element) -> Element): List<Element> =
+    fun List<List<Element>>.matchNames(
+        combiner: (Element, Element) -> Element,
+        singleTransformer: ((Element) -> Element) = { it },
+    ): List<Element> =
         reduce { a, b ->
             val result = mutableListOf<Element>()
             val remaining = b.toMutableList()
             for (element in a) {
-                val matchingIndex = b.indexOfFirst { it.name == element.name }
+                val matchingIndex = remaining.indexOfFirst { it.name == element.name }
                 if (matchingIndex >= 0) {
-                    result += combiner(element, b[matchingIndex])
+                    result += combiner(element, remaining[matchingIndex])
                     remaining.removeAt(matchingIndex)
                 } else {
-                    result += element
+                    result += singleTransformer(element)
                 }
             }
-            result += remaining
+            result += remaining.map(singleTransformer)
             result
         }
 
-    enum class RepeaterType {
+    enum class RepeaterType : ParseNode {
         AT_LEAST_ONE,
         ANY_NUMBER,
         OPTIONAL,
@@ -233,7 +280,56 @@ object MetaWalker : MetaBaseVisitor<MetaWalker.ParseNode>() {
         fun max(other: Element): Element
     }
 
-    class TokenName(override val name: String) : Element {
+    class SingleToken(override val name: String) : Element {
+        override fun makeOptional(): Element = OptionalToken(name)
+
+        override fun makeList(): Element = ListToken(name)
+
+        override fun sum(other: Element): Element = ListToken(name)
+
+        override fun max(other: Element): Element = other
+    }
+
+    class SingleRule(override val name: String): Element {
+        override fun makeOptional(): Element = OptionalRule(name)
+
+        override fun makeList(): Element = ListRule(name)
+
+        override fun sum(other: Element): Element = ListRule(name)
+
+        override fun max(other: Element): Element = other
+    }
+
+    class OptionalToken(override val name: String) : Element {
+        override fun makeOptional(): Element = this
+
+        override fun makeList(): Element = ListToken(name)
+
+        override fun sum(other: Element): Element = ListToken(name)
+
+        override fun max(other: Element): Element =
+            when (other) {
+                is SingleToken -> this
+                else -> other
+            }
+
+    }
+
+    class OptionalRule(override val name: String): Element {
+        override fun makeOptional(): Element = this
+
+        override fun makeList(): Element = ListRule(name)
+
+        override fun sum(other: Element): Element = ListRule(name)
+
+        override fun max(other: Element): Element =
+            when (other) {
+                is SingleRule -> this
+                else -> other
+            }
+    }
+
+    class ListToken(override val name: String): Element {
         override fun makeOptional(): Element = this
 
         override fun makeList(): Element = this
@@ -243,31 +339,7 @@ object MetaWalker : MetaBaseVisitor<MetaWalker.ParseNode>() {
         override fun max(other: Element): Element = this
     }
 
-    class SingleElement(override val name: String): Element {
-        override fun makeOptional(): Element = OptionalElement(name)
-
-        override fun makeList(): Element = ListElement(name)
-
-        override fun sum(other: Element): Element = ListElement(name)
-
-        override fun max(other: Element): Element = other
-    }
-
-    class OptionalElement(override val name: String): Element {
-        override fun makeOptional(): Element = this
-
-        override fun makeList(): Element = ListElement(name)
-
-        override fun sum(other: Element): Element = ListElement(name)
-
-        override fun max(other: Element): Element =
-            when (other) {
-                is SingleElement -> this
-                else -> other
-            }
-    }
-
-    class ListElement(override val name: String): Element {
+    class ListRule(override val name: String): Element {
         override fun makeOptional(): Element = this
 
         override fun makeList(): Element = this
