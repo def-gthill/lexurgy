@@ -122,4 +122,3 @@ hs_err_pid*
 /.idea/compiler.xml
 /.idea/misc.xml
 **/jsMain/**/Meta*
-*Auto.kt

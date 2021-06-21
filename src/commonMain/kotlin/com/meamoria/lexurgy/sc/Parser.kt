@@ -327,7 +327,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                 ctx.getText(),
                 visit(ctx.from()!!),
                 visit(ctx.to()!!),
-                visit(ctx.compoundEnvironment()),
+                visit(ctx.compoundEnvironment()!!),
             )
         } else {
             walkDoNothingExpression()
