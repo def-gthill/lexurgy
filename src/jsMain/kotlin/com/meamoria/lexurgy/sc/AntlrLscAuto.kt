@@ -22,7 +22,6 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     actual fun symbolName(): SymbolNameContext
     actual fun syllableDecl(): SyllableDeclContext
     actual fun syllablePattern(): SyllablePatternContext
-    actual fun syllableElement(): SyllableElementContext
     actual fun deromanizer(): DeromanizerContext
     actual fun romanizer(): RomanizerContext
     actual fun interRomanizer(): InterRomanizerContext
@@ -166,12 +165,8 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     }
 
     class SyllablePatternContext : ParserRuleContext {
-        fun syllableElement(): Array<SyllableElementContext>
-        fun WHITESPACE(): Array<TerminalNode>
-    }
-
-    class SyllableElementContext : ParserRuleContext {
-        fun classRef(): ClassRefContext
+        fun ruleElement(): RuleElementContext
+        fun compoundEnvironment(): CompoundEnvironmentContext
     }
 
     class DeromanizerContext : ParserRuleContext {
@@ -510,7 +505,6 @@ open external class LscVisitor<T>{
     open fun visitSymbolName(ctx: SymbolNameContext): T
     open fun visitSyllableDecl(ctx: SyllableDeclContext): T
     open fun visitSyllablePattern(ctx: SyllablePatternContext): T
-    open fun visitSyllableElement(ctx: SyllableElementContext): T
     open fun visitDeromanizer(ctx: DeromanizerContext): T
     open fun visitRomanizer(ctx: RomanizerContext): T
     open fun visitInterRomanizer(ctx: InterRomanizerContext): T
@@ -606,10 +600,6 @@ actual typealias SyllableDeclContext = LscParser.SyllableDeclContext
 actual fun SyllableDeclContext.allSyllablePatterns(): List<SyllablePatternContext> = syllablePattern().toList()
 
 actual typealias SyllablePatternContext = LscParser.SyllablePatternContext
-
-actual fun SyllablePatternContext.allSyllableElements(): List<SyllableElementContext> = syllableElement().toList()
-
-actual typealias SyllableElementContext = LscParser.SyllableElementContext
 
 actual typealias DeromanizerContext = LscParser.DeromanizerContext
 

@@ -22,8 +22,7 @@ symbolDecl: SYMBOL WHITESPACE symbolName ((SEP symbolName)* | WHITESPACE matrix)
 symbolName: text;
 
 syllableDecl: SYLLABLE_DECL RULE_START (NEWLINE+ EXPLICIT_SYLLABLES | (NEWLINE+ syllablePattern)+);
-syllablePattern: syllableElement (WHITESPACE syllableElement)*;
-syllableElement: classRef;
+syllablePattern: ruleElement compoundEnvironment;
 
 deromanizer: DEROMANIZER (WHITESPACE LITERAL)? RULE_START NEWLINE+ block;
 romanizer: ROMANIZER (WHITESPACE LITERAL)? RULE_START NEWLINE+ block;

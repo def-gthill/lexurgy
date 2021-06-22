@@ -49,7 +49,7 @@ class TestSyllables : StringSpec({
         }
     }
 
-    "!We should be able to use complex structures in syllabification rules" {
+    "We should be able to use complex structures in syllabification rules" {
         val ch = lsc(
             """
                 Feature type(*cons, vowel)
@@ -66,7 +66,7 @@ class TestSyllables : StringSpec({
             """.trimIndent()
         )
 
-        ch("ratsplat") shouldBe "rat.splat"
+        ch("jaksprat") shouldBe "jak.sprat"
         ch("wisnagnit") shouldBe "wis.nag.nit"
 
         shouldThrow<SyllableStructureViolated> { ch("mtar") }

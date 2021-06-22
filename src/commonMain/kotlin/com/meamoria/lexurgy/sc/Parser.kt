@@ -212,13 +212,11 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         )
 
     override fun visitSyllablePattern(ctx: SyllablePatternContext): ParseNode =
-        walkRuleSequence(
+        walkLookaround(
             ctx.getText(),
-            listVisit(ctx.allSyllableElements()),
+            visit(ctx.ruleElement()),
+            visit(ctx.compoundEnvironment())
         )
-
-    override fun visitSyllableElement(ctx: SyllableElementContext): ParseNode =
-        walkSimpleElement(visit(ctx.getChild(0)))
 
     override fun visitDeromanizer(ctx: DeromanizerContext): ParseNode =
         walkDeromanizer(

@@ -22,7 +22,6 @@ expect class LscParser(input: TokenStream) : Parser {
     fun symbolName(): SymbolNameContext
     fun syllableDecl(): SyllableDeclContext
     fun syllablePattern(): SyllablePatternContext
-    fun syllableElement(): SyllableElementContext
     fun deromanizer(): DeromanizerContext
     fun romanizer(): RomanizerContext
     fun interRomanizer(): InterRomanizerContext
@@ -93,7 +92,6 @@ expect open class LscBaseVisitor<T>(){
     open fun visitSymbolName(ctx: SymbolNameContext): T
     open fun visitSyllableDecl(ctx: SyllableDeclContext): T
     open fun visitSyllablePattern(ctx: SyllablePatternContext): T
-    open fun visitSyllableElement(ctx: SyllableElementContext): T
     open fun visitDeromanizer(ctx: DeromanizerContext): T
     open fun visitRomanizer(ctx: RomanizerContext): T
     open fun visitInterRomanizer(ctx: InterRomanizerContext): T
@@ -242,13 +240,8 @@ expect class SyllableDeclContext : ParserRuleContext {
 expect fun SyllableDeclContext.allSyllablePatterns(): List<SyllablePatternContext>
 
 expect class SyllablePatternContext : ParserRuleContext {
-
-}
-
-expect fun SyllablePatternContext.allSyllableElements(): List<SyllableElementContext>
-
-expect class SyllableElementContext : ParserRuleContext {
-    fun classRef(): ClassRefContext
+    fun ruleElement(): RuleElementContext
+    fun compoundEnvironment(): CompoundEnvironmentContext
 }
 
 
