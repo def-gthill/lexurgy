@@ -185,6 +185,12 @@ public interface LscVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitRuleElement(LscParser.RuleElementContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link LscParser#bounded}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitBounded(LscParser.BoundedContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link LscParser#group}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -274,6 +280,12 @@ public interface LscVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitNegated(LscParser.NegatedContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link LscParser#postfix}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitPostfix(LscParser.PostfixContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link LscParser#capture}.
 	 * @param ctx the parse tree

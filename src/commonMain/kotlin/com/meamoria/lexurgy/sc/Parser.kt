@@ -341,6 +341,9 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     override fun visitRuleElement(ctx: RuleElementContext): ParseNode = visit(ctx.getChild(0))
 
+    override fun visitBounded(ctx: BoundedContext): ParseNode =
+        visit(ctx.getChild(0))
+
     override fun visitGroup(ctx: GroupContext): ParseNode =
         visit(ctx.ruleElement())
 
@@ -412,6 +415,9 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             ctx.getText(),
             visit(ctx.getChild(1)),
         )
+
+    override fun visitPostfix(ctx: PostfixContext): ParseNode =
+        visit(ctx.getChild(0))
 
     override fun visitCapture(ctx: CaptureContext): ParseNode =
         walkRuleCapture(

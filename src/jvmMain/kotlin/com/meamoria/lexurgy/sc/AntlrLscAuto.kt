@@ -96,6 +96,8 @@ actual typealias ToContext = LscParser.ToContext
 
 actual typealias RuleElementContext = LscParser.RuleElementContext
 
+actual typealias BoundedContext = LscParser.BoundedContext
+
 actual typealias GroupContext = LscParser.GroupContext
 
 actual typealias ListContext = LscParser.ListContext
@@ -133,6 +135,8 @@ actual fun IntersectionContext.allInterfixElements(): List<InterfixElementContex
 actual typealias InterfixElementContext = LscParser.InterfixElementContext
 
 actual typealias NegatedContext = LscParser.NegatedContext
+
+actual typealias PostfixContext = LscParser.PostfixContext
 
 actual typealias CaptureContext = LscParser.CaptureContext
 

@@ -38,6 +38,7 @@ expect class LscParser(input: TokenStream) : Parser {
     fun from(): FromContext
     fun to(): ToContext
     fun ruleElement(): RuleElementContext
+    fun bounded(): BoundedContext
     fun group(): GroupContext
     fun list(): ListContext
     fun sequence(): SequenceContext
@@ -53,6 +54,7 @@ expect class LscParser(input: TokenStream) : Parser {
     fun intersection(): IntersectionContext
     fun interfixElement(): InterfixElementContext
     fun negated(): NegatedContext
+    fun postfix(): PostfixContext
     fun capture(): CaptureContext
     fun repeater(): RepeaterContext
     fun simple(): SimpleContext
@@ -107,6 +109,7 @@ expect open class LscBaseVisitor<T>(){
     open fun visitFrom(ctx: FromContext): T
     open fun visitTo(ctx: ToContext): T
     open fun visitRuleElement(ctx: RuleElementContext): T
+    open fun visitBounded(ctx: BoundedContext): T
     open fun visitGroup(ctx: GroupContext): T
     open fun visitList(ctx: ListContext): T
     open fun visitSequence(ctx: SequenceContext): T
@@ -122,6 +125,7 @@ expect open class LscBaseVisitor<T>(){
     open fun visitIntersection(ctx: IntersectionContext): T
     open fun visitInterfixElement(ctx: InterfixElementContext): T
     open fun visitNegated(ctx: NegatedContext): T
+    open fun visitPostfix(ctx: PostfixContext): T
     open fun visitCapture(ctx: CaptureContext): T
     open fun visitRepeater(ctx: RepeaterContext): T
     open fun visitSimple(ctx: SimpleContext): T
@@ -350,15 +354,19 @@ expect class ToContext : ParserRuleContext {
 
 
 expect class RuleElementContext : ParserRuleContext {
-    fun group(): GroupContext?
-    fun list(): ListContext?
+    fun bounded(): BoundedContext?
     fun intersection(): IntersectionContext?
     fun negated(): NegatedContext?
-    fun capture(): CaptureContext?
-    fun repeater(): RepeaterContext?
+    fun postfix(): PostfixContext?
     fun simple(): SimpleContext?
     fun sequence(): SequenceContext?
     fun lookaround(): LookaroundContext?
+}
+
+
+expect class BoundedContext : ParserRuleContext {
+    fun group(): GroupContext?
+    fun list(): ListContext?
 }
 
 
@@ -391,12 +399,10 @@ expect class LookaroundContext : ParserRuleContext {
 
 
 expect class FreeElementContext : ParserRuleContext {
-    fun group(): GroupContext?
-    fun list(): ListContext?
+    fun bounded(): BoundedContext?
     fun intersection(): IntersectionContext?
     fun negated(): NegatedContext?
-    fun capture(): CaptureContext?
-    fun repeater(): RepeaterContext?
+    fun postfix(): PostfixContext?
     fun simple(): SimpleContext?
 }
 
@@ -452,11 +458,9 @@ expect class IntersectionContext : ParserRuleContext {
 expect fun IntersectionContext.allInterfixElements(): List<InterfixElementContext>
 
 expect class InterfixElementContext : ParserRuleContext {
-    fun group(): GroupContext?
-    fun list(): ListContext?
+    fun bounded(): BoundedContext?
     fun negated(): NegatedContext?
-    fun capture(): CaptureContext?
-    fun repeater(): RepeaterContext?
+    fun postfix(): PostfixContext?
     fun simple(): SimpleContext?
 }
 
@@ -467,9 +471,14 @@ expect class NegatedContext : ParserRuleContext {
 }
 
 
+expect class PostfixContext : ParserRuleContext {
+    fun capture(): CaptureContext?
+    fun repeater(): RepeaterContext?
+}
+
+
 expect class CaptureContext : ParserRuleContext {
-    fun group(): GroupContext?
-    fun list(): ListContext?
+    fun bounded(): BoundedContext?
     fun negated(): NegatedContext?
     fun simple(): SimpleContext?
     fun captureRef(): CaptureRefContext
@@ -477,8 +486,7 @@ expect class CaptureContext : ParserRuleContext {
 
 
 expect class RepeaterContext : ParserRuleContext {
-    fun group(): GroupContext?
-    fun list(): ListContext?
+    fun bounded(): BoundedContext?
     fun simple(): SimpleContext?
     fun repeaterType(): RepeaterTypeContext
 }

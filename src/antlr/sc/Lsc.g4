@@ -1,5 +1,5 @@
 grammar Lsc;
-// Pointless comment 1
+
 lscFile: WHITESPACE | NEWLINE* statement? (NEWLINE+ statement)* NEWLINE* EOF;
 statement:
     featureDecl | diacriticDecl | symbolDecl | classDecl | syllableDecl |
@@ -42,28 +42,17 @@ expression: UNCHANGED | (from CHANGE to compoundEnvironment);
 from: ruleElement;
 to: ruleElement;
 
-//ruleElement: capture | repeater | group | list | intersection | simple | sequence;
-//sequence: sequenceElement (WHITESPACE sequenceElement)+;
-//sequenceElement: capture | repeater | group | list | intersection | simple;
-//capture: (group | list | negated | classRef | fancyMatrix) captureRef;
-//repeater: (group | list | simple) repeaterType;
-//group: O_PAREN ruleElement C_PAREN;
-//list: LIST_START ruleElement (SEP ruleElement)* LIST_END;
-//intersection: intersectionElement (INTERSECTION intersectionElement)+;
-//intersectionElement: capture | repeater | group | list | simple;
-//simple: negated | classRef | captureRef | fancyMatrix | empty | boundary | betweenWords | text;
-//negated: NEGATION (classRef | captureRef | text);
-
-ruleElement: group | list | intersection | negated | capture | repeater | simple | sequence | lookaround;
+ruleElement: bounded | intersection | negated | postfix | simple | sequence | lookaround;
 
 // "Bounded" elements have a clear start and end symbol
+bounded: group | list;
 group: O_PAREN ruleElement C_PAREN;
 list: LIST_START ruleElement (SEP ruleElement)* LIST_END;
 
 // "Free" elements have sub-elements floating free amid whitespace
 sequence: freeElement (WHITESPACE freeElement)+;
 lookaround: O_PAREN freeElement compoundEnvironment C_PAREN;
-freeElement: group | list | intersection | negated | capture | repeater | simple;
+freeElement: bounded | intersection | negated | postfix | simple;
 
 compoundEnvironment: (CONDITION condition)? (EXCLUSION exclusion)?;
 condition: environment | environmentList;
@@ -77,14 +66,15 @@ environmentAfter: ruleElement;
 
 // "Interfix" elements use a delimiter but no whitespace or boundary marker
 intersection: interfixElement (INTERSECTION interfixElement)+;
-interfixElement: group | list | negated | capture | repeater | simple;
+interfixElement: bounded | negated | postfix | simple;
 
 // "Prefix" elements use a prefix operator
 negated: NEGATION simple;
 
 // "Postfix" elements use a postfix operator
-capture: (group | list | negated | simple) captureRef;
-repeater: (group | list | simple) repeaterType;
+postfix: capture | repeater;
+capture: (bounded | negated | simple) captureRef;
+repeater: (bounded | simple) repeaterType;
 
 // "Simple" elements can't have other elements inside them
 simple: classRef | captureRef | fancyMatrix | empty | boundary | betweenWords | text;
