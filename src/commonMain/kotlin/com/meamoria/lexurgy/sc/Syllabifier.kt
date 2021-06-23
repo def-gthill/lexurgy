@@ -11,7 +11,7 @@ class Syllabifier(
     private val reversedPatterns = patterns.map { it.reversed() }
 
     fun syllabify(word: Word): SyllabifiedWord =
-        if (patterns.isEmpty() && word is SyllabifiedWord) word else {
+        if (patterns.isEmpty() && word.isSyllabified()) word.asSyllabified()!! else {
             val reversedWord = word.reversed()
 
             val syllableBreaks = mutableListOf<Int>()

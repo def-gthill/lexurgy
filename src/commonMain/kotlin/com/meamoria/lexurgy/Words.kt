@@ -65,6 +65,17 @@ interface Word : Comparable<Word> {
     fun recoverStructure(other: Word): Word
 
     /**
+     * Checks whether this word has syllable structure
+     */
+    fun isSyllabified(): Boolean
+
+    /**
+     * Converts to a syllabified word if possible, otherwise
+     * returns null
+     */
+    fun asSyllabified(): SyllabifiedWord?
+
+    /**
      * Returns the word represented by this ``Word`` as
      * a plain string (as per ``string``) but with the
      * specified segment made prominent
@@ -140,6 +151,11 @@ private class ReversedWord(val inner: Word) : Word {
             else -> inner.forceReversed().recoverStructure(other)
         }
 
+    override fun isSyllabified(): Boolean = inner.isSyllabified()
+
+    override fun asSyllabified(): SyllabifiedWord? =
+        force().asSyllabified()
+
     override fun toString(): String =
         segments.joinToString(separator = "/") { it.string } + " (reversed)"
 
@@ -184,6 +200,10 @@ class StandardWord(
         StandardWord(stringSegments + other.segments.map { it.string })
 
     override fun recoverStructure(other: Word): Word = other
+
+    override fun isSyllabified(): Boolean = false
+
+    override fun asSyllabified(): SyllabifiedWord? = null
 
     override fun toString(): String =
         stringSegments.joinToString(separator = "/")
@@ -290,32 +310,31 @@ class SyllabifiedWord(
         )
 
     override fun plus(other: Word): Word =
-        when (other) {
-            is SyllabifiedWord -> {
-                var otherSyllableBreaks = other.syllableBreaks.map { it + length }
-                if (syllableBreaks.isNotEmpty() &&
-                        syllableBreaks.last() == otherSyllableBreaks.firstOrNull()) {
-                    otherSyllableBreaks = otherSyllableBreaks.drop(1)
-                }
-                SyllabifiedWord(
-                    stringSegments + other.stringSegments,
-                    syllableBreaks + otherSyllableBreaks
-                )
+        other.asSyllabified()?.let { sylOther ->
+            var otherSyllableBreaks = sylOther.syllableBreaks.map { it + length }
+            if (syllableBreaks.isNotEmpty() &&
+                syllableBreaks.last() == otherSyllableBreaks.firstOrNull()
+            ) {
+                otherSyllableBreaks = otherSyllableBreaks.drop(1)
             }
-            else -> SyllabifiedWord(
-                stringSegments + other.segments.map { it.string },
-                syllableBreaks,
+            SyllabifiedWord(
+                stringSegments + sylOther.stringSegments,
+                syllableBreaks + otherSyllableBreaks
             )
-        }
+        } ?: SyllabifiedWord(
+            stringSegments + other.segments.map { it.string },
+            syllableBreaks,
+        )
 
     override fun recoverStructure(other: Word): Word =
-        when (other) {
-            is SyllabifiedWord -> other
-            else -> SyllabifiedWord(
-                other.segments.map { it.string },
-                syllableBreaks.filter { it <= other.length }
-            )
-        }
+        other.asSyllabified() ?: SyllabifiedWord(
+            other.segments.map { it.string },
+            syllableBreaks.filter { it <= other.length }
+        )
+
+    override fun isSyllabified(): Boolean = true
+
+    override fun asSyllabified(): SyllabifiedWord = this
 
     override fun toString(): String =
         syllablesAsWords.joinToString("//")

@@ -666,16 +666,13 @@ object EmptyMatcher : SimpleMatcher() {
 
 object SyllableMatcher : SimpleMatcher() {
     override fun claim(declarations: Declarations, word: Word, start: Int, bindings: Bindings): Int? =
-        when (word) {
-            is SyllabifiedWord -> {
-                val syllableIndex = word.syllableBreaks.indexOf(start)
-                when {
-                    syllableIndex < 0 -> null
-                    syllableIndex + 1 == word.syllableBreaks.size -> word.length
-                    else -> word.syllableBreaks[syllableIndex + 1]
-                }
+        word.asSyllabified()?.let { sylWord ->
+            val syllableIndex = sylWord.syllableBreaks.indexOf(start)
+            when {
+                syllableIndex < 0 -> null
+                syllableIndex + 1 == sylWord.syllableBreaks.size -> word.length
+                else -> sylWord.syllableBreaks[syllableIndex + 1]
             }
-            else -> null
         }
 
     override fun reversed(): Matcher = this

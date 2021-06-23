@@ -118,7 +118,7 @@ class TestSyllables : StringSpec({
                 Syllables:
                     @cons? @vowel @cons?
                 stress-second:
-                    @vowel => [+stress] / <syl> @cons? _ $
+                    @vowel => [+stress] / $ <syl> @cons? _
             """.trimIndent()
         )
 
