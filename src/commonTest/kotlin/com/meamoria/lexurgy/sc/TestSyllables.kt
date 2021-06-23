@@ -72,4 +72,58 @@ class TestSyllables : StringSpec({
         shouldThrow<SyllableStructureViolated> { ch("mtar") }
         shouldThrow<SyllableStructureViolated> { ch("antki")}
     }
+
+    "Words that have been automatically syllabified should be re-syllabified after every simple rule" {
+        val ch = lsc(
+            """
+                Class vowel {a, e, i, o, u}
+                Class cons {p, t, k, s, m, n, l, r}
+                Syllables:
+                    @cons? @vowel @cons?
+                r-drop:
+                    r => * / @cons _
+                hiatus-collapse:
+                    {ea, oa, ae, ao} => a
+            """.trimIndent()
+        )
+
+        ch("patran") shouldBe "pa.tan"
+        ch("kaonira") shouldBe "ka.ni.ra"
+    }
+
+    "The <syl> token should match any single syllable" {
+        val ch = lsc(
+            """
+                Feature +stress
+                Diacritic ˈ (before) (floating) [+stress]
+                Class vowel {a, e, i, o, u}
+                Class cons {p, t, k, s, m, n, l, r}
+                Syllables:
+                    @cons? @vowel @cons?
+                stress-penult:
+                    @vowel => [+stress] / _ @cons? <syl> $
+            """.trimIndent()
+        )
+
+        ch("kopiko") shouldBe "ko.pˈi.ko"
+        ch("maria") shouldBe "ma.rˈi.a"
+        ch("salamanka") shouldBe "sa.la.mˈan.ka"
+
+        val ch2 = lsc(
+            """
+                Feature +stress
+                Diacritic ˈ (before) (floating) [+stress]
+                Class vowel {a, e, i, o, u}
+                Class cons {p, t, k, s, m, n, l, r}
+                Syllables:
+                    @cons? @vowel @cons?
+                stress-second:
+                    @vowel => [+stress] / <syl> @cons? _ $
+            """.trimIndent()
+        )
+
+        ch2("kopiko") shouldBe "ko.pˈi.ko"
+        ch2("maria") shouldBe "ma.rˈi.a"
+        ch2("salamanka") shouldBe "sa.lˈa.man.ka"
+    }
 })

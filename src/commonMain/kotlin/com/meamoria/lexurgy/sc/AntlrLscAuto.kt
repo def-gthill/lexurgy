@@ -57,6 +57,7 @@ expect class LscParser(input: TokenStream) : Parser {
     fun capture(): CaptureContext
     fun repeater(): RepeaterContext
     fun simple(): SimpleContext
+    fun anySyllable(): AnySyllableContext
     fun classRef(): ClassRefContext
     fun captureRef(): CaptureRefContext
     fun fancyMatrix(): FancyMatrixContext
@@ -127,6 +128,7 @@ expect open class LscBaseVisitor<T>(){
     open fun visitCapture(ctx: CaptureContext): T
     open fun visitRepeater(ctx: RepeaterContext): T
     open fun visitSimple(ctx: SimpleContext): T
+    open fun visitAnySyllable(ctx: AnySyllableContext): T
     open fun visitClassRef(ctx: ClassRefContext): T
     open fun visitCaptureRef(ctx: CaptureRefContext): T
     open fun visitFancyMatrix(ctx: FancyMatrixContext): T
@@ -486,6 +488,7 @@ expect class RepeaterContext : ParserRuleContext {
 
 
 expect class SimpleContext : ParserRuleContext {
+    fun anySyllable(): AnySyllableContext?
     fun classRef(): ClassRefContext?
     fun captureRef(): CaptureRefContext?
     fun fancyMatrix(): FancyMatrixContext?
@@ -493,6 +496,11 @@ expect class SimpleContext : ParserRuleContext {
     fun boundary(): BoundaryContext?
     fun betweenWords(): BetweenWordsContext?
     fun text(): TextContext?
+}
+
+
+expect class AnySyllableContext : ParserRuleContext {
+    fun ANY_SYLLABLE(): TerminalNode
 }
 
 

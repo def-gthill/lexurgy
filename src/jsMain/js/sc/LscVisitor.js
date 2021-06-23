@@ -300,6 +300,12 @@ LscVisitor.prototype.visitSimple = function(ctx) {
 };
 
 
+// Visit a parse tree produced by LscParser#anySyllable.
+LscVisitor.prototype.visitAnySyllable = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
 // Visit a parse tree produced by LscParser#classRef.
 LscVisitor.prototype.visitClassRef = function(ctx) {
   return this.visitChildren(ctx);

@@ -299,6 +299,12 @@ public interface LscVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitSimple(LscParser.SimpleContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link LscParser#anySyllable}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitAnySyllable(LscParser.AnySyllableContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link LscParser#classRef}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

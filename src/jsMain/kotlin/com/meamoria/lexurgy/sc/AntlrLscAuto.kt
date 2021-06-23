@@ -57,6 +57,7 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     actual fun capture(): CaptureContext
     actual fun repeater(): RepeaterContext
     actual fun simple(): SimpleContext
+    actual fun anySyllable(): AnySyllableContext
     actual fun classRef(): ClassRefContext
     actual fun captureRef(): CaptureRefContext
     actual fun fancyMatrix(): FancyMatrixContext
@@ -388,6 +389,7 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     }
 
     class SimpleContext : ParserRuleContext {
+        fun anySyllable(): AnySyllableContext?
         fun classRef(): ClassRefContext?
         fun captureRef(): CaptureRefContext?
         fun fancyMatrix(): FancyMatrixContext?
@@ -395,6 +397,10 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
         fun boundary(): BoundaryContext?
         fun betweenWords(): BetweenWordsContext?
         fun text(): TextContext?
+    }
+
+    class AnySyllableContext : ParserRuleContext {
+        fun ANY_SYLLABLE(): TerminalNode
     }
 
     class ClassRefContext : ParserRuleContext {
@@ -540,6 +546,7 @@ open external class LscVisitor<T>{
     open fun visitCapture(ctx: CaptureContext): T
     open fun visitRepeater(ctx: RepeaterContext): T
     open fun visitSimple(ctx: SimpleContext): T
+    open fun visitAnySyllable(ctx: AnySyllableContext): T
     open fun visitClassRef(ctx: ClassRefContext): T
     open fun visitCaptureRef(ctx: CaptureRefContext): T
     open fun visitFancyMatrix(ctx: FancyMatrixContext): T
@@ -686,6 +693,8 @@ actual typealias CaptureContext = LscParser.CaptureContext
 actual typealias RepeaterContext = LscParser.RepeaterContext
 
 actual typealias SimpleContext = LscParser.SimpleContext
+
+actual typealias AnySyllableContext = LscParser.AnySyllableContext
 
 actual typealias ClassRefContext = LscParser.ClassRefContext
 

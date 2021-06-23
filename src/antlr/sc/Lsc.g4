@@ -76,7 +76,8 @@ capture: (bounded | negated | simple) captureRef;
 repeater: (bounded | simple) repeaterType;
 
 // "Simple" elements can't have other elements inside them
-simple: classRef | captureRef | fancyMatrix | empty | boundary | betweenWords | text;
+simple: anySyllable | classRef | captureRef | fancyMatrix | empty | boundary | betweenWords | text;
+anySyllable: ANY_SYLLABLE;
 classRef: CLASSREF name;
 captureRef: WORD_BOUNDARY NUMBER;
 
@@ -129,6 +130,7 @@ DIA_FLOATING: '(Floating)' | '(floating)';
 SYMBOL: 'Symbol' | 'symbol';
 SYLLABLE_DECL: 'Syllables';
 EXPLICIT_SYLLABLES: 'explicit';
+ANY_SYLLABLE: '<Syl>' | '<syl>';
 DEROMANIZER: 'Deromanizer' | 'deromanizer';
 ROMANIZER: 'Romanizer' | 'romanizer';
 ALL_MATCHING: 'Then' | 'then';

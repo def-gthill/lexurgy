@@ -140,6 +140,8 @@ actual typealias RepeaterContext = LscParser.RepeaterContext
 
 actual typealias SimpleContext = LscParser.SimpleContext
 
+actual typealias AnySyllableContext = LscParser.AnySyllableContext
+
 actual typealias ClassRefContext = LscParser.ClassRefContext
 
 actual typealias CaptureRefContext = LscParser.CaptureRefContext

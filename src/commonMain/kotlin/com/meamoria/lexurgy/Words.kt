@@ -231,7 +231,7 @@ data class Segment(val string: String) {
 
 class SyllabifiedWord(
     private val stringSegments: List<String>,
-    private val syllableBreaks: List<Int>,
+    val syllableBreaks: List<Int>,
 ) : Word {
 
     constructor(word: Word, syllableBreaks: List<Int>) :

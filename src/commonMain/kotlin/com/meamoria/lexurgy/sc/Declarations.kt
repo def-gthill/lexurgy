@@ -123,6 +123,9 @@ class Declarations(
     fun syllabify(word: Word): Word =
         syllabifier?.syllabify(word) ?: word
 
+    fun syllabify(phrase: Phrase): Phrase =
+        Phrase(phrase.map(::syllabify))
+
     fun String.toFeature(): Feature =
         featureNameToFeatureMap[this] ?: throw LscUndefinedName("feature", this)
 

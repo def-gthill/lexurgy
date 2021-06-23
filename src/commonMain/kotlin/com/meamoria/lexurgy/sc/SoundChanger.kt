@@ -245,6 +245,7 @@ object EmptyRule : ChangeRule {
  * of expressions and an optional filter
  */
 class SimpleChangeRule(
+    val declarations: Declarations,
     val expressions: List<RuleExpression>,
     val filter: ((Segment) -> Boolean)? = null
 ) : ChangeRule {
@@ -266,7 +267,7 @@ class SimpleChangeRule(
             cursor = transformation.end
         }
         bits += phrase.dropUntil(cursor)
-        return Phrase.fromSubPhrases(bits)
+        return declarations.syllabify(Phrase.fromSubPhrases(bits))
     }
 
     private fun filterWord(word: Word): Pair<Word, IntArray> {

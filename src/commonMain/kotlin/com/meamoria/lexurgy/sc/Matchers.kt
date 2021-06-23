@@ -664,6 +664,32 @@ object EmptyMatcher : SimpleMatcher() {
     override fun toString(): String = "*"
 }
 
+object SyllableMatcher : SimpleMatcher() {
+    override fun claim(declarations: Declarations, word: Word, start: Int, bindings: Bindings): Int? =
+        when (word) {
+            is SyllabifiedWord -> {
+                val syllableIndex = word.syllableBreaks.indexOf(start)
+                when {
+                    syllableIndex < 0 -> null
+                    syllableIndex + 1 == word.syllableBreaks.size -> word.length
+                    else -> word.syllableBreaks[syllableIndex + 1]
+                }
+            }
+            else -> null
+        }
+
+    override fun reversed(): Matcher = this
+
+    override fun checkValidInFilter(result: Emitter) =
+        throw LscInvalidTransformation(
+            matcher = this,
+            emitter = result,
+            message = "<syl> isn't allowed in filtered rules"
+        )
+
+    override fun toString(): String = "<syl>"
+}
+
 /**
  * A matcher that doesn't match anything
  */

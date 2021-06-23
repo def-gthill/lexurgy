@@ -430,6 +430,9 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     override fun visitSimple(ctx: SimpleContext): ParseNode =
         walkSimpleElement(visit(ctx.getChild(0)))
 
+    override fun visitAnySyllable(ctx: AnySyllableContext): ParseNode =
+        walkAnySyllable()
+
     override fun visitClassRef(ctx: ClassRefContext): ParseNode =
         walkClassReference(
             ctx.getText(),
@@ -882,6 +885,8 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     private fun walkBetweenWords(): ParseNode = BetweenWordsElement
 
+    private fun walkAnySyllable(): ParseNode = SyllableElement
+
     private fun walkClassReference(
         text: String,
         value: ParseNode
@@ -1094,6 +1099,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             inherited: InheritedRuleProperties,
         ): ChangeRule =
             SimpleChangeRule(
+                declarations,
                 expressions.mapIndexed { index, expression ->
                     expression.link(
                         inherited.name!!,
@@ -1563,6 +1569,14 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             EmptyMatcher
 
         override fun emitter(declarations: Declarations): Emitter = EmptyEmitter
+    }
+
+    private object SyllableElement : BaseParseNode("<syl>"), RuleElement {
+        override val publicName: String = "a syllable element"
+
+        override fun matcher(context: RuleContext, declarations: Declarations): Matcher =
+            SyllableMatcher
+
     }
 
     private class ClassReferenceElement(
