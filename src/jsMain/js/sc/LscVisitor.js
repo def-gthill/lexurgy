@@ -42,6 +42,12 @@ LscVisitor.prototype.visitFeatureDecl = function(ctx) {
 };
 
 
+// Visit a parse tree produced by LscParser#featureModifier.
+LscVisitor.prototype.visitFeatureModifier = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
 // Visit a parse tree produced by LscParser#plusFeature.
 LscVisitor.prototype.visitPlusFeature = function(ctx) {
   return this.visitChildren(ctx);

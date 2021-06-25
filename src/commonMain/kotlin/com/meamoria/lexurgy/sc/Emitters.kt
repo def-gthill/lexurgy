@@ -123,6 +123,31 @@ class MatrixEmitter(val matrix: Matrix) : ConditionalEmitter {
     override fun toString(): String = matrix.toString()
 }
 
+class SyllableMatrixEmitter(val matrix: Matrix) : ConditionalEmitter {
+
+    init {
+        if (matrix.valueList.any { it is NegatedValue }) {
+            throw LscInvalidOutputMatrix(matrix, "negated feature")
+        }
+    }
+
+    override fun result(
+        declarations: Declarations, matcher: SimpleMatcher, original: Word
+    ): UnboundResult =
+        {
+            val syllableFeatures = with(declarations) {
+                matrix.toModifiers()
+            }
+            Phrase(
+                SyllabifiedWord(
+                    original, emptyList(), syllableModifiers = mapOf(0 to syllableFeatures)
+                )
+            )
+        }
+
+    override fun toString(): String = matrix.toString()
+}
+
 class SymbolEmitter(val text: Word) :
     ConditionalEmitter,
     IndependentEmitter {

@@ -55,7 +55,19 @@ interface Word : Comparable<Word> {
             start, end -> slice(start + 1 until end)
         }
 
-    operator fun plus(other: Word): Word
+    operator fun plus(other: Word): Word = concat(other)
+
+    /**
+     * Concatenates the specified word to the end of this word.
+     * ``syllableModifierCombiner`` specifies how to resolve
+     * syllable modifiers when two syllables are combined into
+     * one at the boundary. By default, the new syllable gets
+     * the modifiers from the left component only.
+     */
+    fun concat(
+        other: Word,
+        syllableModifierCombiner: (List<Modifier>, List<Modifier>) -> List<Modifier> = { a, _ -> a },
+    ): Word
 
     /**
      * Returns a word with the same segments as ``other``,
@@ -139,10 +151,17 @@ private class ReversedWord(val inner: Word) : Word {
             inner.take(inner.length - n)
         )
 
-    override fun plus(other: Word): Word =
-        when(other) {
-            is ReversedWord -> ReversedWord(other.inner + this.inner)
-            else -> forceReversed() + other
+    override fun concat(
+        other: Word,
+        syllableModifierCombiner: (List<Modifier>, List<Modifier>) -> List<Modifier>
+    ): Word =
+        when (other) {
+            is ReversedWord -> ReversedWord(
+                other.inner.concat(this.inner) { a, b ->
+                    syllableModifierCombiner(b, a)
+                }
+            )
+            else -> forceReversed().concat(other, syllableModifierCombiner)
         }
 
     override fun recoverStructure(other: Word): Word =
@@ -196,8 +215,12 @@ class StandardWord(
     override fun drop(n: Int): Word =
         StandardWord(stringSegments.drop(n))
 
-    override fun plus(other: Word): Word =
-        StandardWord(stringSegments + other.segments.map { it.string })
+    override fun concat(
+        other: Word,
+        syllableModifierCombiner: (List<Modifier>, List<Modifier>) -> List<Modifier>
+    ): Word = other.asSyllabified()?.let { sylOther ->
+        SyllabifiedWord(this, emptyList()).concat(sylOther, syllableModifierCombiner)
+    } ?: StandardWord(stringSegments + other.segments.map { it.string })
 
     override fun recoverStructure(other: Word): Word = other
 
@@ -249,16 +272,45 @@ data class Segment(val string: String) {
     }
 }
 
+data class Modifier(val string: String, val position: ModifierPosition) {
+
+}
+
+enum class ModifierPosition {
+    BEFORE,
+    FIRST,
+    NUCLEUS,
+    AFTER,
+}
+
 class SyllabifiedWord(
     private val stringSegments: List<String>,
     val syllableBreaks: List<Int>,
+    val syllableModifiers: Map<Int, List<Modifier>> = emptyMap(),
 ) : Word {
 
-    constructor(word: Word, syllableBreaks: List<Int>) :
-            this(word.segments.map { it.string }, syllableBreaks)
+    constructor(
+        word: Word,
+        syllableBreaks: List<Int>,
+        syllableModifiers: Map<Int, List<Modifier>> = emptyMap()
+    ) : this(word.segments.map { it.string }, syllableBreaks, syllableModifiers)
 
     override val string: String
-        get() = syllablesAsWords.joinToString(".") { it.string }
+        get() = syllablesAsWords.mapIndexed {
+                i, syl -> syl.string.modify(syllableModifiers[i] ?: emptyList())
+        }.joinToString(".")
+
+    private fun String.modify(modifiers: List<Modifier>): String {
+        val modifiersByPosition = modifiers.groupBy { it.position }
+        return modifiersByPosition[ModifierPosition.BEFORE].concat() +
+                (firstOrNull() ?: "") +
+                modifiersByPosition[ModifierPosition.FIRST].concat() +
+                drop(1) +
+                modifiersByPosition[ModifierPosition.AFTER].concat()
+    }
+
+    private fun List<Modifier>?.concat(): String =
+        (this ?: emptyList()).joinToString { it.string }
 
     override val segments: List<Segment>
         get() = stringSegments.map(::Segment)
@@ -269,13 +321,15 @@ class SyllabifiedWord(
         }
 
     private val syllableBreaksAndBoundaries =
-        syllableBreaks.addStart().addEnd()
+        (if (syllableBreakAtStart()) emptyList() else listOf(0)) +
+                syllableBreaks +
+                (if (syllableBreakAtEnd()) emptyList() else listOf(length))
 
-    private fun List<Int>.addStart() =
-        if (firstOrNull() == 0) this else listOf(0) + this
+    private fun syllableBreakAtStart(): Boolean =
+        syllableBreaks.firstOrNull() == 0
 
-    private fun List<Int>.addEnd() =
-        if (last() == length) this else this + length
+    private fun syllableBreakAtEnd(): Boolean =
+        syllableBreaks.lastOrNull() == length
 
     override fun normalize(): Word =
         SyllabifiedWord(
@@ -309,21 +363,39 @@ class SyllabifiedWord(
             syllableBreaks.filter { it >= n }.map { it - n }
         )
 
-    override fun plus(other: Word): Word =
+    override fun concat(
+        other: Word,
+        syllableModifierCombiner: (List<Modifier>, List<Modifier>) -> List<Modifier>
+    ): Word =
         other.asSyllabified()?.let { sylOther ->
             var otherSyllableBreaks = sylOther.syllableBreaks.map { it + length }
-            if (syllableBreaks.isNotEmpty() &&
-                syllableBreaks.last() == otherSyllableBreaks.firstOrNull()
-            ) {
+            if (this.syllableBreakAtEnd() && sylOther.syllableBreakAtStart()) {
                 otherSyllableBreaks = otherSyllableBreaks.drop(1)
             }
+            val combinedSyllableModifiers =
+                if(this.syllableBreakAtEnd() || sylOther.syllableBreakAtStart()) {
+                    this.syllableModifiers + sylOther.syllableModifiers.mapKeys {
+                        it.key + syllableBreaks.size + if (this.syllableBreakAtEnd()) 0 else 1
+                    }
+                } else {
+                    (this.syllableModifiers - syllableBreaks.size) +
+                            (syllableBreaks.size to syllableModifierCombiner(
+                                this.syllableModifiers[syllableBreaks.size] ?: emptyList(),
+                                sylOther.syllableModifiers[0] ?: emptyList(),
+                            )) +
+                            (sylOther.syllableModifiers - 0).mapKeys {
+                                it.key + syllableBreaks.size + 1
+                            }
+                }
             SyllabifiedWord(
                 stringSegments + sylOther.stringSegments,
-                syllableBreaks + otherSyllableBreaks
+                syllableBreaks + otherSyllableBreaks,
+                combinedSyllableModifiers,
             )
         } ?: SyllabifiedWord(
             stringSegments + other.segments.map { it.string },
             syllableBreaks,
+            syllableModifiers,
         )
 
     override fun recoverStructure(other: Word): Word =
@@ -560,6 +632,30 @@ class Phrase(val words: List<Word>) : Iterable<Word> {
             )
         }
 
+    /**
+     * Concatenates the specified phrase to the end of this phrase.
+     * ``syllableModifierCombiner`` specifies how to resolve
+     * syllable modifiers when two syllables are combined into
+     * one at the boundary. By default, the new syllable gets
+     * the modifiers from the left component only.
+     */
+    fun concat(
+        other: Phrase,
+        syllableModifierCombiner: (List<Modifier>, List<Modifier>) -> List<Modifier> = { a, _ -> a },
+    ): Phrase = when {
+            words.isEmpty() -> other
+            other.words.isEmpty() -> this
+            else ->
+                Phrase(
+                    words.dropLast(1) +
+                            words.last().concat(
+                                other.first(),
+                                syllableModifierCombiner,
+                            ) +
+                            other.drop(1)
+                )
+    }
+
     private val fullyReversed: Phrase by lazy { Phrase(reversed().map { it.reversed() }) }
 
     fun fullyReversed(): Phrase = fullyReversed
@@ -600,4 +696,11 @@ class Phrase(val words: List<Word>) : Iterable<Word> {
             return Phrase(result)
         }
     }
+}
+
+enum class WordLevel {
+    SEGMENT,
+    SYLLABLE,
+    WORD,
+    PHRASE,
 }

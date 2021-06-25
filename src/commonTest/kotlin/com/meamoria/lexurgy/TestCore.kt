@@ -1,6 +1,7 @@
 package com.meamoria.lexurgy
 
 import com.meamoria.mpp.kotest.StringSpec
+import com.meamoria.mpp.kotest.should
 import com.meamoria.mpp.kotest.shouldBe
 import com.meamoria.mpp.kotest.shouldThrow
 
@@ -16,6 +17,32 @@ class TestCore : StringSpec({
                 StandardWord.fromString("oob")
         StandardWord.fromString("foobar").reversed().slice(1 .. 3) shouldBe
                 StandardWord.fromString("oba").reversed()
+    }
+
+    fun foobarWithModifier(modifier: Modifier): SyllabifiedWord =
+        SyllabifiedWord(
+            StandardWord.fromString("foobar"),
+            syllableBreaks = listOf(3),
+            syllableModifiers = mapOf(0 to listOf(modifier))
+        )
+
+    "We should be able to put diacritics in different positions on a syllable" {
+        foobarWithModifier(Modifier("ˈ", ModifierPosition.BEFORE)).string shouldBe "ˈfoo.bar"
+        foobarWithModifier(Modifier("ʼ", ModifierPosition.FIRST)).string shouldBe "fʼoo.bar"
+        foobarWithModifier(Modifier("|", ModifierPosition.AFTER)).string shouldBe "foo|.bar"
+    }
+
+    fun emptyWithModifier(modifier: Modifier): SyllabifiedWord =
+        SyllabifiedWord(
+            StandardWord.fromString("foobar"),
+            syllableBreaks = listOf(3, 3),
+            syllableModifiers = mapOf(1 to listOf(modifier))
+        )
+
+    "Syllable diacritics should render even if the syllable is empty" {
+        emptyWithModifier(Modifier("ˈ", ModifierPosition.BEFORE)).string shouldBe "foo.ˈ.bar"
+        emptyWithModifier(Modifier("ʼ", ModifierPosition.FIRST)).string shouldBe "foo.ʼ.bar"
+        emptyWithModifier(Modifier("|", ModifierPosition.AFTER)).string shouldBe "foo.|.bar"
     }
 
     "We should be able to create a SegmentTree from a Map" {

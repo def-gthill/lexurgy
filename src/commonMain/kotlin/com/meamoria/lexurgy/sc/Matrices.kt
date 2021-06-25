@@ -1,6 +1,7 @@
 package com.meamoria.lexurgy.sc
 
 import com.meamoria.lexurgy.LscUserError
+import com.meamoria.lexurgy.WordLevel
 
 class Matrix(val valueList: List<MatrixValue>) {
     private val valueSet = valueList.toSet()
@@ -44,12 +45,19 @@ class Matrix(val valueList: List<MatrixValue>) {
 }
 
 interface MatrixValue {
+    fun wordLevel(declarations: Declarations): WordLevel
+
     fun matches(declarations: Declarations, matrix: Matrix, bindings: Bindings): Boolean
 }
 
 data class NegatedValue(val value: String) : MatrixValue {
+    override fun wordLevel(declarations: Declarations): WordLevel =
+        with(declarations) {
+            value.toSimpleValue().toFeature().level
+        }
+
     override fun matches(declarations: Declarations, matrix: Matrix, bindings: Bindings): Boolean =
-        with (declarations) {
+        with(declarations) {
             value.toSimpleValue() !in matrix.simpleValues
         }
 
@@ -57,6 +65,11 @@ data class NegatedValue(val value: String) : MatrixValue {
 }
 
 data class FeatureVariable(val featureName: String) : MatrixValue {
+    override fun wordLevel(declarations: Declarations): WordLevel =
+        with(declarations) {
+            featureName.toFeature().level
+        }
+
     override fun matches(declarations: Declarations, matrix: Matrix, bindings: Bindings): Boolean {
         with(declarations) {
             // Don't try to bind the default values from an empty matrix
@@ -73,8 +86,13 @@ data class FeatureVariable(val featureName: String) : MatrixValue {
 }
 
 data class SimpleValue(val name: String) : MatrixValue {
+    override fun wordLevel(declarations: Declarations): WordLevel =
+        with(declarations) {
+            toFeature().level
+        }
+
     override fun matches(declarations: Declarations, matrix: Matrix, bindings: Bindings): Boolean =
-        with (declarations) {
+        with(declarations) {
             name.toSimpleValue() in matrix.simpleValues
         }
 
@@ -86,8 +104,11 @@ data class SimpleValue(val name: String) : MatrixValue {
 }
 
 data class UndeclaredSymbolValue(val name: String) : MatrixValue {
+    override fun wordLevel(declarations: Declarations): WordLevel =
+        WordLevel.SEGMENT
+
     override fun matches(declarations: Declarations, matrix: Matrix, bindings: Bindings): Boolean =
-        with (declarations) {
+        with(declarations) {
             this@UndeclaredSymbolValue in matrix.fullValueSet
         }
 

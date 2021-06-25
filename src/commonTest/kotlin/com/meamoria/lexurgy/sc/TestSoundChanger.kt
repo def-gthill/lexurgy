@@ -123,7 +123,7 @@ class TestSoundChanger : StringSpec({
 
     "Rules with mismatched elements should produce an LscInvalidRuleExpression with a clear error message" {
         shouldThrow<LscInvalidRuleExpression> {
-            lsc("badrule:\n   a => b [mat]")
+            lsc("Feature bad(mat)\nbadrule:\n   a => b [mat]")
         }.also {
             it.cause.shouldBeInstanceOf<LscInvalidTransformation>()
             it.message shouldBe """
@@ -432,7 +432,7 @@ class TestSoundChanger : StringSpec({
         ch("onni") shouldBe "onnai"
 
         shouldThrow<LscInvalidRuleExpression> {
-            lsc("harmony [vowel]:\n[low] * => [high] a")
+            lsc("Feature bad(vowel, low, high)\nharmony [vowel]:\n[low] * => [high] a")
         }.also {
             it.cause.shouldBeInstanceOf<LscInvalidTransformation>()
             it.message shouldBe """
@@ -441,7 +441,7 @@ class TestSoundChanger : StringSpec({
             """.trimIndent()
         }
         shouldThrow<LscInvalidRuleExpression> {
-            lsc("harmony [vowel]:\n[low] ai => [high] a")
+            lsc("Feature bad(vowel, low, high)\nharmony [vowel]:\n[low] ai => [high] a")
         }.also {
             it.cause.shouldBeInstanceOf<LscInvalidTransformation>()
             it.message shouldBe """
@@ -449,7 +449,9 @@ class TestSoundChanger : StringSpec({
                 Multi-segment matches aren't allowed on the match side of filtered rules
             """.trimIndent()
         }
-        shouldNotThrowAny { lsc("Symbol ai\nharmony [vowel]:\n[low] ai => [high] a") }
+        shouldNotThrowAny {
+            lsc("Feature bad(vowel, low, high)\nSymbol ai\nharmony [vowel]:\n[low] ai => [high] a")
+        }
     }
 
     "Negated features should be usable in filters" {

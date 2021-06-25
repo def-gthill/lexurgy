@@ -10,9 +10,10 @@ classElement: classRef | text;
 featureDecl:
     FEATURE_DECL WHITESPACE (
         (plusFeature (SEP plusFeature)*) |
-        (name WHITESPACE? O_PAREN (nullAlias SEP)? featureValue (SEP featureValue)* C_PAREN)
+        ((featureModifier WHITESPACE)? name WHITESPACE? O_PAREN (nullAlias SEP)? featureValue (SEP featureValue)* C_PAREN)
     );
-plusFeature: AT_LEAST_ONE? name;
+featureModifier: SYLLABLE_FEATURE;
+plusFeature: (featureModifier WHITESPACE)? AT_LEAST_ONE? name;
 nullAlias: NULL featureValue;
 diacriticDecl:
     DIACRITIC WHITESPACE text WHITESPACE
@@ -124,6 +125,7 @@ CLASSREF: '@';
 INTERSECTION: '&';
 CLASS_DECL: 'Class' | 'class';
 FEATURE_DECL: 'Feature' | 'feature';
+SYLLABLE_FEATURE: '(Syllable)' | '(syllable)';
 DIACRITIC: 'Diacritic' | 'diacritic';
 DIA_BEFORE: '(Before)' | '(before)';
 DIA_FLOATING: '(Floating)' | '(floating)';

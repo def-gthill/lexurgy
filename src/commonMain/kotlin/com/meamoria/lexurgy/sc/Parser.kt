@@ -168,15 +168,20 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                         visit(ctx.name()!!),
                         optionalVisit(ctx.nullAlias()),
                         listVisit(ctx.allFeatureValues()),
+                        optionalVisit(ctx.featureModifier())
                     )
                 )
             )
         }
 
+    override fun visitFeatureModifier(ctx: FeatureModifierContext): ParseNode =
+        FeatureLevelNode(ctx.getText(), WordLevel.SYLLABLE)
+
     override fun visitPlusFeature(ctx: PlusFeatureContext): ParseNode = walkPlusFeature(
         ctx.getText(),
         visit(ctx.name()),
         ctx.AT_LEAST_ONE() != null,
+        optionalVisit(ctx.featureModifier()),
     )
 
     override fun visitNullAlias(ctx: NullAliasContext): ParseNode = visit(ctx.featureValue())
@@ -591,12 +596,14 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         featureName: ParseNode,
         nullAlias: ParseNode?,
         values: List<ParseNode>,
+        level: ParseNode?,
     ): ParseNode = FeatureDeclarationNode(
         text,
         Feature(
             (featureName as NameNode).name,
             values.map { (it as SimpleValueNode).simpleValue },
-            (nullAlias as? SimpleValueNode)?.simpleValue,
+            (nullAlias as SimpleValueNode?)?.simpleValue,
+            (level as FeatureLevelNode?)?.level ?: WordLevel.SEGMENT,
         )
     )
 
@@ -604,6 +611,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         text: String,
         featureName: ParseNode,
         plusOnly: Boolean,
+        level: ParseNode?,
     ): ParseNode {
         val name = (featureName as NameNode).name
         return FeatureDeclarationNode(
@@ -613,6 +621,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                 listOf(SimpleValue("+$name")) +
                         if (!plusOnly) listOf(SimpleValue("-$name")) else emptyList(),
                 if (plusOnly) SimpleValue("-$name") else null,
+                (level as FeatureLevelNode?)?.level ?: WordLevel.SEGMENT,
             )
         )
     }
@@ -1013,6 +1022,11 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     private class FeatureDeclarationNode(
         text: String,
         val feature: Feature,
+    ) : BaseParseNode(text)
+
+    private class FeatureLevelNode(
+        text: String,
+        val level: WordLevel,
     ) : BaseParseNode(text)
 
     private class DiacriticDeclarationNode(
@@ -1549,7 +1563,13 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         override fun matcher(context: RuleContext, declarations: Declarations): Matcher =
             MatrixMatcher(matrix)
 
-        override fun emitter(declarations: Declarations): Emitter = MatrixEmitter(matrix)
+        override fun emitter(declarations: Declarations): Emitter =
+            with(declarations) {
+                val split = matrix.splitByLevel()
+                split[WordLevel.SYLLABLE]?.let {
+                    SyllableMatrixEmitter(it)
+                } ?: MatrixEmitter(split[WordLevel.SEGMENT] ?: Matrix.EMPTY)
+            }
     }
 
     private class NegatedElement(

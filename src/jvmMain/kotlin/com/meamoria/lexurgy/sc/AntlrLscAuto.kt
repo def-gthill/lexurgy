@@ -32,6 +32,8 @@ actual fun FeatureDeclContext.allPlusFeatures(): List<PlusFeatureContext> = plus
 
 actual fun FeatureDeclContext.allFeatureValues(): List<FeatureValueContext> = featureValue()
 
+actual typealias FeatureModifierContext = LscParser.FeatureModifierContext
+
 actual typealias PlusFeatureContext = LscParser.PlusFeatureContext
 
 actual typealias NullAliasContext = LscParser.NullAliasContext

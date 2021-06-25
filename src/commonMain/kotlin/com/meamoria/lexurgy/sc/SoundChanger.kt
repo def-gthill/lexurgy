@@ -258,16 +258,25 @@ class SimpleChangeRule(
         val realTransformations = unfilterTransformations(phrase, filterMaps, validTransformations)
         if (realTransformations.isEmpty()) return null
 
-        val bits = mutableListOf<Phrase>()
+        var result = Phrase()
         var cursor = PhraseIndex(0, 0)
         for (transformation in realTransformations.sortedBy { it.start }) {
             if (cursor > transformation.start) continue
-            bits += phrase.slice(cursor, transformation.start)
-            bits += transformation.result
+            result = result.concat(
+                phrase.slice(cursor, transformation.start),
+                declarations::spreadRightward
+            )
+            result = result.concat(
+                transformation.result,
+                declarations::spreadLeftward
+            )
             cursor = transformation.end
         }
-        bits += phrase.dropUntil(cursor)
-        return declarations.syllabify(Phrase.fromSubPhrases(bits))
+        result = result.concat(
+            phrase.dropUntil(cursor),
+            declarations::spreadRightward
+        )
+        return declarations.syllabify(result)
     }
 
     private fun filterWord(word: Word): Pair<Word, IntArray> {

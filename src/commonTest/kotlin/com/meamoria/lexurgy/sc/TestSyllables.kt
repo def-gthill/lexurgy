@@ -126,4 +126,26 @@ class TestSyllables : StringSpec({
         ch2("maria") shouldBe "ma.rˈi.a"
         ch2("salamanka") shouldBe "sa.lˈa.man.ka"
     }
+
+    "We should be able to declare and reference syllable-level features" {
+        val ch = lsc(
+            """
+                Feature (syllable) +stress
+                Diacritic ˈ (before) [+stress]
+                Class vowel {a, æ, e, i, o, u}
+                Class cons {p, t, k, s, m, n, l, r}
+                Syllables:
+                    @cons? @vowel @cons?
+                stress-penult:
+                    <syl> => [+stress] / _ <syl> $
+                stress-raising:
+                    a&[+stress] => æ
+            """.trimIndent()
+        )
+
+        ch("piko") shouldBe "ˈpi.ko"
+        ch("kopiko") shouldBe "ko.ˈpi.ko"
+        ch("maria") shouldBe "ma.ˈri.a"
+        ch("salamanka") shouldBe "sa.la.ˈmæn.ka"
+    }
 })

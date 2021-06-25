@@ -669,6 +669,8 @@ object SyllableMatcher : SimpleMatcher() {
         word.asSyllabified()?.let { sylWord ->
             val syllableIndex = sylWord.syllableBreaks.indexOf(start)
             when {
+                start == 0 && sylWord.syllableBreaks.isEmpty() -> word.length
+                start == 0 -> sylWord.syllableBreaks[0]
                 syllableIndex < 0 -> null
                 syllableIndex + 1 == sylWord.syllableBreaks.size -> word.length
                 else -> sylWord.syllableBreaks[syllableIndex + 1]

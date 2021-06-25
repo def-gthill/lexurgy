@@ -14,6 +14,7 @@ expect class LscParser(input: TokenStream) : Parser {
     fun classDecl(): ClassDeclContext
     fun classElement(): ClassElementContext
     fun featureDecl(): FeatureDeclContext
+    fun featureModifier(): FeatureModifierContext
     fun plusFeature(): PlusFeatureContext
     fun nullAlias(): NullAliasContext
     fun diacriticDecl(): DiacriticDeclContext
@@ -85,6 +86,7 @@ expect open class LscBaseVisitor<T>(){
     open fun visitClassDecl(ctx: ClassDeclContext): T
     open fun visitClassElement(ctx: ClassElementContext): T
     open fun visitFeatureDecl(ctx: FeatureDeclContext): T
+    open fun visitFeatureModifier(ctx: FeatureModifierContext): T
     open fun visitPlusFeature(ctx: PlusFeatureContext): T
     open fun visitNullAlias(ctx: NullAliasContext): T
     open fun visitDiacriticDecl(ctx: DiacriticDeclContext): T
@@ -185,6 +187,7 @@ expect class ClassElementContext : ParserRuleContext {
 
 expect class FeatureDeclContext : ParserRuleContext {
     fun FEATURE_DECL(): TerminalNode
+    fun featureModifier(): FeatureModifierContext?
     fun name(): NameContext?
     fun O_PAREN(): TerminalNode?
     fun nullAlias(): NullAliasContext?
@@ -195,7 +198,14 @@ expect fun FeatureDeclContext.allPlusFeatures(): List<PlusFeatureContext>
 
 expect fun FeatureDeclContext.allFeatureValues(): List<FeatureValueContext>
 
+expect class FeatureModifierContext : ParserRuleContext {
+    fun SYLLABLE_FEATURE(): TerminalNode
+}
+
+
 expect class PlusFeatureContext : ParserRuleContext {
+    fun featureModifier(): FeatureModifierContext?
+    fun WHITESPACE(): TerminalNode?
     fun AT_LEAST_ONE(): TerminalNode?
     fun name(): NameContext
 }

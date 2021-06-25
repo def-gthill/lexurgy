@@ -221,7 +221,7 @@ class TestFeatures : StringSpec({
         ch("ahafasa") shouldBe "ahavaza"
 
         shouldThrow<LscInvalidRuleExpression> {
-            lsc("negated-in-output:\n[foo] => [!bar]")
+            lsc("Feature bad(foo, bar)\nnegated-in-output:\n[foo] => [!bar]")
         }.also {
             it.cause.shouldBeInstanceOf<LscInvalidOutputMatrix>()
             it.message shouldBe """

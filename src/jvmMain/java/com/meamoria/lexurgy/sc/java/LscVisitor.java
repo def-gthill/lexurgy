@@ -41,6 +41,12 @@ public interface LscVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitFeatureDecl(LscParser.FeatureDeclContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link LscParser#featureModifier}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFeatureModifier(LscParser.FeatureModifierContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link LscParser#plusFeature}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

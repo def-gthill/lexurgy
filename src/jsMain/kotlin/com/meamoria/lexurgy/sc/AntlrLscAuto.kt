@@ -14,6 +14,7 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     actual fun classDecl(): ClassDeclContext
     actual fun classElement(): ClassElementContext
     actual fun featureDecl(): FeatureDeclContext
+    actual fun featureModifier(): FeatureModifierContext
     actual fun plusFeature(): PlusFeatureContext
     actual fun nullAlias(): NullAliasContext
     actual fun diacriticDecl(): DiacriticDeclContext
@@ -115,6 +116,7 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
         fun WHITESPACE(): Array<TerminalNode>
         fun plusFeature(): Array<PlusFeatureContext>
         fun SEP(): Array<TerminalNode>
+        fun featureModifier(): FeatureModifierContext?
         fun name(): NameContext?
         fun O_PAREN(): TerminalNode?
         fun nullAlias(): NullAliasContext?
@@ -122,7 +124,13 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
         fun C_PAREN(): TerminalNode?
     }
 
+    class FeatureModifierContext : ParserRuleContext {
+        fun SYLLABLE_FEATURE(): TerminalNode
+    }
+
     class PlusFeatureContext : ParserRuleContext {
+        fun featureModifier(): FeatureModifierContext?
+        fun WHITESPACE(): TerminalNode?
         fun AT_LEAST_ONE(): TerminalNode?
         fun name(): NameContext
     }
@@ -503,6 +511,7 @@ open external class LscVisitor<T>{
     open fun visitClassDecl(ctx: ClassDeclContext): T
     open fun visitClassElement(ctx: ClassElementContext): T
     open fun visitFeatureDecl(ctx: FeatureDeclContext): T
+    open fun visitFeatureModifier(ctx: FeatureModifierContext): T
     open fun visitPlusFeature(ctx: PlusFeatureContext): T
     open fun visitNullAlias(ctx: NullAliasContext): T
     open fun visitDiacriticDecl(ctx: DiacriticDeclContext): T
@@ -585,6 +594,8 @@ actual typealias FeatureDeclContext = LscParser.FeatureDeclContext
 actual fun FeatureDeclContext.allPlusFeatures(): List<PlusFeatureContext> = plusFeature().toList()
 
 actual fun FeatureDeclContext.allFeatureValues(): List<FeatureValueContext> = featureValue().toList()
+
+actual typealias FeatureModifierContext = LscParser.FeatureModifierContext
 
 actual typealias PlusFeatureContext = LscParser.PlusFeatureContext
 

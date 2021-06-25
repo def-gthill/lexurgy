@@ -73,6 +73,8 @@ class SequenceTransformer(
 
         return UnboundTransformation(order, start, elementStart, ::result, resultBits)
     }
+
+    override fun toString(): String = elements.joinToString(" ") { "($it)" }
 }
 
 class AlternativeTransformer(
@@ -184,6 +186,8 @@ class IntersectionTransformer(
             it.end == matchEnd
         }
     }
+
+    override fun toString(): String = "($transformer)&${otherMatchers.joinToString("&")}"
 }
 
 class CaptureTransformer(
@@ -226,6 +230,8 @@ class SimpleConditionalTransformer(
         val result = emitter.result(declarations, matcher, claim)
         return UnboundTransformation(order, start, claimEnd, result)
     }
+
+    override fun toString(): String = "$matcher => $emitter"
 }
 
 class IndependentTransformer(
@@ -242,6 +248,8 @@ class IndependentTransformer(
         val claimEnd = matcher.claim(declarations, phrase, start, bindings) ?: return null
         return UnboundTransformation(order, start, claimEnd, emitter.result())
     }
+
+    override fun toString(): String = "$matcher => $emitter"
 }
 
 class IndependentSequenceTransformer(

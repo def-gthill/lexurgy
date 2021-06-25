@@ -213,14 +213,14 @@ class Declarations(
      * is a member of ``Declarations`` (and the ``ComplexSymbol`` constructor is
      * marked ``internal``) because it enforces declaration order on the diacritics.
      */
-    fun complexSymbol(coreSymbol: Symbol, diacritics: Iterable<Diacritic> = emptyList()): ComplexSymbol =
+    fun complexSymbol(coreSymbol: Symbol?, diacritics: Iterable<Diacritic> = emptyList()): ComplexSymbol =
         ComplexSymbol(coreSymbol, normalizedDiacritics.filter { it in diacritics })
 
     fun ComplexSymbol.withDiacritic(diacritic: Diacritic): ComplexSymbol =
         complexSymbol(symbol, diacritics + diacritic)
 
     fun ComplexSymbol.toMatrix(): Matrix {
-        var result = symbol.matrix
+        var result = symbol?.matrix ?: Matrix.EMPTY
         for (diacritic in diacritics) result = result.update(diacritic.matrix)
         return result
     }
@@ -261,7 +261,15 @@ class Declarations(
         return result.also { matrixToSymbolCache[this] = it }
     }
 
-    private fun Matrix.removeExplicitDefaults(): Matrix = Matrix(valueList.filterNot { it.isDefault() || it.isAbsent() })
+    fun Matrix.toModifiers(): List<Modifier> =
+        toDiacritics().map { it.toModifier() }
+
+    fun Matrix.toDiacritics(): List<Diacritic> {
+        val matrix = removeExplicitDefaults()
+        if (matrix.valueList.isEmpty()) return emptyList()
+        return searchDiacritics(matrix, candidates = listOf(ComplexSymbol()))?.diacritics
+            ?: throw LscInvalidMatrix(matrix)
+    }
 
     private fun searchDiacritics(
         matrix: Matrix,
@@ -297,6 +305,9 @@ class Declarations(
         return difference.size
     }
 
+    private fun Matrix.removeExplicitDefaults(): Matrix =
+        Matrix(valueList.filterNot { it.isDefault() || it.isAbsent() })
+
     fun Matrix.update(updateMatrix: Matrix): Matrix {
         val oldMatrixFeatures = simpleValues.associateBy { it.toFeature() }
         val newMatrixValues = valueList.toMutableList()
@@ -315,13 +326,34 @@ class Declarations(
     fun Matrix.undeclaredSymbol(): Symbol =
         valueList.filterIsInstance<UndeclaredSymbolValue>().single().toUndeclaredSymbol()
 
+    /**
+     * Splits apart the explicit values of this matrix that operate at each
+     * level
+     */
+    fun Matrix.splitByLevel(): Map<WordLevel, Matrix> =
+        valueList.groupBy {
+            it.wordLevel(this@Declarations)
+        }.mapValues { (_, v) -> Matrix(v) }
+
     fun UndeclaredSymbolValue.toUndeclaredSymbol(): Symbol = name.toUndeclaredSymbol()
 
-    private fun SimpleValue.toFeature(): Feature =
+    fun SimpleValue.toFeature(): Feature =
         valueToFeature[this] ?: throw LscUndefinedName("feature value", name)
 
     fun MatrixValue.matches(matrix: Matrix, bindings: Bindings): Boolean =
         matches(this@Declarations, matrix, bindings)
+
+    fun Modifier.toDiacritic(): Diacritic =
+        diacriticNameToDiacritic[string] ?: throw LscUndefinedName("diacritic", string)
+
+    fun List<Modifier>.toMatrix(): Matrix =
+        ComplexSymbol(null, map { it.toDiacritic() }).toMatrix()
+
+    fun spreadLeftward(left: List<Modifier>, right: List<Modifier>): List<Modifier> =
+        left.toMatrix().update(right.toMatrix()).toModifiers()
+
+    fun spreadRightward(left: List<Modifier>, right: List<Modifier>): List<Modifier> =
+        spreadLeftward(right, left)
 
     companion object {
         val empty: Declarations = Declarations(emptyList(), emptyList(), emptyList(), emptyList())
@@ -332,7 +364,12 @@ expect class Cache<K, V>() : MutableMap<K, V>
 
 data class SegmentClass(val name: String, val sounds: List<String>)
 
-class Feature(val name: String, val values: List<SimpleValue>, explicitDefault: SimpleValue? = null) {
+class Feature(
+    val name: String,
+    val values: List<SimpleValue>,
+    explicitDefault: SimpleValue? = null,
+    val level: WordLevel = WordLevel.SEGMENT,
+) {
     val absent: SimpleValue = SimpleValue.absent(name)
     val default: SimpleValue = explicitDefault ?: absent
     val allValues: List<SimpleValue> = listOf(absent) + listOfNotNull(explicitDefault) + values
@@ -352,7 +389,10 @@ data class Symbol(val name: String, val declaredMatrix: Matrix?) {
  * The constructor is marked ``internal`` because validation depends on the declarations.
  * Use the ``complexSymbol`` function in ``Declarations`` to create instances.
  */
-data class ComplexSymbol internal constructor(val symbol: Symbol, val diacritics: List<Diacritic>) {
+data class ComplexSymbol internal constructor(
+    val symbol: Symbol? = null,
+    val diacritics: List<Diacritic> = emptyList(),
+) {
 
     // Most ComplexSymbol instances never have toString called (they're intermediate results).
     // Most of the rest have it called only once, when the ComplexSymbol needs to be converted
@@ -360,15 +400,23 @@ data class ComplexSymbol internal constructor(val symbol: Symbol, val diacritics
     // So compute only as needed.
     val string
         get() = (diacritics.filter { it.before }.map { it.name } +
-                listOf(symbol.name) +
+                listOfNotNull(symbol?.name) +
                 diacritics.filterNot { it.before }.map { it.name }
                 ).joinToString("")
 
     override fun toString(): String = string
 }
 
-data class Diacritic(val name: String, val matrix: Matrix, val before: Boolean, val floating: Boolean) {
+data class Diacritic(
+    val name: String,
+    val matrix: Matrix,
+    val before: Boolean,
+    val floating: Boolean
+) {
     fun normalize() = Diacritic(name.normalizeDecompose(), matrix, before, floating)
+
+    fun toModifier(): Modifier =
+        Modifier(name, if (before) ModifierPosition.BEFORE else ModifierPosition.AFTER)
 }
 
 class LscUndefinedName(val nameType: String, val undefinedName: String) :
