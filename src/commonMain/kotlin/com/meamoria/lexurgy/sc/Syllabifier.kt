@@ -31,6 +31,9 @@ class Syllabifier(
                 }
             }
 
-            SyllabifiedWord(word, syllableBreaks.reversed())
+            val syllableModifiers =
+                word.asSyllabified()?.syllableModifiers ?: emptyMap()
+
+            SyllabifiedWord(word, syllableBreaks.reversed(), syllableModifiers)
         }
 }

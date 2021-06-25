@@ -46,11 +46,15 @@ class SoundChanger(
         debug: (String) -> Unit = ::println,
     ): Map<String?, List<String>> {
         val debugIndices = words.withIndex().filter { it.value in debugWords }.map { it.index }
-        val startWords = words.map(declarations::parsePhonetic).map(declarations::syllabify)
+        val startPhrases = words.map {
+            Phrase(
+                it.split(" ").map(declarations::parsePhonetic).map(declarations::syllabify)
+            )
+        }
 
         val result = mutableMapOf<String?, List<String>>()
 
-        var curWords = startWords
+        var curPhrases = startPhrases
         var started = false
         var stopped = false
 
@@ -60,7 +64,7 @@ class SoundChanger(
         fun runIntermediateRomanizers(ruleName: String?) {
             intermediateRomanizers[ruleName]?.forEach { rom ->
                 result[rom.name] = applyRule(
-                    maybeReplace(rom), words, curWords, debugIndices, debug
+                    maybeReplace(rom), words, curPhrases, debugIndices, debug
                 ).map { it.string }
             }
         }
@@ -80,8 +84,8 @@ class SoundChanger(
             }
             if (started) {
                 if (romanize || rule.ruleType != RuleType.ROMANIZER) {
-                    curWords = applyRule(
-                        rule, words, curWords, debugIndices, debug
+                    curPhrases = applyRule(
+                        rule, words, curPhrases, debugIndices, debug
                     )
                 }
             }
@@ -98,29 +102,29 @@ class SoundChanger(
             throw LscRuleNotFound(startAt, "start at")
         }
 
-        result[null] = curWords.map { it.string.normalizeCompose() }
+        result[null] = curPhrases.map { it.string.normalizeCompose() }
 
         return result
     }
 
     private fun applyRule(
         rule: NamedRule,
-        origWords: List<String>,
-        curWords: List<Word>,
+        origPhrases: List<String>,
+        curPhrases: List<Phrase>,
         debugIndices: List<Int>,
         debug: (String) -> Unit,
-    ): List<Word> =
-        curWords.fastZipMap(origWords) { curWord, word ->
+    ): List<Phrase> =
+        curPhrases.fastZipMap(origPhrases) { curPhrase, phrase ->
             try {
-                rule(Phrase.splitWord(curWord)).toWord()
+                rule(curPhrase)
             } catch (e: Exception) {
-                if (e is UserError) throw LscRuleNotApplicable(e, rule.name, word, curWord.string)
-                else throw LscRuleCrashed(e, rule.name, word, curWord.string)
+                if (e is UserError) throw LscRuleNotApplicable(e, rule.name, phrase, curPhrase.string)
+                else throw LscRuleCrashed(e, rule.name, phrase, curPhrase.string)
             }
-        }.also { newWords ->
+        }.also { newPhrases ->
             for (i in debugIndices) {
-                if (newWords[i] != curWords[i]) {
-                    debug("Applied ${rule.name}: ${curWords[i].string} -> ${newWords[i].string}")
+                if (newPhrases[i] != curPhrases[i]) {
+                    debug("Applied ${rule.name}: ${curPhrases[i].string} -> ${newPhrases[i].string}")
                 }
             }
         }
