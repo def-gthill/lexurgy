@@ -160,13 +160,8 @@ class Declarations(
      * Tries to match the specified matrix to this phonetic symbol.
      * Returns true if the matrix matched, false otherwise. Binds variables.
      */
-    fun Segment.matches(matrix: Matrix, bindings: Bindings): Boolean {
-        val complexSymbolMatrix = (toMatrix())
-        for (value in matrix.valueList) {
-            if (!value.matches(complexSymbolMatrix, bindings)) return false
-        }
-        return true
-    }
+    fun Segment.matches(matrix: Matrix, bindings: Bindings): Boolean =
+        toMatrix().matches(matrix, bindings)
 
     private fun MatrixValue.isDefault(): Boolean = this in defaults
 
@@ -334,6 +329,13 @@ class Declarations(
         valueList.groupBy {
             it.wordLevel(this@Declarations)
         }.mapValues { (_, v) -> Matrix(v) }
+
+    fun Matrix.matches(matrix: Matrix, bindings: Bindings): Boolean {
+        for (value in matrix.valueList) {
+            if (!value.matches(this, bindings)) return false
+        }
+        return true
+    }
 
     fun UndeclaredSymbolValue.toUndeclaredSymbol(): Symbol = name.toUndeclaredSymbol()
 

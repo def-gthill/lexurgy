@@ -595,6 +595,23 @@ class MatrixMatcher(val matrix: Matrix) : SimpleMatcher() {
     override fun toString(): String = matrix.toString()
 }
 
+class SyllableMatrixMatcher(val matrix: Matrix) : SimpleMatcher() {
+    override fun claim(declarations: Declarations, word: Word, start: Int, bindings: Bindings): Int? =
+        with(declarations) {
+            val boundMatrix = matrix.bindVariables(bindings)
+            if (
+                word.asSyllabified()
+                    ?.modifiersAt(start)
+                    ?.toMatrix()
+                    ?.matches(boundMatrix, bindings) == true
+            ) start + 1 else null
+        }
+
+    override fun reversed(): Matcher = this
+
+    override fun toString(): String = matrix.toString()
+}
+
 abstract class AbstractTextMatcher(val text: Word) : SimpleMatcher() {
     override fun checkValidInFilter(result: Emitter) {
         if (text.length > 1) {

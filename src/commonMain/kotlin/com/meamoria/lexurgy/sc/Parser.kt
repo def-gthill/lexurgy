@@ -1561,7 +1561,12 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         override val publicName: String = "a matrix"
 
         override fun matcher(context: RuleContext, declarations: Declarations): Matcher =
-            MatrixMatcher(matrix)
+            with(declarations) {
+                val split = matrix.splitByLevel()
+                split[WordLevel.SYLLABLE]?.let {
+                    SyllableMatrixMatcher(it)
+                } ?: MatrixMatcher(split[WordLevel.SEGMENT] ?: Matrix.EMPTY)
+            }
 
         override fun emitter(declarations: Declarations): Emitter =
             with(declarations) {

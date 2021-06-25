@@ -331,6 +331,12 @@ class SyllabifiedWord(
     private fun syllableBreakAtEnd(): Boolean =
         syllableBreaks.lastOrNull() == length
 
+    fun modifiersAt(index: Int): List<Modifier> =
+        syllableModifiers[syllableNumberAt(index)] ?: emptyList()
+
+    fun syllableNumberAt(index: Int): Int =
+        syllableBreaks.indexOfFirst { it > index } - (if (syllableBreakAtStart()) 1 else 0)
+
     override fun normalize(): Word =
         SyllabifiedWord(
             stringSegments.map { it.normalizeDecompose() }, syllableBreaks
@@ -348,19 +354,27 @@ class SyllabifiedWord(
             syllableBreaks.filter {
                 it >= indices.first &&
                         it <= indices.last + 1
-            }.map { it - indices.first }
+            }.map { it - indices.first },
+            syllableModifiers.filterKeys {
+                it >= syllableNumberAt(indices.first) &&
+                        it <= syllableNumberAt(indices.last)
+            }.mapKeys { it.key - syllableNumberAt(indices.first) },
         )
 
     override fun take(n: Int): Word =
         SyllabifiedWord(
             stringSegments.take(n),
-            syllableBreaks.filter { it <= n }
+            syllableBreaks.filter { it <= n },
+            syllableModifiers.filterKeys { it <= syllableNumberAt(n) },
         )
 
     override fun drop(n: Int): Word =
         SyllabifiedWord(
             stringSegments.drop(n),
-            syllableBreaks.filter { it >= n }.map { it - n }
+            syllableBreaks.map { it - n }.filter { it >= 0 },
+            syllableModifiers.mapKeys {
+                it.key - syllableNumberAt(n)
+            }.filterKeys { it >= 0 },
         )
 
     override fun concat(
@@ -660,12 +674,6 @@ class Phrase(val words: List<Word>) : Iterable<Word> {
 
     fun fullyReversed(): Phrase = fullyReversed
 
-
-    /**
-     * Joins this Phrase's words together with space to form a Word
-     */
-    fun toWord(): Word = Word.joinWithSpaces(words)
-
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is Phrase) return false
@@ -679,8 +687,6 @@ class Phrase(val words: List<Word>) : Iterable<Word> {
     override fun toString(): String = string
 
     companion object {
-        fun splitWord(word: Word): Phrase = Phrase(word.split())
-
         fun fromSubPhrases(subPhrases: Iterable<Phrase>): Phrase {
             val result = mutableListOf<Word>()
             for (phrase in subPhrases) {
