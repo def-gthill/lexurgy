@@ -294,7 +294,7 @@ class SimpleChangeRule(
                 filterIndex++
             }
         }
-        return StandardWord.fromSegments(resultBits) to filterMap.toIntArray()
+        return StandardWord(resultBits) to filterMap.toIntArray()
     }
 
     // Strips out transformations that would try to change something that's already being changed.

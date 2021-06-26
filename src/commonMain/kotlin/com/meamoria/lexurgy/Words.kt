@@ -1,6 +1,6 @@
 package com.meamoria.lexurgy
 
-interface Word : Comparable<Word> {
+interface Word {
     /**
      * The word represented by this ``Word`` as a plain string. This is distinct from calling ``toString()``, which
      * might show additional markup to indicate the word's structure.
@@ -10,7 +10,6 @@ interface Word : Comparable<Word> {
     val segments: List<Segment>
 
     val length: Int
-        get() = segments.size
 
     fun normalize(): Word
 
@@ -46,14 +45,6 @@ interface Word : Comparable<Word> {
     fun take(n: Int): Word
 
     fun drop(n: Int): Word
-
-    /**
-     * Splits the word at spaces
-     */
-    fun split(): List<Word> =
-        (listOf(-1) + segments.allIndicesOf(Segment.space).map { it } + length).zipWithNext {
-            start, end -> slice(start + 1 until end)
-        }
 
     operator fun plus(other: Word): Word = concat(other)
 
@@ -105,17 +96,6 @@ interface Word : Comparable<Word> {
                 }
                 result
             }
-
-        fun joinWithSpaces(words: List<Word>): Word =
-            if (words.isEmpty()) StandardWord.empty
-            else {
-                var result = words.first()
-                for (word in words.drop(1)) {
-                    result += StandardWord.single(Segment.space)
-                    result += word
-                }
-                result
-            }
     }
 }
 
@@ -126,6 +106,9 @@ private class ReversedWord(val inner: Word) : Word {
 
     override val segments: List<Segment>
         get() = inner.segments.asReversed()
+
+    override val length: Int
+        get() = inner.length
 
     override fun normalize(): Word = ReversedWord(inner.normalize())
 
@@ -188,39 +171,50 @@ private class ReversedWord(val inner: Word) : Word {
         return inner.hashCode()
     }
 
-    override fun compareTo(other: Word): Int = force().compareTo(other)
-
     private fun force(): Word = inner.forceReversed()
 }
 
-class StandardWord(
-    private val stringSegments: List<String>,
+class StandardWord private constructor(
+    override val segments: List<Segment>,
+    private val syllabification: Syllabification? = null,
 ) : Word {
-    override val string: String = stringSegments.joinToString("")
 
-    override val segments: List<Segment> = stringSegments.map(::Segment)
+    constructor(segments: List<Segment>) : this(segments, null)
+
+    override val string: String
+        get() = syllabification?.string ?: segments.joinToString("")
+
+    override val length: Int = segments.size
+
+    fun withSyllabification(
+        syllableBreaks: List<Int>,
+        syllableModifiers: Map<Int, List<Modifier>> = emptyMap(),
+    ): StandardWord = StandardWord(
+        segments,
+        Syllabification(segments, syllableBreaks, syllableModifiers),
+    )
 
     override fun normalize(): Word =
-        StandardWord(stringSegments.map { it.normalizeDecompose() })
+        StandardWord(segments.map { it.normalizeDecompose() })
 
     override fun forceReversed(): Word =
-        StandardWord(stringSegments.reversed())
+        StandardWord(segments.reversed())
 
     override fun slice(indices: IntRange): Word =
-        StandardWord(stringSegments.slice(indices))
+        StandardWord(segments.slice(indices))
 
     override fun take(n: Int): Word =
-        StandardWord(stringSegments.take(n))
+        StandardWord(segments.take(n))
 
     override fun drop(n: Int): Word =
-        StandardWord(stringSegments.drop(n))
+        StandardWord(segments.drop(n))
 
     override fun concat(
         other: Word,
         syllableModifierCombiner: (List<Modifier>, List<Modifier>) -> List<Modifier>
     ): Word = other.asSyllabified()?.let { sylOther ->
         SyllabifiedWord(this, emptyList()).concat(sylOther, syllableModifierCombiner)
-    } ?: StandardWord(stringSegments + other.segments.map { it.string })
+    } ?: StandardWord(segments + other.segments)
 
     override fun recoverStructure(other: Word): Word = other
 
@@ -229,51 +223,62 @@ class StandardWord(
     override fun asSyllabified(): SyllabifiedWord? = null
 
     override fun toString(): String =
-        stringSegments.joinToString(separator = "/")
+        segments.joinToString(separator = "/")
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is StandardWord) return false
-        return stringSegments == other.stringSegments
+        return segments == other.segments
     }
 
-    override fun hashCode(): Int = stringSegments.hashCode()
-
-    override fun compareTo(other: Word): Int {
-        for ((thisSegment, otherSegment) in stringSegments.zip(other.segments.map { it.string })) {
-            if (thisSegment < otherSegment) return -1
-            if (thisSegment > otherSegment) return 1
-        }
-        if (stringSegments.size < other.segments.size) return -1
-        if (stringSegments.size > other.segments.size) return 1
-        return 0
-    }
+    override fun hashCode(): Int = segments.hashCode()
 
     companion object {
         val empty: StandardWord = StandardWord(emptyList())
 
-        fun single(segment: Segment): StandardWord = fromSegments(listOf(segment))
-
-        fun fromSegments(segments: List<Segment>): StandardWord =
-            StandardWord(segments.map { it.string })
+        fun single(segment: Segment): StandardWord =
+            StandardWord(listOf(segment))
 
         /**
          * Creates a word with a segment for each character
          * in the string.
          */
         fun fromString(string: String): StandardWord =
-            StandardWord(string.toList().map { it.toString() })
+            StandardWord(string.toList().map { Segment(it.toString()) })
+
+        /**
+         * Creates a word from the specified schematic, using the
+         * following syntax:
+         *
+         * - Segments are separated by slashes '/';
+         * - "Before" diacritics are separated from the core by an open paren '(';
+         * - "After" diacritics are separated from the core by a close paren ')';
+         * - "First" diacritics are written after the core and separated from it by a pipe '|'.
+         */
+        fun fromSchematic(string: String): StandardWord =
+            StandardWord(string.split("/").map(::Segment))
     }
 }
 
-data class Segment(val string: String) {
-    companion object {
-        val space = Segment(" ")
-    }
+data class Segment(val string: String, val modifiers: List<Modifier> = emptyList()) {
+    fun normalizeDecompose(): Segment =
+        Segment(string.normalizeDecompose(), modifiers)
+
+    override fun toString(): String = string.modify(modifiers)
 }
 
-data class Modifier(val string: String, val position: ModifierPosition) {
+data class Modifier(val string: String, val position: ModifierPosition)
 
+private fun List<Modifier>?.concat(): String =
+    (this ?: emptyList()).joinToString { it.string }
+
+private fun String.modify(modifiers: List<Modifier>): String {
+    val modifiersByPosition = modifiers.groupBy { it.position }
+    return modifiersByPosition[ModifierPosition.BEFORE].concat() +
+            (firstOrNull() ?: "") +
+            modifiersByPosition[ModifierPosition.FIRST].concat() +
+            drop(1) +
+            modifiersByPosition[ModifierPosition.AFTER].concat()
 }
 
 enum class ModifierPosition {
@@ -283,19 +288,14 @@ enum class ModifierPosition {
     AFTER,
 }
 
-class SyllabifiedWord(
-    private val stringSegments: List<String>,
+private class Syllabification(
+    private val segments: List<Segment>,
     val syllableBreaks: List<Int>,
     val syllableModifiers: Map<Int, List<Modifier>> = emptyMap(),
-) : Word {
+) {
+    val length: Int = segments.size
 
-    constructor(
-        word: Word,
-        syllableBreaks: List<Int>,
-        syllableModifiers: Map<Int, List<Modifier>> = emptyMap()
-    ) : this(word.segments.map { it.string }, syllableBreaks, syllableModifiers)
-
-    override val string: String
+    val string: String
         get() = syllablesAsWords.mapIndexed {
                 i, syl -> syl.string.modify(syllableModifiers[i] ?: emptyList())
         }.joinToString(".")
@@ -312,12 +312,45 @@ class SyllabifiedWord(
     private fun List<Modifier>?.concat(): String =
         (this ?: emptyList()).joinToString { it.string }
 
-    override val segments: List<Segment>
-        get() = stringSegments.map(::Segment)
+    val syllablesAsWords: List<Word>
+        get() = syllableBreaksAndBoundaries.zipWithNext { startIndex, endIndex ->
+            StandardWord(segments.slice(startIndex until endIndex))
+        }
+
+    private val syllableBreaksAndBoundaries =
+        (if (syllableBreakAtStart()) emptyList() else listOf(0)) +
+                syllableBreaks +
+                (if (syllableBreakAtEnd()) emptyList() else listOf(length))
+
+    private fun syllableBreakAtStart(): Boolean =
+        syllableBreaks.firstOrNull() == 0
+
+    private fun syllableBreakAtEnd(): Boolean =
+        syllableBreaks.lastOrNull() == length
+}
+
+class SyllabifiedWord(
+    override val segments: List<Segment>,
+    val syllableBreaks: List<Int>,
+    val syllableModifiers: Map<Int, List<Modifier>> = emptyMap(),
+) : Word {
+
+    constructor(
+        word: Word,
+        syllableBreaks: List<Int>,
+        syllableModifiers: Map<Int, List<Modifier>> = emptyMap()
+    ) : this(word.segments, syllableBreaks, syllableModifiers)
+
+    override val string: String
+        get() = syllablesAsWords.mapIndexed {
+                i, syl -> syl.string.modify(syllableModifiers[i] ?: emptyList())
+        }.joinToString(".")
+
+    override val length: Int = segments.size
 
     val syllablesAsWords: List<Word>
         get() = syllableBreaksAndBoundaries.zipWithNext { startIndex, endIndex ->
-            StandardWord(stringSegments.slice(startIndex until endIndex))
+            StandardWord(segments.slice(startIndex until endIndex))
         }
 
     private val syllableBreaksAndBoundaries =
@@ -339,18 +372,18 @@ class SyllabifiedWord(
 
     override fun normalize(): Word =
         SyllabifiedWord(
-            stringSegments.map { it.normalizeDecompose() }, syllableBreaks
+            segments.map { it.normalizeDecompose() }, syllableBreaks
         )
 
     override fun forceReversed(): Word =
         SyllabifiedWord(
-            stringSegments.reversed(),
+            segments.reversed(),
             syllableBreaks.reversed().map { length - it }
         )
 
     override fun slice(indices: IntRange): Word =
         SyllabifiedWord(
-            stringSegments.slice(indices),
+            segments.slice(indices),
             syllableBreaks.filter {
                 it >= indices.first &&
                         it <= indices.last + 1
@@ -363,14 +396,14 @@ class SyllabifiedWord(
 
     override fun take(n: Int): Word =
         SyllabifiedWord(
-            stringSegments.take(n),
+            segments.take(n),
             syllableBreaks.filter { it <= n },
             syllableModifiers.filterKeys { it <= syllableNumberAt(n) },
         )
 
     override fun drop(n: Int): Word =
         SyllabifiedWord(
-            stringSegments.drop(n),
+            segments.drop(n),
             syllableBreaks.map { it - n }.filter { it >= 0 },
             syllableModifiers.mapKeys {
                 it.key - syllableNumberAt(n)
@@ -402,19 +435,19 @@ class SyllabifiedWord(
                             }
                 }
             SyllabifiedWord(
-                stringSegments + sylOther.stringSegments,
+                segments + sylOther.segments,
                 syllableBreaks + otherSyllableBreaks,
                 combinedSyllableModifiers,
             )
         } ?: SyllabifiedWord(
-            stringSegments + other.segments.map { it.string },
+            segments + other.segments,
             syllableBreaks,
             syllableModifiers,
         )
 
     override fun recoverStructure(other: Word): Word =
         other.asSyllabified() ?: SyllabifiedWord(
-            other.segments.map { it.string },
+            other.segments,
             syllableBreaks.filter { it <= other.length }
         )
 
@@ -428,17 +461,15 @@ class SyllabifiedWord(
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is SyllabifiedWord) return false
-        return stringSegments == other.stringSegments &&
+        return segments == other.segments &&
                 syllableBreaks == other.syllableBreaks
     }
 
     override fun hashCode(): Int {
-        var result = stringSegments.hashCode()
+        var result = segments.hashCode()
         result = 31 * result + syllableBreaks.hashCode()
         return result
     }
-
-    override fun compareTo(other: Word): Int = 0
 }
 
 class PhoneticParser(
@@ -511,10 +542,10 @@ class PhoneticParser(
 
         if (cursor > segStart) doneSegment()
         return if (syllableSeparator == null) {
-            StandardWord(parsedSegments)
+            StandardWord(parsedSegments.map(::Segment))
         } else {
             doneSyllable()
-            SyllabifiedWord(parsedSegments, syllableBreaks)
+            SyllabifiedWord(parsedSegments.map(::Segment), syllableBreaks)
         }
     }
 

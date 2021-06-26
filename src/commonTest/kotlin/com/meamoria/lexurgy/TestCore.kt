@@ -7,10 +7,6 @@ import com.meamoria.mpp.kotest.shouldThrow
 
 @Suppress("unused")
 class TestCore : StringSpec({
-    "We should be able to split words on spaces" {
-        StandardWord.fromString("foo bar").split() shouldBe
-                listOf(StandardWord.fromString("foo"), StandardWord.fromString("bar"))
-    }
 
     "We should be able extract sub-words between specified indices" {
         StandardWord.fromString("foobar").slice(1 .. 3) shouldBe
@@ -19,9 +15,8 @@ class TestCore : StringSpec({
                 StandardWord.fromString("oba").reversed()
     }
 
-    fun foobarWithModifier(modifier: Modifier): SyllabifiedWord =
-        SyllabifiedWord(
-            StandardWord.fromString("foobar"),
+    fun foobarWithModifier(modifier: Modifier): StandardWord =
+        StandardWord.fromString("foobar").withSyllabification(
             syllableBreaks = listOf(3),
             syllableModifiers = mapOf(0 to listOf(modifier))
         )
@@ -32,9 +27,8 @@ class TestCore : StringSpec({
         foobarWithModifier(Modifier("|", ModifierPosition.AFTER)).string shouldBe "foo|.bar"
     }
 
-    fun emptyWithModifier(modifier: Modifier): SyllabifiedWord =
-        SyllabifiedWord(
-            StandardWord.fromString("foobar"),
+    fun emptyWithModifier(modifier: Modifier): StandardWord =
+        StandardWord.fromString("foobar").withSyllabification(
             syllableBreaks = listOf(3, 3),
             syllableModifiers = mapOf(1 to listOf(modifier))
         )
@@ -67,7 +61,7 @@ class TestCore : StringSpec({
 
         val parser = PhoneticParser(segments, beforeDiacritics, afterDiacritics)
 
-        parser.parse("ⁿdapʰi") shouldBe StandardWord(listOf("ⁿd", "a", "pʰ", "i"))
+        parser.parse("ⁿdapʰi") shouldBe StandardWord.fromSchematic("ⁿd/a/pʰ/i")
         shouldThrow<DanglingDiacritic> { parser.parse("ʰana") }
         shouldThrow<DanglingDiacritic> { parser.parse("anaˈ") }
     }

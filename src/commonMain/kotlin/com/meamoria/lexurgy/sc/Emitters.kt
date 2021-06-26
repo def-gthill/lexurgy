@@ -114,7 +114,7 @@ class MatrixEmitter(val matrix: Matrix) : ConditionalEmitter {
                         val resultSegments = original.segments.map {
                             it.toMatrix().update(boundMatrix).toSymbol()
                         }
-                        StandardWord.fromSegments(resultSegments)
+                        StandardWord(resultSegments)
                     }
                 }
             )
@@ -190,7 +190,7 @@ class SymbolEmitter(val text: Word) :
                 }
             } else text.segments
         }
-        return StandardWord.fromSegments(result)
+        return StandardWord(result)
     }
 
     override fun toString(): String = text.string.ifEmpty { "*" }
