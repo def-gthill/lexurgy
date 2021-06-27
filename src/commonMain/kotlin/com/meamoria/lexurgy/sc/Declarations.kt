@@ -86,15 +86,8 @@ class Declarations(
 
     private val phoneticParser = PhoneticParser(
         symbols.map { it.name },
-        diacritics.filter { it.before }.map { it.name },
-        diacritics.filterNot { it.before }.map { it.name },
-        syllableSeparator = syllabifier?.let { "." },
-    )
-
-    private val normalizedPhoneticParser = PhoneticParser(
-        normalizedSymbols.map { it.name },
-        normalizedDiacritics.filter { it.before }.map { it.name },
-        normalizedDiacritics.filterNot { it.before }.map { it.name },
+        beforeDiacritics = diacritics.filter { it.before }.map { it.name },
+        afterDiacritics = diacritics.filterNot { it.before }.map { it.name },
         syllableSeparator = syllabifier?.let { "." },
     )
 
@@ -116,7 +109,7 @@ class Declarations(
     )
 
     fun parsePhonetic(text: String): Word =
-        phoneticParser.parse(text).normalize()
+        phoneticParser.parse(text).normalize(phoneticParser)
 
     fun parsePhonetic(word: Word): Word = parsePhonetic(word.string)
 
@@ -182,15 +175,14 @@ class Declarations(
         for (diacritic in otherFloating) {
             if (diacritic !in result.diacritics) result = result.withDiacritic(diacritic)
         }
-        return result.toPhoneticSegment()
+        return result.toSegment()
     }
 
     fun Segment.toComplexSymbol(): ComplexSymbol {
         phoneticSegmentToComplexSymbolCache[this]?.let { return it }
 
-        val (core, before, after) = normalizedPhoneticParser.breakDiacritics(string)
-        val coreSymbol = symbolNameToSymbol[core] ?: Symbol(core, null)
-        val diacritics = (before + after).map { diacriticNameToDiacritic.getValue(it) }
+        val coreSymbol = symbolNameToSymbol[string] ?: Symbol(string, null)
+        val diacritics = modifiers.map { diacriticNameToDiacritic.getValue(it.string) }
         return complexSymbol(coreSymbol, diacritics).also {
             phoneticSegmentToComplexSymbolCache[this] = it
         }
@@ -198,7 +190,7 @@ class Declarations(
 
     fun Segment.toMatrix(): Matrix = toComplexSymbol().toMatrix()
 
-    fun Symbol.toPhoneticSegment(): Segment = Segment(name)
+    fun Symbol.toSegment(): Segment = Segment(name)
 
     val Symbol.matrix: Matrix
         get() = declaredMatrix ?: Matrix(listOf(UndeclaredSymbolValue(name)))
@@ -220,7 +212,10 @@ class Declarations(
         return result
     }
 
-    fun ComplexSymbol.toPhoneticSegment(): Segment = Segment(string)
+    fun ComplexSymbol.toSegment(): Segment = Segment(
+        symbol?.name ?: "",
+        diacritics.map { it.toModifier() }
+    )
 
     val Matrix.fullValueList: List<MatrixValue>
         get() {
@@ -249,8 +244,8 @@ class Declarations(
 
         val matrix = removeExplicitDefaults()
 
-        val result = matrixToSimpleSymbol[matrix]?.toPhoneticSegment()
-            ?: searchDiacritics(matrix)?.toPhoneticSegment()
+        val result = matrixToSimpleSymbol[matrix]?.toSegment()
+            ?: searchDiacritics(matrix)?.toSegment()
             ?: throw LscInvalidMatrix(matrix)
 
         return result.also { matrixToSymbolCache[this] = it }

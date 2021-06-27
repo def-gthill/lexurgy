@@ -11,7 +11,7 @@ interface Word {
 
     val length: Int
 
-    fun normalize(): Word
+    fun normalize(parser: PhoneticParser): Word
 
     fun isEmpty(): Boolean = segments.isEmpty()
 
@@ -110,7 +110,8 @@ private class ReversedWord(val inner: Word) : Word {
     override val length: Int
         get() = inner.length
 
-    override fun normalize(): Word = ReversedWord(inner.normalize())
+    override fun normalize(parser: PhoneticParser): Word =
+        ReversedWord(inner.normalize(parser))
 
     override fun reversed(): Word = inner
 
@@ -194,8 +195,8 @@ class StandardWord private constructor(
         Syllabification(segments, syllableBreaks, syllableModifiers),
     )
 
-    override fun normalize(): Word =
-        StandardWord(segments.map { it.normalizeDecompose() })
+    override fun normalize(parser: PhoneticParser): Word =
+        StandardWord(segments.map { it.normalizeDecompose(parser) })
 
     override fun forceReversed(): Word =
         StandardWord(segments.reversed())
@@ -256,21 +257,75 @@ class StandardWord private constructor(
          * - "First" diacritics are written after the core and separated from it by a pipe '|'.
          */
         fun fromSchematic(string: String): StandardWord =
-            StandardWord(string.split("/").map(::Segment))
+            StandardWord(string.split("/").map { Segment.fromSchematic(it) })
     }
 }
 
 data class Segment(val string: String, val modifiers: List<Modifier> = emptyList()) {
-    fun normalizeDecompose(): Segment =
-        Segment(string.normalizeDecompose(), modifiers)
+    /**
+     * Normalizes this segment to NFD form, both in the core string
+     * and in the modifiers. The core string is re-parsed using
+     * the given ``PhoneticParser`` to see if it itself contains
+     * declared modifiers; if so, these modifiers are moved to
+     * the modifier list.
+     */
+    fun normalizeDecompose(parser: PhoneticParser): Segment {
+        val normalizedString = string.normalizeDecompose()
+        val normalizedModifiers = modifiers.map { it.normalizeDecompose() }
+        if (normalizedString == string) return Segment(string, normalizedModifiers)
+        val parsedString = parser.parse(normalizedString)
+        return if (parsedString.length == 1) {
+            val parsedSegment = parsedString[0]
+            Segment(parsedSegment.string, parsedSegment.modifiers + normalizedModifiers)
+        } else Segment(normalizedString, normalizedModifiers)
+    }
 
     override fun toString(): String = string.modify(modifiers)
+
+    companion object {
+        fun fromSchematic(string: String): Segment {
+            val beforeEnd = string.indexOf('(')
+            val firstStart = string.indexOf('|')
+            val afterStart = string.indexOf(')')
+
+            val coreStart = if (beforeEnd >= 0) beforeEnd + 1 else 0
+            val coreEnd = when {
+                firstStart >= 0 -> firstStart
+                afterStart >= 0 -> afterStart
+                else -> string.length
+            }
+
+            val beforeModifiers = if (beforeEnd < 0) emptyList() else {
+                string.take(beforeEnd).map {
+                    Modifier(it.toString(), ModifierPosition.BEFORE)
+                }
+            }
+            val firstModifiers = if (firstStart < 0) emptyList() else {
+                (if (afterStart < 0) string.drop(firstStart + 1)
+                        else string.slice(firstStart + 1 until afterStart)
+                        ).map { Modifier(it.toString(), ModifierPosition.FIRST) }
+            }
+            val afterModifiers = if (afterStart < 0) emptyList() else {
+                string.drop(afterStart + 1).map {
+                    Modifier(it.toString(), ModifierPosition.AFTER)
+                }
+            }
+
+            return Segment(
+                string.slice(coreStart until coreEnd),
+                beforeModifiers + firstModifiers + afterModifiers,
+            )
+        }
+    }
 }
 
-data class Modifier(val string: String, val position: ModifierPosition)
+data class Modifier(val string: String, val position: ModifierPosition) {
+    fun normalizeDecompose(): Modifier =
+        Modifier(string.normalizeDecompose(), position)
+}
 
 private fun List<Modifier>?.concat(): String =
-    (this ?: emptyList()).joinToString { it.string }
+    (this ?: emptyList()).joinToString("") { it.string }
 
 private fun String.modify(modifiers: List<Modifier>): String {
     val modifiersByPosition = modifiers.groupBy { it.position }
@@ -370,9 +425,9 @@ class SyllabifiedWord(
     fun syllableNumberAt(index: Int): Int =
         syllableBreaks.indexOfFirst { it > index } - (if (syllableBreakAtStart()) 1 else 0)
 
-    override fun normalize(): Word =
+    override fun normalize(parser: PhoneticParser): Word =
         SyllabifiedWord(
-            segments.map { it.normalizeDecompose() }, syllableBreaks
+            segments.map { it.normalizeDecompose(parser) }, syllableBreaks
         )
 
     override fun forceReversed(): Word =
@@ -474,120 +529,114 @@ class SyllabifiedWord(
 
 class PhoneticParser(
     val segments: List<String>,
-    val beforeDiacritics: List<String>,
-    val afterDiacritics: List<String>,
+    val beforeDiacritics: List<String> = emptyList(),
+    val firstDiacritics: List<String> = emptyList(),
+    val afterDiacritics: List<String> = emptyList(),
     val syllableSeparator: String? = null,
 ) {
     private val fullDict = segments.associateWith { 0 } +
-            beforeDiacritics.associateWith { -1 } +
-            afterDiacritics.associateWith { 1 }
+            beforeDiacritics.associateWith { ModifierPosition.BEFORE } +
+            firstDiacritics.associateWith { ModifierPosition.FIRST } +
+            afterDiacritics.associateWith { ModifierPosition.AFTER }
 
     private val tree = SegmentTree(fullDict)
 
-    fun parse(word: String): Word {
-        var segStart = 0
+    fun parse(string: String): Word {
         var cursor = 0
-        var coreFound = false
-        val parsedSegments = mutableListOf<String>()
+        var unparsedString = string
+
+        var core: String? = null
+        val diacritics = mutableListOf<Modifier>()
+
+        val parsedSegments = mutableListOf<Segment>()
         var syllableOffset = 0
         val syllableBreaks = mutableListOf<Int>()
 
         fun doneSegment() {
-            parsedSegments += word.substring(segStart, cursor)
-            segStart = cursor
+            parsedSegments += Segment(core!!, diacritics.toList())
+            core = null
+            diacritics.clear()
         }
 
         fun doneSyllable() {
             syllableBreaks += cursor - syllableOffset
         }
 
-        while (cursor < word.length) {
+        while (cursor < string.length) {
             if (syllableSeparator != null) {
-                if (word.drop(cursor).startsWith(syllableSeparator)) {
-                    if (coreFound) doneSegment()
-                    coreFound = false
+                if (unparsedString.startsWith(syllableSeparator)) {
+                    if (core != null) doneSegment()
                     doneSyllable()
                     cursor += syllableSeparator.length
-                    segStart += syllableSeparator.length
+                    unparsedString = unparsedString.drop(syllableSeparator.length)
                     syllableOffset += syllableSeparator.length
                     continue
                 }
             }
-            val match = tree.tryMatch(word.drop(cursor))
+            val match = tree.tryMatch(unparsedString)
             if (match == null) {
-                if (coreFound) doneSegment()
+                if (core != null) doneSegment()
+                core = string[cursor].toString()
                 cursor++
-                coreFound = true
+                unparsedString = unparsedString.drop(1)
             } else {
                 val (matchString, matchType) = match
-                if (matchType == -1) {
-                    // Before diacritic
-                    if (coreFound) doneSegment()
-                    coreFound = false
-                    cursor += matchString.length
-                    if (cursor >= word.length)
-                        throw DanglingDiacritic(word, cursor - matchString.length, matchString)
-                } else if (matchType == 0) {
-                    // Core symbol
-                    if (coreFound) doneSegment()
-                    cursor += matchString.length
-                    coreFound = true
-                } else {
-                    // After diacritic
-                    if (coreFound) cursor += matchString.length
-                    else throw DanglingDiacritic(word, cursor, matchString)
+                when (matchType) {
+                    ModifierPosition.BEFORE -> {
+                        // Before diacritic
+                        if (core != null) doneSegment()
+                        val matchEnd = cursor + matchString.length
+                        if (matchEnd >= string.length)
+                            throw DanglingDiacritic(string, cursor, matchString)
+                        diacritics += Modifier(
+                            matchString,
+                            ModifierPosition.BEFORE,
+                        )
+                        cursor = matchEnd
+                        unparsedString = unparsedString.drop(matchString.length)
+                    }
+                    0 -> {
+                        // Core symbol
+                        if (core != null) doneSegment()
+                        core = matchString
+                        cursor += matchString.length
+                        unparsedString = unparsedString.drop(matchString.length)
+                    }
+                    ModifierPosition.FIRST -> {
+                        // First-character diacritic
+                        if (core != null && core!!.length == 1) {
+                            unparsedString = core!! + unparsedString.drop(matchString.length)
+                            core = null
+                            diacritics += Modifier(matchString, ModifierPosition.FIRST)
+                        }
+                        else throw DanglingDiacritic(string, cursor, matchString)
+                    }
+                    ModifierPosition.AFTER -> {
+                        // After diacritic
+                        if (core != null) {
+                            diacritics += Modifier(
+                                matchString,
+                                ModifierPosition.AFTER,
+                            )
+                            cursor += matchString.length
+                            unparsedString = unparsedString.drop(matchString.length)
+                        }
+                        else throw DanglingDiacritic(string, cursor, matchString)
+                    }
+                    else -> throw AssertionError()
                 }
             }
         }
 
-        if (cursor > segStart) doneSegment()
+        if (core != null) doneSegment()
         return if (syllableSeparator == null) {
-            StandardWord(parsedSegments.map(::Segment))
+            StandardWord(parsedSegments)
         } else {
             doneSyllable()
-            SyllabifiedWord(parsedSegments.map(::Segment), syllableBreaks)
+            SyllabifiedWord(parsedSegments, syllableBreaks)
         }
-    }
-
-    fun breakDiacritics(symbol: String): DiacriticBreakdown {
-        var cursor = 0
-        val before = mutableListOf<String>()
-        var core: String? = null
-        val after = mutableListOf<String>()
-        var alreadyFailedMatch = false
-        while (cursor < symbol.length) {
-            val match = tree.tryMatch(symbol.drop(cursor)) ?: (symbol[cursor].toString() to 0).also {
-                if (alreadyFailedMatch) return DiacriticBreakdown(symbol)
-                alreadyFailedMatch = true
-            }
-
-            val (matchString, matchType) = match
-            if (matchType == -1) {
-                // Before diacritic
-                if (core != null) throw DanglingDiacritic(symbol, cursor, matchString)
-                cursor += matchString.length
-                before += matchString
-                if (cursor >= symbol.length) throw DanglingDiacritic(symbol, cursor - matchString.length, matchString)
-            } else if (matchType == 0) {
-                // Core symbol
-                if (after.isNotEmpty()) throw DanglingDiacritic(symbol, cursor - matchString.length, matchString)
-                cursor += matchString.length
-                core = (core ?: "") + matchString
-            } else {
-                // After diacritic
-                if (core == null) throw DanglingDiacritic(symbol, cursor, matchString)
-                cursor += matchString.length
-                after += matchString
-            }
-        }
-        if (core == null) throw DanglingDiacritic(symbol, cursor, symbol.lastOrNull()?.toString() ?: "")
-        return DiacriticBreakdown(core, before, after)
     }
 }
-
-data class DiacriticBreakdown(
-    val core: String, val before: List<String> = emptyList(), val after: List<String> = emptyList()
-)
 
 class DanglingDiacritic(word: String, position: Int, diacritic: String) :
     UserError("The diacritic $diacritic at position $position in $word isn't attached to a symbol")

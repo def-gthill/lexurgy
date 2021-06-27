@@ -88,8 +88,14 @@ fun String.padEndCombining(length: Int): String {
     return padEnd(length + combiningCount())
 }
 
+/**
+ * Performs Unicode normalization to NFD form
+ */
 expect fun String.normalizeDecompose(): String
 
+/**
+ * Performs Unicode normalization to NFC form
+ */
 expect fun String.normalizeCompose(): String
 
 /**

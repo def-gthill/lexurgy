@@ -55,13 +55,20 @@ class TestCore : StringSpec({
     }
 
     "We should be able to parse a word into its segments using a PhoneticParser" {
-        val segments = listOf("ᵐb", "ⁿd", "ᵑg")
+        val segments = listOf("ᵐb", "ⁿd", "ᵑg", "ou")
         val beforeDiacritics = listOf("ˈ")
+        val firstDiacritics = listOf("́")
         val afterDiacritics = listOf("ʼ", "ʰ")
 
-        val parser = PhoneticParser(segments, beforeDiacritics, afterDiacritics)
+        val parser = PhoneticParser(
+            segments,
+            beforeDiacritics = beforeDiacritics,
+            firstDiacritics = firstDiacritics,
+            afterDiacritics = afterDiacritics,
+        )
 
-        parser.parse("ⁿdapʰi") shouldBe StandardWord.fromSchematic("ⁿd/a/pʰ/i")
+        parser.parse("ⁿdapʰi") shouldBe StandardWord.fromSchematic("ⁿd/a/p)ʰ/i")
+        parser.parse("tʼˈóula") shouldBe StandardWord.fromSchematic("t)ʼ/ˈ(ou|́/l/a")
         shouldThrow<DanglingDiacritic> { parser.parse("ʰana") }
         shouldThrow<DanglingDiacritic> { parser.parse("anaˈ") }
     }
