@@ -199,7 +199,10 @@ class StandardWord private constructor(
         StandardWord(segments.map { it.normalizeDecompose(parser) })
 
     override fun forceReversed(): Word =
-        StandardWord(segments.reversed())
+        StandardWord(
+            segments.reversed(),
+            syllabification?.reversed(),
+        )
 
     override fun slice(indices: IntRange): Word =
         StandardWord(segments.slice(indices))
@@ -257,7 +260,40 @@ class StandardWord private constructor(
          * - "First" diacritics are written after the core and separated from it by a pipe '|'.
          */
         fun fromSchematic(string: String): StandardWord =
-            StandardWord(string.split("/").map { Segment.fromSchematic(it) })
+            if ("//" in string || "((" in string || "||" in string || "))" in string) {
+                fromSyllabifiedSchematic(string)
+            } else {
+                StandardWord(
+                    string.split("/").map { Segment.fromSchematic(it) }
+                )
+            }
+
+        private fun fromSyllabifiedSchematic(string: String): StandardWord {
+            val syllableSchematics = string.split("//")
+            val (syllableSegments, syllableModifiers) =
+                syllableSchematics.map { fromSyllableSchematic(it) }.unzip()
+            val segments = syllableSegments.flatten()
+            return StandardWord(
+                segments,
+                Syllabification(
+                    segments,
+                    syllableSegments.scan(0) { acc, s -> acc + s.size },
+                    syllableModifiers.withIndex().filter {
+                        it.value.isNotEmpty()
+                    }.associateBy({ it.index }, { it.value }),
+                )
+            )
+        }
+
+        private fun fromSyllableSchematic(string: String): Pair<List<Segment>, List<Modifier>> {
+            val (syllableCore, syllableModifiers) = breakModifiers(
+                string,
+                beforeSeparator = "((",
+                firstSeparator = "||",
+                afterSeparator = "))",
+            )
+            return fromSchematic(syllableCore).segments to syllableModifiers
+        }
     }
 }
 
@@ -283,39 +319,12 @@ data class Segment(val string: String, val modifiers: List<Modifier> = emptyList
     override fun toString(): String = string.modify(modifiers)
 
     companion object {
-        fun fromSchematic(string: String): Segment {
-            val beforeEnd = string.indexOf('(')
-            val firstStart = string.indexOf('|')
-            val afterStart = string.indexOf(')')
-
-            val coreStart = if (beforeEnd >= 0) beforeEnd + 1 else 0
-            val coreEnd = when {
-                firstStart >= 0 -> firstStart
-                afterStart >= 0 -> afterStart
-                else -> string.length
-            }
-
-            val beforeModifiers = if (beforeEnd < 0) emptyList() else {
-                string.take(beforeEnd).map {
-                    Modifier(it.toString(), ModifierPosition.BEFORE)
-                }
-            }
-            val firstModifiers = if (firstStart < 0) emptyList() else {
-                (if (afterStart < 0) string.drop(firstStart + 1)
-                        else string.slice(firstStart + 1 until afterStart)
-                        ).map { Modifier(it.toString(), ModifierPosition.FIRST) }
-            }
-            val afterModifiers = if (afterStart < 0) emptyList() else {
-                string.drop(afterStart + 1).map {
-                    Modifier(it.toString(), ModifierPosition.AFTER)
-                }
-            }
-
-            return Segment(
-                string.slice(coreStart until coreEnd),
-                beforeModifiers + firstModifiers + afterModifiers,
-            )
-        }
+        fun fromSchematic(string: String): Segment = breakModifiers(
+            string,
+            beforeSeparator = "(",
+            firstSeparator = "|",
+            afterSeparator = ")",
+        )
     }
 }
 
@@ -334,6 +343,54 @@ private fun String.modify(modifiers: List<Modifier>): String {
             modifiersByPosition[ModifierPosition.FIRST].concat() +
             drop(1) +
             modifiersByPosition[ModifierPosition.AFTER].concat()
+}
+
+private fun breakModifiers(
+    string: String,
+    beforeSeparator: String,
+    firstSeparator: String,
+    afterSeparator: String,
+): Segment {
+    val beforeEnd = string.indexOf(beforeSeparator)
+    val maybeCoreEnd = string.indexOf(firstSeparator)
+    val maybeFirstEnd = string.indexOf(afterSeparator)
+
+    val coreStart =
+        if (beforeEnd >= 0) beforeEnd + beforeSeparator.length
+        else 0
+    val coreEnd = when {
+        maybeCoreEnd >= 0 -> maybeCoreEnd
+        maybeFirstEnd >= 0 -> maybeFirstEnd
+        else -> string.length
+    }
+    val firstStart =
+        if (maybeCoreEnd >= 0) maybeCoreEnd + firstSeparator.length
+        else -1
+    val firstEnd = if (maybeFirstEnd >= 0) maybeFirstEnd else string.length
+    val afterStart =
+        if (firstEnd >= 0) firstEnd + afterSeparator.length
+        else -1
+
+    val beforeModifiers = if (beforeEnd < 0) emptyList() else {
+        string.take(beforeEnd).map {
+            Modifier(it.toString(), ModifierPosition.BEFORE)
+        }
+    }
+    val firstModifiers = if (firstStart < 0) emptyList() else {
+        (if (afterStart < 0) string.drop(firstEnd)
+        else string.slice(firstStart until firstEnd)
+                ).map { Modifier(it.toString(), ModifierPosition.FIRST) }
+    }
+    val afterModifiers = if (afterStart < 0) emptyList() else {
+        string.drop(afterStart).map {
+            Modifier(it.toString(), ModifierPosition.AFTER)
+        }
+    }
+
+    return Segment(
+        string.slice(coreStart until coreEnd),
+        beforeModifiers + firstModifiers + afterModifiers,
+    )
 }
 
 enum class ModifierPosition {
@@ -382,6 +439,18 @@ private class Syllabification(
 
     private fun syllableBreakAtEnd(): Boolean =
         syllableBreaks.lastOrNull() == length
+
+    val numSyllables: Int =
+        syllableBreaks.size + 1 -
+                (if (syllableBreakAtStart()) 1 else 0) -
+                (if (syllableBreakAtEnd()) 1 else 0)
+
+    fun reversed(): Syllabification =
+        Syllabification(
+            segments.reversed(),
+            syllableBreaks.reversed().map { length - it },
+            syllableModifiers.mapKeys { numSyllables - it.key - 1 }
+        )
 }
 
 class SyllabifiedWord(
