@@ -1,7 +1,7 @@
 package com.meamoria.mpp.kotest
 
 import io.kotest.core.spec.style.StringSpec
-import io.kotest.core.test.TestContext
+import io.kotest.core.spec.style.scopes.StringSpecScope
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
@@ -12,7 +12,7 @@ import io.kotest.matchers.string.startWith
 
 actual typealias StringSpec = StringSpec
 
-actual typealias TestContext = TestContext
+actual typealias StringSpecScope = StringSpecScope
 
 actual fun fail(message: String): Nothing = fail(message)
 
