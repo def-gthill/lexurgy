@@ -11,9 +11,19 @@ interface Word {
 
     val length: Int
 
+    fun toStandard(): StandardWord
+
     fun normalize(parser: PhoneticParser): Word
 
     fun isEmpty(): Boolean = segments.isEmpty()
+
+    val numSyllables: Int
+
+    val syllableBreaks: List<Int>
+
+    val syllableModifiers: Map<Int, List<Modifier>>
+
+    fun modifiersAt(index: Int): List<Modifier>
 
     /**
      * Returns a reversed view of this word
@@ -73,18 +83,12 @@ interface Word {
     fun isSyllabified(): Boolean
 
     /**
-     * Converts to a syllabified word if possible, otherwise
-     * returns null
-     */
-    fun asSyllabified(): SyllabifiedWord?
-
-    /**
      * Returns the word represented by this ``Word`` as
      * a plain string (as per ``string``) but with the
      * specified segment made prominent
      */
     fun highlightSegment(index: Int): String =
-        take(index).string + "(" + this[index].string + ")" + drop(index + 1).string
+        take(index).string + "(" + this[index].core + ")" + drop(index + 1).string
 
     companion object {
         fun join(words: List<Word>): Word =
@@ -110,8 +114,23 @@ private class ReversedWord(val inner: Word) : Word {
     override val length: Int
         get() = inner.length
 
+    override fun toStandard(): StandardWord = force().toStandard()
+
     override fun normalize(parser: PhoneticParser): Word =
         ReversedWord(inner.normalize(parser))
+
+    override val numSyllables: Int
+        get() = TODO("Not yet implemented")
+
+    override val syllableBreaks: List<Int>
+        get() = TODO("Not yet implemented")
+
+    override val syllableModifiers: Map<Int, List<Modifier>>
+        get() = TODO("Not yet implemented")
+
+    override fun modifiersAt(index: Int): List<Modifier> {
+        TODO("Not yet implemented")
+    }
 
     override fun reversed(): Word = inner
 
@@ -149,18 +168,15 @@ private class ReversedWord(val inner: Word) : Word {
         }
 
     override fun recoverStructure(other: Word): Word =
-        when(other) {
+        when (other) {
             is ReversedWord -> ReversedWord(inner.recoverStructure(other.inner))
             else -> inner.forceReversed().recoverStructure(other)
         }
 
     override fun isSyllabified(): Boolean = inner.isSyllabified()
 
-    override fun asSyllabified(): SyllabifiedWord? =
-        force().asSyllabified()
-
     override fun toString(): String =
-        segments.joinToString(separator = "/") { it.string } + " (reversed)"
+        segments.joinToString(separator = "/") { it.core } + " (reversed)"
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -183,7 +199,7 @@ class StandardWord private constructor(
     constructor(segments: List<Segment>) : this(segments, null)
 
     override val string: String
-        get() = syllabification?.string ?: segments.joinToString("")
+        get() = syllabification?.string ?: segments.joinToString("") { it.string }
 
     override val length: Int = segments.size
 
@@ -195,8 +211,22 @@ class StandardWord private constructor(
         Syllabification(segments, syllableBreaks, syllableModifiers),
     )
 
+    override fun toStandard(): StandardWord = this
+
     override fun normalize(parser: PhoneticParser): Word =
         StandardWord(segments.map { it.normalizeDecompose(parser) })
+
+    override val numSyllables: Int
+        get() = syllabification?.numSyllables ?: 0
+
+    override val syllableBreaks: List<Int>
+        get() = syllabification?.syllableBreaks ?: emptyList()
+
+    override val syllableModifiers: Map<Int, List<Modifier>>
+        get() = syllabification?.syllableModifiers ?: emptyMap()
+
+    override fun modifiersAt(index: Int): List<Modifier> =
+        emptyList()
 
     override fun forceReversed(): Word =
         StandardWord(
@@ -216,18 +246,28 @@ class StandardWord private constructor(
     override fun concat(
         other: Word,
         syllableModifierCombiner: (List<Modifier>, List<Modifier>) -> List<Modifier>
-    ): Word = other.asSyllabified()?.let { sylOther ->
-        SyllabifiedWord(this, emptyList()).concat(sylOther, syllableModifierCombiner)
-    } ?: StandardWord(segments + other.segments)
+    ): Word {
+        val otherStandard = other.toStandard()
+        return StandardWord(
+            segments + other.segments,
+            if (syllabification == null || otherStandard.syllabification == null) null else {
+                syllabification.concat(
+                    otherStandard.syllabification,
+                    syllableModifierCombiner,
+                )
+            }
+        )
+    }
+//    other.asSyllabified()?.let { sylOther ->
+//        SyllabifiedWord(this, emptyList()).concat(sylOther, syllableModifierCombiner)
+//    } ?: StandardWord(segments + other.segments)
 
     override fun recoverStructure(other: Word): Word = other
 
     override fun isSyllabified(): Boolean = false
 
-    override fun asSyllabified(): SyllabifiedWord? = null
-
     override fun toString(): String =
-        segments.joinToString(separator = "/")
+        syllabification?.toString() ?: segments.joinToString(separator = "/")
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -269,7 +309,7 @@ class StandardWord private constructor(
             }
 
         private fun fromSyllabifiedSchematic(string: String): StandardWord {
-            val syllableSchematics = string.split("//")
+            val syllableSchematics = string.split("//").filter { it.isNotEmpty() }
             val (syllableSegments, syllableModifiers) =
                 syllableSchematics.map { fromSyllableSchematic(it) }.unzip()
             val segments = syllableSegments.flatten()
@@ -277,7 +317,10 @@ class StandardWord private constructor(
                 segments,
                 Syllabification(
                     segments,
-                    syllableSegments.scan(0) { acc, s -> acc + s.size },
+                    syllableSegments.scan(0) { acc, s -> acc + s.size }.slice(
+                        (if (string.startsWith("//")) 0 else 1) ..
+                                syllableSegments.size - (if(string.endsWith("//")) 0 else 1)
+                    ),
                     syllableModifiers.withIndex().filter {
                         it.value.isNotEmpty()
                     }.associateBy({ it.index }, { it.value }),
@@ -297,7 +340,11 @@ class StandardWord private constructor(
     }
 }
 
-data class Segment(val string: String, val modifiers: List<Modifier> = emptyList()) {
+data class Segment(val core: String, val modifiers: List<Modifier> = emptyList()) {
+
+    val string: String
+        get() = core.modify(modifiers)
+
     /**
      * Normalizes this segment to NFD form, both in the core string
      * and in the modifiers. The core string is re-parsed using
@@ -306,17 +353,23 @@ data class Segment(val string: String, val modifiers: List<Modifier> = emptyList
      * the modifier list.
      */
     fun normalizeDecompose(parser: PhoneticParser): Segment {
-        val normalizedString = string.normalizeDecompose()
+        val normalizedString = core.normalizeDecompose()
         val normalizedModifiers = modifiers.map { it.normalizeDecompose() }
-        if (normalizedString == string) return Segment(string, normalizedModifiers)
+        if (normalizedString == core) return Segment(core, normalizedModifiers)
         val parsedString = parser.parse(normalizedString)
         return if (parsedString.length == 1) {
             val parsedSegment = parsedString[0]
-            Segment(parsedSegment.string, parsedSegment.modifiers + normalizedModifiers)
+            Segment(parsedSegment.core, parsedSegment.modifiers + normalizedModifiers)
         } else Segment(normalizedString, normalizedModifiers)
     }
 
-    override fun toString(): String = string.modify(modifiers)
+    override fun toString(): String =
+        core.modifySchematic(
+            modifiers,
+            beforeSeparator = "(",
+            firstSeparator = "|",
+            afterSeparator = ")",
+        )
 
     companion object {
         fun fromSchematic(string: String): Segment = breakModifiers(
@@ -344,6 +397,26 @@ private fun String.modify(modifiers: List<Modifier>): String {
             drop(1) +
             modifiersByPosition[ModifierPosition.AFTER].concat()
 }
+
+private fun String.modifySchematic(
+    modifiers: List<Modifier>,
+    beforeSeparator: String,
+    firstSeparator: String,
+    afterSeparator: String,
+): String {
+    val modifiersByPosition = modifiers.groupBy { it.position }
+    return modifierString(modifiersByPosition[ModifierPosition.BEFORE], postfix = beforeSeparator) +
+            this +
+            modifierString(modifiersByPosition[ModifierPosition.FIRST], prefix = firstSeparator) +
+            modifierString(modifiersByPosition[ModifierPosition.AFTER], prefix = afterSeparator)
+}
+
+private fun modifierString(
+    modifiers: List<Modifier>?, prefix: String = "", postfix: String = ""
+): String =
+    modifiers?.ifNotEmpty { mods ->
+        prefix + mods.joinToString("") { it.string } + postfix
+    } ?: ""
 
 private fun breakModifiers(
     string: String,
@@ -408,9 +481,11 @@ private class Syllabification(
     val length: Int = segments.size
 
     val string: String
-        get() = syllablesAsWords.mapIndexed {
-                i, syl -> syl.string.modify(syllableModifiers[i] ?: emptyList())
-        }.joinToString(".")
+        get() = (if (syllableBreakAtStart()) "." else "") +
+                syllablesAsWords.mapIndexed { i, syl ->
+                    syl.string.modify(syllableModifiers[i] ?: emptyList())
+                }.joinToString(".") +
+                (if (syllableBreakAtEnd()) "." else "")
 
     private fun String.modify(modifiers: List<Modifier>): String {
         val modifiersByPosition = modifiers.groupBy { it.position }
@@ -451,150 +526,193 @@ private class Syllabification(
             syllableBreaks.reversed().map { length - it },
             syllableModifiers.mapKeys { numSyllables - it.key - 1 }
         )
-}
 
-class SyllabifiedWord(
-    override val segments: List<Segment>,
-    val syllableBreaks: List<Int>,
-    val syllableModifiers: Map<Int, List<Modifier>> = emptyMap(),
-) : Word {
-
-    constructor(
-        word: Word,
-        syllableBreaks: List<Int>,
-        syllableModifiers: Map<Int, List<Modifier>> = emptyMap()
-    ) : this(word.segments, syllableBreaks, syllableModifiers)
-
-    override val string: String
-        get() = syllablesAsWords.mapIndexed {
-                i, syl -> syl.string.modify(syllableModifiers[i] ?: emptyList())
-        }.joinToString(".")
-
-    override val length: Int = segments.size
-
-    val syllablesAsWords: List<Word>
-        get() = syllableBreaksAndBoundaries.zipWithNext { startIndex, endIndex ->
-            StandardWord(segments.slice(startIndex until endIndex))
-        }
-
-    private val syllableBreaksAndBoundaries =
-        (if (syllableBreakAtStart()) emptyList() else listOf(0)) +
-                syllableBreaks +
-                (if (syllableBreakAtEnd()) emptyList() else listOf(length))
-
-    private fun syllableBreakAtStart(): Boolean =
-        syllableBreaks.firstOrNull() == 0
-
-    private fun syllableBreakAtEnd(): Boolean =
-        syllableBreaks.lastOrNull() == length
-
-    fun modifiersAt(index: Int): List<Modifier> =
-        syllableModifiers[syllableNumberAt(index)] ?: emptyList()
-
-    fun syllableNumberAt(index: Int): Int =
-        syllableBreaks.indexOfFirst { it > index } - (if (syllableBreakAtStart()) 1 else 0)
-
-    override fun normalize(parser: PhoneticParser): Word =
-        SyllabifiedWord(
-            segments.map { it.normalizeDecompose(parser) }, syllableBreaks
-        )
-
-    override fun forceReversed(): Word =
-        SyllabifiedWord(
-            segments.reversed(),
-            syllableBreaks.reversed().map { length - it }
-        )
-
-    override fun slice(indices: IntRange): Word =
-        SyllabifiedWord(
-            segments.slice(indices),
-            syllableBreaks.filter {
-                it >= indices.first &&
-                        it <= indices.last + 1
-            }.map { it - indices.first },
-            syllableModifiers.filterKeys {
-                it >= syllableNumberAt(indices.first) &&
-                        it <= syllableNumberAt(indices.last)
-            }.mapKeys { it.key - syllableNumberAt(indices.first) },
-        )
-
-    override fun take(n: Int): Word =
-        SyllabifiedWord(
-            segments.take(n),
-            syllableBreaks.filter { it <= n },
-            syllableModifiers.filterKeys { it <= syllableNumberAt(n) },
-        )
-
-    override fun drop(n: Int): Word =
-        SyllabifiedWord(
-            segments.drop(n),
-            syllableBreaks.map { it - n }.filter { it >= 0 },
-            syllableModifiers.mapKeys {
-                it.key - syllableNumberAt(n)
-            }.filterKeys { it >= 0 },
-        )
-
-    override fun concat(
-        other: Word,
+    fun concat(
+        other: Syllabification,
         syllableModifierCombiner: (List<Modifier>, List<Modifier>) -> List<Modifier>
-    ): Word =
-        other.asSyllabified()?.let { sylOther ->
-            var otherSyllableBreaks = sylOther.syllableBreaks.map { it + length }
-            if (this.syllableBreakAtEnd() && sylOther.syllableBreakAtStart()) {
-                otherSyllableBreaks = otherSyllableBreaks.drop(1)
-            }
-            val combinedSyllableModifiers =
-                if(this.syllableBreakAtEnd() || sylOther.syllableBreakAtStart()) {
-                    this.syllableModifiers + sylOther.syllableModifiers.mapKeys {
-                        it.key + syllableBreaks.size + if (this.syllableBreakAtEnd()) 0 else 1
-                    }
-                } else {
-                    (this.syllableModifiers - syllableBreaks.size) +
-                            (syllableBreaks.size to syllableModifierCombiner(
-                                this.syllableModifiers[syllableBreaks.size] ?: emptyList(),
-                                sylOther.syllableModifiers[0] ?: emptyList(),
-                            )) +
-                            (sylOther.syllableModifiers - 0).mapKeys {
-                                it.key + syllableBreaks.size + 1
-                            }
+    ): Syllabification {
+        var otherSyllableBreaks = other.syllableBreaks.map { it + length }
+        if (syllableBreakAtEnd() && other.syllableBreakAtStart()) {
+            otherSyllableBreaks = otherSyllableBreaks.drop(1)
+        }
+        val combinedSyllableModifiers =
+            if (syllableBreakAtEnd() || other.syllableBreakAtStart()) {
+                syllableModifiers + other.syllableModifiers.mapKeys {
+                    it.key + syllableBreaks.size + if (syllableBreakAtEnd()) 0 else 1
                 }
-            SyllabifiedWord(
-                segments + sylOther.segments,
-                syllableBreaks + otherSyllableBreaks,
-                combinedSyllableModifiers,
-            )
-        } ?: SyllabifiedWord(
+            } else {
+                (syllableModifiers - syllableBreaks.size) +
+                        (syllableBreaks.size to syllableModifierCombiner(
+                            syllableModifiers[syllableBreaks.size] ?: emptyList(),
+                            other.syllableModifiers[0] ?: emptyList(),
+                        )) +
+                        (other.syllableModifiers - 0).mapKeys {
+                            it.key + syllableBreaks.size + 1
+                        }
+            }
+        return Syllabification(
             segments + other.segments,
-            syllableBreaks,
-            syllableModifiers,
+            syllableBreaks + otherSyllableBreaks,
+            combinedSyllableModifiers,
         )
-
-    override fun recoverStructure(other: Word): Word =
-        other.asSyllabified() ?: SyllabifiedWord(
-            other.segments,
-            syllableBreaks.filter { it <= other.length }
-        )
-
-    override fun isSyllabified(): Boolean = true
-
-    override fun asSyllabified(): SyllabifiedWord = this
+    }
 
     override fun toString(): String =
-        syllablesAsWords.joinToString("//")
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is SyllabifiedWord) return false
-        return segments == other.segments &&
-                syllableBreaks == other.syllableBreaks
-    }
-
-    override fun hashCode(): Int {
-        var result = segments.hashCode()
-        result = 31 * result + syllableBreaks.hashCode()
-        return result
-    }
+        (if (syllableBreakAtStart()) "//" else "") +
+                syllablesAsWords.mapIndexed { i, syl ->
+                    syl.toString().modifySchematic(
+                        syllableModifiers[i] ?: emptyList(),
+                        beforeSeparator = "((",
+                        firstSeparator = "||",
+                        afterSeparator = "))",
+                    )
+                }.joinToString("//") +
+                (if (syllableBreakAtEnd()) "//" else "")
 }
+
+//
+//class SyllabifiedWord(
+//    override val segments: List<Segment>,
+//    val syllableBreaks: List<Int>,
+//    val syllableModifiers: Map<Int, List<Modifier>> = emptyMap(),
+//) : Word {
+//
+//    constructor(
+//        word: Word,
+//        syllableBreaks: List<Int>,
+//        syllableModifiers: Map<Int, List<Modifier>> = emptyMap()
+//    ) : this(word.segments, syllableBreaks, syllableModifiers)
+//
+//    override val string: String
+//        get() = syllablesAsWords.mapIndexed {
+//                i, syl -> syl.string.modify(syllableModifiers[i] ?: emptyList())
+//        }.joinToString(".")
+//
+//    override val length: Int = segments.size
+//
+//    val syllablesAsWords: List<Word>
+//        get() = syllableBreaksAndBoundaries.zipWithNext { startIndex, endIndex ->
+//            StandardWord(segments.slice(startIndex until endIndex))
+//        }
+//
+//    private val syllableBreaksAndBoundaries =
+//        (if (syllableBreakAtStart()) emptyList() else listOf(0)) +
+//                syllableBreaks +
+//                (if (syllableBreakAtEnd()) emptyList() else listOf(length))
+//
+//    private fun syllableBreakAtStart(): Boolean =
+//        syllableBreaks.firstOrNull() == 0
+//
+//    private fun syllableBreakAtEnd(): Boolean =
+//        syllableBreaks.lastOrNull() == length
+//
+//    fun modifiersAt(index: Int): List<Modifier> =
+//        syllableModifiers[syllableNumberAt(index)] ?: emptyList()
+//
+//    fun syllableNumberAt(index: Int): Int =
+//        syllableBreaks.indexOfFirst { it > index } - (if (syllableBreakAtStart()) 1 else 0)
+//
+//    override fun normalize(parser: PhoneticParser): Word =
+//        SyllabifiedWord(
+//            segments.map { it.normalizeDecompose(parser) }, syllableBreaks
+//        )
+//
+//    override fun forceReversed(): Word =
+//        SyllabifiedWord(
+//            segments.reversed(),
+//            syllableBreaks.reversed().map { length - it }
+//        )
+//
+//    override fun slice(indices: IntRange): Word =
+//        SyllabifiedWord(
+//            segments.slice(indices),
+//            syllableBreaks.filter {
+//                it >= indices.first &&
+//                        it <= indices.last + 1
+//            }.map { it - indices.first },
+//            syllableModifiers.filterKeys {
+//                it >= syllableNumberAt(indices.first) &&
+//                        it <= syllableNumberAt(indices.last)
+//            }.mapKeys { it.key - syllableNumberAt(indices.first) },
+//        )
+//
+//    override fun take(n: Int): Word =
+//        SyllabifiedWord(
+//            segments.take(n),
+//            syllableBreaks.filter { it <= n },
+//            syllableModifiers.filterKeys { it <= syllableNumberAt(n) },
+//        )
+//
+//    override fun drop(n: Int): Word =
+//        SyllabifiedWord(
+//            segments.drop(n),
+//            syllableBreaks.map { it - n }.filter { it >= 0 },
+//            syllableModifiers.mapKeys {
+//                it.key - syllableNumberAt(n)
+//            }.filterKeys { it >= 0 },
+//        )
+//
+//    override fun concat(
+//        other: Word,
+//        syllableModifierCombiner: (List<Modifier>, List<Modifier>) -> List<Modifier>
+//    ): Word =
+//        other.asSyllabified()?.let { sylOther ->
+//            var otherSyllableBreaks = sylOther.syllableBreaks.map { it + length }
+//            if (this.syllableBreakAtEnd() && sylOther.syllableBreakAtStart()) {
+//                otherSyllableBreaks = otherSyllableBreaks.drop(1)
+//            }
+//            val combinedSyllableModifiers =
+//                if(this.syllableBreakAtEnd() || sylOther.syllableBreakAtStart()) {
+//                    this.syllableModifiers + sylOther.syllableModifiers.mapKeys {
+//                        it.key + syllableBreaks.size + if (this.syllableBreakAtEnd()) 0 else 1
+//                    }
+//                } else {
+//                    (this.syllableModifiers - syllableBreaks.size) +
+//                            (syllableBreaks.size to syllableModifierCombiner(
+//                                this.syllableModifiers[syllableBreaks.size] ?: emptyList(),
+//                                sylOther.syllableModifiers[0] ?: emptyList(),
+//                            )) +
+//                            (sylOther.syllableModifiers - 0).mapKeys {
+//                                it.key + syllableBreaks.size + 1
+//                            }
+//                }
+//            SyllabifiedWord(
+//                segments + sylOther.segments,
+//                syllableBreaks + otherSyllableBreaks,
+//                combinedSyllableModifiers,
+//            )
+//        } ?: SyllabifiedWord(
+//            segments + other.segments,
+//            syllableBreaks,
+//            syllableModifiers,
+//        )
+//
+//    override fun recoverStructure(other: Word): Word =
+//        other.asSyllabified() ?: SyllabifiedWord(
+//            other.segments,
+//            syllableBreaks.filter { it <= other.length }
+//        )
+//
+//    override fun isSyllabified(): Boolean = true
+//
+//    override fun asSyllabified(): SyllabifiedWord = this
+//
+//    override fun toString(): String =
+//        syllablesAsWords.joinToString("//")
+//
+//    override fun equals(other: Any?): Boolean {
+//        if (this === other) return true
+//        if (other !is SyllabifiedWord) return false
+//        return segments == other.segments &&
+//                syllableBreaks == other.syllableBreaks
+//    }
+//
+//    override fun hashCode(): Int {
+//        var result = segments.hashCode()
+//        result = 31 * result + syllableBreaks.hashCode()
+//        return result
+//    }
+//}
 
 class PhoneticParser(
     val segments: List<String>,
@@ -677,8 +795,7 @@ class PhoneticParser(
                             unparsedString = core!! + unparsedString.drop(matchString.length)
                             core = null
                             diacritics += Modifier(matchString, ModifierPosition.FIRST)
-                        }
-                        else throw DanglingDiacritic(string, cursor, matchString)
+                        } else throw DanglingDiacritic(string, cursor, matchString)
                     }
                     ModifierPosition.AFTER -> {
                         // After diacritic
@@ -689,8 +806,7 @@ class PhoneticParser(
                             )
                             cursor += matchString.length
                             unparsedString = unparsedString.drop(matchString.length)
-                        }
-                        else throw DanglingDiacritic(string, cursor, matchString)
+                        } else throw DanglingDiacritic(string, cursor, matchString)
                     }
                     else -> throw AssertionError()
                 }
@@ -702,7 +818,7 @@ class PhoneticParser(
             StandardWord(parsedSegments)
         } else {
             doneSyllable()
-            SyllabifiedWord(parsedSegments, syllableBreaks)
+            StandardWord(parsedSegments).withSyllabification(syllableBreaks)
         }
     }
 }
@@ -712,7 +828,7 @@ class DanglingDiacritic(word: String, position: Int, diacritic: String) :
 
 class SyllableStructureViolated(word: Word, position: Int) :
     UserError(
-        "The segment \"${word[position].string}\" in \"${word.highlightSegment(position)}\" " +
+        "The segment \"${word[position].core}\" in \"${word.highlightSegment(position)}\" " +
                 "doesn't fit the syllable structure"
     )
 
@@ -743,8 +859,8 @@ class Phrase(val words: List<Word>) : Iterable<Word> {
         get() = words.size
 
     fun hasIndex(index: PhraseIndex): Boolean =
-        index.wordIndex in 0 .. size &&
-                index.segmentIndex in 0 .. words[index.wordIndex].length
+        index.wordIndex in 0..size &&
+                index.segmentIndex in 0..words[index.wordIndex].length
 
     override fun iterator(): Iterator<Word> = words.iterator()
 
@@ -806,17 +922,17 @@ class Phrase(val words: List<Word>) : Iterable<Word> {
         other: Phrase,
         syllableModifierCombiner: (List<Modifier>, List<Modifier>) -> List<Modifier> = { a, _ -> a },
     ): Phrase = when {
-            words.isEmpty() -> other
-            other.words.isEmpty() -> this
-            else ->
-                Phrase(
-                    words.dropLast(1) +
-                            words.last().concat(
-                                other.first(),
-                                syllableModifierCombiner,
-                            ) +
-                            other.drop(1)
-                )
+        words.isEmpty() -> other
+        other.words.isEmpty() -> this
+        else ->
+            Phrase(
+                words.dropLast(1) +
+                        words.last().concat(
+                            other.first(),
+                            syllableModifierCombiner,
+                        ) +
+                        other.drop(1)
+            )
     }
 
     private val fullyReversed: Phrase by lazy { Phrase(reversed().map { it.reversed() }) }

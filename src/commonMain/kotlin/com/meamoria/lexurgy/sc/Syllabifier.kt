@@ -1,6 +1,6 @@
 package com.meamoria.lexurgy.sc
 
-import com.meamoria.lexurgy.SyllabifiedWord
+import com.meamoria.lexurgy.StandardWord
 import com.meamoria.lexurgy.SyllableStructureViolated
 import com.meamoria.lexurgy.Word
 
@@ -10,8 +10,8 @@ class Syllabifier(
 ) {
     private val reversedPatterns = patterns.map { it.reversed() }
 
-    fun syllabify(word: Word): SyllabifiedWord =
-        if (patterns.isEmpty() && word.isSyllabified()) word.asSyllabified()!! else {
+    fun syllabify(word: Word): Word =
+        if (patterns.isEmpty() && word.isSyllabified()) word else {
             val reversedWord = word.reversed()
 
             val syllableBreaks = mutableListOf<Int>()
@@ -31,9 +31,8 @@ class Syllabifier(
                 }
             }
 
-            val syllableModifiers =
-                word.asSyllabified()?.syllableModifiers ?: emptyMap()
-
-            SyllabifiedWord(word, syllableBreaks.reversed(), syllableModifiers)
+            StandardWord(word.segments).withSyllabification(
+                syllableBreaks.reversed(), word.syllableModifiers
+            )
         }
 }

@@ -16,6 +16,9 @@ fun <T, R> List<Iterable<T>>.zipAll(transform: (List<T>) -> R): List<R> {
     return result
 }
 
+fun <T, R> List<T>.ifNotEmpty(transform: (List<T>) -> R): R? =
+    if (isEmpty()) null else transform(this)
+
 fun <T> Iterable<T>.subsets(): Sequence<List<T>> {
     val list = toList()
     return generateSequence(emptyList()) { prev ->

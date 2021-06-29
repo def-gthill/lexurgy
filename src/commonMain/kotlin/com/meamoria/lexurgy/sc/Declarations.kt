@@ -181,7 +181,7 @@ class Declarations(
     fun Segment.toComplexSymbol(): ComplexSymbol {
         phoneticSegmentToComplexSymbolCache[this]?.let { return it }
 
-        val coreSymbol = symbolNameToSymbol[string] ?: Symbol(string, null)
+        val coreSymbol = symbolNameToSymbol[core] ?: Symbol(core, null)
         val diacritics = modifiers.map { diacriticNameToDiacritic.getValue(it.string) }
         return complexSymbol(coreSymbol, diacritics).also {
             phoneticSegmentToComplexSymbolCache[this] = it

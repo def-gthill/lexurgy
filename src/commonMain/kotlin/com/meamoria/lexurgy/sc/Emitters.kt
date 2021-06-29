@@ -139,8 +139,8 @@ class SyllableMatrixEmitter(val matrix: Matrix) : ConditionalEmitter {
                 matrix.toModifiers()
             }
             Phrase(
-                SyllabifiedWord(
-                    original, emptyList(), syllableModifiers = mapOf(0 to syllableFeatures)
+                original.toStandard().withSyllabification(
+                    emptyList(), syllableModifiers = mapOf(0 to syllableFeatures)
                 )
             )
         }

@@ -599,12 +599,8 @@ class SyllableMatrixMatcher(val matrix: Matrix) : SimpleMatcher() {
     override fun claim(declarations: Declarations, word: Word, start: Int, bindings: Bindings): Int? =
         with(declarations) {
             val boundMatrix = matrix.bindVariables(bindings)
-            if (
-                word.asSyllabified()
-                    ?.modifiersAt(start)
-                    ?.toMatrix()
-                    ?.matches(boundMatrix, bindings) == true
-            ) start + 1 else null
+            if (word.modifiersAt(start).toMatrix().matches(boundMatrix, bindings))
+                start + 1 else null
         }
 
     override fun reversed(): Matcher = this
@@ -682,17 +678,17 @@ object EmptyMatcher : SimpleMatcher() {
 }
 
 object SyllableMatcher : SimpleMatcher() {
-    override fun claim(declarations: Declarations, word: Word, start: Int, bindings: Bindings): Int? =
-        word.asSyllabified()?.let { sylWord ->
-            val syllableIndex = sylWord.syllableBreaks.indexOf(start)
-            when {
-                start == 0 && sylWord.syllableBreaks.isEmpty() -> word.length
-                start == 0 -> sylWord.syllableBreaks[0]
-                syllableIndex < 0 -> null
-                syllableIndex + 1 == sylWord.syllableBreaks.size -> word.length
-                else -> sylWord.syllableBreaks[syllableIndex + 1]
-            }
+    override fun claim(declarations: Declarations, word: Word, start: Int, bindings: Bindings): Int? {
+        if (!word.isSyllabified()) return null
+        val syllableIndex = word.syllableBreaks.indexOf(start)
+        return when {
+            start == 0 && word.numSyllables == 0 -> word.length
+            start == 0 -> word.syllableBreaks[0]
+            syllableIndex < 0 -> null
+            syllableIndex + 1 == word.numSyllables -> word.length
+            else -> word.syllableBreaks[syllableIndex + 1]
         }
+    }
 
     override fun reversed(): Matcher = this
 
