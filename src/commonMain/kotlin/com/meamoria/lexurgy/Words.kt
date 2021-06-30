@@ -195,7 +195,6 @@ class StandardWord private constructor(
     override val segments: List<Segment>,
     private val syllabification: Syllabification? = null,
 ) : Word {
-
     constructor(segments: List<Segment>) : this(segments, null)
 
     override val string: String
@@ -216,6 +215,9 @@ class StandardWord private constructor(
     override fun normalize(parser: PhoneticParser): Word =
         StandardWord(segments.map { it.normalizeDecompose(parser) })
 
+    private val forcedSyllabification: Syllabification
+        get() = syllabification ?: Syllabification(segments, emptyList(), emptyMap())
+
     override val numSyllables: Int
         get() = syllabification?.numSyllables ?: 0
 
@@ -226,7 +228,7 @@ class StandardWord private constructor(
         get() = syllabification?.syllableModifiers ?: emptyMap()
 
     override fun modifiersAt(index: Int): List<Modifier> =
-        emptyList()
+        syllabification?.modifiersAt(index) ?: emptyList()
 
     override fun forceReversed(): Word =
         StandardWord(
@@ -250,12 +252,10 @@ class StandardWord private constructor(
         val otherStandard = other.toStandard()
         return StandardWord(
             segments + other.segments,
-            if (syllabification == null || otherStandard.syllabification == null) null else {
-                syllabification.concat(
-                    otherStandard.syllabification,
-                    syllableModifierCombiner,
-                )
-            }
+            forcedSyllabification.concat(
+                otherStandard.forcedSyllabification,
+                syllableModifierCombiner,
+            )
         )
     }
 //    other.asSyllabified()?.let { sylOther ->
@@ -520,6 +520,13 @@ private class Syllabification(
                 (if (syllableBreakAtStart()) 1 else 0) -
                 (if (syllableBreakAtEnd()) 1 else 0)
 
+    fun modifiersAt(index: Int): List<Modifier> =
+        syllableModifiers[syllableNumberAt(index)] ?: emptyList()
+
+    fun syllableNumberAt(index: Int): Int =
+        if (syllableBreaks.isEmpty()) 0
+        else syllableBreaks.indexOfFirst { it > index } - (if (syllableBreakAtStart()) 1 else 0)
+
     fun reversed(): Syllabification =
         Syllabification(
             segments.reversed(),
@@ -538,16 +545,17 @@ private class Syllabification(
         val combinedSyllableModifiers =
             if (syllableBreakAtEnd() || other.syllableBreakAtStart()) {
                 syllableModifiers + other.syllableModifiers.mapKeys {
-                    it.key + syllableBreaks.size + if (syllableBreakAtEnd()) 0 else 1
+                    it.key + numSyllables + if (syllableBreakAtEnd()) 0 else 1
                 }
             } else {
-                (syllableModifiers - syllableBreaks.size) +
-                        (syllableBreaks.size to syllableModifierCombiner(
-                            syllableModifiers[syllableBreaks.size] ?: emptyList(),
+                val syllableOffset = numSyllables - 1
+                (syllableModifiers - syllableOffset) +
+                        (syllableOffset to syllableModifierCombiner(
+                            syllableModifiers[syllableOffset] ?: emptyList(),
                             other.syllableModifiers[0] ?: emptyList(),
                         )) +
                         (other.syllableModifiers - 0).mapKeys {
-                            it.key + syllableBreaks.size + 1
+                            it.key + syllableOffset
                         }
             }
         return Syllabification(

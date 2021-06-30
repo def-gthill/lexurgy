@@ -76,8 +76,24 @@ class TestSyllabifiedWords : StringSpec({
         shine.modifiersAt(2) shouldBe listOf(h, backquote)
     }
 
-    "!We should be able to concatenate syllabified words" {
+    "We should be able to concatenate syllabified words" {
         (banana + excellent).string shouldBe "ba.na.naek.se.ˈlen.te"
         (banana + shine).string shouldBe "ba.na.nascein"
+        (banana + startBreak).string shouldBe "ba.na.na.foo"
+        (startBreak + excellent).string shouldBe ".fooek.se.ˈlen.te"
+        ((shine + endBreak) + (startBreak + excellent)).string shouldBe "sʰceinfoo`.fooek.se.ˈlen.te"
+        (excellent + startBreak + shine).string shouldBe "ek.se.ˈlen.te.fooscein"
+    }
+
+    "We should be able to provide a modifier combiner to override the default left-only behaviour" {
+        startBreak.concat(shine) { _, b -> b }.string shouldBe ".fʰooscein`"
+    }
+
+    "We should be able to concatenate simple words to syllabified words" {
+        (banana + word("f/o/o")).string shouldBe "ba.na.nafoo"
+        (word("f/o/o") + banana).string shouldBe "fooba.na.na"
+        (shine + word("f/o/o")).string shouldBe "sʰceinfoo`"
+        (word("f/o/o") + shine).string shouldBe "fooscein"
+        word("f/o/o").concat(shine) { _, b -> b }.string shouldBe "fʰooscein`"
     }
 })
