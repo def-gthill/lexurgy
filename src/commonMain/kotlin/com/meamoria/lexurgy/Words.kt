@@ -120,17 +120,16 @@ private class ReversedWord(val inner: Word) : Word {
         ReversedWord(inner.normalize(parser))
 
     override val numSyllables: Int
-        get() = TODO("Not yet implemented")
+        get() = inner.numSyllables
 
     override val syllableBreaks: List<Int>
-        get() = TODO("Not yet implemented")
+        get() = inner.syllableBreaks.reversed().map { inner.length - it }
 
     override val syllableModifiers: Map<Int, List<Modifier>>
-        get() = TODO("Not yet implemented")
+        get() = inner.syllableModifiers.mapKeys { inner.numSyllables - it.key - 1 }
 
-    override fun modifiersAt(index: Int): List<Modifier> {
-        TODO("Not yet implemented")
-    }
+    override fun modifiersAt(index: Int): List<Modifier> =
+        inner.modifiersAt(inner.length - index - 1)
 
     override fun reversed(): Word = inner
 
@@ -164,19 +163,19 @@ private class ReversedWord(val inner: Word) : Word {
                     syllableModifierCombiner(b, a)
                 }
             )
-            else -> forceReversed().concat(other, syllableModifierCombiner)
+            else -> force().concat(other, syllableModifierCombiner)
         }
 
     override fun recoverStructure(other: Word): Word =
         when (other) {
             is ReversedWord -> ReversedWord(inner.recoverStructure(other.inner))
-            else -> inner.forceReversed().recoverStructure(other)
+            else -> force().recoverStructure(other)
         }
 
     override fun isSyllabified(): Boolean = inner.isSyllabified()
 
     override fun toString(): String =
-        segments.joinToString(separator = "/") { it.core } + " (reversed)"
+        force().toString() + " (reversed)"
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
