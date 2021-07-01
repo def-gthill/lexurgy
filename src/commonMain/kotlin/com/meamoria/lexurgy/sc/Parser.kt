@@ -1711,14 +1711,14 @@ class LscIllegalStructureInInput(
     val invalidNodeType: String,
     val invalidNode: String,
 ) : LscUserError(
-    "${invalidNodeType.capitalize()} like \"$invalidNode\" can't be used in the input of a rule"
+    "${invalidNodeType.replaceFirstChar { it.uppercase() }} like \"$invalidNode\" can't be used in the input of a rule"
 )
 
 class LscIllegalStructureInOutput(
     val invalidNodeType: String,
     val invalidNode: String,
 ) : LscUserError(
-    "${invalidNodeType.capitalize()} like \"$invalidNode\" can't be used in the output of a rule"
+    "${invalidNodeType.replaceFirstChar { it.uppercase() }} like \"$invalidNode\" can't be used in the output of a rule"
 )
 
 class LscMixedBlock(

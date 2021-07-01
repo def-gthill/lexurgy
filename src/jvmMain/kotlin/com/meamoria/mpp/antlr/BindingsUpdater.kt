@@ -257,10 +257,10 @@ object MetaWalker : MetaBaseVisitor<MetaWalker.ParseNode>() {
             }.joinToString(separator ?: "\n")
 
         fun String.replaceLowerUpper(replacement: String): String =
-            replace("#lower#", replacement).replace("#upper#", replacement.capitalize())
+            replace("#lower#", replacement).replace("#upper#", replacement.replaceFirstChar { it.uppercase() })
 
         fun String.replaceRuleUpper(replacement: String): String =
-            replace("#rule_upper#", replacement.capitalize())
+            replace("#rule_upper#", replacement.replaceFirstChar { it.uppercase() })
     }
 
     class AntlrRule(val name: String, val elements: List<Element>) : ParseNode
