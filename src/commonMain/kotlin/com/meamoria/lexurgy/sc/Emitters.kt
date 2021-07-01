@@ -2,7 +2,7 @@ package com.meamoria.lexurgy.sc
 
 import com.meamoria.lexurgy.*
 
-typealias UnboundResult<T> = (Bindings) -> List<Word<T>>
+typealias UnboundResult = (Bindings) -> Phrase
 
 /**
  * A device that produces segments in the output word.
@@ -13,7 +13,7 @@ typealias UnboundResult<T> = (Bindings) -> List<Word<T>>
  * it will change its output to suit the match result but also
  * has a reasonable default if the match result isn't available.
  */
-interface Emitter<I : Segment<I>, O : Segment<O>> {
+interface Emitter {
     /**
      * Tests if this emitter is conditional, i.e. its output
      * depends on the match result.
@@ -27,15 +27,16 @@ interface Emitter<I : Segment<I>, O : Segment<O>> {
     fun isIndependent(): Boolean
 }
 
-class SequenceEmitter<I : Segment<I>, O : Segment<O>>(val elements: List<Emitter<I, O>>) : Emitter<I, O> {
-    override fun toString(): String = elements.joinToString(separator = " ", prefix = "(", postfix = ")")
+class SequenceEmitter(val elements: List<Emitter>) : Emitter {
+    override fun toString(): String =
+        elements.joinToString(separator = " ", prefix = "(", postfix = ")")
 
     override fun isConditional(): Boolean = elements.any { it.isConditional() }
 
     override fun isIndependent(): Boolean = elements.all { it.isIndependent() }
 }
 
-class AlternativeEmitter<I : Segment<I>, O : Segment<O>>(val elements: List<Emitter<I, O>>) : Emitter<I, O> {
+class AlternativeEmitter(val elements: List<Emitter>) : Emitter {
     override fun toString(): String = elements.joinToString(prefix = "{", postfix = "}")
 
     override fun isConditional(): Boolean = true
@@ -48,8 +49,8 @@ class AlternativeEmitter<I : Segment<I>, O : Segment<O>>(val elements: List<Emit
  * This means it doesn't need information from a connected
  * ``Matcher`` about what it matched.
  */
-interface IndependentEmitter<I : Segment<I>, O : Segment<O>> : Emitter<I, O> {
-    fun result(): UnboundResult<O>
+interface IndependentEmitter : Emitter {
+    fun result(): UnboundResult
 
     override fun isConditional(): Boolean = false
 
@@ -59,40 +60,40 @@ interface IndependentEmitter<I : Segment<I>, O : Segment<O>> : Emitter<I, O> {
 /**
  * An emitter whose result depends on a connected ``Matcher``.
  */
-interface ConditionalEmitter<I : Segment<I>, O : Segment<O>> : Emitter<I, O> {
+interface ConditionalEmitter : Emitter {
     fun result(
         declarations: Declarations,
-        matcher: SimpleMatcher<I>,
-        original: List<Word<I>>
-    ): UnboundResult<O> = result(declarations, matcher, original.first())
+        matcher: SimpleMatcher,
+        original: Phrase
+    ): UnboundResult = result(declarations, matcher, original.first())
 
     fun result(
         declarations: Declarations,
-        matcher: SimpleMatcher<I>,
-        original: Word<I>
-    ): UnboundResult<O>
+        matcher: SimpleMatcher,
+        original: Word
+    ): UnboundResult
 
     override fun isConditional(): Boolean = true
 
     override fun isIndependent(): Boolean = false
 }
 
-class BetweenWordsEmitter<I : Segment<I>, O : Segment<O>>(val outType: SegmentType<O>) :
-    IndependentEmitter<I, O> {
-    override fun result(): UnboundResult<O> =
-        { listOf(outType.empty, outType.empty) }
+object BetweenWordsEmitter :
+    IndependentEmitter {
+    override fun result(): UnboundResult =
+        { Phrase(StandardWord.empty, StandardWord.empty) }
 }
 
-class CaptureReferenceEmitter(val number: Int) : IndependentEmitter<PhonS, PhonS> {
-    override fun result(): UnboundResult<PhonS> =
+class CaptureReferenceEmitter(val number: Int) : IndependentEmitter {
+    override fun result(): UnboundResult =
         { bindings ->
-            listOf(bindings.captures[number] ?: throw LscUnboundCapture(number))
+            Phrase(bindings.captures[number] ?: throw LscUnboundCapture(number))
         }
 
     override fun toString(): String = "$$number"
 }
 
-class MatrixEmitter(val matrix: Matrix) : ConditionalEmitter<PhonS, PhonS> {
+class MatrixEmitter(val matrix: Matrix) : ConditionalEmitter {
 
     init {
         if (matrix.valueList.any { it is NegatedValue }) {
@@ -101,19 +102,19 @@ class MatrixEmitter(val matrix: Matrix) : ConditionalEmitter<PhonS, PhonS> {
     }
 
     override fun result(
-        declarations: Declarations, matcher: SimpleMatcher<PhonS>, original: Word<PhonS>
-    ): UnboundResult<PhonS> =
+        declarations: Declarations, matcher: SimpleMatcher, original: Word
+    ): UnboundResult =
         { bindings ->
-            listOf(
+            Phrase(
                 with(declarations) {
                     val boundMatrix = matrix.bindVariables(bindings)
                     if (original.isEmpty()) {
-                        Phonetic.single(boundMatrix.toSymbol())
+                        StandardWord.single(boundMatrix.toSymbol())
                     } else {
                         val resultSegments = original.segments.map {
                             it.toMatrix().update(boundMatrix).toSymbol()
                         }
-                        Phonetic.fromSegments(resultSegments)
+                        StandardWord(resultSegments)
                     }
                 }
             )
@@ -122,43 +123,74 @@ class MatrixEmitter(val matrix: Matrix) : ConditionalEmitter<PhonS, PhonS> {
     override fun toString(): String = matrix.toString()
 }
 
-class SymbolEmitter<I : Segment<I>>(val text: Word<PhonS>) :
-    ConditionalEmitter<I, PhonS>,
-    IndependentEmitter<I, PhonS> {
+class SyllableMatrixEmitter(val matrix: Matrix) : ConditionalEmitter {
 
-    override fun result(): UnboundResult<PhonS> = { listOf(text) }
+    init {
+        if (matrix.valueList.any { it is NegatedValue }) {
+            throw LscInvalidOutputMatrix(matrix, "negated feature")
+        }
+    }
 
     override fun result(
-        declarations: Declarations, matcher: SimpleMatcher<I>, original: Word<I>
-    ): UnboundResult<PhonS> {
-        if (
-            matcher is SymbolMatcher && original is PhoneticWord
-        ) {
-            val result = with(declarations) {
-                if (matcher.text.length == text.length && original.length == text.length) {
-                    matcher.text.segments.zip3(
-                        original.segments, text.segments
-                    ) { matcherSegment, originalSegment, textSegment ->
-                        textSegment.withFloatingDiacriticsFrom(originalSegment, excluding = matcherSegment)
-                    }
-                } else if (matcher.text.length == original.length && text.length == 1) {
-                    var newText = text.segments.first()
-                    matcher.text.segments.zip(original.segments).forEach { (matcherSegment, originalSegment) ->
-                        newText = newText.withFloatingDiacriticsFrom(originalSegment, excluding = matcherSegment)
-                    }
-                    listOf(newText)
-                } else if (matcher.text.length == 1 && original.length == 1) {
-                    val matcherSegment = matcher.text.segments.first()
-                    val originalSegment = original.segments.first()
-                    text.segments.map {
-                        it.withFloatingDiacriticsFrom(originalSegment, excluding = matcherSegment)
-                    }
-                } else text.segments
+        declarations: Declarations, matcher: SimpleMatcher, original: Word
+    ): UnboundResult =
+        {
+            val syllableFeatures = with(declarations) {
+                matrix.toModifiers()
             }
-            return { listOf(Phonetic.fromSegments(result)) }
-        } else {
-            return { listOf(text) }
+            Phrase(
+                original.toStandard().withSyllabification(
+                    emptyList(), syllableModifiers = mapOf(0 to syllableFeatures)
+                )
+            )
         }
+
+    override fun toString(): String = matrix.toString()
+}
+
+class SymbolEmitter(val text: Word) :
+    ConditionalEmitter,
+    IndependentEmitter {
+
+    override fun result(): UnboundResult = { Phrase(text) }
+
+    override fun result(
+        declarations: Declarations, matcher: SimpleMatcher, original: Word
+    ): UnboundResult = {
+        Phrase(
+            original.recoverStructure(
+                if (matcher is SymbolMatcher) {
+                    resultFromSymbolMatcher(declarations, matcher, original)
+                } else text
+            )
+        )
+    }
+
+    private fun resultFromSymbolMatcher(
+        declarations: Declarations, matcher: SymbolMatcher, original: Word
+    ): Word {
+        val result = with(declarations) {
+            if (matcher.text.length == text.length && original.length == text.length) {
+                matcher.text.segments.zip3(
+                    original.segments, text.segments
+                ) { matcherSegment, originalSegment, textSegment ->
+                    textSegment.withFloatingDiacriticsFrom(originalSegment, excluding = matcherSegment)
+                }
+            } else if (matcher.text.length == original.length && text.length == 1) {
+                var newText = text.segments.first()
+                matcher.text.segments.zip(original.segments).forEach { (matcherSegment, originalSegment) ->
+                    newText = newText.withFloatingDiacriticsFrom(originalSegment, excluding = matcherSegment)
+                }
+                listOf(newText)
+            } else if (matcher.text.length == 1 && original.length == 1) {
+                val matcherSegment = matcher.text.segments.first()
+                val originalSegment = original.segments.first()
+                text.segments.map {
+                    it.withFloatingDiacriticsFrom(originalSegment, excluding = matcherSegment)
+                }
+            } else text.segments
+        }
+        return StandardWord(result)
     }
 
     override fun toString(): String = text.string.ifEmpty { "*" }
@@ -168,19 +200,25 @@ class SymbolEmitter<I : Segment<I>>(val text: Word<PhonS>) :
     override fun isIndependent(): Boolean = true
 }
 
-class TextEmitter<I : Segment<I>, O : Segment<O>>(val text: Word<O>) : IndependentEmitter<I, O> {
-    override fun result(): UnboundResult<O> {
-        return { listOf(text) }
+class TextEmitter(val text: Word) : IndependentEmitter {
+    override fun result(): UnboundResult {
+        return { Phrase(text) }
     }
 
     override fun toString(): String = text.string.ifEmpty { "*" }
 }
 
-class EmptyEmitter<I : Segment<I>, O : Segment<O>>(val outType: SegmentType<O>) : IndependentEmitter<I, O> {
-    override fun result(): UnboundResult<O> =
-        { listOf(outType.empty) }
+object EmptyEmitter : IndependentEmitter {
+    override fun result(): UnboundResult =
+        { Phrase(StandardWord.empty) }
 
     override fun toString(): String = "*"
+}
+
+object NeverEmitter : IndependentEmitter {
+    override fun result(): UnboundResult = throw AssertionError("A never-emitter can't emit")
+
+    override fun toString(): String = "N/A"
 }
 
 class LscInvalidOutputMatrix(val matrix: Matrix, val invalidFeature: String) :

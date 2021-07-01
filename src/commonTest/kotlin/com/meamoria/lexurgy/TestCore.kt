@@ -6,6 +6,30 @@ import com.meamoria.mpp.kotest.shouldThrow
 
 @Suppress("unused")
 class TestCore : StringSpec({
+    fun foobarWithModifier(modifier: Modifier): StandardWord =
+        StandardWord.fromString("foobar").withSyllabification(
+            syllableBreaks = listOf(3),
+            syllableModifiers = mapOf(0 to listOf(modifier))
+        )
+
+    "We should be able to put diacritics in different positions on a syllable" {
+        foobarWithModifier(Modifier("ˈ", ModifierPosition.BEFORE)).string shouldBe "ˈfoo.bar"
+        foobarWithModifier(Modifier("ʼ", ModifierPosition.FIRST)).string shouldBe "fʼoo.bar"
+        foobarWithModifier(Modifier("|", ModifierPosition.AFTER)).string shouldBe "foo|.bar"
+    }
+
+    fun emptyWithModifier(modifier: Modifier): StandardWord =
+        StandardWord.fromString("foobar").withSyllabification(
+            syllableBreaks = listOf(3, 3),
+            syllableModifiers = mapOf(1 to listOf(modifier))
+        )
+
+    "Syllable diacritics should render even if the syllable is empty" {
+        emptyWithModifier(Modifier("ˈ", ModifierPosition.BEFORE)).string shouldBe "foo.ˈ.bar"
+        emptyWithModifier(Modifier("ʼ", ModifierPosition.FIRST)).string shouldBe "foo.ʼ.bar"
+        emptyWithModifier(Modifier("|", ModifierPosition.AFTER)).string shouldBe "foo.|.bar"
+    }
+
     "We should be able to create a SegmentTree from a Map" {
         val treeMap = mapOf(
             "d" to 1,
@@ -22,13 +46,20 @@ class TestCore : StringSpec({
     }
 
     "We should be able to parse a word into its segments using a PhoneticParser" {
-        val segments = listOf("ᵐb", "ⁿd", "ᵑg")
+        val segments = listOf("ᵐb", "ⁿd", "ᵑg", "ou")
         val beforeDiacritics = listOf("ˈ")
+        val firstDiacritics = listOf("́")
         val afterDiacritics = listOf("ʼ", "ʰ")
 
-        val parser = PhoneticParser(segments, beforeDiacritics, afterDiacritics)
+        val parser = PhoneticParser(
+            segments,
+            beforeDiacritics = beforeDiacritics,
+            firstDiacritics = firstDiacritics,
+            afterDiacritics = afterDiacritics,
+        )
 
-        parser.parse("ⁿdapʰi") shouldBe PhoneticWord(listOf("ⁿd", "a", "pʰ", "i"))
+        parser.parse("ⁿdapʰi") shouldBe StandardWord.fromSchematic("ⁿd/a/p)ʰ/i")
+        parser.parse("tʼˈóula") shouldBe StandardWord.fromSchematic("t)ʼ/ˈ(ou|́/l/a")
         shouldThrow<DanglingDiacritic> { parser.parse("ʰana") }
         shouldThrow<DanglingDiacritic> { parser.parse("anaˈ") }
     }

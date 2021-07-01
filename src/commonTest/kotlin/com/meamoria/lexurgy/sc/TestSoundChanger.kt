@@ -123,7 +123,7 @@ class TestSoundChanger : StringSpec({
 
     "Rules with mismatched elements should produce an LscInvalidRuleExpression with a clear error message" {
         shouldThrow<LscInvalidRuleExpression> {
-            lsc("badrule:\n   a => b [mat]")
+            lsc("Feature bad(mat)\nbadrule:\n   a => b [mat]")
         }.also {
             it.cause.shouldBeInstanceOf<LscInvalidTransformation>()
             it.message shouldBe """
@@ -178,71 +178,6 @@ class TestSoundChanger : StringSpec({
         ch("afoobi") shouldBe "fooba"
         ch("dasusad") shouldBe "idassada"
         ch("muddud") shouldBe "mudududa"
-    }
-
-    "We should be able to restrict changes to a specific environment" {
-        val ch = lsc(
-            """
-               |Feature Depth(front, back)
-               |Feature Place(alv, pal, vel)
-               |Symbol i [front]
-               |Symbol u [back]
-               |Symbol t [alv]
-               |Symbol tʃ [pal]
-               |Symbol k [vel]
-               |soft-c:
-               |    [alv] => [pal] / _ [front]
-               |    [vel] => [pal] / _ [front]
-            """.trimMargin()
-        )
-
-        ch("kikuki") shouldBe "tʃikutʃi"
-        ch("tutit") shouldBe "tutʃit"
-    }
-
-    "We should be able to prevent changes from happening in a specific environment" {
-        val ch1 = lsc(
-            """
-               |simple:
-               |    k => x / a _ // _ a
-               |complex:
-               |    p => f / {a _, e _} // {_ a, _ e}
-            """.trimMargin()
-        )
-
-        ch1("akakekak") shouldBe "akaxekax"
-        ch1("apapepipapu") shouldBe "apapefipafu"
-
-        val ch2 = lsc(
-            """
-               |Feature Manner(stop, fric)
-               |Feature Place(lab, alv, vel)
-               |Symbol p [stop lab]
-               |Symbol t [stop alv]
-               |Symbol k [stop vel]
-               |Symbol f [fric lab]
-               |Symbol s [fric alv]
-               |Symbol x [fric vel]
-               |different-stops:
-               |    [stop ${'$'}Place] => [fric] / _ [stop] // _ [${'$'}Place]
-            """.trimMargin()
-        )
-
-        ch2("aptekpa") shouldBe "aftexpa"
-        ch2("atteppa") shouldBe "atteppa"
-    }
-
-    "A change should still proceed even if its environment is also changing" {
-        val ch = lsc(
-            """
-                dissimilate:
-                e => i / e _
-                i => e / i _
-            """.trimIndent()
-        )
-
-        ch("beeeeeeee") shouldBe "beiiiiiii"
-        ch("beeiieeii") shouldBe "beiieeiie"
     }
 
     "Multiple-character symbols should be recognized as single symbols" {
@@ -380,6 +315,36 @@ class TestSoundChanger : StringSpec({
         ch("epistrefu") shouldBe "épistrefu"
     }
 
+    "We should be able to write compact changes with alternative lists" {
+        val ch = lsc(
+            """
+                vowel-shift:
+                {o, u} => {u, y}
+                {i, e} => {e, a} / _ {m, n}
+            """.trimIndent()
+        )
+
+        ch("botu") shouldBe "buty"
+        ch("tintin") shouldBe "tenten"
+        ch("tenpin") shouldBe "tanpen"
+        ch("mitochondrion") shouldBe "mituchundriun"
+    }
+
+    "We should be able to define reusable alternative lists as sound classes" {
+        val ch = lsc(
+            """
+                Class vowel {a, e, i, o, u}
+                Class unvcdstop {p, t, k}
+                Class vcdstop {b, d, g}
+                intervocalic-lenition:
+                @unvcdstop => @vcdstop / @vowel _ @vowel
+            """.trimIndent()
+        )
+
+        ch("apetiko") shouldBe "abedigo"
+        ch("aptiko") shouldBe "aptigo"
+    }
+
     "Duplicate class declarations should produce an LscDuplicateName" {
         shouldThrow<LscDuplicateName> {
             lsc(
@@ -424,80 +389,6 @@ class TestSoundChanger : StringSpec({
         ch("puraa") shouldBe "pura"
     }
 
-    "We should be able to implement gemination and degemination with captures" {
-        val ch = lsc(
-            """
-                Class stop {p, t, k}
-                Class fricative {f, s, x}
-                stop-gemination:
-                h @stop$1 => $1 $1
-                fricative-degemination:
-                @fricative$1 => * / _ $1
-            """.trimIndent()
-        )
-
-        ch("ahpessi") shouldBe "appesi"
-        ch("ifsehkasxo") shouldBe "ifsekkasxo"
-    }
-
-    "We should be able to implement gemination and degemination with matrix captures" {
-        val ch = lsc(
-            """
-                Feature Manner(stop, fricative)
-                Feature Place(labial, alveolar, velar)
-                Symbol p [labial stop]
-                Symbol t [alveolar stop]
-                Symbol k [velar stop]
-                Symbol f [labial fricative]
-                Symbol s [alveolar fricative]
-                Symbol x [velar fricative]
-                stop-gemination:
-                h [stop]$1 => $1 $1
-                fricative-degemination:
-                [fricative]$1 => * / _ $1
-            """.trimIndent()
-        )
-
-        ch("ahpessi") shouldBe "appesi"
-        ch("ifsehkasxo") shouldBe "ifsekkasxo"
-        // Tests that we don't get crashes if the rule is looking for a geminate off the end of the word.
-        ch("affes") shouldBe "afes"
-    }
-
-    "We should be able to implement metathesis with captures" {
-        val ch = lsc(
-            """
-                Class stop {p, t, k}
-                Class fricative {f, s, x}
-                Class vowel {a, e, i, o, u}
-                metathesis:
-                @stop$1 @fricative$2 => $2 $1 / @vowel _ @vowel
-            """.trimIndent()
-        )
-
-        ch("taksidepsi") shouldBe "taskidespi"
-        ch("fnitficuts") shouldBe "fnifticuts"
-    }
-
-    "Capturing multiple things with the same capture number should result in a LscReboundCapture" {
-        shouldThrow<LscRuleNotApplicable> {
-            val ch = lsc(
-                """
-                Class stop {p, t, k}
-                double-stop-epenthesis:
-                    * => i / _ @stop$1 @stop$1
-                """.trimIndent()
-            )
-            ch("ppa")
-        }.also {
-            it.cause.shouldBeInstanceOf<LscReboundCapture>()
-            it.message shouldBe
-                    "Rule double-stop-epenthesis could not be applied to word ppa (originally ppa)\n" +
-                    "Capture variable 1 is bound more than once; " +
-                    "replace the second with a capture reference (\"${'$'}1\")"
-        }
-    }
-
     "We should be able to negate plain text and capture references" {
         val ch = lsc(
             """
@@ -513,34 +404,6 @@ class TestSoundChanger : StringSpec({
 
         ch("cietua") shouldBe "cjetwa"
         ch("vietuu") shouldBe "vetuu"
-    }
-
-    "We should be able to sequence rule expressions rather than having them all happen at once" {
-        val chain = lsc(
-            """
-                Symbol ts
-                chain:
-                t => ts
-                ts => s
-                s => h
-                h => *
-            """.trimIndent()
-        )
-
-        val nonchain = lsc(
-            """
-                Symbol ts
-                not-a-chain:
-                t => ts
-                Then: ts => s
-                Then:
-                s => h
-                h => *
-            """.trimIndent()
-        )
-
-        chain("tatsasaha") shouldBe "tsasahaa"
-        nonchain("tatsasaha") shouldBe "hahahaa"
     }
 
     "A rule with a filter should only operate on sounds that pass the filter" {
@@ -569,7 +432,7 @@ class TestSoundChanger : StringSpec({
         ch("onni") shouldBe "onnai"
 
         shouldThrow<LscInvalidRuleExpression> {
-            lsc("harmony [vowel]:\n[low] * => [high] a")
+            lsc("Feature bad(vowel, low, high)\nharmony [vowel]:\n[low] * => [high] a")
         }.also {
             it.cause.shouldBeInstanceOf<LscInvalidTransformation>()
             it.message shouldBe """
@@ -578,7 +441,7 @@ class TestSoundChanger : StringSpec({
             """.trimIndent()
         }
         shouldThrow<LscInvalidRuleExpression> {
-            lsc("harmony [vowel]:\n[low] ai => [high] a")
+            lsc("Feature bad(vowel, low, high)\nharmony [vowel]:\n[low] ai => [high] a")
         }.also {
             it.cause.shouldBeInstanceOf<LscInvalidTransformation>()
             it.message shouldBe """
@@ -586,7 +449,9 @@ class TestSoundChanger : StringSpec({
                 Multi-segment matches aren't allowed on the match side of filtered rules
             """.trimIndent()
         }
-        shouldNotThrowAny { lsc("Symbol ai\nharmony [vowel]:\n[low] ai => [high] a") }
+        shouldNotThrowAny {
+            lsc("Feature bad(vowel, low, high)\nSymbol ai\nharmony [vowel]:\n[low] ai => [high] a")
+        }
     }
 
     "Negated features should be usable in filters" {
@@ -752,7 +617,7 @@ class TestSoundChanger : StringSpec({
     }
 
     "Deromanizers and romanizers should default to all-phonetic" {
-        shouldThrow<DanglingDiacritic> {
+        shouldThrow<LscInvalidRuleExpression> {
             lsc(
                 """
                     Feature +ejective
@@ -761,8 +626,8 @@ class TestSoundChanger : StringSpec({
                         ' => ʔ
                 """.trimIndent()
             )
-        }
-        shouldThrow<DanglingDiacritic> {
+        }.also { it.reason.shouldBeInstanceOf<DanglingDiacritic>() }
+        shouldThrow<LscInvalidRuleExpression> {
             lsc(
                 """
                     Feature +ejective
@@ -771,8 +636,8 @@ class TestSoundChanger : StringSpec({
                         ʔ => '
                 """.trimIndent()
             )
-        }
-        shouldThrow<DanglingDiacritic> {
+        }.also { it.reason.shouldBeInstanceOf<DanglingDiacritic>() }
+        shouldThrow<LscInvalidRuleExpression> {
             lsc(
                 """
                     Feature +ejective
@@ -781,7 +646,7 @@ class TestSoundChanger : StringSpec({
                         ʔ => '
                 """.trimIndent()
             )
-        }
+        }.also { it.reason.shouldBeInstanceOf<DanglingDiacritic>() }
     }
 
     "Deromanizers and romanizers marked 'literal' should ignore declarations" {
@@ -903,6 +768,29 @@ class TestSoundChanger : StringSpec({
             "a" to listOf("shashi", "vaneshak"),
             "b" to listOf("xaxi", "vanexak"),
             null to listOf("siäsii", "vänesiäk"),
+        )
+    }
+
+    "Setting romanize = false should make all romanizers dump phonetic forms" {
+        val ch = lsc(
+            """
+                Deromanizer:
+                ch => tʃ
+                change:
+                tʃ => ʃ
+                Romanizer-a:
+                ʃ => sh
+                Romanizer-b:
+                ʃ => x
+                Romanizer:
+                ʃ => si
+            """.trimIndent()
+        )
+
+        ch.changeWithIntermediates(listOf("chachi", "vanechak"), romanize = false) shouldBe mapOf(
+            "a" to listOf("ʃaʃi", "vaneʃak"),
+            "b" to listOf("ʃaʃi", "vaneʃak"),
+            null to listOf("ʃaʃi", "vaneʃak"),
         )
     }
 

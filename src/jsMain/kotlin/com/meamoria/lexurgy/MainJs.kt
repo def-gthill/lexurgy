@@ -9,7 +9,11 @@ import org.w3c.dom.HTMLTextAreaElement
 import org.w3c.dom.events.Event
 
 fun main() {
-    if (document.title.isEmpty()) return
+    try {
+        if (document.title.isEmpty()) return
+    } catch (e: Throwable) {
+        return
+    }
 
     val inputField = document.getElementById("input") as HTMLTextAreaElement
     val changeField = document.getElementById("changes") as HTMLTextAreaElement

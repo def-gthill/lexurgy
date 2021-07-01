@@ -7,12 +7,21 @@ the same words in a newer form of the language.
 
 Check out the `web app <https://www.meamoria.com/lexurgy/app/sc>`_!
 
+User Guide
+-----------
+
+.. toctree::
+    :maxdepth: 2
+    :caption: Contents:
+
+    sc-tutorial
+    sc-cli
+
 Why Lexurgy SC?
 ----------------
 
-Conlangers rarely get things exactly right the first try, and sound
-changes are especially prone to revision. Lexurgy embraces this truth.
-It's designed around two main goals:
+Sound changes are hard to get right on the first try, and
+Lexurgy embraces this truth. It's designed around two main goals:
 
     - Rules are short, easy to read, and can have descriptive names.
       When you want to revise the sound changes, you shouldn't be lost
@@ -57,14 +66,3 @@ of their features. That way, you can use features for the heavy
 lifting, like managing stress systems and assimiliation,
 while sticking with the simpler alternative lists and sound
 classes for easier rules.
-
-User Guide
------------
-
-.. toctree::
-    :maxdepth: 2
-    :caption: Contents:
-
-    sc-tutorial
-    sc-dsl
-    sc-cli

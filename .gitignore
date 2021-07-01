@@ -121,3 +121,4 @@ hs_err_pid*
 /.idea/artifacts/
 /.idea/compiler.xml
 /.idea/misc.xml
+**/jsMain/**/Meta*

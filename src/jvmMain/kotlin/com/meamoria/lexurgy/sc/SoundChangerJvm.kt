@@ -3,6 +3,7 @@ package com.meamoria.lexurgy.sc
 import com.meamoria.lexurgy.*
 import java.io.FileNotFoundException
 import java.nio.file.Path
+import java.util.concurrent.TimeUnit
 import kotlin.streams.toList
 import kotlin.time.ExperimentalTime
 import kotlin.time.TimedValue
@@ -118,7 +119,7 @@ fun SoundChanger.changeFiles(
             } else stageCompare
 
         console(
-            "Applied the changes to ${enpl(words.size, "word")} in ${"%.3f".format(time.inSeconds)} seconds"
+            "Applied the changes to ${enpl(words.size, "word")} in ${"%.3f".format(time.toDouble(TimeUnit.SECONDS))} seconds"
         )
 
         dumpList(wordsPath, finalWords, suffix = outSuffix)

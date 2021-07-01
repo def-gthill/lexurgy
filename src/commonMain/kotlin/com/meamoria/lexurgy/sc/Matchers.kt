@@ -2,43 +2,45 @@ package com.meamoria.lexurgy.sc
 
 import com.meamoria.lexurgy.*
 
-interface Matcher<I : Segment<I>> {
+interface Matcher {
     fun claim(
         declarations: Declarations,
-        words: List<Word<I>>,
-        start: WordListIndex,
+        phrase: Phrase,
+        start: PhraseIndex,
         bindings: Bindings
-    ): WordListIndex? {
+    ): PhraseIndex? {
+        if (!phrase.hasIndex(start)) return null
         val (startWord, startIndex) = start
-        if (startIndex !in 0 .. words[startWord].length) return null
-        claim(declarations, words[startWord], startIndex, bindings)?.let { return WordListIndex(startWord, it) }
+        claim(declarations, phrase[startWord], startIndex, bindings)?.let {
+            return PhraseIndex(startWord, it)
+        }
         return null
     }
 
     fun claim(
         declarations: Declarations,
-        word: Word<I>,
+        word: Word,
         start: Int,
         bindings: Bindings
     ): Int? =
         claim(
             declarations,
-            listOf(word),
-            WordListIndex(0, start), bindings
+            Phrase(listOf(word)),
+            PhraseIndex(0, start),
+            bindings
         )?.segmentIndex
 
-    fun reversed(): Matcher<I>
+    fun reversed(): Matcher
 
     /**
      * Makes a transformer that matches using this `Matcher` and uses the specified
      * `Emitter` to produce the result.
      * @param filtered: Whether the transformer is in a filtered rule
      */
-    fun <O : Segment<O>> transformerTo(
-        result: Emitter<I, O>,
-        outType: SegmentType<O>,
+    fun transformerTo(
+        result: Emitter,
         filtered: Boolean,
-    ): Transformer<I, O>
+    ): Transformer
 
     /**
      * Checks whether this matcher prefers to treat emitters as
@@ -55,36 +57,35 @@ interface Matcher<I : Segment<I>> {
     fun prefersIndependentSequenceEmitters(): Boolean
 }
 
-abstract class BaseMatcher<I : Segment<I>> : Matcher<I> {
-    override fun <O : Segment<O>> transformerTo(
-        result: Emitter<I, O>,
-        outType: SegmentType<O>,
+abstract class BaseMatcher : Matcher {
+    override fun transformerTo(
+        result: Emitter,
         filtered: Boolean,
-    ): Transformer<I, O> {
+    ): Transformer {
         if (filtered) checkValidInFilter(result)
         return try {
             when (result) {
-                is AlternativeEmitter -> transformerToAlternatives(result, outType, filtered)
+                is AlternativeEmitter -> transformerToAlternatives(result, filtered)
                 is SequenceEmitter ->
                     if (prefersIndependentSequenceEmitters() && result.isIndependent()) {
-                        transformerToIndependentSequence(result, outType, filtered)
+                        transformerToIndependentSequence(result, filtered)
                     } else {
-                        transformerToSequence(result, outType, filtered)
+                        transformerToSequence(result, filtered)
                     }
                 else ->
                     if (prefersIndependentEmitters() && result.isIndependent()) {
-                        transformerToIndependent(result as IndependentEmitter, outType, filtered)
+                        transformerToIndependent(result as IndependentEmitter, filtered)
                     } else if (result.isConditional()) {
-                        transformerToConditional(result as ConditionalEmitter, outType, filtered)
+                        transformerToConditional(result as ConditionalEmitter, filtered)
                     } else {
-                        transformerToIndependent(result as IndependentEmitter, outType, filtered)
+                        transformerToIndependent(result as IndependentEmitter, filtered)
                     }
             }
         } catch (e: LscInvalidTransformation) {
             if (result.isIndependent()) {
                 when (result) {
-                    is SequenceEmitter -> transformerToIndependentSequence(result, outType, filtered)
-                    else -> transformerToIndependent(result as IndependentEmitter, outType, filtered)
+                    is SequenceEmitter -> transformerToIndependentSequence(result, filtered)
+                    else -> transformerToIndependent(result as IndependentEmitter, filtered)
                 }
             } else {
                 throw e
@@ -97,37 +98,32 @@ abstract class BaseMatcher<I : Segment<I>> : Matcher<I> {
      * Returns normally if yes, throws an appropriate `LscInvalidTransformation` if not.
      * The default implementation always returns normally.
      */
-    protected open fun <O : Segment<O>> checkValidInFilter(result: Emitter<I, O>) = Unit
+    protected open fun checkValidInFilter(result: Emitter) = Unit
 
-    protected abstract fun <O : Segment<O>> transformerToAlternatives(
-        result: AlternativeEmitter<I, O>,
-        outType: SegmentType<O>,
+    protected abstract fun transformerToAlternatives(
+        result: AlternativeEmitter,
         filtered: Boolean,
-    ): Transformer<I, O>
+    ): Transformer
 
-    protected abstract fun <O : Segment<O>> transformerToSequence(
-        result: SequenceEmitter<I, O>,
-        outType: SegmentType<O>,
+    protected abstract fun transformerToSequence(
+        result: SequenceEmitter,
         filtered: Boolean,
-    ): Transformer<I, O>
+    ): Transformer
 
-    protected abstract fun <O : Segment<O>> transformerToConditional(
-        result: ConditionalEmitter<I, O>,
-        outType: SegmentType<O>,
+    protected abstract fun transformerToConditional(
+        result: ConditionalEmitter,
         filtered: Boolean,
-    ): Transformer<I, O>
+    ): Transformer
 
-    protected open fun <O : Segment<O>> transformerToIndependent(
-        result: IndependentEmitter<I, O>,
-        outType: SegmentType<O>,
+    protected open fun transformerToIndependent(
+        result: IndependentEmitter,
         filtered: Boolean,
-    ): Transformer<I, O> = IndependentTransformer(this, result)
+    ): Transformer = IndependentTransformer(this, result)
 
-    protected open fun <O : Segment<O>> transformerToIndependentSequence(
-        result: SequenceEmitter<I, O>,
-        outType: SegmentType<O>,
+    protected open fun transformerToIndependentSequence(
+        result: SequenceEmitter,
         filtered: Boolean,
-    ): Transformer<I, O> = if (filtered) {
+    ): Transformer = if (filtered) {
         // Filtered rules need each output element to correspond to an
         // input element so it can restore the ignored segments in the
         // right places. This isn't possible with IndependentSequenceEmitter.
@@ -141,14 +137,14 @@ abstract class BaseMatcher<I : Segment<I>> : Matcher<I> {
             result.elements,
         )
     } else {
-        IndependentSequenceTransformer(outType,this, result)
+        IndependentSequenceTransformer(this, result)
     }
 
-    protected fun <O : Segment<O>> mismatchedLengths(
-        match: Matcher<I>,
-        result: Emitter<I, O>,
-        matchElements: List<Matcher<I>>,
-        resultElements: List<Emitter<I, O>>,
+    protected fun mismatchedLengths(
+        match: Matcher,
+        result: Emitter,
+        matchElements: List<Matcher>,
+        resultElements: List<Emitter>,
     ): Nothing = throw LscInvalidTransformation(
         match, result,
         "Found ${enpl(matchElements.size, "element")} " +
@@ -166,55 +162,158 @@ abstract class BaseMatcher<I : Segment<I>> : Matcher<I> {
  * A matcher whose response to all emitters is to try to connect
  * a sub-element to the emitter.
  */
-abstract class LiftingMatcher<I : Segment<I>> : BaseMatcher<I>() {
-    override fun <O : Segment<O>> transformerToAlternatives(
-        result: AlternativeEmitter<I, O>,
-        outType: SegmentType<O>,
+abstract class LiftingMatcher : BaseMatcher() {
+    override fun transformerToAlternatives(
+        result: AlternativeEmitter,
         filtered: Boolean
-    ): Transformer<I, O> = liftingTransformerTo(result, outType, filtered)
+    ): Transformer = liftingTransformerTo(result, filtered)
 
-    override fun <O : Segment<O>> transformerToSequence(
-        result: SequenceEmitter<I, O>,
-        outType: SegmentType<O>,
+    override fun transformerToSequence(
+        result: SequenceEmitter,
         filtered: Boolean
-    ): Transformer<I, O> = liftingTransformerTo(result, outType, filtered)
+    ): Transformer = liftingTransformerTo(result, filtered)
 
-    override fun <O : Segment<O>> transformerToConditional(
-        result: ConditionalEmitter<I, O>,
-        outType: SegmentType<O>,
+    override fun transformerToConditional(
+        result: ConditionalEmitter,
         filtered: Boolean
-    ): Transformer<I, O> = liftingTransformerTo(result, outType, filtered)
+    ): Transformer = liftingTransformerTo(result, filtered)
 
-    protected abstract fun <O : Segment<O>> liftingTransformerTo(
-        result: Emitter<I, O>,
-        outType: SegmentType<O>,
+    protected abstract fun liftingTransformerTo(
+        result: Emitter,
         filtered: Boolean
-    ): Transformer<I, O>
+    ): Transformer
 }
 
-class SequenceMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : BaseMatcher<I>() {
+class EnvironmentMatcher(
+    val element: Matcher,
+    val environment: CompoundEnvironment,
+) : LiftingMatcher() {
     override fun claim(
         declarations: Declarations,
-        words: List<Word<I>>,
-        start: WordListIndex,
+        phrase: Phrase,
+        start: PhraseIndex,
         bindings: Bindings
-    ): WordListIndex? {
+    ): PhraseIndex? {
+        val claimEnd = element.claim(declarations, phrase, start, bindings) ?: return null
+        if (!environment.check(declarations, phrase, start, claimEnd, bindings)) return null
+        return claimEnd
+    }
+
+    override fun reversed(): Matcher =
+        EnvironmentMatcher(element.reversed(), environment.reversed())
+
+    override fun toString(): String = "$element$environment"
+
+    override fun liftingTransformerTo(result: Emitter, filtered: Boolean): Transformer =
+        EnvironmentTransformer(element.transformerTo(result, filtered), environment)
+}
+
+/**
+ * A lookahead/lookbehind condition that tests whether the material
+ * before and after a match fits the specified criteria.
+ * The check passes if at least one of the ``positive`` environments
+ * is satisfied (or the list is empty), and if none of the ``negative``
+ * environments are satisfied.
+ */
+class CompoundEnvironment(val positive: List<Environment>, val negative: List<Environment>) {
+
+    private val realPositive =
+        if (positive.isEmpty()) listOf(Environment(EmptyMatcher, EmptyMatcher))
+        else positive.map { it.beforeReversed() }
+
+    private val realNegative = negative.map { it.beforeReversed() }
+
+    fun check(
+        declarations: Declarations,
+        phrase: Phrase,
+        matchStart: PhraseIndex,
+        matchEnd: PhraseIndex,
+        bindings: Bindings,
+    ): Boolean {
+        for (environment in realNegative) {
+            if (
+                environment.check(
+                    declarations, phrase, matchStart, matchEnd, bindings
+                )
+            ) return false
+        }
+        for (environment in realPositive) {
+            if (
+                environment.check(
+                    declarations, phrase, matchStart, matchEnd, bindings
+                )
+            ) return true
+        }
+        return false
+    }
+
+    fun reversed(): CompoundEnvironment =
+        CompoundEnvironment(
+            positive.map { it.reversed() },
+            negative.map { it.reversed() }
+        )
+
+    override fun toString(): String =
+        "${environtext("/", positive)}${environtext("//", negative)}"
+
+    private fun environtext(sep: String, environ: List<Environment>) =
+        when (environ.size) {
+            0 -> ""
+            1 -> " $sep ${environ.single()}"
+            else -> " $sep ${environ.joinToString(prefix = "{", postfix = "}")}"
+        }
+}
+
+class Environment(val before: Matcher, val after: Matcher) {
+    fun check(
+        declarations: Declarations,
+        phrase: Phrase,
+        matchStart: PhraseIndex,
+        matchEnd: PhraseIndex,
+        bindings: Bindings,
+    ): Boolean {
+        val reversedPhrase = phrase.fullyReversed()
+        val environmentBindings = bindings.copy()
+        before.claim(
+            declarations, reversedPhrase, phrase.reversedIndex(matchStart), environmentBindings
+        ) ?: return false
+        after.claim(
+            declarations, phrase, matchEnd, environmentBindings
+        ) ?: return false
+        bindings.combine(environmentBindings)
+        return true
+    }
+
+    fun beforeReversed(): Environment = Environment(before.reversed(), after)
+
+    fun reversed(): Environment =
+        Environment(after.reversed(), before.reversed())
+
+    override fun toString(): String = "$before _ $after"
+}
+
+class SequenceMatcher(val elements: List<Matcher>) : BaseMatcher() {
+    override fun claim(
+        declarations: Declarations,
+        phrase: Phrase,
+        start: PhraseIndex,
+        bindings: Bindings
+    ): PhraseIndex? {
         var elementStart = start
         for (element in elements) {
-            elementStart = element.claim(declarations, words, elementStart, bindings) ?: return null
+            elementStart = element.claim(declarations, phrase, elementStart, bindings) ?: return null
         }
         return elementStart
     }
 
-    override fun reversed(): Matcher<I> = SequenceMatcher(elements.asReversed().map { it.reversed() })
+    override fun reversed(): Matcher = SequenceMatcher(elements.asReversed().map { it.reversed() })
 
     override fun toString(): String = elements.joinToString(separator = " ", prefix = "(", postfix = ")")
 
-    override fun <O : Segment<O>> transformerToAlternatives(
-        result: AlternativeEmitter<I, O>,
-        outType: SegmentType<O>,
+    override fun transformerToAlternatives(
+        result: AlternativeEmitter,
         filtered: Boolean
-    ): Transformer<I, O> {
+    ): Transformer {
         val matchAlternatives = elements.mapNotNull { it as? AlternativeMatcher }
         val resultSequences = result.elements.map { it as? SequenceEmitter }
         if (
@@ -230,7 +329,6 @@ class SequenceMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : BaseMatc
             return AlternativeTransformer(
                 matchSequences,
                 resultSequences.requireNoNulls(),
-                outType,
                 filtered,
             )
         } else {
@@ -238,52 +336,50 @@ class SequenceMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : BaseMatc
         }
     }
 
-    override fun <O : Segment<O>> transformerToSequence(
-        result: SequenceEmitter<I, O>,
-        outType: SegmentType<O>,
+    override fun transformerToSequence(
+        result: SequenceEmitter,
         filtered: Boolean
-    ): Transformer<I, O> = if (elements.size == result.elements.size) {
-        SequenceTransformer(elements, result.elements, outType, filtered)
+    ): Transformer = if (elements.size == result.elements.size) {
+        SequenceTransformer(elements, result.elements, filtered)
     } else {
         mismatchedLengths(this, result, elements, result.elements)
     }
 
-    override fun <O : Segment<O>> transformerToConditional(
-        result: ConditionalEmitter<I, O>,
-        outType: SegmentType<O>,
+    override fun transformerToConditional(
+        result: ConditionalEmitter,
         filtered: Boolean
-    ): Transformer<I, O> = SequenceTransformer(elements, elements.map { result }, outType, filtered)
+    ): Transformer = SequenceTransformer(elements, elements.map { result }, filtered)
 
     override fun prefersIndependentEmitters(): Boolean = true
 }
 
-class RepeaterMatcher<I : Segment<I>>(
-    val element: Matcher<I>,
+class RepeaterMatcher(
+    val element: Matcher,
     val type: RepeaterType,
-    val precedingMatcher: Matcher<I>?,
-    val followingMatcher: Matcher<I>?,
-) : LiftingMatcher<I>() {
+    val precedingMatcher: Matcher?,
+    val followingMatcher: Matcher?,
+) : LiftingMatcher() {
     override fun claim(
         declarations: Declarations,
-        words: List<Word<I>>,
-        start: WordListIndex,
+        phrase: Phrase,
+        start: PhraseIndex,
         bindings: Bindings
-    ): WordListIndex? {
+    ): PhraseIndex? {
         var elementStart = start
         var times = 0
         while (true) {
             val altBindings = bindings.copy()
-            if (followingMatcher?.claim(declarations, words, elementStart, altBindings)?.takeIf {
+            if (followingMatcher?.claim(declarations, phrase, elementStart, altBindings)?.takeIf {
                     it > elementStart
                 } != null) break
-            elementStart = element.claim(declarations, words, elementStart, bindings) ?: break
+            elementStart = element.claim(declarations, phrase, elementStart, bindings) ?: break
             times++
             if (type.maxReps?.let { times >= it } == true) break
         }
         return elementStart.takeIf { times >= type.minReps }
     }
 
-    override fun reversed(): Matcher<I> =
+    override fun reversed(): Matcher =
         RepeaterMatcher(
             element.reversed(),
             type,
@@ -293,27 +389,26 @@ class RepeaterMatcher<I : Segment<I>>(
 
     override fun toString(): String = "$element${type.string}"
 
-    override fun <O : Segment<O>> liftingTransformerTo(
-        result: Emitter<I, O>,
-        outType: SegmentType<O>,
+    override fun liftingTransformerTo(
+        result: Emitter,
         filtered: Boolean
-    ): Transformer<I, O> = RepeaterTransformer(this, result, outType, filtered)
+    ): Transformer = RepeaterTransformer(this, result, filtered)
 
     override fun prefersIndependentEmitters(): Boolean = true
 
     override fun prefersIndependentSequenceEmitters(): Boolean = true
 }
 
-class AlternativeMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : BaseMatcher<I>() {
+class AlternativeMatcher(val elements: List<Matcher>) : BaseMatcher() {
     override fun claim(
         declarations: Declarations,
-        words: List<Word<I>>,
-        start: WordListIndex,
+        phrase: Phrase,
+        start: PhraseIndex,
         bindings: Bindings
-    ): WordListIndex? {
+    ): PhraseIndex? {
         for (element in elements) {
             val altBindings = bindings.copy()
-            element.claim(declarations, words, start, altBindings)?.let {
+            element.claim(declarations, phrase, start, altBindings)?.let {
                 bindings.combine(altBindings)
                 return it
             }
@@ -321,35 +416,36 @@ class AlternativeMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : BaseM
         return null
     }
 
-    override fun reversed(): Matcher<I> = AlternativeMatcher(elements.map { it.reversed() })
+    override fun reversed(): Matcher = AlternativeMatcher(elements.map { it.reversed() })
 
     override fun toString(): String = elements.joinToString(prefix = "{", postfix = "}")
 
-    override fun <O : Segment<O>> transformerToAlternatives(
-        result: AlternativeEmitter<I, O>,
-        outType: SegmentType<O>,
+    override fun transformerToAlternatives(
+        result: AlternativeEmitter,
         filtered: Boolean
-    ): Transformer<I, O> = if (elements.size == result.elements.size) {
-        AlternativeTransformer(elements, result.elements, outType, filtered)
+    ): Transformer = if (elements.size == result.elements.size) {
+        AlternativeTransformer(elements, result.elements, filtered)
     } else {
-        mismatchedLengths(this, result, elements, result.elements)
+        try {
+            AlternativeTransformer(elements, result, filtered)
+        } catch (_: LscInvalidTransformation) {
+            mismatchedLengths(this, result, elements, result.elements)
+        }
     }
 
-    override fun <O : Segment<O>> transformerToSequence(
-        result: SequenceEmitter<I, O>,
-        outType: SegmentType<O>,
+    override fun transformerToSequence(
+        result: SequenceEmitter,
         filtered: Boolean
-    ): Transformer<I, O> = AlternativeTransformer(elements, result, outType, filtered)
+    ): Transformer = AlternativeTransformer(elements, result, filtered)
 
-    override fun <O : Segment<O>> transformerToConditional(
-        result: ConditionalEmitter<I, O>,
-        outType: SegmentType<O>,
+    override fun transformerToConditional(
+        result: ConditionalEmitter,
         filtered: Boolean
-    ): Transformer<I, O> = AlternativeTransformer(elements, result, outType, filtered)
+    ): Transformer = AlternativeTransformer(elements, result, filtered)
 }
 
-class IntersectionMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : LiftingMatcher<I>() {
-    override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int? {
+class IntersectionMatcher(val elements: List<Matcher>) : LiftingMatcher() {
+    override fun claim(declarations: Declarations, word: Word, start: Int, bindings: Bindings): Int? {
         var matchEnd: Int? = null
         for (element in elements) {
             val elementMatchEnd = element.claim(declarations, word, start, bindings) ?: return null
@@ -362,144 +458,158 @@ class IntersectionMatcher<I : Segment<I>>(val elements: List<Matcher<I>>) : Lift
         return matchEnd
     }
 
-    override fun reversed(): Matcher<I> = IntersectionMatcher(elements.map { it.reversed() })
+    override fun reversed(): Matcher = IntersectionMatcher(elements.map { it.reversed() })
 
     override fun toString(): String = elements.joinToString("&")
 
-    override fun <O : Segment<O>> liftingTransformerTo(
-        result: Emitter<I, O>,
-        outType: SegmentType<O>,
+    override fun liftingTransformerTo(
+        result: Emitter,
         filtered: Boolean
-    ): Transformer<I, O> =
+    ): Transformer =
         IntersectionTransformer(
-            elements.first().transformerTo(result, outType, filtered),
+            elements.first().transformerTo(result, filtered),
             elements.drop(1),
         )
 }
 
-class CaptureMatcher(val element: Matcher<PhonS>, val number: Int) : LiftingMatcher<PhonS>() {
-    override fun claim(declarations: Declarations, word: Word<PhonS>, start: Int, bindings: Bindings): Int? =
+class CaptureMatcher(
+    val element: Matcher,
+    val number: Int,
+    val isReversed: Boolean = false,
+) : LiftingMatcher() {
+    override fun claim(declarations: Declarations, word: Word, start: Int, bindings: Bindings): Int? =
         if (number in bindings.captures) {
             throw LscReboundCapture(number)
         } else {
             element.claim(declarations, word, start, bindings)?.also { end ->
-                bindings.captures[number] = word.slice(start until end)
+                val capture = word.slice(start until end)
+                bindings.captures[number] =
+                    if (isReversed) capture.reversed() else capture
             }
         }
 
-    override fun reversed(): Matcher<PhonS> = CaptureMatcher(element.reversed(), number)
+    override fun reversed(): Matcher =
+        CaptureMatcher(element.reversed(), number, !isReversed)
 
     override fun toString(): String = "$element$$number"
 
-    override fun <O : Segment<O>> liftingTransformerTo(
-        result: Emitter<PhonS, O>,
-        outType: SegmentType<O>,
+    override fun liftingTransformerTo(
+        result: Emitter,
         filtered: Boolean
-    ): Transformer<PhonS, O> =
-        CaptureTransformer(element.transformerTo(result, outType, filtered), number)
+    ): Transformer =
+        CaptureTransformer(element.transformerTo(result, filtered), number)
 }
 
 /**
  * A matcher that isn't a container for other matchers
  */
-abstract class SimpleMatcher<I : Segment<I>> : BaseMatcher<I>() {
-    override fun <O : Segment<O>> transformerToAlternatives(
-        result: AlternativeEmitter<I, O>,
-        outType: SegmentType<O>,
+abstract class SimpleMatcher : BaseMatcher() {
+    override fun transformerToAlternatives(
+        result: AlternativeEmitter,
         filtered: Boolean
-    ): Transformer<I, O> = mismatchedLengths(this, result, listOf(this), result.elements)
+    ): Transformer = mismatchedLengths(this, result, listOf(this), result.elements)
 
-    override fun <O : Segment<O>> transformerToSequence(
-        result: SequenceEmitter<I, O>,
-        outType: SegmentType<O>,
+    override fun transformerToSequence(
+        result: SequenceEmitter,
         filtered: Boolean
-    ): Transformer<I, O> = mismatchedLengths(this, result, listOf(this), result.elements)
+    ): Transformer = mismatchedLengths(this, result, listOf(this), result.elements)
 
-    override fun <O : Segment<O>> transformerToConditional(
-        result: ConditionalEmitter<I, O>,
-        outType: SegmentType<O>,
+    override fun transformerToConditional(
+        result: ConditionalEmitter,
         filtered: Boolean
-    ): Transformer<I, O> = SimpleConditionalTransformer(this, result)
+    ): Transformer = SimpleConditionalTransformer(this, result)
 
-    override fun <O : Segment<O>> transformerToIndependent(
-        result: IndependentEmitter<I, O>,
-        outType: SegmentType<O>,
+    override fun transformerToIndependent(
+        result: IndependentEmitter,
         filtered: Boolean
-    ): Transformer<I, O> = IndependentTransformer(this, result)
+    ): Transformer = IndependentTransformer(this, result)
 
-    override fun <O : Segment<O>> transformerToIndependentSequence(
-        result: SequenceEmitter<I, O>,
-        outType: SegmentType<O>,
+    override fun transformerToIndependentSequence(
+        result: SequenceEmitter,
         filtered: Boolean
-    ): Transformer<I, O> = IndependentSequenceTransformer(outType, this, result)
+    ): Transformer = IndependentSequenceTransformer(this, result)
 }
 
-class BetweenWordsMatcher<I : Segment<I>> : SimpleMatcher<I>() {
+object BetweenWordsMatcher : SimpleMatcher() {
     override fun claim(
         declarations: Declarations,
-        words: List<Word<I>>,
-        start: WordListIndex,
+        phrase: Phrase,
+        start: PhraseIndex,
         bindings: Bindings
-    ): WordListIndex? {
+    ): PhraseIndex? {
         val (startWord, startIndex) = start
-        return if (startWord < words.size - 1 && startIndex == words[startWord].length) {
-            WordListIndex(startWord + 1, 0)
+        return if (startWord < phrase.size - 1 && startIndex == phrase[startWord].length) {
+            PhraseIndex(startWord + 1, 0)
         } else null
     }
 
-    override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int? = null
+    override fun claim(declarations: Declarations, word: Word, start: Int, bindings: Bindings): Int? = null
 
-    override fun reversed(): Matcher<I> = this
+    override fun reversed(): Matcher = this
 
     override fun toString(): String = "$$"
 }
 
-class WordStartMatcher<I : Segment<I>> : SimpleMatcher<I>() {
-    override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int? =
+object WordStartMatcher : SimpleMatcher() {
+    override fun claim(declarations: Declarations, word: Word, start: Int, bindings: Bindings): Int? =
         start.takeIf { it == 0 }
 
-    override fun reversed(): Matcher<I> = WordEndMatcher()
+    override fun reversed(): Matcher = WordEndMatcher
 
     override fun toString(): String = "$"
 }
 
-class WordEndMatcher<I : Segment<I>> : SimpleMatcher<I>() {
-    override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int? =
+object WordEndMatcher : SimpleMatcher() {
+    override fun claim(declarations: Declarations, word: Word, start: Int, bindings: Bindings): Int? =
         start.takeIf { it == word.length }
 
-    override fun reversed(): Matcher<I> = WordStartMatcher()
+    override fun reversed(): Matcher = WordStartMatcher
 
     override fun toString(): String = "$"
 }
 
-class CaptureReferenceMatcher(val number: Int) : SimpleMatcher<PhonS>() {
-    override fun claim(declarations: Declarations, word: Word<PhonS>, start: Int, bindings: Bindings): Int? =
+class CaptureReferenceMatcher(val number: Int, val isReversed: Boolean = false) : SimpleMatcher() {
+    override fun claim(declarations: Declarations, word: Word, start: Int, bindings: Bindings): Int? =
         bindings.captures[number]?.let { capturedText ->
+            val orientedCapturedText = if (isReversed) capturedText.reversed() else capturedText
             return (start + capturedText.length).takeIf { end ->
-                word.drop(start).take(end - start) == capturedText
+                word.drop(start).take(end - start) == orientedCapturedText
             }
         } ?: throw LscUnboundCapture(number)
 
-    override fun reversed(): Matcher<PhonS> = this
+    override fun reversed(): Matcher = CaptureReferenceMatcher(number, !isReversed)
 
     override fun toString(): String = "$$number"
 }
 
-class MatrixMatcher(val matrix: Matrix) : SimpleMatcher<PhonS>() {
-    override fun claim(declarations: Declarations, word: Word<PhonS>, start: Int, bindings: Bindings): Int? =
+class MatrixMatcher(val matrix: Matrix) : SimpleMatcher() {
+    override fun claim(declarations: Declarations, word: Word, start: Int, bindings: Bindings): Int? =
         with(declarations) {
             val boundMatrix = matrix.bindVariables(bindings)
             if (start < word.length && word[start].matches(boundMatrix, bindings)) start + 1
             else null
         }
 
-    override fun reversed(): Matcher<PhonS> = this
+    override fun reversed(): Matcher = this
 
     override fun toString(): String = matrix.toString()
 }
 
-abstract class AbstractTextMatcher<I : Segment<I>>(val text: Word<I>) : SimpleMatcher<I>() {
-    override fun <O : Segment<O>> checkValidInFilter(result: Emitter<I, O>) {
+class SyllableMatrixMatcher(val matrix: Matrix) : SimpleMatcher() {
+    override fun claim(declarations: Declarations, word: Word, start: Int, bindings: Bindings): Int? =
+        with(declarations) {
+            val boundMatrix = matrix.bindVariables(bindings)
+            if (word.modifiersAt(start).toMatrix().matches(boundMatrix, bindings))
+                start + 1 else null
+        }
+
+    override fun reversed(): Matcher = this
+
+    override fun toString(): String = matrix.toString()
+}
+
+abstract class AbstractTextMatcher(val text: Word) : SimpleMatcher() {
+    override fun checkValidInFilter(result: Emitter) {
         if (text.length > 1) {
             throw LscInvalidTransformation(
                 matcher = this,
@@ -510,8 +620,8 @@ abstract class AbstractTextMatcher<I : Segment<I>>(val text: Word<I>) : SimpleMa
     }
 }
 
-class SymbolMatcher(text: Word<PhonS>) : AbstractTextMatcher<PhonS>(text) {
-    override fun claim(declarations: Declarations, word: Word<PhonS>, start: Int, bindings: Bindings): Int? {
+class SymbolMatcher(text: Word) : AbstractTextMatcher(text) {
+    override fun claim(declarations: Declarations, word: Word, start: Int, bindings: Bindings): Int? {
         val end = start + text.length
         if (end > word.length) return null
         val matches = with(declarations) {
@@ -522,42 +632,42 @@ class SymbolMatcher(text: Word<PhonS>) : AbstractTextMatcher<PhonS>(text) {
         return if (matches) end else null
     }
 
-    override fun reversed(): Matcher<PhonS> = SymbolMatcher(text.reversed())
+    override fun reversed(): Matcher = SymbolMatcher(text.reversed())
 
     override fun toString(): String = text.string.ifEmpty { "*" }
 }
 
-class TextMatcher<I : Segment<I>>(text: Word<I>) : AbstractTextMatcher<I>(text) {
-    override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int? {
+class TextMatcher(text: Word) : AbstractTextMatcher(text) {
+    override fun claim(declarations: Declarations, word: Word, start: Int, bindings: Bindings): Int? {
         val wordStart = word.drop(start).take(text.length)
         return if (wordStart == text) start + text.length else null
     }
 
-    override fun reversed(): Matcher<I> = TextMatcher(text.reversed())
+    override fun reversed(): Matcher = TextMatcher(text.reversed())
 
     override fun toString(): String = text.string
 }
 
-class NegatedMatcher<I : Segment<I>>(val matcher: Matcher<I>) : SimpleMatcher<I>() {
-    override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int? =
+class NegatedMatcher(val matcher: Matcher) : SimpleMatcher() {
+    override fun claim(declarations: Declarations, word: Word, start: Int, bindings: Bindings): Int? =
         when {
             start >= word.length -> null
             matcher.claim(declarations, word, start, bindings) == null -> start + 1
             else -> null
         }
 
-    override fun reversed(): Matcher<I> = NegatedMatcher(matcher.reversed())
+    override fun reversed(): Matcher = NegatedMatcher(matcher.reversed())
 
     override fun toString(): String = "!$matcher"
 }
 
-class EmptyMatcher<I : Segment<I>> : SimpleMatcher<I>() {
-    override fun claim(declarations: Declarations, word: Word<I>, start: Int, bindings: Bindings): Int =
+object EmptyMatcher : SimpleMatcher() {
+    override fun claim(declarations: Declarations, word: Word, start: Int, bindings: Bindings): Int =
         start
 
-    override fun reversed(): Matcher<I> = this
+    override fun reversed(): Matcher = this
 
-    override fun <O : Segment<O>> checkValidInFilter(result: Emitter<I, O>) =
+    override fun checkValidInFilter(result: Emitter) =
         throw LscInvalidTransformation(
             matcher = this,
             emitter = result,
@@ -565,4 +675,42 @@ class EmptyMatcher<I : Segment<I>> : SimpleMatcher<I>() {
         )
 
     override fun toString(): String = "*"
+}
+
+object SyllableMatcher : SimpleMatcher() {
+    override fun claim(declarations: Declarations, word: Word, start: Int, bindings: Bindings): Int? {
+        if (!word.isSyllabified()) return null
+        val syllableIndex = word.syllableBreaks.indexOf(start)
+        return when {
+            start == 0 && word.numSyllables == 0 -> word.length
+            start == 0 -> word.syllableBreaks[0]
+            syllableIndex < 0 -> null
+            syllableIndex + 1 == word.syllableBreaks.size -> word.length
+            else -> word.syllableBreaks[syllableIndex + 1]
+        }
+    }
+
+    override fun reversed(): Matcher = this
+
+    override fun checkValidInFilter(result: Emitter) =
+        throw LscInvalidTransformation(
+            matcher = this,
+            emitter = result,
+            message = "<syl> isn't allowed in filtered rules"
+        )
+
+    override fun toString(): String = "<syl>"
+}
+
+/**
+ * A matcher that doesn't match anything
+ */
+object NeverMatcher : SimpleMatcher() {
+    override fun claim(
+        declarations: Declarations, word: Word, start: Int, bindings: Bindings
+    ): Int? = null
+
+    override fun reversed(): Matcher = this
+
+    override fun toString(): String = "N/A"
 }
