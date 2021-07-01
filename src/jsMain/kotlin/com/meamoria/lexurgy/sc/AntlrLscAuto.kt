@@ -175,6 +175,8 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
 
     class SyllablePatternContext : ParserRuleContext {
         fun ruleElement(): RuleElementContext
+        fun CHANGE(): TerminalNode?
+        fun matrix(): MatrixContext?
         fun compoundEnvironment(): CompoundEnvironmentContext
     }
 

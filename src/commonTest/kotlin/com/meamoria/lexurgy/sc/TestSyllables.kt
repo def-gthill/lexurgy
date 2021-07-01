@@ -148,4 +148,37 @@ class TestSyllables : StringSpec({
         ch("maria") shouldBe "ma.ˈri.a"
         ch("salamanka") shouldBe "sa.la.ˈmæn.ka"
     }
+
+    "We should be able to assign syllable-level features in the syllabification rules" {
+        val ch = lsc(
+            """
+                Feature (syllable) +stress
+                Feature (syllable) sylType(light, heavy)
+                Feature +long
+                Diacritic ˈ (before) [+stress]
+                Diacritic ¹ [light]
+                Diacritic ² [heavy]
+                Diacritic ː (floating) [+long]
+                Class vowel {a, e, i, o, u}
+                Class diphthong {aj, oj}
+                Class cons {p, t, k, b, d, g, f, s, h, m, n, l, r, w}
+                Syllables:
+                    @cons? {@vowel, @diphthong} @cons => [heavy]
+                    @cons? @diphthong => [heavy]
+                    @cons? @vowel&[+long] => [heavy]
+                    @cons? @vowel => [light]
+                stress:
+                    [heavy] => [+stress] / _ <syl> $
+                    Else:
+                    <syl> => [+stress] / _ <syl> <syl> $
+                coda-dropping:
+                    @cons => * / _ @cons
+            """.trimIndent()
+        )
+
+        ch("feːminaj") shouldBe "ˈfeː².mi¹.naj²"
+        ch("pueroː") shouldBe "ˈpu¹.e¹.roː²"
+        ch("wolukris") shouldBe "wo¹.ˈlu¹.ris²"
+        ch("wideːre") shouldBe "wi¹.ˈdeː².re¹"
+    }
 })

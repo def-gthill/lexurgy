@@ -217,10 +217,11 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         )
 
     override fun visitSyllablePattern(ctx: SyllablePatternContext): ParseNode =
-        walkLookaround(
+        walkSyllablePattern(
             ctx.getText(),
             visit(ctx.ruleElement()),
-            visit(ctx.compoundEnvironment())
+            visit(ctx.compoundEnvironment()),
+            optionalVisit(ctx.matrix()),
         )
 
     override fun visitDeromanizer(ctx: DeromanizerContext): ParseNode =
@@ -652,7 +653,19 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         text: String,
         patterns: List<ParseNode>,
     ): ParseNode =
-        SyllableStructureNode(text, patterns)
+        SyllableStructureNode(text, patterns.map { it as SyllablePatternNode })
+
+    private fun walkSyllablePattern(
+        text: String,
+        ruleElement: ParseNode,
+        environment: ParseNode,
+        matrix: ParseNode?,
+    ): ParseNode =
+        SyllablePatternNode(
+            text,
+            walkLookaround(text, ruleElement, environment) as RuleElement,
+            matrix as MatrixNode?,
+        )
 
     private fun walkDeromanizer(
         text: String,
@@ -1047,14 +1060,24 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     private class SyllableStructureNode(
         text: String,
-        val patterns: List<ParseNode>,
+        val patterns: List<SyllablePatternNode>,
     ) : BaseParseNode(text) {
         fun syllabifier(declarations: Declarations): Syllabifier =
             Syllabifier(
                 declarations,
-                patterns.map {
-                    (it as RuleElement).matcher(RuleContext.aloneInMain(), declarations)
-                }
+                patterns.map { it.syllabifierPattern(declarations) }
+            )
+    }
+
+    private class SyllablePatternNode(
+        text: String,
+        val element: RuleElement,
+        val matrix: MatrixNode?,
+    ) : BaseParseNode(text) {
+        fun syllabifierPattern(declarations: Declarations): Syllabifier.Pattern =
+            Syllabifier.Pattern(
+                element.matcher(RuleContext.aloneInMain(), declarations),
+                matrix?.matrix,
             )
     }
 

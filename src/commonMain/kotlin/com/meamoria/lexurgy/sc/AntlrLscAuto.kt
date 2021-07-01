@@ -253,6 +253,8 @@ expect fun SyllableDeclContext.allSyllablePatterns(): List<SyllablePatternContex
 
 expect class SyllablePatternContext : ParserRuleContext {
     fun ruleElement(): RuleElementContext
+    fun CHANGE(): TerminalNode?
+    fun matrix(): MatrixContext?
     fun compoundEnvironment(): CompoundEnvironmentContext
 }
 
