@@ -212,7 +212,10 @@ class StandardWord private constructor(
     override fun toStandard(): StandardWord = this
 
     override fun normalize(parser: PhoneticParser): Word =
-        StandardWord(segments.map { it.normalizeDecompose(parser) })
+        StandardWord(
+            segments.map { it.normalizeDecompose(parser) },
+            syllabification?.normalize(parser)
+        )
 
     private val forcedSyllabification: Syllabification
         get() = syllabification ?: Syllabification(segments, emptyList(), emptyMap())
@@ -236,13 +239,22 @@ class StandardWord private constructor(
         )
 
     override fun slice(indices: IntRange): Word =
-        StandardWord(segments.slice(indices))
+        StandardWord(
+            segments.slice(indices),
+            syllabification?.slice(indices),
+        )
 
     override fun take(n: Int): Word =
-        StandardWord(segments.take(n))
+        StandardWord(
+            segments.take(n),
+            syllabification?.take(n),
+        )
 
     override fun drop(n: Int): Word =
-        StandardWord(segments.drop(n))
+        StandardWord(
+            segments.drop(n),
+            syllabification?.drop(n),
+        )
 
     override fun concat(
         other: Word,
@@ -257,13 +269,11 @@ class StandardWord private constructor(
             )
         )
     }
-//    other.asSyllabified()?.let { sylOther ->
-//        SyllabifiedWord(this, emptyList()).concat(sylOther, syllableModifierCombiner)
-//    } ?: StandardWord(segments + other.segments)
 
-    override fun recoverStructure(other: Word): Word = other
+    override fun recoverStructure(other: Word): Word =
+        syllabification?.recoverStructure(other) ?: other
 
-    override fun isSyllabified(): Boolean = false
+    override fun isSyllabified(): Boolean = syllabification != null
 
     override fun toString(): String =
         syllabification?.toString() ?: segments.joinToString(separator = "/")
@@ -498,6 +508,13 @@ private class Syllabification(
     private fun List<Modifier>?.concat(): String =
         (this ?: emptyList()).joinToString { it.string }
 
+    fun normalize(parser: PhoneticParser): Syllabification =
+        Syllabification(
+            segments.map { it.normalizeDecompose(parser) },
+            syllableBreaks,
+            syllableModifiers.mapValues { e -> e.value.map { it.normalizeDecompose() } },
+        )
+
     val syllablesAsWords: List<Word>
         get() = syllableBreaksAndBoundaries.zipWithNext { startIndex, endIndex ->
             StandardWord(segments.slice(startIndex until endIndex))
@@ -533,6 +550,35 @@ private class Syllabification(
             syllableModifiers.mapKeys { numSyllables - it.key - 1 }
         )
 
+    fun slice(indices: IntRange): Syllabification =
+        Syllabification(
+            segments.slice(indices),
+            syllableBreaks.filter {
+                it >= indices.first &&
+                        it <= indices.last + 1
+            }.map { it - indices.first },
+            syllableModifiers.filterKeys {
+                it >= syllableNumberAt(indices.first) &&
+                        it <= syllableNumberAt(indices.last)
+            }.mapKeys { it.key - syllableNumberAt(indices.first) },
+        )
+
+    fun take(n: Int): Syllabification =
+        Syllabification(
+            segments.take(n),
+            syllableBreaks.filter { it <= n },
+            syllableModifiers.filterKeys { it <= syllableNumberAt(n) },
+        )
+
+    fun drop(n: Int): Syllabification =
+        Syllabification(
+            segments.drop(n),
+            syllableBreaks.map { it - n }.filter { it >= 0 },
+            syllableModifiers.mapKeys {
+                it.key - syllableNumberAt(n)
+            }.filterKeys { it >= 0 },
+        )
+
     fun concat(
         other: Syllabification,
         syllableModifierCombiner: (List<Modifier>, List<Modifier>) -> List<Modifier>
@@ -563,6 +609,13 @@ private class Syllabification(
             combinedSyllableModifiers,
         )
     }
+
+    fun recoverStructure(other: Word): Word =
+        if (other.isSyllabified()) other
+        else StandardWord(other.segments).withSyllabification(
+            syllableBreaks.filter { it <= other.length },
+            syllableModifiers.filterKeys { it <= other.numSyllables }
+        )
 
     override fun toString(): String =
         (if (syllableBreakAtStart()) "//" else "") +
@@ -824,7 +877,6 @@ class PhoneticParser(
         return if (syllableSeparator == null) {
             StandardWord(parsedSegments)
         } else {
-            doneSyllable()
             StandardWord(parsedSegments).withSyllabification(syllableBreaks)
         }
     }

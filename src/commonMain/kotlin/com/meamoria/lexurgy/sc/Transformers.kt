@@ -115,6 +115,11 @@ class AlternativeTransformer(
         }
         return null
     }
+
+    override fun toString(): String = elements.joinToString(
+        prefix = "{",
+        postfix = "}",
+    )
 }
 
 class RepeaterTransformer(

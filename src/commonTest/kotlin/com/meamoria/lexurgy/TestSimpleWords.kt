@@ -23,6 +23,12 @@ class TestSimpleWords : StringSpec({
         potato.toString() shouldBe "p)ʰ/ou|́/ⁿ(t/ei|̀/t/o"
     }
 
+    "Simple words aren't syllabified" {
+        banana.isSyllabified() shouldBe false
+        shine.isSyllabified() shouldBe false
+        potato.isSyllabified() shouldBe false
+    }
+
     "Simple words should have no syllables" {
         banana.numSyllables shouldBe 0
         shine.numSyllables shouldBe 0
@@ -53,5 +59,19 @@ class TestSimpleWords : StringSpec({
     "We should be able to concatenate simple words" {
         (banana + shine).string shouldBe "bananaschein"
         (banana + potato).string shouldBe "bananapʰóuⁿtèito"
+    }
+
+    "We should be able to slice simple words" {
+        banana.slice(0 .. 2).string shouldBe "ban"
+        banana.slice(2 .. 4).string shouldBe "nan"
+        shine.slice(0 .. 1).string shouldBe "schei"
+        potato.slice(3 .. 5).string shouldBe "èito"
+    }
+
+    "We should be able to drop segments from simple words" {
+        banana.drop(2).string shouldBe "nana"
+        banana.drop(5).string shouldBe "a"
+        shine.drop(1).string shouldBe "ein"
+        potato.drop(3).string shouldBe "èito"
     }
 })

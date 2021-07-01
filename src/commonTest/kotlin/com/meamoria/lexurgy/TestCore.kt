@@ -1,20 +1,11 @@
 package com.meamoria.lexurgy
 
 import com.meamoria.mpp.kotest.StringSpec
-import com.meamoria.mpp.kotest.should
 import com.meamoria.mpp.kotest.shouldBe
 import com.meamoria.mpp.kotest.shouldThrow
 
 @Suppress("unused")
 class TestCore : StringSpec({
-
-    "We should be able extract sub-words between specified indices" {
-        StandardWord.fromString("foobar").slice(1 .. 3) shouldBe
-                StandardWord.fromString("oob")
-        StandardWord.fromString("foobar").reversed().slice(1 .. 3) shouldBe
-                StandardWord.fromString("oba").reversed()
-    }
-
     fun foobarWithModifier(modifier: Modifier): StandardWord =
         StandardWord.fromString("foobar").withSyllabification(
             syllableBreaks = listOf(3),

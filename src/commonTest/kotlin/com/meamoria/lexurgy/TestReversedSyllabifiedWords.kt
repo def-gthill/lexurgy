@@ -92,4 +92,18 @@ class TestReversedSyllabifiedWords : StringSpec({
         (banana + forward("f/oo") + word("f/oo") + forward("b/a//n/a//n/a")).string shouldBe
                 "an.an.abfoooofba.na.na"
     }
+
+    "We should be able to slice reversed syllabified words and get reversed words" {
+        banana.slice(0 .. 2).toString() shouldBe "a/n//a (reversed)"
+        banana.slice(2 .. 5).toString() shouldBe "//a/n//a/b (reversed)"
+        excellent.slice(4 .. 6).toString() shouldBe "ˈ((l//e/s// (reversed)"
+        shine.slice(0 .. 1).toString() shouldBe "n/ei||ʰ))` (reversed)"
+    }
+
+    "We should be able to drop segments from syllabified words" {
+        banana.drop(2).string shouldBe ".an.ab"
+        banana.drop(5).string shouldBe "b"
+        excellent.drop(4).string shouldBe "ˈl.es.ke"
+        shine.drop(1).string shouldBe "eʰisc`"
+    }
 })

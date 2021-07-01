@@ -33,6 +33,14 @@ class TestSyllabifiedWords : StringSpec({
         endBreak.toString() shouldBe "f/oo//"
     }
 
+    "Syllabified words are syllabified" {
+        banana.isSyllabified() shouldBe true
+        excellent.isSyllabified() shouldBe true
+        shine.isSyllabified() shouldBe true
+        startBreak.isSyllabified() shouldBe true
+        endBreak.isSyllabified() shouldBe true
+    }
+
     "Syllabified words should have correct syllable counts" {
         banana.numSyllables shouldBe 3
         excellent.numSyllables shouldBe 4
@@ -95,5 +103,19 @@ class TestSyllabifiedWords : StringSpec({
         (shine + word("f/o/o")).string shouldBe "sʰceinfoo`"
         (word("f/o/o") + shine).string shouldBe "fooscein"
         word("f/o/o").concat(shine) { _, b -> b }.string shouldBe "fʰooscein`"
+    }
+
+    "We should be able to slice syllabified words" {
+        banana.slice(0 .. 2).string shouldBe "ba.n"
+        banana.slice(2 .. 4).string shouldBe ".na.n"
+        excellent.slice(5 .. 6).string shouldBe "ˈen."
+        shine.slice(0 .. 1).string shouldBe "sʰcei`"
+    }
+
+    "We should be able to drop segments from syllabified words" {
+        banana.drop(2).string shouldBe ".na.na"
+        banana.drop(5).string shouldBe "a"
+        excellent.drop(5).string shouldBe "ˈen.te"
+        shine.drop(1).string shouldBe "eʰin`"
     }
 })

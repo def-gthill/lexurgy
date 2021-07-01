@@ -60,4 +60,18 @@ class TestReversedSimpleWords : StringSpec({
         (banana + forward("f/o/o")).toString() shouldBe "a/n/a/n/a/b/f/o/o"
         (forward("f/o/o") + banana).toString() shouldBe "f/o/o/a/n/a/n/a/b"
     }
+
+    "We should be able to slice reversed words and get reversed wourds" {
+        banana.slice(0 .. 2).toString() shouldBe "a/n/a (reversed)"
+        banana.slice(2 .. 5).toString() shouldBe "a/n/a/b (reversed)"
+        shine.slice(0 .. 1).toString() shouldBe "n/ei (reversed)"
+        potato.slice(3 .. 5).toString() shouldBe "ⁿ(t/ou|́/p)ʰ (reversed)"
+    }
+
+    "We should be able to drop segments from reversed words" {
+        banana.drop(2).string shouldBe "anab"
+        banana.drop(5).string shouldBe "b"
+        shine.drop(1).string shouldBe "eisch"
+        potato.drop(3).string shouldBe "ⁿtóupʰ"
+    }
 })

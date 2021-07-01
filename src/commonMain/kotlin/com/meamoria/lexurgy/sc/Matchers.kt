@@ -685,7 +685,7 @@ object SyllableMatcher : SimpleMatcher() {
             start == 0 && word.numSyllables == 0 -> word.length
             start == 0 -> word.syllableBreaks[0]
             syllableIndex < 0 -> null
-            syllableIndex + 1 == word.numSyllables -> word.length
+            syllableIndex + 1 == word.syllableBreaks.size -> word.length
             else -> word.syllableBreaks[syllableIndex + 1]
         }
     }
