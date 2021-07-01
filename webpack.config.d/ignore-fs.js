@@ -1,1 +1,1 @@
-config.node = { fs: 'empty' }
+config.resolve.fallback = { fs: false }
