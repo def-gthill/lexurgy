@@ -378,20 +378,6 @@ class RepeaterMatcher(
         }
         return result.drop(type.minReps).reversed().flatten()
     }
-//    {
-//        var elementStart = start
-//        var times = 0
-//        while (true) {
-//            val altBindings = bindings.copy()
-//            if (followingMatcher?.claim(declarations, phrase, elementStart, altBindings)?.takeIf {
-//                    it > elementStart
-//                } != null) break
-//            elementStart = element.claim(declarations, phrase, elementStart, bindings) ?: break
-//            times++
-//            if (type.maxReps?.let { times >= it } == true) break
-//        }
-//        return elementStart.takeIf { times >= type.minReps }
-//    }
 
     override fun reversed(): Matcher =
         RepeaterMatcher(

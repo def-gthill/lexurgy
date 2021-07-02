@@ -58,17 +58,21 @@ class SequenceTransformer(
         start: PhraseIndex,
         bindings: Bindings,
     ): List<UnboundTransformation> {
-        var resultBits = emptyList<UnboundTransformation>()
+        var resultBits = listOf(emptyList<UnboundTransformation>())
         for (element in elements) {
             resultBits = resultBits.flatMap { prev ->
-                element.transform(order, declarations, phrase, prev.end, bindings)
+                element.transform(order, declarations, phrase, prev.lastOrNull()?.end ?: start, bindings).map {
+                    prev + it
+                }
             }
         }
 
-        fun result(finalBindings: Bindings): Phrase =
-            Phrase.fromSubPhrases(resultBits.map { it.result(finalBindings) })
+        return resultBits.map { singleResultBits ->
+            fun result(finalBindings: Bindings): Phrase =
+                Phrase.fromSubPhrases(singleResultBits.map { it.result(finalBindings) })
 
-        return listOf(UnboundTransformation(order, start, resultBits.last().end, ::result, resultBits))
+            UnboundTransformation(order, start, singleResultBits.last().end, ::result, singleResultBits)
+        }
     }
 
     override fun toString(): String = elements.joinToString(" ") { "($it)" }
@@ -139,23 +143,27 @@ class RepeaterTransformer(
         start: PhraseIndex,
         bindings: Bindings
     ): List<UnboundTransformation> {
-        val resultBits = mutableListOf(emptyList<UnboundTransformation>())
+        val resultBits = mutableListOf(listOf(emptyList<UnboundTransformation>()))
         while (true) {
             val newResultBits = resultBits.last().flatMap { prev ->
-                transformer.transform(order, declarations, phrase, prev.end, bindings)
+                transformer.transform(order, declarations, phrase, prev.lastOrNull()?.end ?: start, bindings).map {
+                    prev + it
+                }
             }
             if (newResultBits.isEmpty()) break
             resultBits += newResultBits
             if (type.maxReps != null && resultBits.size > type.maxReps) break
         }
 
-        return resultBits.drop(type.minReps).map { singleResultBits ->
+        return resultBits.drop(type.minReps).reversed().flatten().map { singleResultBits ->
             fun result(finalBindings: Bindings): Phrase =
                 Phrase.fromSubPhrases(singleResultBits.map { it.result(finalBindings) })
 
             UnboundTransformation(order, start, singleResultBits.last().end, ::result, singleResultBits)
         }
     }
+
+    override fun toString(): String = "($transformer)${type.string}"
 }
 
 class IntersectionTransformer(
