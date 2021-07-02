@@ -23,7 +23,7 @@ class Syllabifier(
 
             while (index < word.length) {
                 val bestMatch = reversedPatterns.mapNotNull { pattern ->
-                    pattern.matcher.claim(declarations, reversedWord, index, bindings)?.let {
+                    pattern.matcher.claim(declarations, reversedWord, index, bindings).firstOrNull()?.let {
                         PatternMatch(it, pattern.assignedMatrix)
                     }
                 }.maxByOrNull { it.end }

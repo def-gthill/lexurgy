@@ -415,7 +415,7 @@ class RuleExpression(
             val bindings = Bindings()
             val transformation = transformer.transform(
                 expressionNumber, declarations, phrase, matchStart, bindings
-            ) ?: continue
+            ).firstOrNull() ?: continue
             return transformation.bindVariables(bindings)
         }
         return null
