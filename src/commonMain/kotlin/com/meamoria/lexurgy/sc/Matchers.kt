@@ -451,12 +451,12 @@ class IntersectionMatcher(val elements: List<Matcher>) : LiftingMatcher() {
         var matchEnds: List<Int> = emptyList()
         for (element in elements) {
             val elementMatchEnds = element.claim(declarations, word, start, bindings)
-            if (matchEnds.isEmpty()) {
-                matchEnds = elementMatchEnds
+            matchEnds = if (matchEnds.isEmpty()) {
+                elementMatchEnds
             } else {
-                matchEnds = matchEnds.filter { it in elementMatchEnds }
-                if (matchEnds.isEmpty()) return matchEnds
+                matchEnds.filter { it in elementMatchEnds }
             }
+            if (matchEnds.isEmpty()) return matchEnds
         }
         return matchEnds
     }
@@ -489,10 +489,12 @@ class CaptureMatcher(
         if (number in bindings.captures) {
             throw LscReboundCapture(number)
         } else {
-            element.claim(declarations, word, start, bindings).also { end ->
-                val capture = word.slice(start until end.first())
-                bindings.captures[number] =
-                    if (isReversed) capture.reversed() else capture
+            element.claim(declarations, word, start, bindings).also { ends ->
+                if (ends.isNotEmpty()) {
+                    val capture = word.slice(start until ends.first())
+                    bindings.captures[number] =
+                        if (isReversed) capture.reversed() else capture
+                }
             }
         }
 

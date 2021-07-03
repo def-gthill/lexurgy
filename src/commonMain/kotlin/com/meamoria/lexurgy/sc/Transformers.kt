@@ -159,7 +159,13 @@ class RepeaterTransformer(
             fun result(finalBindings: Bindings): Phrase =
                 Phrase.fromSubPhrases(singleResultBits.map { it.result(finalBindings) })
 
-            UnboundTransformation(order, start, singleResultBits.last().end, ::result, singleResultBits)
+            UnboundTransformation(
+                order,
+                start,
+                singleResultBits.lastOrNull()?.end ?: start,
+                ::result,
+                singleResultBits,
+            )
         }
     }
 
@@ -180,12 +186,12 @@ class IntersectionTransformer(
         var matchEnds: List<PhraseIndex> = emptyList()
         for (matcher in otherMatchers) {
             val thisMatchEnds = matcher.claim(declarations, phrase, start, bindings)
-            if (matchEnds.isEmpty()) {
-                matchEnds = thisMatchEnds
+            matchEnds = if (matchEnds.isEmpty()) {
+                thisMatchEnds
             } else {
-                matchEnds = matchEnds.filter { it in thisMatchEnds }
-                if (matchEnds.isEmpty()) return emptyList()
+                matchEnds.filter { it in thisMatchEnds }
             }
+            if (matchEnds.isEmpty()) return emptyList()
         }
         return transformer.transform(order, declarations, phrase, start, bindings).filter {
             it.end in matchEnds
@@ -211,10 +217,12 @@ class CaptureTransformer(
         } else {
             element.transform(order, declarations, phrase, start, bindings).filter {
                 it.start.wordIndex == it.end.wordIndex
-            }.also {
-                bindings.captures[number] = phrase[it.first().start.wordIndex].slice(
-                    it.first().start.segmentIndex until it.first().end.segmentIndex
-                )
+            }.also { transforms ->
+                if (transforms.isNotEmpty()) {
+                    bindings.captures[number] = phrase[transforms.first().start.wordIndex].slice(
+                        transforms.first().start.segmentIndex until transforms.first().end.segmentIndex
+                    )
+                }
             }
         }
 }
