@@ -80,10 +80,6 @@ class TestRepeaters : StringSpec({
         ch("fh") shouldBe "fh"
     }
 
-    "Only captures in a successful match should be bound" {
-        fail("Not yet!")
-    }
-
     "Backtracking should work between the input and after environment" {
         val ch = lsc(
             """

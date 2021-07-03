@@ -81,6 +81,16 @@ class TestAlternatives : StringSpec({
     }
 
     "Only captures in a successful match should be bound" {
-        fail("Not yet!")
+        val ch = lsc(
+            """
+                Class vowel {a, e, i, o, u}
+                Class cons {p, t, k, s, m, n, l}
+                capture-from-alt:
+                {@cons$1 a, @vowel$1 n} => n $1
+            """.trimIndent()
+        )
+
+        ch("pataki") shouldBe "npntki"
+        ch("panana") shouldBe "pnanaa"
     }
 })
