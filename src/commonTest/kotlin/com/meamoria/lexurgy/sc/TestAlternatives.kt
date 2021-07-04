@@ -80,7 +80,7 @@ class TestAlternatives : StringSpec({
         ch("cadan") shouldBe "cafan"
     }
 
-    "!Only captures in a successful match should be bound" {
+    "Only captures in a successful match should be bound" {
         val ch = lsc(
             """
                 Class vowel {a, e, i, o, u}

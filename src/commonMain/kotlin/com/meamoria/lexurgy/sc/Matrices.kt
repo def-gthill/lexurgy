@@ -47,7 +47,11 @@ class Matrix(val valueList: List<MatrixValue>) {
 interface MatrixValue {
     fun wordLevel(declarations: Declarations): WordLevel
 
-    fun matches(declarations: Declarations, matrix: Matrix, bindings: Bindings): Boolean
+    fun matches(declarations: Declarations, matrix: Matrix, bindings: Bindings): Bindings? =
+        if (matchesNonBinding(declarations, matrix, bindings)) bindings else null
+
+    fun matchesNonBinding(declarations: Declarations, matrix: Matrix, bindings: Bindings): Boolean =
+        matches(declarations, matrix, bindings) != null
 }
 
 data class NegatedValue(val value: String) : MatrixValue {
@@ -56,7 +60,7 @@ data class NegatedValue(val value: String) : MatrixValue {
             value.toSimpleValue().toFeature().level
         }
 
-    override fun matches(declarations: Declarations, matrix: Matrix, bindings: Bindings): Boolean =
+    override fun matchesNonBinding(declarations: Declarations, matrix: Matrix, bindings: Bindings): Boolean =
         with(declarations) {
             value.toSimpleValue() !in matrix.simpleValues
         }
@@ -70,15 +74,15 @@ data class FeatureVariable(val featureName: String) : MatrixValue {
             featureName.toFeature().level
         }
 
-    override fun matches(declarations: Declarations, matrix: Matrix, bindings: Bindings): Boolean {
+    override fun matches(declarations: Declarations, matrix: Matrix, bindings: Bindings): Bindings? {
         with(declarations) {
             // Don't try to bind the default values from an empty matrix
-            if (matrix.valueList.isEmpty()) return false
+            if (matrix.valueList.isEmpty()) return null
             val featureObject = featureName.toFeature()
             val match = featureObject.allValues.filter { it in matrix.fullValueSet }
             return match.firstOrNull()?.let {
-                bindings.features[featureObject] = it
-            } != null
+                bindings.bindFeature(featureObject, it)
+            }
         }
     }
 
@@ -91,7 +95,7 @@ data class SimpleValue(val name: String) : MatrixValue {
             toFeature().level
         }
 
-    override fun matches(declarations: Declarations, matrix: Matrix, bindings: Bindings): Boolean =
+    override fun matchesNonBinding(declarations: Declarations, matrix: Matrix, bindings: Bindings): Boolean =
         with(declarations) {
             name.toSimpleValue() in matrix.simpleValues
         }
@@ -107,7 +111,7 @@ data class UndeclaredSymbolValue(val name: String) : MatrixValue {
     override fun wordLevel(declarations: Declarations): WordLevel =
         WordLevel.SEGMENT
 
-    override fun matches(declarations: Declarations, matrix: Matrix, bindings: Bindings): Boolean =
+    override fun matchesNonBinding(declarations: Declarations, matrix: Matrix, bindings: Bindings): Boolean =
         with(declarations) {
             this@UndeclaredSymbolValue in matrix.fullValueSet
         }

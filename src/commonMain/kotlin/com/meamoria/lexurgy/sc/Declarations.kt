@@ -153,7 +153,7 @@ class Declarations(
      * Tries to match the specified matrix to this phonetic symbol.
      * Returns true if the matrix matched, false otherwise. Binds variables.
      */
-    fun Segment.matches(matrix: Matrix, bindings: Bindings): Boolean =
+    fun Segment.matches(matrix: Matrix, bindings: Bindings): Bindings? =
         toMatrix().matches(matrix, bindings)
 
     private fun MatrixValue.isDefault(): Boolean = this in defaults
@@ -325,11 +325,12 @@ class Declarations(
             it.wordLevel(this@Declarations)
         }.mapValues { (_, v) -> Matrix(v) }
 
-    fun Matrix.matches(matrix: Matrix, bindings: Bindings): Boolean {
+    fun Matrix.matches(matrix: Matrix, bindings: Bindings): Bindings? {
+        var result = bindings
         for (value in matrix.valueList) {
-            if (!value.matches(this, bindings)) return false
+            value.matches(this, bindings)?.let { result = it } ?: return null
         }
-        return true
+        return result
     }
 
     fun UndeclaredSymbolValue.toUndeclaredSymbol(): Symbol = name.toUndeclaredSymbol()
@@ -337,7 +338,7 @@ class Declarations(
     fun SimpleValue.toFeature(): Feature =
         valueToFeature[this] ?: throw LscUndefinedName("feature value", name)
 
-    fun MatrixValue.matches(matrix: Matrix, bindings: Bindings): Boolean =
+    fun MatrixValue.matches(matrix: Matrix, bindings: Bindings): Bindings? =
         matches(this@Declarations, matrix, bindings)
 
     fun Modifier.toDiacritic(): Diacritic =

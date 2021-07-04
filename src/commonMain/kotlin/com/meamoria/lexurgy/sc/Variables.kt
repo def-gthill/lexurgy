@@ -3,22 +3,30 @@ package com.meamoria.lexurgy.sc
 import com.meamoria.lexurgy.LscUserError
 import com.meamoria.lexurgy.Word
 
-class Bindings {
-    val features: MutableMap<Feature, SimpleValue> = mutableMapOf()
-    val captures: MutableMap<Int, Word> = mutableMapOf()
+class Bindings(
+    val features: Map<Feature, SimpleValue>,
+    val captures: Map<Int, Word>,
+) {
+    fun bindFeature(feature: Feature, value: SimpleValue): Bindings =
+        Bindings(
+            features + (feature to value),
+            captures,
+        )
 
-    fun copy(): Bindings = Bindings().also {
-        it.features += this.features
-        it.captures += this.captures
-    }
+    fun bindCapture(number: Int, value: Word): Bindings =
+        Bindings(
+            features,
+            captures + (number to value),
+        )
 
     /**
-     * Import bindings from ``other``, preserving this object's content
+     * Returns a ``Bindings`` that combines the bindings
+     * from this and other
      */
-    fun combine(other: Bindings) {
-        features += other.features
-        captures += other.captures
-    }
+    fun combine(other: Bindings): Bindings = Bindings(
+        features + other.features,
+        captures + other.captures,
+    )
 }
 
 class LscUnboundCapture(number: Int) : LscUserError("Capture variable $number referenced before being bound")

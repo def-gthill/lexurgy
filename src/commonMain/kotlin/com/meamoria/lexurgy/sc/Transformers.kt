@@ -26,10 +26,12 @@ class EnvironmentTransformer(
     ): List<UnboundTransformation> {
         val transformations = element.transform(
             order, declarations, phrase, start, bindings)
-        return transformations.filter { transformation ->
+        return transformations.mapNotNull { transformation ->
             environment.check(
                 declarations, phrase, start, transformation.end, bindings
-            )
+            )?.let {
+                transformation.replaceBindings(it)
+            }
         }
     }
 
@@ -61,7 +63,11 @@ class SequenceTransformer(
         var resultBits = listOf(emptyList<UnboundTransformation>())
         for (element in elements) {
             resultBits = resultBits.flatMap { prev ->
-                element.transform(order, declarations, phrase, prev.lastOrNull()?.end ?: start, bindings).map {
+                element.transform(
+                    order, declarations, phrase,
+                    prev.lastOrNull()?.end ?: start,
+                    prev.lastOrNull()?.returnBindings ?: bindings,
+                ).map {
                     prev + it
                 }
             }
@@ -71,7 +77,10 @@ class SequenceTransformer(
             fun result(finalBindings: Bindings): Phrase =
                 Phrase.fromSubPhrases(singleResultBits.map { it.result(finalBindings) })
 
-            UnboundTransformation(order, start, singleResultBits.last().end, ::result, singleResultBits)
+            UnboundTransformation(
+                order, start, singleResultBits.last().end, ::result,
+                singleResultBits.last().returnBindings, singleResultBits,
+            )
         }
     }
 
@@ -108,10 +117,7 @@ class AlternativeTransformer(
         bindings: Bindings
     ): List<UnboundTransformation> =
         elements.flatMap { element ->
-            val altBindings = bindings.copy()
-            element.transform(order, declarations, phrase, start, altBindings).also {
-                bindings.combine(altBindings)
-            }
+            element.transform(order, declarations, phrase, start, bindings)
         }
 
     override fun toString(): String = elements.joinToString(
@@ -146,7 +152,11 @@ class RepeaterTransformer(
         val resultBits = mutableListOf(listOf(emptyList<UnboundTransformation>()))
         while (true) {
             val newResultBits = resultBits.last().flatMap { prev ->
-                transformer.transform(order, declarations, phrase, prev.lastOrNull()?.end ?: start, bindings).map {
+                transformer.transform(
+                    order, declarations, phrase,
+                    prev.lastOrNull()?.end ?: start,
+                    prev.lastOrNull()?.returnBindings ?: bindings
+                ).map {
                     prev + it
                 }
             }
@@ -164,6 +174,7 @@ class RepeaterTransformer(
                 start,
                 singleResultBits.lastOrNull()?.end ?: start,
                 ::result,
+                singleResultBits.lastOrNull()?.returnBindings ?: bindings,
                 singleResultBits,
             )
         }
@@ -183,7 +194,7 @@ class IntersectionTransformer(
         start: PhraseIndex,
         bindings: Bindings
     ): List<UnboundTransformation> {
-        var matchEnds: List<PhraseIndex> = emptyList()
+        var matchEnds: List<PhraseMatchEnd> = emptyList()
         for (matcher in otherMatchers) {
             val thisMatchEnds = matcher.claim(declarations, phrase, start, bindings)
             matchEnds = if (matchEnds.isEmpty()) {
@@ -193,8 +204,11 @@ class IntersectionTransformer(
             }
             if (matchEnds.isEmpty()) return emptyList()
         }
-        return transformer.transform(order, declarations, phrase, start, bindings).filter {
-            it.end in matchEnds
+        val matchEndsMap = matchEnds.associate { it.index to it.returnBindings }
+        return transformer.transform(
+            order, declarations, phrase, start, bindings
+        ).mapNotNull { transformer ->
+            matchEndsMap[transformer.end]?.let { transformer.updateBindings(it) }
         }
     }
 
@@ -217,12 +231,13 @@ class CaptureTransformer(
         } else {
             element.transform(order, declarations, phrase, start, bindings).filter {
                 it.start.wordIndex == it.end.wordIndex
-            }.also { transforms ->
-                if (transforms.isNotEmpty()) {
-                    bindings.captures[number] = phrase[transforms.first().start.wordIndex].slice(
-                        transforms.first().start.segmentIndex until transforms.first().end.segmentIndex
-                    )
-                }
+            }.map { transform ->
+                val capture = phrase[transform.start.wordIndex].slice(
+                    transform.start.segmentIndex until transform.end.segmentIndex
+                )
+                transform.replaceBindings(
+                    transform.returnBindings.bindCapture(number, capture)
+                )
             }
         }
 }
@@ -239,9 +254,9 @@ class SimpleConditionalTransformer(
         bindings: Bindings,
     ): List<UnboundTransformation> =
         matcher.claim(declarations, phrase, start, bindings).map { claimEnd ->
-            val claim = phrase.slice(start, claimEnd)
+            val claim = phrase.slice(start, claimEnd.index)
             val result = emitter.result(declarations, matcher, claim)
-            UnboundTransformation(order, start, claimEnd, result)
+            UnboundTransformation(order, start, claimEnd.index, result, claimEnd.returnBindings)
         }
 
     override fun toString(): String = "$matcher => $emitter"
@@ -260,7 +275,7 @@ class IndependentTransformer(
     ): List<UnboundTransformation> {
         val claimEnds = matcher.claim(declarations, phrase, start, bindings)
         return claimEnds.map { claimEnd ->
-            UnboundTransformation(order, start, claimEnd, emitter.result())
+            UnboundTransformation(order, start, claimEnd.index, emitter.result(), claimEnd.returnBindings)
         }
     }
 
@@ -283,18 +298,27 @@ class IndependentSequenceTransformer(
 
             fun result(finalBindings: Bindings): Phrase =
                 Phrase.fromSubPhrases(resultBits.map { it.result(finalBindings) })
-            UnboundTransformation(order, start, claimEnd, ::result, resultBits)
+            UnboundTransformation(
+                order, start, claimEnd.index, ::result,
+                claimEnd.returnBindings, resultBits,
+            )
         }
 
     private fun SequenceEmitter.resultBits(
         order: Int,
         start: PhraseIndex,
-        claimEnd: PhraseIndex,
+        claimEnd: PhraseMatchEnd,
     ): List<UnboundTransformation> =
         elements.flatMap {
             when (it) {
                 is SequenceEmitter -> it.resultBits(order, start, claimEnd)
-                else -> listOf(UnboundTransformation(order, start, claimEnd, (it as IndependentEmitter).result()))
+                else -> listOf(
+                    UnboundTransformation(
+                        order, start, claimEnd.index,
+                        (it as IndependentEmitter).result(),
+                        claimEnd.returnBindings,
+                    )
+                )
             }
         }
 }
@@ -315,6 +339,7 @@ data class UnboundTransformation(
     val start: PhraseIndex,
     val end: PhraseIndex,
     val result: UnboundResult,
+    val returnBindings: Bindings,
     val subs: List<UnboundTransformation> = emptyList(),
 ) {
     fun bindVariables(bindings: Bindings): Transformation =
@@ -325,4 +350,10 @@ data class UnboundTransformation(
             result(bindings),
             subs.map { it.bindVariables(bindings) },
         )
+
+    fun replaceBindings(bindings: Bindings): UnboundTransformation =
+        copy(returnBindings = bindings)
+
+    fun updateBindings(bindings: Bindings): UnboundTransformation =
+        copy(returnBindings = returnBindings.combine(bindings))
 }
