@@ -305,6 +305,7 @@ class SequenceMatcher(val elements: List<Matcher>) : BaseMatcher() {
             ends = ends.flatMap { (end, prevBindings) ->
                 element.claim(declarations, phrase, end, prevBindings)
             }
+            if (ends.isEmpty()) return emptyList()
         }
         return ends
     }

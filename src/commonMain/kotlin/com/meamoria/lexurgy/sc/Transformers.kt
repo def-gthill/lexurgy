@@ -28,9 +28,9 @@ class EnvironmentTransformer(
             order, declarations, phrase, start, bindings)
         return transformations.mapNotNull { transformation ->
             environment.check(
-                declarations, phrase, start, transformation.end, bindings
+                declarations, phrase, start, transformation.end, transformation.returnBindings
             )?.let {
-                transformation.replaceBindings(it)
+                transformation.updateBindings(it)
             }
         }
     }
@@ -71,6 +71,7 @@ class SequenceTransformer(
                     prev + it
                 }
             }
+            if (resultBits.isEmpty()) return emptyList()
         }
 
         return resultBits.map { singleResultBits ->
@@ -342,7 +343,7 @@ data class UnboundTransformation(
     val returnBindings: Bindings,
     val subs: List<UnboundTransformation> = emptyList(),
 ) {
-    fun bindVariables(bindings: Bindings): Transformation =
+    fun bindVariables(bindings: Bindings = returnBindings): Transformation =
         Transformation(
             order,
             start,
@@ -356,4 +357,13 @@ data class UnboundTransformation(
 
     fun updateBindings(bindings: Bindings): UnboundTransformation =
         copy(returnBindings = returnBindings.combine(bindings))
+
+    override fun toString(): String {
+        val tryResult = try {
+            result(Bindings()).string
+        } catch (e: Exception) {
+            "<unbound>"
+        }
+        return "UnboundTransformation($order, $start to $end, $tryResult, binding $returnBindings, ${subs.size} subs"
+    }
 }

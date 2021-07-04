@@ -4,8 +4,8 @@ import com.meamoria.lexurgy.LscUserError
 import com.meamoria.lexurgy.Word
 
 class Bindings(
-    val features: Map<Feature, SimpleValue>,
-    val captures: Map<Int, Word>,
+    val features: Map<Feature, SimpleValue> = emptyMap(),
+    val captures: Map<Int, Word> = emptyMap(),
 ) {
     fun bindFeature(feature: Feature, value: SimpleValue): Bindings =
         Bindings(
@@ -27,6 +27,8 @@ class Bindings(
         features + other.features,
         captures + other.captures,
     )
+
+    override fun toString(): String = "$captures; $features"
 }
 
 class LscUnboundCapture(number: Int) : LscUserError("Capture variable $number referenced before being bound")

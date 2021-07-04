@@ -328,7 +328,7 @@ class Declarations(
     fun Matrix.matches(matrix: Matrix, bindings: Bindings): Bindings? {
         var result = bindings
         for (value in matrix.valueList) {
-            value.matches(this, bindings)?.let { result = it } ?: return null
+            value.matches(this, bindings)?.let { result = result.combine(it) } ?: return null
         }
         return result
     }

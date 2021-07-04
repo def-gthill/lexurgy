@@ -1234,7 +1234,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                 { segment: Segment ->
                     filter.matcher(RuleContext.aloneInMain(), declarations).claim(
                         declarations, StandardWord.single(segment), 0, Bindings()
-                    ).any { it == 1 }
+                    ).any { it.index == 1 }
                 }
             }
             return StandardNamedRule(
