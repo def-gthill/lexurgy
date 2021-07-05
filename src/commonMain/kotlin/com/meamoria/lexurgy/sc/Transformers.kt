@@ -75,13 +75,18 @@ class SequenceTransformer(
             if (resultBits.isEmpty()) return emptyList()
         }
 
+        fun result(singleResultBits: List<UnboundTransformation>, finalBindings: Bindings): Phrase =
+            Phrase.fromSubPhrases(singleResultBits.map { it.result(finalBindings) })
+
         return resultBits.map { singleResultBits ->
-            fun result(finalBindings: Bindings): Phrase =
-                Phrase.fromSubPhrases(singleResultBits.map { it.result(finalBindings) })
 
             UnboundTransformation(
-                order, start, singleResultBits.last().end, ::result,
-                singleResultBits.last().returnBindings, singleResultBits,
+                order,
+                start,
+                singleResultBits.last().end,
+                { bindings -> result(singleResultBits, bindings) },
+                singleResultBits.last().returnBindings,
+                singleResultBits,
             )
         }
     }
@@ -167,15 +172,16 @@ class RepeaterTransformer(
             if (type.maxReps != null && resultBits.size > type.maxReps) break
         }
 
+        fun result(singleResultBits: List<UnboundTransformation>, finalBindings: Bindings): Phrase =
+            Phrase.fromSubPhrases(singleResultBits.map { it.result(finalBindings) })
+
         return resultBits.drop(type.minReps).reversed().flatten().map { singleResultBits ->
-            fun result(finalBindings: Bindings): Phrase =
-                Phrase.fromSubPhrases(singleResultBits.map { it.result(finalBindings) })
 
             UnboundTransformation(
                 order,
                 start,
                 singleResultBits.lastOrNull()?.end ?: start,
-                ::result,
+                { finalBindings -> result(singleResultBits, finalBindings) },
                 singleResultBits.lastOrNull()?.returnBindings ?: bindings,
                 singleResultBits,
             )
