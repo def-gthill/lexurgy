@@ -91,6 +91,6 @@ class TestAlternatives : StringSpec({
         )
 
         ch("pataki") shouldBe "npntki"
-        ch("panana") shouldBe "pnanaa"
+        ch("anana") shouldBe "nanaa"
     }
 })

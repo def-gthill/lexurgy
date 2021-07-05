@@ -28,7 +28,8 @@ class EnvironmentTransformer(
             order, declarations, phrase, start, bindings)
         return transformations.mapNotNull { transformation ->
             environment.check(
-                declarations, phrase, start, transformation.end, transformation.returnBindings
+                declarations, phrase, start,
+                transformation.end, transformation.returnBindings
             )?.let {
                 transformation.updateBindings(it)
             }

@@ -199,7 +199,7 @@ class EnvironmentMatcher(
                 declarations, phrase, start,
                 claimEnd.index, claimEnd.returnBindings,
             )?.let {
-                claimEnd.replaceBindings(it)
+                claimEnd.updateBindings(it)
             }
         }
     }
@@ -235,17 +235,17 @@ class CompoundEnvironment(val positive: List<Environment>, val negative: List<En
         matchEnd: PhraseIndex,
         bindings: Bindings,
     ): Bindings? {
+        val positiveBindings = realPositive.firstNotNullOfOrNull { environment ->
+            environment.check(
+                declarations, phrase, matchStart, matchEnd, bindings
+            )
+        } ?: return null
         for (environment in realNegative) {
             environment.check(
-                declarations, phrase, matchStart, matchEnd, bindings
-            ) ?: return null
+                declarations, phrase, matchStart, matchEnd, positiveBindings
+            )?.let { return null }
         }
-        for (environment in realPositive) {
-            environment.check(
-                declarations, phrase, matchStart, matchEnd, bindings
-            )?.let { return it }
-        }
-        return null
+        return positiveBindings
     }
 
     fun reversed(): CompoundEnvironment =
@@ -814,4 +814,7 @@ data class PhraseMatchEnd(val index: PhraseIndex, val returnBindings: Bindings) 
 
     fun replaceBindings(bindings: Bindings) =
         PhraseMatchEnd(index, bindings)
+
+    fun updateBindings(bindings: Bindings) =
+        PhraseMatchEnd(index, returnBindings.combine(bindings))
 }

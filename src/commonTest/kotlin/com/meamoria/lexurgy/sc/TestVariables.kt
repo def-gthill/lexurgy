@@ -122,6 +122,20 @@ class TestVariables : StringSpec({
         ch("napata") shouldBe "napata"
     }
 
+    "We should be able to bind a variable in the condition and reference it in the exclusion" {
+        val ch = lsc(
+            """
+                Class stop {p, t, k}
+                Class vowel {a, e, i, o, u}
+                drop-between-non-identical-stops:
+                    @vowel => * / @stop$1 _ // _ $1
+            """.trimIndent()
+        )
+
+        ch("natata") shouldBe "natat"
+        ch("napata") shouldBe "napt"
+    }
+
     "We should be able to bind character sequences without the reversing causing trouble" {
         val ch = lsc(
             """
