@@ -93,6 +93,19 @@ class TestRepeaters : StringSpec({
         ch("ek ana eta iona") shouldBe "ekanetona"
     }
 
+    "We should abort cases of catastrophic backtracking" {
+        val ch = lsc(
+            """
+                catastrophic:
+                    (x+ x+)+ y => q
+            """.trimIndent()
+        )
+
+        shouldThrow<LscRuleNotApplicable> {
+            ch("xxxxxxxxxxx")
+        }.also { it.cause.shouldBeInstanceOf<LscTooManyOptions>()}
+    }
+
     "We should be able to change repeaters into things" {
         val ch = lsc(
             """

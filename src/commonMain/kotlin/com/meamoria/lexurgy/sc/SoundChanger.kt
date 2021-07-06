@@ -536,3 +536,8 @@ class LscDivergingPropagation(val rule: ChangeRule, val initialWord: String, val
         "Propagating rule $rule applied to rule $initialWord appears " +
                 "not to settle on a result; the last few versions of the word were ${wordsAtAbort.joinToString(" -> ")}"
     )
+
+class LscTooManyOptions(val matcher: Any) :
+    LscUserError(
+        "Too many possibilities when matching $matcher"
+    )

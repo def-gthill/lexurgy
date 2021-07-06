@@ -54,6 +54,9 @@ interface Matcher {
      * are possible.
      */
     fun prefersIndependentSequenceEmitters(): Boolean
+
+    fun <T> List<T>.checkTooManyOptions(): List<T> =
+        checkTooManyOptions(this@Matcher, this)
 }
 
 abstract class BaseMatcher : Matcher {
@@ -304,7 +307,7 @@ class SequenceMatcher(val elements: List<Matcher>) : BaseMatcher() {
         for (element in elements) {
             ends = ends.flatMap { (end, prevBindings) ->
                 element.claim(declarations, phrase, end, prevBindings)
-            }
+            }.checkTooManyOptions()
             if (ends.isEmpty()) return emptyList()
         }
         return ends
@@ -373,7 +376,7 @@ class RepeaterMatcher(
         while (true) {
             val newResult = result.last().flatMap { (end, prevBindings) ->
                 element.claim(declarations, phrase, end, prevBindings)
-            }
+            }.checkTooManyOptions()
             if (newResult.isEmpty()) break
             result += newResult
             if (type.maxReps != null && result.size > type.maxReps) break
@@ -410,7 +413,7 @@ class AlternativeMatcher(val elements: List<Matcher>) : BaseMatcher() {
     ): List<PhraseMatchEnd> =
         elements.flatMap { element ->
             element.claim(declarations, phrase, start, bindings)
-        }
+        }.checkTooManyOptions()
 
     override fun reversed(): Matcher = AlternativeMatcher(elements.map { it.reversed() })
 
@@ -818,3 +821,6 @@ data class PhraseMatchEnd(val index: PhraseIndex, val returnBindings: Bindings) 
     fun updateBindings(bindings: Bindings) =
         PhraseMatchEnd(index, returnBindings.combine(bindings))
 }
+
+fun <T> checkTooManyOptions(matcher: Any, options: List<T>): List<T> =
+    if (options.size >= 1000) throw LscTooManyOptions(matcher) else options

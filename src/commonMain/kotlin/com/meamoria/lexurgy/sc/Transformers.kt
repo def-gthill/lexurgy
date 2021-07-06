@@ -11,6 +11,9 @@ interface Transformer {
         start: PhraseIndex,
         bindings: Bindings,
     ): List<UnboundTransformation>
+
+    fun <T> List<T>.checkTooManyOptions(): List<T> =
+        checkTooManyOptions(this@Transformer, this)
 }
 
 class EnvironmentTransformer(
@@ -71,7 +74,7 @@ class SequenceTransformer(
                 ).map {
                     prev + it
                 }
-            }
+            }.checkTooManyOptions()
             if (resultBits.isEmpty()) return emptyList()
         }
 
@@ -125,7 +128,7 @@ class AlternativeTransformer(
     ): List<UnboundTransformation> =
         elements.flatMap { element ->
             element.transform(order, declarations, phrase, start, bindings)
-        }
+        }.checkTooManyOptions()
 
     override fun toString(): String = elements.joinToString(
         prefix = "{",
@@ -166,7 +169,7 @@ class RepeaterTransformer(
                 ).map {
                     prev + it
                 }
-            }
+            }.checkTooManyOptions()
             if (newResultBits.isEmpty()) break
             resultBits += newResultBits
             if (type.maxReps != null && resultBits.size > type.maxReps) break
