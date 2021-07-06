@@ -165,21 +165,30 @@ class TestVariables : StringSpec({
     }
 
     "Capturing multiple things with the same capture number should result in a LscReboundCapture" {
+        val badTemplate = """
+            Class stop {p, t, k}
+            bad-rule:
+        """.trimIndent()
+
         shouldThrow<LscRuleNotApplicable> {
-            val ch = lsc(
-                """
-                Class stop {p, t, k}
-                double-stop-epenthesis:
-                    * => i / _ @stop$1 @stop$1
-                """.trimIndent()
-            )
+            val ch = lsc("$badTemplate\n* => i / _ @stop$1 @stop$1")
             ch("ppa")
         }.also {
             it.cause.shouldBeInstanceOf<LscReboundCapture>()
             it.message shouldBe
-                    "Rule double-stop-epenthesis could not be applied to word ppa (originally ppa)\n" +
+                    "Rule bad-rule could not be applied to word ppa (originally ppa)\n" +
                     "Capture variable 1 is bound more than once; " +
                     "replace the second with a capture reference (\"${'$'}1\")"
+        }
+
+        shouldThrow<LscRuleNotApplicable> {
+            val ch = lsc("$badTemplate\n@stop$1 => * / _ @stop$1")
+            ch("ppa")
+        }
+
+        shouldThrow<LscRuleNotApplicable> {
+            val ch = lsc("$badTemplate\n(@stop$1)+ => * / _ a")
+            ch("ppa")
         }
     }
 })
