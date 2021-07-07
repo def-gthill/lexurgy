@@ -8,54 +8,79 @@ class Syllabifier(
     val declarations: Declarations,
     val patterns: List<Pattern>,
 ) {
-    private val reversedPatterns = patterns.map { it.reversed() }
-
     fun syllabify(word: Word): Word =
         if (patterns.isEmpty() && word.isSyllabified()) word else {
-            val reversedWord = word.reversed()
-
-            val syllableBreaks = mutableListOf<Int>()
-            val newSyllableModifiers = word.syllableModifiers.mapKeys {
-                word.numSyllables - it.key - 1
-            }.toMutableMap()
-            var index = 0
-            val bindings = Bindings()
-
-            while (index < word.length) {
-                val bestMatch = reversedPatterns.mapNotNull { pattern ->
-                    pattern.matcher.claim(declarations, reversedWord, index, bindings).firstOrNull()?.let {
-                        PatternMatch(it.index, pattern.assignedMatrix)
-                    }
-                }.maxByOrNull { it.end }
-                    ?: throw SyllableStructureViolated(
-                        word, word.length - index - 1
-                    )
-                index = bestMatch.end
-                if (bestMatch.assignedMatrix != null) {
-                    with(declarations) {
-                        newSyllableModifiers +=
-                            syllableBreaks.size to
-                                    (newSyllableModifiers[syllableBreaks.size] ?: emptyList()).toMatrix().update(
-                                        bestMatch.assignedMatrix
-                                    ).toModifiers()
+            val syllableSequences = mutableMapOf(0 to PatternMatchSequence(emptyList()))
+            var latestSyllableEnd = 0
+            for (i in 0 until word.length) {
+                val prev = syllableSequences[i] ?: continue
+                val newSequences = patterns.flatMapIndexed { patternNumber, pattern ->
+                    pattern.matcher.claim(declarations, word, i, Bindings()).map {
+                        prev + PatternMatch(
+                            patternNumber,
+                            it.index,
+                            pattern.assignedMatrix,
+                        )
                     }
                 }
-                if (index < word.length) {
-                    syllableBreaks += word.length - index
+                for (sequence in newSequences) {
+                    val existing = syllableSequences[sequence.end]
+                    if (existing == null || sequence < existing) {
+                        syllableSequences[sequence.end] = sequence
+                        latestSyllableEnd = sequence.end
+                    }
                 }
             }
-
-            StandardWord(word.segments).withSyllabification(
-                syllableBreaks.reversed(),
-                newSyllableModifiers.mapKeys {
-                    syllableBreaks.size - it.key
+            val patternMatches =
+                syllableSequences[word.length]?.patternMatches ?: throw SyllableStructureViolated(
+                    word,
+                    latestSyllableEnd
+                )
+            val newSyllableModifiers =
+                patternMatches.withIndex().filter {
+                    it.value.assignedMatrix != null
+                }.associate { it.index to it.value.assignedMatrix!! }
+            val combinedSyllableModifiers = word.syllableModifiers.toMutableMap()
+            for ((syllableNumber, assignedMatrix) in newSyllableModifiers) {
+                combinedSyllableModifiers += syllableNumber to with(declarations) {
+                    (combinedSyllableModifiers[syllableNumber]?.toMatrix() ?: Matrix.EMPTY).update(
+                        assignedMatrix
+                    ).toModifiers()
                 }
+            }
+            StandardWord(word.segments).withSyllabification(
+                patternMatches.dropLast(1).map { it.end },
+                combinedSyllableModifiers,
             )
         }
 
-    class Pattern(val matcher: Matcher, val assignedMatrix: Matrix?) {
-        fun reversed(): Pattern = Pattern(matcher.reversed(), assignedMatrix)
-    }
+    data class Pattern(val matcher: Matcher, val assignedMatrix: Matrix?)
 
-    private class PatternMatch(val end: Int, val assignedMatrix: Matrix?)
+    private data class PatternMatch(
+        val patternNumber: Int,
+        val end: Int,
+        val assignedMatrix: Matrix?,
+    )
+
+    private data class PatternMatchSequence(
+        val patternMatches: List<PatternMatch>,
+    ) : Comparable<PatternMatchSequence> {
+
+        val end: Int = patternMatches.lastOrNull()?.end ?: 0
+
+        override fun compareTo(other: PatternMatchSequence): Int {
+            for ((thisPattern, otherPattern) in patternMatches.zip(other.patternMatches)) {
+                if (thisPattern.end != otherPattern.end) {
+                    return thisPattern.end.compareTo(otherPattern.end)
+                }
+                if (thisPattern.patternNumber != otherPattern.patternNumber) {
+                    return thisPattern.patternNumber.compareTo(otherPattern.patternNumber)
+                }
+            }
+            return 0
+        }
+
+        operator fun plus(patternMatch: PatternMatch): PatternMatchSequence =
+            PatternMatchSequence(patternMatches + patternMatch)
+    }
 }

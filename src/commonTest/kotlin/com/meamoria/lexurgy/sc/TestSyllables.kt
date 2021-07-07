@@ -45,7 +45,7 @@ class TestSyllables : StringSpec({
             ch("katmandu")
         }.also {
             it.message shouldBe
-                    "The segment \"n\" in \"katma(n)du\" doesn't fit the syllable structure"
+                    "The segment \"t\" in \"ka(t)mandu\" doesn't fit the syllable structure"
         }
     }
 
@@ -71,6 +71,19 @@ class TestSyllables : StringSpec({
 
         shouldThrow<SyllableStructureViolated> { ch("mtar") }
         shouldThrow<SyllableStructureViolated> { ch("antki")}
+    }
+
+    "Syllabification should proceed left-to-right, always choosing the shortest syllable that doesn't cause subsequent syllables to fail" {
+        val ch = lsc(
+            """
+                Class vowel {a, e, i, o, u}
+                Class cons {p, t, k, s, m, n, l, r}
+                Syllables:
+                    @cons? @vowel (t s)?
+            """.trimIndent()
+        )
+
+        ch("patso") shouldBe "pats.o"
     }
 
     "Words that have been automatically syllabified should be re-syllabified after every simple rule" {
