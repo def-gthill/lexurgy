@@ -186,6 +186,20 @@ abstract class LiftingMatcher : BaseMatcher() {
     ): Transformer
 }
 
+/**
+ * A matcher that may change its behaviour if given a specific
+ * number of segments to try to match.
+ */
+interface LengthHintedMatcher {
+    fun claim(
+        declarations: Declarations,
+        word: Word,
+        start: Int,
+        expectedEnd: Int,
+        bindings: Bindings
+    ): Bindings?
+}
+
 class EnvironmentMatcher(
     val element: Matcher,
     val environment: CompoundEnvironment,
@@ -450,22 +464,12 @@ class IntersectionMatcher(val elements: List<Matcher>) : LiftingMatcher() {
         start: Int,
         bindings: Bindings
     ): List<WordMatchEnd> {
-        var matchEnds: List<WordMatchEnd> = emptyList()
-        for (element in elements) {
-            val elementMatchEnds = element.claim(declarations, word, start, bindings)
-            val elementMatchEndsMap = elementMatchEnds.associate { it.index to it.returnBindings }
-            matchEnds = if (matchEnds.isEmpty()) {
-                elementMatchEnds
-            } else {
-                matchEnds.mapNotNull { matchEnd ->
-                    elementMatchEndsMap[matchEnd.index]?.let {
-                        matchEnd.updateBindings(it)
-                    }
-                }
-            }
-            if (matchEnds.isEmpty()) return emptyList()
-        }
-        return matchEnds
+        val matchEnds = elements.first().claim(
+            declarations, word, start, bindings
+        )
+        return filterIntersection(
+            declarations, elements.drop(1), word, start, bindings, matchEnds
+        ) { it }
     }
 
     override fun reversed(): Matcher = IntersectionMatcher(elements.map { it.reversed() })
@@ -480,6 +484,39 @@ class IntersectionMatcher(val elements: List<Matcher>) : LiftingMatcher() {
             elements.first().transformerTo(result, filtered),
             elements.drop(1),
         )
+}
+
+fun <T : WithBindings<T>> filterIntersection(
+    declarations: Declarations,
+    elements: List<Matcher>,
+    word: Word,
+    start: Int,
+    initialBindings: Bindings,
+    possibleMatches: List<T>,
+    matchEndTransformer: (T) -> WordMatchEnd,
+): List<T> {
+    var matchEnds = possibleMatches
+    for (element in elements) {
+        if (element is LengthHintedMatcher) {
+            matchEnds = matchEnds.mapNotNull { matchEnd ->
+                val transformer = matchEndTransformer(matchEnd)
+                element.claim(
+                    declarations, word, start, transformer.index, initialBindings
+                )?.let { matchEnd.updateBindings(it) }
+            }
+        } else {
+            val elementMatchEnds = element.claim(declarations, word, start, initialBindings)
+            val elementMatchEndsMap = elementMatchEnds.associate { it.index to it.returnBindings }
+            matchEnds = matchEnds.mapNotNull { matchEnd ->
+                val transformed = matchEndTransformer(matchEnd)
+                elementMatchEndsMap[transformed.index]?.let {
+                    matchEnd.updateBindings(it)
+                }
+            }
+            if (matchEnds.isEmpty()) return emptyList()
+        }
+    }
+    return matchEnds
 }
 
 class CaptureMatcher(
@@ -642,7 +679,7 @@ class MatrixMatcher(val matrix: Matrix) : SimpleMatcher() {
     override fun toString(): String = matrix.toString()
 }
 
-class SyllableMatrixMatcher(val matrix: Matrix) : SimpleMatcher() {
+class SyllableMatrixMatcher(val matrix: Matrix) : SimpleMatcher(), LengthHintedMatcher {
     override fun claim(
         declarations: Declarations,
         word: Word,
@@ -654,6 +691,19 @@ class SyllableMatrixMatcher(val matrix: Matrix) : SimpleMatcher() {
             word.modifiersAt(start).toMatrix().matches(boundMatrix, bindings)?.let {
                 listOf(WordMatchEnd(start + 1, it))
             } ?: emptyList()
+        }
+
+    override fun claim(
+        declarations: Declarations,
+        word: Word,
+        start: Int,
+        expectedEnd: Int,
+        bindings: Bindings
+    ): Bindings? =
+        if (word.syllableBreaks.any { it in ((start + 1) until expectedEnd) }) null
+        else with(declarations) {
+            val boundMatrix = matrix.bindVariables(bindings)
+            word.modifiersAt(start).toMatrix().matches(boundMatrix, bindings)
         }
 
     override fun reversed(): Matcher = this
@@ -801,24 +851,30 @@ object NeverMatcher : SimpleMatcher() {
     override fun toString(): String = "N/A"
 }
 
-data class WordMatchEnd(val index: Int, val returnBindings: Bindings) {
+interface WithBindings<T : WithBindings<T>> {
+    fun replaceBindings(bindings: Bindings): T
+
+    fun updateBindings(bindings: Bindings): T
+}
+
+data class WordMatchEnd(val index: Int, val returnBindings: Bindings) : WithBindings<WordMatchEnd> {
     fun withWordIndex(wordIndex: Int) =
         PhraseMatchEnd(PhraseIndex(wordIndex, index), returnBindings)
 
-    fun replaceBindings(bindings: Bindings) =
+    override fun replaceBindings(bindings: Bindings) =
         WordMatchEnd(index, bindings)
 
-    fun updateBindings(bindings: Bindings) =
+    override fun updateBindings(bindings: Bindings) =
         WordMatchEnd(index, returnBindings.combine(bindings))
 }
 
-data class PhraseMatchEnd(val index: PhraseIndex, val returnBindings: Bindings) {
+data class PhraseMatchEnd(val index: PhraseIndex, val returnBindings: Bindings) : WithBindings<PhraseMatchEnd> {
     val segmentIndex = WordMatchEnd(index.segmentIndex, returnBindings)
 
-    fun replaceBindings(bindings: Bindings) =
+    override fun replaceBindings(bindings: Bindings) =
         PhraseMatchEnd(index, bindings)
 
-    fun updateBindings(bindings: Bindings) =
+    override fun updateBindings(bindings: Bindings) =
         PhraseMatchEnd(index, returnBindings.combine(bindings))
 }
 

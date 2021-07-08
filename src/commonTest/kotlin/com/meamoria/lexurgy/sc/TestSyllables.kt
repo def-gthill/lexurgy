@@ -70,7 +70,7 @@ class TestSyllables : StringSpec({
         ch("wisnagnit") shouldBe "wis.nag.nit"
 
         shouldThrow<SyllableStructureViolated> { ch("mtar") }
-        shouldThrow<SyllableStructureViolated> { ch("antki")}
+        shouldThrow<SyllableStructureViolated> { ch("antki") }
     }
 
     "Syllabification should proceed left-to-right, always choosing the shortest syllable that doesn't cause subsequent syllables to fail" {
@@ -181,7 +181,7 @@ class TestSyllables : StringSpec({
                     @cons? @vowel&[+long] => [heavy]
                     @cons? @vowel => [light]
                 stress:
-                    [heavy] => [+stress] / _ <syl> $
+                    <syl>&[heavy] => [+stress] / _ <syl> $
                     Else:
                     <syl> => [+stress] / _ <syl> <syl> $
                 coda-dropping:
@@ -193,5 +193,25 @@ class TestSyllables : StringSpec({
         ch("pueroː") shouldBe "ˈpu¹.e¹.roː²"
         ch("wolukris") shouldBe "wo¹.ˈlu¹.ris²"
         ch("wideːre") shouldBe "wi¹.ˈdeː².re¹"
+    }
+
+    "Syllable-level features should stay as close to their original sounds as possible when resyllabifying" {
+        val ch = lsc(
+            """
+                Feature (syllable) +stress
+                Diacritic ˈ (before) [+stress]
+                Class vowel {a, e, i, o, u}
+                Class cons {p, t, k, s, m, n, l, r}
+                Syllables:
+                    (@cons / _ @cons)? @cons? @vowel @cons?
+                stress-penult:
+                    <syl> => [+stress] / _ <syl> $
+                syncope:
+                    @vowel => * / _ <syl>&[+stress]
+            """.trimIndent()
+        )
+
+        ch("kamina") shouldBe "ˈkmi.na"
+        ch("arensa") shouldBe "ˈren.sa"
     }
 })

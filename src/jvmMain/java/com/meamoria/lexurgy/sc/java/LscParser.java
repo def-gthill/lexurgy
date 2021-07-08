@@ -35,7 +35,7 @@ public class LscParser extends Parser {
 		RULE_block = 20, RULE_blockElement = 21, RULE_blockType = 22, RULE_expressionList = 23, 
 		RULE_ruleName = 24, RULE_expression = 25, RULE_from = 26, RULE_to = 27, 
 		RULE_ruleElement = 28, RULE_bounded = 29, RULE_group = 30, RULE_list = 31, 
-		RULE_sequence = 32, RULE_lookaround = 33, RULE_freeElement = 34, RULE_compoundEnvironment = 35, 
+		RULE_lookaround = 32, RULE_sequence = 33, RULE_freeElement = 34, RULE_compoundEnvironment = 35, 
 		RULE_condition = 36, RULE_exclusion = 37, RULE_environmentList = 38, RULE_environment = 39, 
 		RULE_environmentBefore = 40, RULE_environmentAfter = 41, RULE_intersection = 42, 
 		RULE_interfixElement = 43, RULE_negated = 44, RULE_postfix = 45, RULE_capture = 46, 
@@ -51,8 +51,8 @@ public class LscParser extends Parser {
 			"symbolName", "syllableDecl", "syllablePattern", "deromanizer", "romanizer", 
 			"interRomanizer", "changeRule", "changeRuleModifier", "filter", "block", 
 			"blockElement", "blockType", "expressionList", "ruleName", "expression", 
-			"from", "to", "ruleElement", "bounded", "group", "list", "sequence", 
-			"lookaround", "freeElement", "compoundEnvironment", "condition", "exclusion", 
+			"from", "to", "ruleElement", "bounded", "group", "list", "lookaround", 
+			"sequence", "freeElement", "compoundEnvironment", "condition", "exclusion", 
 			"environmentList", "environment", "environmentBefore", "environmentAfter", 
 			"intersection", "interfixElement", "negated", "postfix", "capture", "repeater", 
 			"simple", "anySyllable", "classRef", "captureRef", "fancyMatrix", "fancyValue", 
@@ -2275,9 +2275,6 @@ public class LscParser extends Parser {
 		public SequenceContext sequence() {
 			return getRuleContext(SequenceContext.class,0);
 		}
-		public LookaroundContext lookaround() {
-			return getRuleContext(LookaroundContext.class,0);
-		}
 		public RuleElementContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -2293,7 +2290,7 @@ public class LscParser extends Parser {
 		RuleElementContext _localctx = new RuleElementContext(_ctx, getState());
 		enterRule(_localctx, 56, RULE_ruleElement);
 		try {
-			setState(461);
+			setState(460);
 			_errHandler.sync(this);
 			switch ( getInterpreter().adaptivePredict(_input,48,_ctx) ) {
 			case 1:
@@ -2338,13 +2335,6 @@ public class LscParser extends Parser {
 				sequence();
 				}
 				break;
-			case 7:
-				enterOuterAlt(_localctx, 7);
-				{
-				setState(460);
-				lookaround();
-				}
-				break;
 			}
 		}
 		catch (RecognitionException re) {
@@ -2365,6 +2355,9 @@ public class LscParser extends Parser {
 		public ListContext list() {
 			return getRuleContext(ListContext.class,0);
 		}
+		public LookaroundContext lookaround() {
+			return getRuleContext(LookaroundContext.class,0);
+		}
 		public BoundedContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -2382,23 +2375,28 @@ public class LscParser extends Parser {
 		try {
 			setState(465);
 			_errHandler.sync(this);
-			switch (_input.LA(1)) {
-			case O_PAREN:
+			switch ( getInterpreter().adaptivePredict(_input,49,_ctx) ) {
+			case 1:
 				enterOuterAlt(_localctx, 1);
 				{
-				setState(463);
+				setState(462);
 				group();
 				}
 				break;
-			case LIST_START:
+			case 2:
 				enterOuterAlt(_localctx, 2);
 				{
-				setState(464);
+				setState(463);
 				list();
 				}
 				break;
-			default:
-				throw new NoViableAltException(this);
+			case 3:
+				enterOuterAlt(_localctx, 3);
+				{
+				setState(464);
+				lookaround();
+				}
+				break;
 			}
 		}
 		catch (RecognitionException re) {
@@ -2520,6 +2518,53 @@ public class LscParser extends Parser {
 		return _localctx;
 	}
 
+	public static class LookaroundContext extends ParserRuleContext {
+		public TerminalNode O_PAREN() { return getToken(LscParser.O_PAREN, 0); }
+		public FreeElementContext freeElement() {
+			return getRuleContext(FreeElementContext.class,0);
+		}
+		public CompoundEnvironmentContext compoundEnvironment() {
+			return getRuleContext(CompoundEnvironmentContext.class,0);
+		}
+		public TerminalNode C_PAREN() { return getToken(LscParser.C_PAREN, 0); }
+		public LookaroundContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+		@Override public int getRuleIndex() { return RULE_lookaround; }
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof LscVisitor ) return ((LscVisitor<? extends T>)visitor).visitLookaround(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
+	public final LookaroundContext lookaround() throws RecognitionException {
+		LookaroundContext _localctx = new LookaroundContext(_ctx, getState());
+		enterRule(_localctx, 64, RULE_lookaround);
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(482);
+			match(O_PAREN);
+			setState(483);
+			freeElement();
+			setState(484);
+			compoundEnvironment();
+			setState(485);
+			match(C_PAREN);
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
 	public static class SequenceContext extends ParserRuleContext {
 		public List<FreeElementContext> freeElement() {
 			return getRuleContexts(FreeElementContext.class);
@@ -2544,14 +2589,14 @@ public class LscParser extends Parser {
 
 	public final SequenceContext sequence() throws RecognitionException {
 		SequenceContext _localctx = new SequenceContext(_ctx, getState());
-		enterRule(_localctx, 64, RULE_sequence);
+		enterRule(_localctx, 66, RULE_sequence);
 		try {
 			int _alt;
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(482);
+			setState(487);
 			freeElement();
-			setState(485); 
+			setState(490); 
 			_errHandler.sync(this);
 			_alt = 1;
 			do {
@@ -2559,9 +2604,9 @@ public class LscParser extends Parser {
 				case 1:
 					{
 					{
-					setState(483);
+					setState(488);
 					match(WHITESPACE);
-					setState(484);
+					setState(489);
 					freeElement();
 					}
 					}
@@ -2569,57 +2614,10 @@ public class LscParser extends Parser {
 				default:
 					throw new NoViableAltException(this);
 				}
-				setState(487); 
+				setState(492); 
 				_errHandler.sync(this);
 				_alt = getInterpreter().adaptivePredict(_input,51,_ctx);
 			} while ( _alt!=2 && _alt!=org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER );
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	public static class LookaroundContext extends ParserRuleContext {
-		public TerminalNode O_PAREN() { return getToken(LscParser.O_PAREN, 0); }
-		public FreeElementContext freeElement() {
-			return getRuleContext(FreeElementContext.class,0);
-		}
-		public CompoundEnvironmentContext compoundEnvironment() {
-			return getRuleContext(CompoundEnvironmentContext.class,0);
-		}
-		public TerminalNode C_PAREN() { return getToken(LscParser.C_PAREN, 0); }
-		public LookaroundContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-		@Override public int getRuleIndex() { return RULE_lookaround; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof LscVisitor ) return ((LscVisitor<? extends T>)visitor).visitLookaround(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	public final LookaroundContext lookaround() throws RecognitionException {
-		LookaroundContext _localctx = new LookaroundContext(_ctx, getState());
-		enterRule(_localctx, 66, RULE_lookaround);
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(489);
-			match(O_PAREN);
-			setState(490);
-			freeElement();
-			setState(491);
-			compoundEnvironment();
-			setState(492);
-			match(C_PAREN);
 			}
 		}
 		catch (RecognitionException re) {
@@ -4467,10 +4465,10 @@ public class LscParser extends Parser {
 		"\n\27\3\30\3\30\3\31\3\31\6\31\u01ab\n\31\r\31\16\31\u01ac\3\31\7\31\u01b0"+
 		"\n\31\f\31\16\31\u01b3\13\31\3\32\3\32\3\32\7\32\u01b8\n\32\f\32\16\32"+
 		"\u01bb\13\32\3\33\3\33\3\33\3\33\3\33\3\33\5\33\u01c3\n\33\3\34\3\34\3"+
-		"\35\3\35\3\36\3\36\3\36\3\36\3\36\3\36\3\36\5\36\u01d0\n\36\3\37\3\37"+
+		"\35\3\35\3\36\3\36\3\36\3\36\3\36\3\36\5\36\u01cf\n\36\3\37\3\37\3\37"+
 		"\5\37\u01d4\n\37\3 \3 \3 \3 \3!\3!\3!\3!\7!\u01de\n!\f!\16!\u01e1\13!"+
-		"\3!\3!\3\"\3\"\3\"\6\"\u01e8\n\"\r\"\16\"\u01e9\3#\3#\3#\3#\3#\3$\3$\3"+
-		"$\3$\3$\5$\u01f6\n$\3%\3%\5%\u01fa\n%\3%\3%\5%\u01fe\n%\3&\3&\5&\u0202"+
+		"\3!\3!\3\"\3\"\3\"\3\"\3\"\3#\3#\3#\6#\u01ed\n#\r#\16#\u01ee\3$\3$\3$"+
+		"\3$\3$\5$\u01f6\n$\3%\3%\5%\u01fa\n%\3%\3%\5%\u01fe\n%\3&\3&\5&\u0202"+
 		"\n&\3\'\3\'\5\'\u0206\n\'\3(\3(\3(\3(\7(\u020c\n(\f(\16(\u020f\13(\3("+
 		"\3(\3)\3)\3)\5)\u0216\n)\3)\3)\3)\5)\u021b\n)\3)\5)\u021e\n)\5)\u0220"+
 		"\n)\3*\3*\3+\3+\3,\3,\3,\6,\u0229\n,\r,\16,\u022a\3-\3-\3-\3-\5-\u0231"+
@@ -4490,8 +4488,8 @@ public class LscParser extends Parser {
 		"\u0132\3\2\2\2\36\u0139\3\2\2\2 \u0146\3\2\2\2\"\u0153\3\2\2\2$\u0162"+
 		"\3\2\2\2&\u0176\3\2\2\2(\u017a\3\2\2\2*\u017c\3\2\2\2,\u01a4\3\2\2\2."+
 		"\u01a6\3\2\2\2\60\u01a8\3\2\2\2\62\u01b4\3\2\2\2\64\u01c2\3\2\2\2\66\u01c4"+
-		"\3\2\2\28\u01c6\3\2\2\2:\u01cf\3\2\2\2<\u01d3\3\2\2\2>\u01d5\3\2\2\2@"+
-		"\u01d9\3\2\2\2B\u01e4\3\2\2\2D\u01eb\3\2\2\2F\u01f5\3\2\2\2H\u01f9\3\2"+
+		"\3\2\2\28\u01c6\3\2\2\2:\u01ce\3\2\2\2<\u01d3\3\2\2\2>\u01d5\3\2\2\2@"+
+		"\u01d9\3\2\2\2B\u01e4\3\2\2\2D\u01e9\3\2\2\2F\u01f5\3\2\2\2H\u01f9\3\2"+
 		"\2\2J\u0201\3\2\2\2L\u0205\3\2\2\2N\u0207\3\2\2\2P\u021f\3\2\2\2R\u0221"+
 		"\3\2\2\2T\u0223\3\2\2\2V\u0225\3\2\2\2X\u0230\3\2\2\2Z\u0232\3\2\2\2\\"+
 		"\u0237\3\2\2\2^\u023c\3\2\2\2`\u0242\3\2\2\2b\u024e\3\2\2\2d\u0250\3\2"+
@@ -4604,20 +4602,20 @@ public class LscParser extends Parser {
 		"\u01bd\u01be\5\66\34\2\u01be\u01bf\7\5\2\2\u01bf\u01c0\58\35\2\u01c0\u01c1"+
 		"\5H%\2\u01c1\u01c3\3\2\2\2\u01c2\u01bc\3\2\2\2\u01c2\u01bd\3\2\2\2\u01c3"+
 		"\65\3\2\2\2\u01c4\u01c5\5:\36\2\u01c5\67\3\2\2\2\u01c6\u01c7\5:\36\2\u01c7"+
-		"9\3\2\2\2\u01c8\u01d0\5<\37\2\u01c9\u01d0\5V,\2\u01ca\u01d0\5Z.\2\u01cb"+
-		"\u01d0\5\\/\2\u01cc\u01d0\5b\62\2\u01cd\u01d0\5B\"\2\u01ce\u01d0\5D#\2"+
-		"\u01cf\u01c8\3\2\2\2\u01cf\u01c9\3\2\2\2\u01cf\u01ca\3\2\2\2\u01cf\u01cb"+
-		"\3\2\2\2\u01cf\u01cc\3\2\2\2\u01cf\u01cd\3\2\2\2\u01cf\u01ce\3\2\2\2\u01d0"+
-		";\3\2\2\2\u01d1\u01d4\5> \2\u01d2\u01d4\5@!\2\u01d3\u01d1\3\2\2\2\u01d3"+
+		"9\3\2\2\2\u01c8\u01cf\5<\37\2\u01c9\u01cf\5V,\2\u01ca\u01cf\5Z.\2\u01cb"+
+		"\u01cf\5\\/\2\u01cc\u01cf\5b\62\2\u01cd\u01cf\5D#\2\u01ce\u01c8\3\2\2"+
+		"\2\u01ce\u01c9\3\2\2\2\u01ce\u01ca\3\2\2\2\u01ce\u01cb\3\2\2\2\u01ce\u01cc"+
+		"\3\2\2\2\u01ce\u01cd\3\2\2\2\u01cf;\3\2\2\2\u01d0\u01d4\5> \2\u01d1\u01d4"+
+		"\5@!\2\u01d2\u01d4\5B\"\2\u01d3\u01d0\3\2\2\2\u01d3\u01d1\3\2\2\2\u01d3"+
 		"\u01d2\3\2\2\2\u01d4=\3\2\2\2\u01d5\u01d6\7\13\2\2\u01d6\u01d7\5:\36\2"+
 		"\u01d7\u01d8\7\f\2\2\u01d8?\3\2\2\2\u01d9\u01da\7\20\2\2\u01da\u01df\5"+
 		":\36\2\u01db\u01dc\7\4\2\2\u01dc\u01de\5:\36\2\u01dd\u01db\3\2\2\2\u01de"+
 		"\u01e1\3\2\2\2\u01df\u01dd\3\2\2\2\u01df\u01e0\3\2\2\2\u01e0\u01e2\3\2"+
-		"\2\2\u01e1\u01df\3\2\2\2\u01e2\u01e3\7\21\2\2\u01e3A\3\2\2\2\u01e4\u01e7"+
-		"\5F$\2\u01e5\u01e6\7\n\2\2\u01e6\u01e8\5F$\2\u01e7\u01e5\3\2\2\2\u01e8"+
-		"\u01e9\3\2\2\2\u01e9\u01e7\3\2\2\2\u01e9\u01ea\3\2\2\2\u01eaC\3\2\2\2"+
-		"\u01eb\u01ec\7\13\2\2\u01ec\u01ed\5F$\2\u01ed\u01ee\5H%\2\u01ee\u01ef"+
-		"\7\f\2\2\u01efE\3\2\2\2\u01f0\u01f6\5<\37\2\u01f1\u01f6\5V,\2\u01f2\u01f6"+
+		"\2\2\u01e1\u01df\3\2\2\2\u01e2\u01e3\7\21\2\2\u01e3A\3\2\2\2\u01e4\u01e5"+
+		"\7\13\2\2\u01e5\u01e6\5F$\2\u01e6\u01e7\5H%\2\u01e7\u01e8\7\f\2\2\u01e8"+
+		"C\3\2\2\2\u01e9\u01ec\5F$\2\u01ea\u01eb\7\n\2\2\u01eb\u01ed\5F$\2\u01ec"+
+		"\u01ea\3\2\2\2\u01ed\u01ee\3\2\2\2\u01ee\u01ec\3\2\2\2\u01ee\u01ef\3\2"+
+		"\2\2\u01efE\3\2\2\2\u01f0\u01f6\5<\37\2\u01f1\u01f6\5V,\2\u01f2\u01f6"+
 		"\5Z.\2\u01f3\u01f6\5\\/\2\u01f4\u01f6\5b\62\2\u01f5\u01f0\3\2\2\2\u01f5"+
 		"\u01f1\3\2\2\2\u01f5\u01f2\3\2\2\2\u01f5\u01f3\3\2\2\2\u01f5\u01f4\3\2"+
 		"\2\2\u01f6G\3\2\2\2\u01f7\u01f8\7\6\2\2\u01f8\u01fa\5J&\2\u01f9\u01f7"+
@@ -4677,7 +4675,7 @@ public class LscParser extends Parser {
 		"\u00c2\u00cb\u00d1\u00d5\u00db\u00e2\u00e7\u00ee\u00f1\u0101\u0109\u0115"+
 		"\u011a\u0123\u0129\u012e\u0130\u0135\u013c\u0142\u0149\u014f\u0158\u015e"+
 		"\u0167\u016b\u0170\u0176\u017a\u0180\u0188\u018a\u0190\u0198\u019f\u01a4"+
-		"\u01ac\u01b1\u01b9\u01c2\u01cf\u01d3\u01df\u01e9\u01f5\u01f9\u01fd\u0201"+
+		"\u01ac\u01b1\u01b9\u01c2\u01ce\u01d3\u01df\u01ee\u01f5\u01f9\u01fd\u0201"+
 		"\u0205\u020d\u0215\u021a\u021d\u021f\u022a\u0230\u0237\u023c\u0242\u024e"+
 		"\u025a\u0260\u026a\u027f\u0285\u028c\u0297";
 	public static final ATN _ATN =

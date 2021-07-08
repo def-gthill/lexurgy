@@ -75,11 +75,11 @@ var serializedATN = ["\u0003\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964",
     "\u001a\f\u001a\u000e\u001a\u01bb\u000b\u001a\u0003\u001b\u0003\u001b",
     "\u0003\u001b\u0003\u001b\u0003\u001b\u0003\u001b\u0005\u001b\u01c3\n",
     "\u001b\u0003\u001c\u0003\u001c\u0003\u001d\u0003\u001d\u0003\u001e\u0003",
-    "\u001e\u0003\u001e\u0003\u001e\u0003\u001e\u0003\u001e\u0003\u001e\u0005",
-    "\u001e\u01d0\n\u001e\u0003\u001f\u0003\u001f\u0005\u001f\u01d4\n\u001f",
+    "\u001e\u0003\u001e\u0003\u001e\u0003\u001e\u0003\u001e\u0005\u001e\u01cf",
+    "\n\u001e\u0003\u001f\u0003\u001f\u0003\u001f\u0005\u001f\u01d4\n\u001f",
     "\u0003 \u0003 \u0003 \u0003 \u0003!\u0003!\u0003!\u0003!\u0007!\u01de",
-    "\n!\f!\u000e!\u01e1\u000b!\u0003!\u0003!\u0003\"\u0003\"\u0003\"\u0006",
-    "\"\u01e8\n\"\r\"\u000e\"\u01e9\u0003#\u0003#\u0003#\u0003#\u0003#\u0003",
+    "\n!\f!\u000e!\u01e1\u000b!\u0003!\u0003!\u0003\"\u0003\"\u0003\"\u0003",
+    "\"\u0003\"\u0003#\u0003#\u0003#\u0006#\u01ed\n#\r#\u000e#\u01ee\u0003",
     "$\u0003$\u0003$\u0003$\u0003$\u0005$\u01f6\n$\u0003%\u0003%\u0005%\u01fa",
     "\n%\u0003%\u0003%\u0005%\u01fe\n%\u0003&\u0003&\u0005&\u0202\n&\u0003",
     "\'\u0003\'\u0005\'\u0206\n\'\u0003(\u0003(\u0003(\u0003(\u0007(\u020c",
@@ -115,10 +115,10 @@ var serializedATN = ["\u0003\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964",
     "\u0002*\u017c\u0003\u0002\u0002\u0002,\u01a4\u0003\u0002\u0002\u0002",
     ".\u01a6\u0003\u0002\u0002\u00020\u01a8\u0003\u0002\u0002\u00022\u01b4",
     "\u0003\u0002\u0002\u00024\u01c2\u0003\u0002\u0002\u00026\u01c4\u0003",
-    "\u0002\u0002\u00028\u01c6\u0003\u0002\u0002\u0002:\u01cf\u0003\u0002",
+    "\u0002\u0002\u00028\u01c6\u0003\u0002\u0002\u0002:\u01ce\u0003\u0002",
     "\u0002\u0002<\u01d3\u0003\u0002\u0002\u0002>\u01d5\u0003\u0002\u0002",
     "\u0002@\u01d9\u0003\u0002\u0002\u0002B\u01e4\u0003\u0002\u0002\u0002",
-    "D\u01eb\u0003\u0002\u0002\u0002F\u01f5\u0003\u0002\u0002\u0002H\u01f9",
+    "D\u01e9\u0003\u0002\u0002\u0002F\u01f5\u0003\u0002\u0002\u0002H\u01f9",
     "\u0003\u0002\u0002\u0002J\u0201\u0003\u0002\u0002\u0002L\u0205\u0003",
     "\u0002\u0002\u0002N\u0207\u0003\u0002\u0002\u0002P\u021f\u0003\u0002",
     "\u0002\u0002R\u0221\u0003\u0002\u0002\u0002T\u0223\u0003\u0002\u0002",
@@ -318,14 +318,14 @@ var serializedATN = ["\u0003\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964",
     "\u01c2\u01bc\u0003\u0002\u0002\u0002\u01c2\u01bd\u0003\u0002\u0002\u0002",
     "\u01c35\u0003\u0002\u0002\u0002\u01c4\u01c5\u0005:\u001e\u0002\u01c5",
     "7\u0003\u0002\u0002\u0002\u01c6\u01c7\u0005:\u001e\u0002\u01c79\u0003",
-    "\u0002\u0002\u0002\u01c8\u01d0\u0005<\u001f\u0002\u01c9\u01d0\u0005",
-    "V,\u0002\u01ca\u01d0\u0005Z.\u0002\u01cb\u01d0\u0005\\/\u0002\u01cc",
-    "\u01d0\u0005b2\u0002\u01cd\u01d0\u0005B\"\u0002\u01ce\u01d0\u0005D#",
-    "\u0002\u01cf\u01c8\u0003\u0002\u0002\u0002\u01cf\u01c9\u0003\u0002\u0002",
-    "\u0002\u01cf\u01ca\u0003\u0002\u0002\u0002\u01cf\u01cb\u0003\u0002\u0002",
-    "\u0002\u01cf\u01cc\u0003\u0002\u0002\u0002\u01cf\u01cd\u0003\u0002\u0002",
-    "\u0002\u01cf\u01ce\u0003\u0002\u0002\u0002\u01d0;\u0003\u0002\u0002",
-    "\u0002\u01d1\u01d4\u0005> \u0002\u01d2\u01d4\u0005@!\u0002\u01d3\u01d1",
+    "\u0002\u0002\u0002\u01c8\u01cf\u0005<\u001f\u0002\u01c9\u01cf\u0005",
+    "V,\u0002\u01ca\u01cf\u0005Z.\u0002\u01cb\u01cf\u0005\\/\u0002\u01cc",
+    "\u01cf\u0005b2\u0002\u01cd\u01cf\u0005D#\u0002\u01ce\u01c8\u0003\u0002",
+    "\u0002\u0002\u01ce\u01c9\u0003\u0002\u0002\u0002\u01ce\u01ca\u0003\u0002",
+    "\u0002\u0002\u01ce\u01cb\u0003\u0002\u0002\u0002\u01ce\u01cc\u0003\u0002",
+    "\u0002\u0002\u01ce\u01cd\u0003\u0002\u0002\u0002\u01cf;\u0003\u0002",
+    "\u0002\u0002\u01d0\u01d4\u0005> \u0002\u01d1\u01d4\u0005@!\u0002\u01d2",
+    "\u01d4\u0005B\"\u0002\u01d3\u01d0\u0003\u0002\u0002\u0002\u01d3\u01d1",
     "\u0003\u0002\u0002\u0002\u01d3\u01d2\u0003\u0002\u0002\u0002\u01d4=",
     "\u0003\u0002\u0002\u0002\u01d5\u01d6\u0007\u000b\u0002\u0002\u01d6\u01d7",
     "\u0005:\u001e\u0002\u01d7\u01d8\u0007\f\u0002\u0002\u01d8?\u0003\u0002",
@@ -335,12 +335,12 @@ var serializedATN = ["\u0003\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964",
     "\u0002\u0002\u01df\u01dd\u0003\u0002\u0002\u0002\u01df\u01e0\u0003\u0002",
     "\u0002\u0002\u01e0\u01e2\u0003\u0002\u0002\u0002\u01e1\u01df\u0003\u0002",
     "\u0002\u0002\u01e2\u01e3\u0007\u0011\u0002\u0002\u01e3A\u0003\u0002",
-    "\u0002\u0002\u01e4\u01e7\u0005F$\u0002\u01e5\u01e6\u0007\n\u0002\u0002",
-    "\u01e6\u01e8\u0005F$\u0002\u01e7\u01e5\u0003\u0002\u0002\u0002\u01e8",
-    "\u01e9\u0003\u0002\u0002\u0002\u01e9\u01e7\u0003\u0002\u0002\u0002\u01e9",
-    "\u01ea\u0003\u0002\u0002\u0002\u01eaC\u0003\u0002\u0002\u0002\u01eb",
-    "\u01ec\u0007\u000b\u0002\u0002\u01ec\u01ed\u0005F$\u0002\u01ed\u01ee",
-    "\u0005H%\u0002\u01ee\u01ef\u0007\f\u0002\u0002\u01efE\u0003\u0002\u0002",
+    "\u0002\u0002\u01e4\u01e5\u0007\u000b\u0002\u0002\u01e5\u01e6\u0005F",
+    "$\u0002\u01e6\u01e7\u0005H%\u0002\u01e7\u01e8\u0007\f\u0002\u0002\u01e8",
+    "C\u0003\u0002\u0002\u0002\u01e9\u01ec\u0005F$\u0002\u01ea\u01eb\u0007",
+    "\n\u0002\u0002\u01eb\u01ed\u0005F$\u0002\u01ec\u01ea\u0003\u0002\u0002",
+    "\u0002\u01ed\u01ee\u0003\u0002\u0002\u0002\u01ee\u01ec\u0003\u0002\u0002",
+    "\u0002\u01ee\u01ef\u0003\u0002\u0002\u0002\u01efE\u0003\u0002\u0002",
     "\u0002\u01f0\u01f6\u0005<\u001f\u0002\u01f1\u01f6\u0005V,\u0002\u01f2",
     "\u01f6\u0005Z.\u0002\u01f3\u01f6\u0005\\/\u0002\u01f4\u01f6\u0005b2",
     "\u0002\u01f5\u01f0\u0003\u0002\u0002\u0002\u01f5\u01f1\u0003\u0002\u0002",
@@ -442,7 +442,7 @@ var serializedATN = ["\u0003\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964",
     "\u00d5\u00db\u00e2\u00e7\u00ee\u00f1\u0101\u0109\u0115\u011a\u0123\u0129",
     "\u012e\u0130\u0135\u013c\u0142\u0149\u014f\u0158\u015e\u0167\u016b\u0170",
     "\u0176\u017a\u0180\u0188\u018a\u0190\u0198\u019f\u01a4\u01ac\u01b1\u01b9",
-    "\u01c2\u01cf\u01d3\u01df\u01e9\u01f5\u01f9\u01fd\u0201\u0205\u020d\u0215",
+    "\u01c2\u01ce\u01d3\u01df\u01ee\u01f5\u01f9\u01fd\u0201\u0205\u020d\u0215",
     "\u021a\u021d\u021f\u022a\u0230\u0237\u023c\u0242\u024e\u025a\u0260\u026a",
     "\u027f\u0285\u028c\u0297"].join("");
 
@@ -478,7 +478,7 @@ var ruleNames =  [ "lscFile", "statement", "classDecl", "classElement",
                    "interRomanizer", "changeRule", "changeRuleModifier", 
                    "filter", "block", "blockElement", "blockType", "expressionList", 
                    "ruleName", "expression", "from", "to", "ruleElement", 
-                   "bounded", "group", "list", "sequence", "lookaround", 
+                   "bounded", "group", "list", "lookaround", "sequence", 
                    "freeElement", "compoundEnvironment", "condition", "exclusion", 
                    "environmentList", "environment", "environmentBefore", 
                    "environmentAfter", "intersection", "interfixElement", 
@@ -586,8 +586,8 @@ LscParser.RULE_ruleElement = 28;
 LscParser.RULE_bounded = 29;
 LscParser.RULE_group = 30;
 LscParser.RULE_list = 31;
-LscParser.RULE_sequence = 32;
-LscParser.RULE_lookaround = 33;
+LscParser.RULE_lookaround = 32;
+LscParser.RULE_sequence = 33;
 LscParser.RULE_freeElement = 34;
 LscParser.RULE_compoundEnvironment = 35;
 LscParser.RULE_condition = 36;
@@ -3551,10 +3551,6 @@ RuleElementContext.prototype.sequence = function() {
     return this.getTypedRuleContext(SequenceContext,0);
 };
 
-RuleElementContext.prototype.lookaround = function() {
-    return this.getTypedRuleContext(LookaroundContext,0);
-};
-
 RuleElementContext.prototype.accept = function(visitor) {
     if ( visitor instanceof LscVisitor ) {
         return visitor.visitRuleElement(this);
@@ -3573,7 +3569,7 @@ LscParser.prototype.ruleElement = function() {
     var localctx = new RuleElementContext(this, this._ctx, this.state);
     this.enterRule(localctx, 56, LscParser.RULE_ruleElement);
     try {
-        this.state = 461;
+        this.state = 460;
         this._errHandler.sync(this);
         var la_ = this._interp.adaptivePredict(this._input,48,this._ctx);
         switch(la_) {
@@ -3611,12 +3607,6 @@ LscParser.prototype.ruleElement = function() {
             this.enterOuterAlt(localctx, 6);
             this.state = 459;
             this.sequence();
-            break;
-
-        case 7:
-            this.enterOuterAlt(localctx, 7);
-            this.state = 460;
-            this.lookaround();
             break;
 
         }
@@ -3659,6 +3649,10 @@ BoundedContext.prototype.list = function() {
     return this.getTypedRuleContext(ListContext,0);
 };
 
+BoundedContext.prototype.lookaround = function() {
+    return this.getTypedRuleContext(LookaroundContext,0);
+};
+
 BoundedContext.prototype.accept = function(visitor) {
     if ( visitor instanceof LscVisitor ) {
         return visitor.visitBounded(this);
@@ -3679,19 +3673,26 @@ LscParser.prototype.bounded = function() {
     try {
         this.state = 465;
         this._errHandler.sync(this);
-        switch(this._input.LA(1)) {
-        case LscParser.O_PAREN:
+        var la_ = this._interp.adaptivePredict(this._input,49,this._ctx);
+        switch(la_) {
+        case 1:
             this.enterOuterAlt(localctx, 1);
-            this.state = 463;
+            this.state = 462;
             this.group();
             break;
-        case LscParser.LIST_START:
+
+        case 2:
             this.enterOuterAlt(localctx, 2);
-            this.state = 464;
+            this.state = 463;
             this.list();
             break;
-        default:
-            throw new antlr4.error.NoViableAltException(this);
+
+        case 3:
+            this.enterOuterAlt(localctx, 3);
+            this.state = 464;
+            this.lookaround();
+            break;
+
         }
     } catch (re) {
     	if(re instanceof antlr4.error.RecognitionException) {
@@ -3876,6 +3877,80 @@ LscParser.prototype.list = function() {
 };
 
 
+function LookaroundContext(parser, parent, invokingState) {
+	if(parent===undefined) {
+	    parent = null;
+	}
+	if(invokingState===undefined || invokingState===null) {
+		invokingState = -1;
+	}
+	antlr4.ParserRuleContext.call(this, parent, invokingState);
+    this.parser = parser;
+    this.ruleIndex = LscParser.RULE_lookaround;
+    return this;
+}
+
+LookaroundContext.prototype = Object.create(antlr4.ParserRuleContext.prototype);
+LookaroundContext.prototype.constructor = LookaroundContext;
+
+LookaroundContext.prototype.O_PAREN = function() {
+    return this.getToken(LscParser.O_PAREN, 0);
+};
+
+LookaroundContext.prototype.freeElement = function() {
+    return this.getTypedRuleContext(FreeElementContext,0);
+};
+
+LookaroundContext.prototype.compoundEnvironment = function() {
+    return this.getTypedRuleContext(CompoundEnvironmentContext,0);
+};
+
+LookaroundContext.prototype.C_PAREN = function() {
+    return this.getToken(LscParser.C_PAREN, 0);
+};
+
+LookaroundContext.prototype.accept = function(visitor) {
+    if ( visitor instanceof LscVisitor ) {
+        return visitor.visitLookaround(this);
+    } else {
+        return visitor.visitChildren(this);
+    }
+};
+
+
+
+
+LscParser.LookaroundContext = LookaroundContext;
+
+LscParser.prototype.lookaround = function() {
+
+    var localctx = new LookaroundContext(this, this._ctx, this.state);
+    this.enterRule(localctx, 64, LscParser.RULE_lookaround);
+    try {
+        this.enterOuterAlt(localctx, 1);
+        this.state = 482;
+        this.match(LscParser.O_PAREN);
+        this.state = 483;
+        this.freeElement();
+        this.state = 484;
+        this.compoundEnvironment();
+        this.state = 485;
+        this.match(LscParser.C_PAREN);
+    } catch (re) {
+    	if(re instanceof antlr4.error.RecognitionException) {
+	        localctx.exception = re;
+	        this._errHandler.reportError(this, re);
+	        this._errHandler.recover(this, re);
+	    } else {
+	    	throw re;
+	    }
+    } finally {
+        this.exitRule();
+    }
+    return localctx;
+};
+
+
 function SequenceContext(parser, parent, invokingState) {
 	if(parent===undefined) {
 	    parent = null;
@@ -3931,103 +4006,29 @@ LscParser.SequenceContext = SequenceContext;
 LscParser.prototype.sequence = function() {
 
     var localctx = new SequenceContext(this, this._ctx, this.state);
-    this.enterRule(localctx, 64, LscParser.RULE_sequence);
+    this.enterRule(localctx, 66, LscParser.RULE_sequence);
     try {
         this.enterOuterAlt(localctx, 1);
-        this.state = 482;
+        this.state = 487;
         this.freeElement();
-        this.state = 485; 
+        this.state = 490; 
         this._errHandler.sync(this);
         var _alt = 1;
         do {
         	switch (_alt) {
         	case 1:
-        		this.state = 483;
+        		this.state = 488;
         		this.match(LscParser.WHITESPACE);
-        		this.state = 484;
+        		this.state = 489;
         		this.freeElement();
         		break;
         	default:
         		throw new antlr4.error.NoViableAltException(this);
         	}
-        	this.state = 487; 
+        	this.state = 492; 
         	this._errHandler.sync(this);
         	_alt = this._interp.adaptivePredict(this._input,51, this._ctx);
         } while ( _alt!=2 && _alt!=antlr4.atn.ATN.INVALID_ALT_NUMBER );
-    } catch (re) {
-    	if(re instanceof antlr4.error.RecognitionException) {
-	        localctx.exception = re;
-	        this._errHandler.reportError(this, re);
-	        this._errHandler.recover(this, re);
-	    } else {
-	    	throw re;
-	    }
-    } finally {
-        this.exitRule();
-    }
-    return localctx;
-};
-
-
-function LookaroundContext(parser, parent, invokingState) {
-	if(parent===undefined) {
-	    parent = null;
-	}
-	if(invokingState===undefined || invokingState===null) {
-		invokingState = -1;
-	}
-	antlr4.ParserRuleContext.call(this, parent, invokingState);
-    this.parser = parser;
-    this.ruleIndex = LscParser.RULE_lookaround;
-    return this;
-}
-
-LookaroundContext.prototype = Object.create(antlr4.ParserRuleContext.prototype);
-LookaroundContext.prototype.constructor = LookaroundContext;
-
-LookaroundContext.prototype.O_PAREN = function() {
-    return this.getToken(LscParser.O_PAREN, 0);
-};
-
-LookaroundContext.prototype.freeElement = function() {
-    return this.getTypedRuleContext(FreeElementContext,0);
-};
-
-LookaroundContext.prototype.compoundEnvironment = function() {
-    return this.getTypedRuleContext(CompoundEnvironmentContext,0);
-};
-
-LookaroundContext.prototype.C_PAREN = function() {
-    return this.getToken(LscParser.C_PAREN, 0);
-};
-
-LookaroundContext.prototype.accept = function(visitor) {
-    if ( visitor instanceof LscVisitor ) {
-        return visitor.visitLookaround(this);
-    } else {
-        return visitor.visitChildren(this);
-    }
-};
-
-
-
-
-LscParser.LookaroundContext = LookaroundContext;
-
-LscParser.prototype.lookaround = function() {
-
-    var localctx = new LookaroundContext(this, this._ctx, this.state);
-    this.enterRule(localctx, 66, LscParser.RULE_lookaround);
-    try {
-        this.enterOuterAlt(localctx, 1);
-        this.state = 489;
-        this.match(LscParser.O_PAREN);
-        this.state = 490;
-        this.freeElement();
-        this.state = 491;
-        this.compoundEnvironment();
-        this.state = 492;
-        this.match(LscParser.C_PAREN);
     } catch (re) {
     	if(re instanceof antlr4.error.RecognitionException) {
 	        localctx.exception = re;

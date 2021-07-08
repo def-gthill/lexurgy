@@ -42,16 +42,16 @@ expression: UNCHANGED | (from CHANGE to compoundEnvironment);
 from: ruleElement;
 to: ruleElement;
 
-ruleElement: bounded | intersection | negated | postfix | simple | sequence | lookaround;
+ruleElement: bounded | intersection | negated | postfix | simple | sequence;
 
 // "Bounded" elements have a clear start and end symbol
-bounded: group | list;
+bounded: group | list | lookaround;
 group: O_PAREN ruleElement C_PAREN;
 list: LIST_START ruleElement (SEP ruleElement)* LIST_END;
+lookaround: O_PAREN freeElement compoundEnvironment C_PAREN;
 
 // "Free" elements have sub-elements floating free amid whitespace
 sequence: freeElement (WHITESPACE freeElement)+;
-lookaround: O_PAREN freeElement compoundEnvironment C_PAREN;
 freeElement: bounded | intersection | negated | postfix | simple;
 
 compoundEnvironment: (CONDITION condition)? (EXCLUSION exclusion)?;

@@ -203,17 +203,17 @@ public interface LscVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitList(LscParser.ListContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link LscParser#sequence}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitSequence(LscParser.SequenceContext ctx);
-	/**
 	 * Visit a parse tree produced by {@link LscParser#lookaround}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitLookaround(LscParser.LookaroundContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link LscParser#sequence}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitSequence(LscParser.SequenceContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link LscParser#freeElement}.
 	 * @param ctx the parse tree

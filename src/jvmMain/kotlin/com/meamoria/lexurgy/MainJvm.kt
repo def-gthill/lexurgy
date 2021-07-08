@@ -10,8 +10,8 @@ import com.github.ajalt.clikt.parameters.options.multiple
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.path
 import com.meamoria.lexurgy.sc.LscRuleCrashed
-import com.meamoria.lexurgy.sc.SoundChanger
 import com.meamoria.lexurgy.sc.changeFiles
+import java.io.IOException
 import java.io.PrintWriter
 import kotlin.system.exitProcess
 import kotlin.time.ExperimentalTime
@@ -103,7 +103,7 @@ class SC : CliktCommand(
                 }
                 writer.flush()
             } else {
-                if (e is UserError) console(e.message.toString())
+                if (e is UserError || e is IOException) console(e.message.toString())
                 else console(
                     "Lexurgy couldn't apply the changes because of an unexpected error. " +
                             "Rerun with developer mode turned on (-d) and submit a bug report " +

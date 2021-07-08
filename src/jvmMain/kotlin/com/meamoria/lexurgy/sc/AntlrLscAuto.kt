@@ -102,11 +102,11 @@ actual typealias ListContext = LscParser.ListContext
 
 actual fun ListContext.allRuleElements(): List<RuleElementContext> = ruleElement()
 
+actual typealias LookaroundContext = LscParser.LookaroundContext
+
 actual typealias SequenceContext = LscParser.SequenceContext
 
 actual fun SequenceContext.allFreeElements(): List<FreeElementContext> = freeElement()
-
-actual typealias LookaroundContext = LscParser.LookaroundContext
 
 actual typealias FreeElementContext = LscParser.FreeElementContext
 

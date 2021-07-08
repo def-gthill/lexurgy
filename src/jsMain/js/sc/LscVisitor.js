@@ -204,14 +204,14 @@ LscVisitor.prototype.visitList = function(ctx) {
 };
 
 
-// Visit a parse tree produced by LscParser#sequence.
-LscVisitor.prototype.visitSequence = function(ctx) {
+// Visit a parse tree produced by LscParser#lookaround.
+LscVisitor.prototype.visitLookaround = function(ctx) {
   return this.visitChildren(ctx);
 };
 
 
-// Visit a parse tree produced by LscParser#lookaround.
-LscVisitor.prototype.visitLookaround = function(ctx) {
+// Visit a parse tree produced by LscParser#sequence.
+LscVisitor.prototype.visitSequence = function(ctx) {
   return this.visitChildren(ctx);
 };
 

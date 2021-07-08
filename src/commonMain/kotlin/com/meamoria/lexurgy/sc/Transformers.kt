@@ -205,22 +205,17 @@ class IntersectionTransformer(
         start: PhraseIndex,
         bindings: Bindings
     ): List<UnboundTransformation> {
-        var matchEnds: List<PhraseMatchEnd> = emptyList()
-        for (matcher in otherMatchers) {
-            val thisMatchEnds = matcher.claim(declarations, phrase, start, bindings)
-            matchEnds = if (matchEnds.isEmpty()) {
-                thisMatchEnds
-            } else {
-                matchEnds.filter { it in thisMatchEnds }
-            }
-            if (matchEnds.isEmpty()) return emptyList()
-        }
-        val matchEndsMap = matchEnds.associate { it.index to it.returnBindings }
-        return transformer.transform(
+        val transformers = transformer.transform(
             order, declarations, phrase, start, bindings
-        ).mapNotNull { transformer ->
-            matchEndsMap[transformer.end]?.let { transformer.updateBindings(it) }
-        }
+        ).filter { it.start.wordIndex == it.end.wordIndex }
+        return filterIntersection(
+            declarations,
+            otherMatchers,
+            phrase[start.wordIndex],
+            start.segmentIndex,
+            bindings,
+            transformers,
+        ) { it.toMatchEnd() }
     }
 
     override fun toString(): String = "($transformer)&${otherMatchers.joinToString("&")}"
@@ -352,7 +347,7 @@ data class UnboundTransformation(
     val result: UnboundResult,
     val returnBindings: Bindings,
     val subs: List<UnboundTransformation> = emptyList(),
-) {
+) : WithBindings<UnboundTransformation> {
     fun bindVariables(bindings: Bindings = returnBindings): Transformation =
         Transformation(
             order,
@@ -362,11 +357,14 @@ data class UnboundTransformation(
             subs.map { it.bindVariables(bindings) },
         )
 
-    fun replaceBindings(bindings: Bindings): UnboundTransformation =
+    override fun replaceBindings(bindings: Bindings): UnboundTransformation =
         copy(returnBindings = bindings)
 
-    fun updateBindings(bindings: Bindings): UnboundTransformation =
+    override fun updateBindings(bindings: Bindings): UnboundTransformation =
         copy(returnBindings = returnBindings.combine(bindings))
+
+    fun toMatchEnd(): WordMatchEnd =
+        WordMatchEnd(end.segmentIndex, returnBindings)
 
     override fun toString(): String {
         val tryResult = try {

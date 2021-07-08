@@ -41,8 +41,8 @@ expect class LscParser(input: TokenStream) : Parser {
     fun bounded(): BoundedContext
     fun group(): GroupContext
     fun list(): ListContext
-    fun sequence(): SequenceContext
     fun lookaround(): LookaroundContext
+    fun sequence(): SequenceContext
     fun freeElement(): FreeElementContext
     fun compoundEnvironment(): CompoundEnvironmentContext
     fun condition(): ConditionContext
@@ -113,8 +113,8 @@ expect open class LscBaseVisitor<T>(){
     open fun visitBounded(ctx: BoundedContext): T
     open fun visitGroup(ctx: GroupContext): T
     open fun visitList(ctx: ListContext): T
-    open fun visitSequence(ctx: SequenceContext): T
     open fun visitLookaround(ctx: LookaroundContext): T
+    open fun visitSequence(ctx: SequenceContext): T
     open fun visitFreeElement(ctx: FreeElementContext): T
     open fun visitCompoundEnvironment(ctx: CompoundEnvironmentContext): T
     open fun visitCondition(ctx: ConditionContext): T
@@ -367,13 +367,13 @@ expect class RuleElementContext : ParserRuleContext {
     fun postfix(): PostfixContext?
     fun simple(): SimpleContext?
     fun sequence(): SequenceContext?
-    fun lookaround(): LookaroundContext?
 }
 
 
 expect class BoundedContext : ParserRuleContext {
     fun group(): GroupContext?
     fun list(): ListContext?
+    fun lookaround(): LookaroundContext?
 }
 
 
@@ -391,12 +391,6 @@ expect class ListContext : ParserRuleContext {
 
 expect fun ListContext.allRuleElements(): List<RuleElementContext>
 
-expect class SequenceContext : ParserRuleContext {
-
-}
-
-expect fun SequenceContext.allFreeElements(): List<FreeElementContext>
-
 expect class LookaroundContext : ParserRuleContext {
     fun O_PAREN(): TerminalNode
     fun freeElement(): FreeElementContext
@@ -404,6 +398,12 @@ expect class LookaroundContext : ParserRuleContext {
     fun C_PAREN(): TerminalNode
 }
 
+
+expect class SequenceContext : ParserRuleContext {
+
+}
+
+expect fun SequenceContext.allFreeElements(): List<FreeElementContext>
 
 expect class FreeElementContext : ParserRuleContext {
     fun bounded(): BoundedContext?

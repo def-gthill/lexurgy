@@ -41,8 +41,8 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     actual fun bounded(): BoundedContext
     actual fun group(): GroupContext
     actual fun list(): ListContext
-    actual fun sequence(): SequenceContext
     actual fun lookaround(): LookaroundContext
+    actual fun sequence(): SequenceContext
     actual fun freeElement(): FreeElementContext
     actual fun compoundEnvironment(): CompoundEnvironmentContext
     actual fun condition(): ConditionContext
@@ -283,12 +283,12 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
         fun postfix(): PostfixContext?
         fun simple(): SimpleContext?
         fun sequence(): SequenceContext?
-        fun lookaround(): LookaroundContext?
     }
 
     class BoundedContext : ParserRuleContext {
         fun group(): GroupContext?
         fun list(): ListContext?
+        fun lookaround(): LookaroundContext?
     }
 
     class GroupContext : ParserRuleContext {
@@ -304,16 +304,16 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
         fun LIST_END(): TerminalNode
     }
 
-    class SequenceContext : ParserRuleContext {
-        fun freeElement(): Array<FreeElementContext>
-        fun WHITESPACE(): Array<TerminalNode>
-    }
-
     class LookaroundContext : ParserRuleContext {
         fun O_PAREN(): TerminalNode
         fun freeElement(): FreeElementContext
         fun compoundEnvironment(): CompoundEnvironmentContext
         fun C_PAREN(): TerminalNode
+    }
+
+    class SequenceContext : ParserRuleContext {
+        fun freeElement(): Array<FreeElementContext>
+        fun WHITESPACE(): Array<TerminalNode>
     }
 
     class FreeElementContext : ParserRuleContext {
@@ -540,8 +540,8 @@ open external class LscVisitor<T>{
     open fun visitBounded(ctx: BoundedContext): T
     open fun visitGroup(ctx: GroupContext): T
     open fun visitList(ctx: ListContext): T
-    open fun visitSequence(ctx: SequenceContext): T
     open fun visitLookaround(ctx: LookaroundContext): T
+    open fun visitSequence(ctx: SequenceContext): T
     open fun visitFreeElement(ctx: FreeElementContext): T
     open fun visitCompoundEnvironment(ctx: CompoundEnvironmentContext): T
     open fun visitCondition(ctx: ConditionContext): T
@@ -667,11 +667,11 @@ actual typealias ListContext = LscParser.ListContext
 
 actual fun ListContext.allRuleElements(): List<RuleElementContext> = ruleElement().toList()
 
+actual typealias LookaroundContext = LscParser.LookaroundContext
+
 actual typealias SequenceContext = LscParser.SequenceContext
 
 actual fun SequenceContext.allFreeElements(): List<FreeElementContext> = freeElement().toList()
-
-actual typealias LookaroundContext = LscParser.LookaroundContext
 
 actual typealias FreeElementContext = LscParser.FreeElementContext
 

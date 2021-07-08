@@ -590,7 +590,7 @@ private class Syllabification(
         val combinedSyllableModifiers =
             if (syllableBreakAtEnd() || other.syllableBreakAtStart()) {
                 syllableModifiers + other.syllableModifiers.mapKeys {
-                    it.key + numSyllables + if (syllableBreakAtEnd()) 0 else 1
+                    it.key + numSyllables
                 }
             } else {
                 val syllableOffset = numSyllables - 1
