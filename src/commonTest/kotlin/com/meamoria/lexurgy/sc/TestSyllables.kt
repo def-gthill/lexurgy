@@ -203,7 +203,7 @@ class TestSyllables : StringSpec({
                 Class vowel {a, e, i, o, u}
                 Class cons {p, t, k, s, m, n, l, r}
                 Syllables:
-                    (@cons / _ @cons)? @cons? @vowel @cons?
+                    (@cons // @vowel _)? @cons? @vowel @cons?
                 stress-penult:
                     <syl> => [+stress] / _ <syl> $
                 syncope:

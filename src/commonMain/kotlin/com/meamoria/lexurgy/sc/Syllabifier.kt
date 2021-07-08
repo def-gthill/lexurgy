@@ -13,13 +13,16 @@ class Syllabifier(
         if (patterns.isEmpty() && word.isSyllabified()) word else {
             val syllableSequence = findBestSyllableSequence(word)
             val patternMatches = syllableSequence.patternMatches
+            val newSyllableBreaks = patternMatches.dropLast(1).map { it.end }
             val newSyllableMatrices =
                 patternMatches.withIndex().filter {
                     it.value.assignedMatrix != null
                 }.associate { it.index to it.value.assignedMatrix!! }
-            val combinedSyllableModifiers = combineSyllableModifiers(word, newSyllableMatrices)
+            val combinedSyllableModifiers = combineSyllableModifiers(
+                word, newSyllableBreaks, newSyllableMatrices
+            )
             StandardWord(word.segments).withSyllabification(
-                patternMatches.dropLast(1).map { it.end },
+                newSyllableBreaks,
                 combinedSyllableModifiers,
             )
         }
@@ -50,17 +53,42 @@ class Syllabifier(
     }
 
     private fun combineSyllableModifiers(
-        word: Word, newSyllableMatrices: Map<Int, Matrix>
+        word: Word, newSyllableBreaks: List<Int>, newSyllableMatrices: Map<Int, Matrix>
     ): Map<Int, List<Modifier>> {
-        val combinedSyllableModifiers = word.syllableModifiers.toMutableMap()
-        for ((syllableNumber, assignedMatrix) in newSyllableMatrices) {
-            combinedSyllableModifiers += syllableNumber to with(declarations) {
-                (combinedSyllableModifiers[syllableNumber]?.toMatrix() ?: Matrix.EMPTY).update(
-                    assignedMatrix
-                ).toModifiers()
+        val syllableMap = findSyllableMap(word, newSyllableBreaks)
+        with(declarations) {
+            val combinedSyllableModifiers = mutableMapOf<Int, Matrix>()
+            for ((syllableNumber, modifiers) in word.syllableModifiers) {
+                val newSyllableNumber = syllableMap[syllableNumber] ?: syllableNumber
+                val existingMatrix = combinedSyllableModifiers[newSyllableNumber] ?: Matrix.EMPTY
+                val newMatrix = existingMatrix.update(modifiers.toMatrix())
+                combinedSyllableModifiers += newSyllableNumber to newMatrix
+            }
+            for ((syllableNumber, assignedMatrix) in newSyllableMatrices) {
+                val existingMatrix = combinedSyllableModifiers[syllableNumber] ?: Matrix.EMPTY
+                val newMatrix = existingMatrix.update(assignedMatrix)
+                combinedSyllableModifiers += syllableNumber to newMatrix
+            }
+            return combinedSyllableModifiers.mapValues { it.value.toModifiers() }
+        }
+    }
+
+    private fun findSyllableMap(word: Word, newSyllableBreaks: List<Int>): Map<Int, Int> {
+        if (!word.isSyllabified()) return emptyMap()
+        val result = mutableMapOf<Int, Int>()
+        val oldEnds = word.syllableBreaks + word.length
+        val newEnds = newSyllableBreaks + word.length
+        var newIndex = 0
+        for (oldIndex in oldEnds.indices) {
+            result[oldIndex] = newIndex
+            newIndex += when {
+                newIndex == newEnds.size - 1 -> 0
+                oldIndex + 1 < oldEnds.size && newEnds[newIndex] >= oldEnds[oldIndex + 1] -> 0
+                newIndex + 1 < newEnds.size && oldEnds[oldIndex] >= newEnds[newIndex + 1] -> 2
+                else -> 1
             }
         }
-        return combinedSyllableModifiers
+        return result
     }
 
     data class Pattern(val matcher: Matcher, val assignedMatrix: Matrix?)
