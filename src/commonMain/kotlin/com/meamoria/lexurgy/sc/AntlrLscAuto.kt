@@ -395,7 +395,7 @@ expect fun ListContext.allRuleElements(): List<RuleElementContext>
 
 expect class LookaroundContext : ParserRuleContext {
     fun O_PAREN(): TerminalNode
-    fun freeElement(): FreeElementContext
+    fun ruleElement(): RuleElementContext
     fun compoundEnvironment(): CompoundEnvironmentContext
     fun C_PAREN(): TerminalNode
 }

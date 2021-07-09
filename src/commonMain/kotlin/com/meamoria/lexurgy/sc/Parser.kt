@@ -373,7 +373,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     override fun visitLookaround(ctx: LookaroundContext): ParseNode =
         walkLookaround(
             ctx.getText(),
-            visit(ctx.freeElement()),
+            visit(ctx.ruleElement()),
             visit(ctx.compoundEnvironment())
         )
 

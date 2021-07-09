@@ -2534,8 +2534,8 @@ public class LscParser extends Parser {
 
 	public static class LookaroundContext extends ParserRuleContext {
 		public TerminalNode O_PAREN() { return getToken(LscParser.O_PAREN, 0); }
-		public FreeElementContext freeElement() {
-			return getRuleContext(FreeElementContext.class,0);
+		public RuleElementContext ruleElement() {
+			return getRuleContext(RuleElementContext.class,0);
 		}
 		public CompoundEnvironmentContext compoundEnvironment() {
 			return getRuleContext(CompoundEnvironmentContext.class,0);
@@ -2561,7 +2561,7 @@ public class LscParser extends Parser {
 			setState(485);
 			match(O_PAREN);
 			setState(486);
-			freeElement();
+			ruleElement();
 			setState(487);
 			compoundEnvironment();
 			setState(488);
@@ -4627,7 +4627,7 @@ public class LscParser extends Parser {
 		":\36\2\u01de\u01df\7\4\2\2\u01df\u01e1\5:\36\2\u01e0\u01de\3\2\2\2\u01e1"+
 		"\u01e4\3\2\2\2\u01e2\u01e0\3\2\2\2\u01e2\u01e3\3\2\2\2\u01e3\u01e5\3\2"+
 		"\2\2\u01e4\u01e2\3\2\2\2\u01e5\u01e6\7\21\2\2\u01e6A\3\2\2\2\u01e7\u01e8"+
-		"\7\13\2\2\u01e8\u01e9\5F$\2\u01e9\u01ea\5H%\2\u01ea\u01eb\7\f\2\2\u01eb"+
+		"\7\13\2\2\u01e8\u01e9\5:\36\2\u01e9\u01ea\5H%\2\u01ea\u01eb\7\f\2\2\u01eb"+
 		"C\3\2\2\2\u01ec\u01ef\5F$\2\u01ed\u01ee\7\n\2\2\u01ee\u01f0\5F$\2\u01ef"+
 		"\u01ed\3\2\2\2\u01f0\u01f1\3\2\2\2\u01f1\u01ef\3\2\2\2\u01f1\u01f2\3\2"+
 		"\2\2\u01f2E\3\2\2\2\u01f3\u01f9\5<\37\2\u01f4\u01f9\5V,\2\u01f5\u01f9"+

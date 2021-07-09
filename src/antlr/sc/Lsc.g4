@@ -48,7 +48,7 @@ ruleElement: bounded | intersection | negated | postfix | simple | sequence;
 bounded: group | list | lookaround;
 group: O_PAREN ruleElement C_PAREN;
 list: LIST_START ruleElement (SEP ruleElement)* LIST_END;
-lookaround: O_PAREN freeElement compoundEnvironment C_PAREN;
+lookaround: O_PAREN ruleElement compoundEnvironment C_PAREN;
 
 // "Free" elements have sub-elements floating free amid whitespace
 sequence: freeElement (WHITESPACE freeElement)+;

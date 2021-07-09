@@ -17,8 +17,8 @@ deromanizer:
     y => j
 
 Syllables:
-    @cons? @liquid? {@vowel @cons, @vowel&[+long]} => [+heavy]
-    @cons? @liquid? @vowel
+    {@cons, @liquid, (@cons @liquid // @vowel _), *} {@vowel @cons, @vowel&[+long]} => [+heavy]
+    {@cons, @liquid, (@cons @liquid // @vowel _), *} @vowel
 
 stress:
     (
