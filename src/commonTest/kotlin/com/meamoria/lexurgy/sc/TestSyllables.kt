@@ -86,7 +86,7 @@ class TestSyllables : StringSpec({
         ch("patso") shouldBe "pats.o"
     }
 
-    "Words that have been automatically syllabified should be re-syllabified after every simple rule" {
+    "Words that have been automatically syllabified should be re-syllabified after every named rule" {
         val ch = lsc(
             """
                 Class vowel {a, e, i, o, u}
@@ -208,6 +208,28 @@ class TestSyllables : StringSpec({
                     <syl> => [+stress] / _ <syl> $
                 syncope:
                     @vowel => * / _ <syl>&[+stress]
+            """.trimIndent()
+        )
+
+        ch("kamina") shouldBe "ˈkmi.na"
+        ch("arensa") shouldBe "ˈren.sa"
+    }
+
+    "We should be able to change syllable structure partway through the rules" {
+        val ch = lsc(
+            """
+                Feature (syllable) +stress
+                Diacritic ˈ (before) [+stress]
+                Class vowel {a, e, i, o, u}
+                Class cons {p, t, k, s, m, n, l, r}
+                Syllables:
+                    @cons? @vowel @cons?
+                stress-penult:
+                    <syl> => [+stress] / _ <syl> $
+                syncope:
+                    @vowel => * / _ <syl>&[+stress]
+                Syllables:
+                    (@cons // @vowel _)? @cons? @vowel @cons?
             """.trimIndent()
         )
 

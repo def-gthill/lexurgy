@@ -3,7 +3,8 @@ package com.meamoria.lexurgy.sc
 import com.meamoria.lexurgy.*
 
 class SoundChanger(
-    val declarations: Declarations,
+    val initialDeclarations: Declarations,
+    val finalDeclarations: Declarations,
     val rules: List<NamedRule>,
     val intermediateRomanizers: Map<String?, List<NamedRule>> = emptyMap()
 ) {
@@ -46,6 +47,7 @@ class SoundChanger(
         debug: (String) -> Unit = ::println,
     ): Map<String?, List<String>> {
         val debugIndices = words.withIndex().filter { it.value in debugWords }.map { it.index }
+        var declarations = initialDeclarations
         val startPhrases = words.map {
             Phrase(
                 it.split(" ").map(declarations::parsePhonetic).map(declarations::syllabify)
@@ -59,7 +61,9 @@ class SoundChanger(
         var stopped = false
 
         fun maybeReplace(realRomanizer: NamedRule): NamedRule =
-            if (romanize) realRomanizer else StandardNamedRule("fake-romanizer", EmptyRule)
+            if (romanize) realRomanizer else StandardNamedRule(
+                "fake-romanizer", initialDeclarations, EmptyRule
+            )
 
         fun runIntermediateRomanizers(ruleName: String?) {
             intermediateRomanizers[ruleName]?.forEach { rom ->
@@ -69,14 +73,25 @@ class SoundChanger(
             }
         }
 
+        fun resyllabify(rule: NamedRule?) {
+            if (rule == null) {
+                declarations = finalDeclarations
+            } else if (rule.declarations != declarations) {
+                declarations = rule.declarations
+            }
+            curPhrases = curPhrases.map { declarations.syllabify(it) }
+        }
+
         for (rule in rules) {
             if (rule.name == stopBefore) {
                 stopped = true
                 break
             }
             if (rule.ruleType == RuleType.ROMANIZER) {
+                resyllabify(null)
                 runIntermediateRomanizers(null)
             } else {
+                resyllabify(rule)
                 runIntermediateRomanizers(rule.name)
             }
             if (!started && (startAt == null || rule.name == startAt)) {
@@ -92,6 +107,7 @@ class SoundChanger(
         }
 
         if (rules.lastOrNull()?.ruleType != RuleType.ROMANIZER) {
+            resyllabify(null)
             runIntermediateRomanizers(null)
         }
 
@@ -199,6 +215,8 @@ interface NamedRule : ChangeRule {
 
     val ruleType: RuleType
 
+    val declarations: Declarations
+
     override fun invoke(phrase: Phrase): Phrase
 }
 
@@ -210,6 +228,7 @@ enum class RuleType {
 
 class StandardNamedRule(
     override val name: String,
+    override val declarations: Declarations,
     val mainBlock: ChangeRule,
     override val ruleType: RuleType = RuleType.NORMAL,
     val filter: ((Segment) -> Boolean)? = null,
@@ -280,7 +299,7 @@ class SimpleChangeRule(
             phrase.dropUntil(cursor),
             declarations::spreadRightward
         )
-        return declarations.syllabify(result)
+        return result
     }
 
     private fun filterWord(word: Word): Pair<Word, IntArray> {

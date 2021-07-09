@@ -67,40 +67,45 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     override fun visitLscFile(ctx: LscFileContext): ParseNode {
         val statementContexts = ctx.allStatements().map { it.getChild(0) as ParserRuleContext }
         validateOrder(statementContexts)
-        val (changeRules, intermediateRomanizers) = visitRulesAndIntermediateRomanizers(statementContexts)
+        val (changeRules, ruleAnchoredStatements) = visitRulesAndRuleAnchoredStatements(statementContexts)
         return walkFile(
             ctx.getText(),
             featureDeclarations = listVisit(statementContexts.filterIsInstance<FeatureDeclContext>()),
             diacriticDeclarations = listVisit(statementContexts.filterIsInstance<DiacriticDeclContext>()),
             symbolDeclarations = listVisit(statementContexts.filterIsInstance<SymbolDeclContext>()),
             classDeclarations = listVisit(statementContexts.filterIsInstance<ClassDeclContext>()),
-            syllableStructure = optionalVisit(statementContexts.filterIsInstance<SyllableDeclContext>().singleOrNull()),
+            syllableStructure = ruleAnchoredStatements.filter { it.statement is SyllableStructureNode },
             deromanizer = optionalVisit(statementContexts.filterIsInstance<DeromanizerContext>().singleOrNull()),
             changeRules = changeRules,
             romanizer = optionalVisit(statementContexts.filterIsInstance<RomanizerContext>().singleOrNull()),
-            intermediateRomanizers = intermediateRomanizers,
+            intermediateRomanizers = ruleAnchoredStatements.filter { it.statement is UnlinkedRomanizer },
         )
     }
 
-    private fun visitRulesAndIntermediateRomanizers(
+    private fun visitRulesAndRuleAnchoredStatements(
         contexts: List<ParserRuleContext>
-    ): Pair<List<ParseNode>, List<RomanizerToFollowingRule<ParseNode>>> {
+    ): Pair<List<ParseNode>, List<RuleAnchoredStatement>> {
         val changeRules = mutableListOf<ParseNode>()
-        val romanizers = mutableListOf<RomanizerToFollowingRule<ParseNode>>()
-        val curRomanizers = mutableListOf<ParseNode>()
+        val anchoredStatements = mutableListOf<RuleAnchoredStatement>()
+        val curAnchoredStatements = mutableListOf<ParseNode>()
         for (context in contexts) {
             when (context) {
-                is InterRomanizerContext -> curRomanizers += visit(context)
                 is ChangeRuleContext -> {
                     val rule = visit(context)
                     changeRules += rule
-                    romanizers.addAll(curRomanizers.map { RomanizerToFollowingRule(it, rule) })
-                    curRomanizers.clear()
+                    anchoredStatements.addAll(
+                        curAnchoredStatements.map { RuleAnchoredStatement(it, rule) }
+                    )
+                    curAnchoredStatements.clear()
                 }
+                is RomanizerContext -> Unit
+                else -> curAnchoredStatements += visit(context)
             }
         }
-        romanizers.addAll(curRomanizers.map { RomanizerToFollowingRule(it, null) })
-        return changeRules to romanizers
+        anchoredStatements.addAll(
+            curAnchoredStatements.map { RuleAnchoredStatement(it, null) }
+        )
+        return changeRules to anchoredStatements
     }
 
     private fun validateOrder(statements: List<ParserRuleContext>) {
@@ -120,8 +125,8 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         DiacriticDeclContext::class to 10,
         SymbolDeclContext::class to 10,
         ClassDeclContext::class to 30,
-        SyllableDeclContext::class to 35,
         DeromanizerContext::class to 40,
+        SyllableDeclContext::class to 50,
         ChangeRuleContext::class to 50,
         InterRomanizerContext::class to 50,
         RomanizerContext::class to 60,
@@ -132,6 +137,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         DiacriticDeclContext::class to "diacritic declarations",
         SymbolDeclContext::class to "symbol declarations",
         ClassDeclContext::class to "class declarations",
+        SyllableDeclContext::class to "syllable declarations",
         DeromanizerContext::class to "deromanizer",
         ChangeRuleContext::class to "change rules",
         InterRomanizerContext::class to "intermediate romanizers",
@@ -139,11 +145,11 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     )
 
     /**
-     * A romanizer anchored before a particular rule.
-     * If ``rule`` is null, this romanizer is after all the rules.
+     * A statement anchored before a particular rule.
+     * If ``rule`` is null, this statement is after all the rules.
      */
-    private data class RomanizerToFollowingRule<ParseNode>(
-        val romanizer: ParseNode,
+    private data class RuleAnchoredStatement(
+        val statement: ParseNode,
         val rule: ParseNode?,
     )
 
@@ -546,11 +552,11 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         diacriticDeclarations: List<ParseNode>,
         symbolDeclarations: List<ParseNode>,
         classDeclarations: List<ParseNode>,
-        syllableStructure: ParseNode?,
+        syllableStructure: List<RuleAnchoredStatement>,
         deromanizer: ParseNode?,
         changeRules: List<ParseNode>,
         romanizer: ParseNode?,
-        intermediateRomanizers: List<RomanizerToFollowingRule<ParseNode>>
+        intermediateRomanizers: List<RuleAnchoredStatement>
     ): ParseNode = SoundChangerNodeImpl(
         text,
         featureDeclarations,
@@ -987,13 +993,13 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         private val diacriticDeclarations: List<ParseNode>,
         private val symbolDeclarations: List<ParseNode>,
         private val classDeclarations: List<ParseNode>,
-        private val syllableStructure: ParseNode?,
+        private val syllableStructure: List<RuleAnchoredStatement>,
         private val deromanizer: ParseNode?,
         private val changeRules: List<ParseNode>,
         private val romanizer: ParseNode?,
-        private val intermediateRomanizers: List<RomanizerToFollowingRule<ParseNode>>,
+        private val intermediateRomanizers: List<RuleAnchoredStatement>,
     ) : BaseParseNode(text), SoundChangerNode {
-        private val declarations = Declarations(
+        private val initialDeclarations = Declarations(
             featureDeclarations.flatMap { sublist ->
                 (sublist as ParseNodeList).elements.map { (it as FeatureDeclarationNode).feature }
             },
@@ -1002,16 +1008,27 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                 (sublist as ParseNodeList).elements.map { (it as SymbolDeclarationNode).symbol }
             },
             resolveClasses(classDeclarations),
-        ).let {
-            it.withSyllabifier(
-                (syllableStructure as SyllableStructureNode?)?.syllabifier(it),
+        )
+        private val ruleToDeclarations = syllableStructure.associate {
+            (it.rule as UnlinkedRule?) to initialDeclarations.withSyllabifier(
+                (it.statement as SyllableStructureNode).syllabifier(initialDeclarations)
             )
         }
-        val allRules = listOfNotNull(deromanizer as UnlinkedRule?) +
+        private val allRules = listOfNotNull(deromanizer as UnlinkedRule?) +
                 changeRules.map { it as UnlinkedRule } +
                 listOfNotNull(romanizer as UnlinkedRule?)
-        private val linkedRules = allRules.map {
-            it.link(
+        private val realInitialDeclarations =
+            if (syllableStructure.isEmpty()) {
+                initialDeclarations
+            } else {
+                initialDeclarations.withSyllabifier(
+                    Syllabifier(initialDeclarations, emptyList())
+                )
+            }
+        private var declarations = realInitialDeclarations
+        private val linkedRules = allRules.map { rule ->
+            declarations = ruleToDeclarations[rule] ?: declarations
+            rule.link(
                 1, declarations, InheritedRuleProperties.none
             ) as NamedRule
         }
@@ -1019,14 +1036,15 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             (it.rule as UnlinkedStandardRule?)?.name
         }.mapValues { (_, value) ->
             value.map {
-                (it.romanizer as UnlinkedRomanizer).link(
+                (it.statement as UnlinkedRomanizer).link(
                     1, declarations, InheritedRuleProperties.none
                 ) as NamedRule
             }
         }
 
         override val soundChanger = SoundChanger(
-            declarations,
+            realInitialDeclarations,
+            ruleToDeclarations[null] ?: declarations,
             linkedRules,
             linkedIntermediateRomanizers,
         )
@@ -1174,10 +1192,12 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                 val subrulesWithRedeclaration =
                     listOf(subrules.first()) + Redeclaration(declarations) + subrules.drop(1)
                 return StandardNamedRule(
-                    name, SequentialBlock(subrulesWithRedeclaration), ruleType = RuleType.DEROMANIZER
+                    name, declarations, SequentialBlock(subrulesWithRedeclaration), ruleType = RuleType.DEROMANIZER
                 )
             } else {
-                StandardNamedRule(name, SequentialBlock(subrules), ruleType = RuleType.DEROMANIZER)
+                StandardNamedRule(
+                    name, declarations, SequentialBlock(subrules), ruleType = RuleType.DEROMANIZER
+                )
             }
         }
     }
@@ -1207,11 +1227,11 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                 val subrulesWithRedeclaration =
                     subrules.dropLast(1) + Redeclaration(Declarations.empty) + subrules.last()
                 return StandardNamedRule(
-                    name, SequentialBlock(subrulesWithRedeclaration), ruleType = RuleType.ROMANIZER
+                    name, declarations, SequentialBlock(subrulesWithRedeclaration), ruleType = RuleType.ROMANIZER
                 )
             } else {
                 StandardNamedRule(
-                    name, SequentialBlock(subrules), ruleType = RuleType.ROMANIZER
+                    name, declarations, SequentialBlock(subrules), ruleType = RuleType.ROMANIZER
                 )
             }
         }
@@ -1239,6 +1259,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             }
             return StandardNamedRule(
                 name,
+                declarations,
                 linkedSubrules(
                     firstExpressionNumber,
                 ) { _, subrule, subFirstExpressionNumber ->

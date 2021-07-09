@@ -12,11 +12,23 @@ Class stop {p, t, k, b, d, ɡ}
 Class liquid {r, l, w, j}
 Class cons {@stop, s, m, n, @liquid}
 
+deromanizer:
+    g => ɡ
+    y => j
+
 Syllables:
     @cons? @liquid? {@vowel @cons, @vowel&[+long]} => [+heavy]
     @cons? @liquid? @vowel
 
 stress:
-    <syl> => [primary] / _ <syl>&[-heavy] <syl>&[-heavy] $
-    Else:
-    <syl> => [primary] / _ <syl> $
+    (
+        <syl> => [primary] / _ <syl>&[-heavy] <syl>&[-heavy] $
+        Else:
+        <syl> => [primary] / _ <syl> $
+    )
+    Then:
+    (
+        <syl>&[+heavy !primary] => [secondary] / $ _
+        Else:
+        <syl>&[!primary] => [secondary] / $ <syl>&[!primary] _
+    )
