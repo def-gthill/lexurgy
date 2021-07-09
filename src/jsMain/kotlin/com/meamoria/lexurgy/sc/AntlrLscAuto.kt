@@ -247,6 +247,8 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     class BlockTypeContext : ParserRuleContext {
         fun ALL_MATCHING(): TerminalNode?
         fun FIRST_MATCHING(): TerminalNode?
+        fun WHITESPACE(): TerminalNode?
+        fun PROPAGATE(): TerminalNode?
     }
 
     class ExpressionListContext : ParserRuleContext {

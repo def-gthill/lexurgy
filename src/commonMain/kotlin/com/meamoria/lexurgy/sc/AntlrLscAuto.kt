@@ -327,6 +327,8 @@ expect class BlockElementContext : ParserRuleContext {
 expect class BlockTypeContext : ParserRuleContext {
     fun ALL_MATCHING(): TerminalNode?
     fun FIRST_MATCHING(): TerminalNode?
+    fun WHITESPACE(): TerminalNode?
+    fun PROPAGATE(): TerminalNode?
 }
 
 

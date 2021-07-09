@@ -490,6 +490,19 @@ class TestSoundChanger : StringSpec({
         ex.cause.shouldBeInstanceOf<LscDivergingPropagation>()
     }
 
+    "We should be able to propagate parts of a sequential block" {
+        val ch = lsc(
+            """
+                alternate:
+                    a => b / _ c
+                    Then propagate:
+                        c => b / b c _
+            """.trimIndent()
+        )
+
+        ch("aaaaaccccccccc") shouldBe "aaaabcbcbcbcbc"
+    }
+
     "A deromanizer should convert plain words to phonetic, and a romanizer should do the opposite" {
         val ch = lsc(
             """

@@ -304,7 +304,11 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         val blockTypes = ctx.allBlockTypes()
         if (blockTypes.isEmpty()) return visit(ctx.allBlockElements().single())
         val blockType = checkUniformBlockType(blockTypes)
-        return walkBlock(ctx.getText(), blockType, listVisit(ctx.allBlockElements()))
+        val propagateFlags = listOf(false) + blockTypes.map { it.PROPAGATE() != null }
+        val blockElements = listVisit(ctx.allBlockElements()).zip(propagateFlags) { element, propagate ->
+            if (propagate) UnlinkedPropagateBlock(element as UnlinkedRule) else element
+        }
+        return walkBlock(ctx.getText(), blockType, blockElements)
     }
 
     private fun checkUniformBlockType(blockCtxs: List<BlockTypeContext>): BlockType {
@@ -728,7 +732,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     private fun walkBlock(
         text: String,
         blockType: BlockType,
-        subrules: List<ParseNode>
+        subrules: List<ParseNode>,
     ): ParseNode =
         when (blockType) {
             BlockType.SEQUENTIAL -> UnlinkedSequentialBlock(
@@ -1257,20 +1261,20 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                     ).any { it.index == 1 }
                 }
             }
+            val subrule = linkedSubrules(
+                firstExpressionNumber,
+            ) { _, subrule, subFirstExpressionNumber ->
+                subrule.link(
+                    subFirstExpressionNumber,
+                    declarations,
+                    inherited.copy(name = name, filter = filter)
+                )
+            }.single()
             return StandardNamedRule(
                 name,
                 declarations,
-                linkedSubrules(
-                    firstExpressionNumber,
-                ) { _, subrule, subFirstExpressionNumber ->
-                    subrule.link(
-                        subFirstExpressionNumber,
-                        declarations,
-                        inherited.copy(name = name, filter = filter)
-                    )
-                }.single(),
+                if (propagate) PropagateBlock(subrule) else subrule,
                 filter = filter,
-                propagate = propagate,
             )
         }
     }
@@ -1311,6 +1315,26 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                     }
                 )
             )
+    }
+
+    private class UnlinkedPropagateBlock(
+        val subrule: UnlinkedRule,
+    ) : UnlinkedRule {
+        override val numExpressions: Int = subrule.numExpressions
+
+        override fun link(
+            firstExpressionNumber: Int,
+            declarations: Declarations,
+            inherited: InheritedRuleProperties
+        ): ChangeRule = PropagateBlock(
+            subrule.link(
+                firstExpressionNumber,
+                declarations,
+                inherited,
+            )
+        )
+
+        override val text: String = subrule.text
     }
 
     private class UnlinkedRuleExpression(

@@ -34,7 +34,7 @@ changeRuleModifier: filter | PROPAGATE;
 filter: classRef | fancyMatrix;
 block: blockElement (NEWLINE+ blockType RULE_START (WHITESPACE | NEWLINE+) blockElement)*;
 blockElement: expressionList | O_PAREN NEWLINE* block NEWLINE* C_PAREN;
-blockType: ALL_MATCHING | FIRST_MATCHING;
+blockType: (ALL_MATCHING | FIRST_MATCHING) (WHITESPACE PROPAGATE)?;
 expressionList: expression (NEWLINE+ expression)*;
 ruleName: NAME (HYPHEN (NAME | NUMBER))*;
 

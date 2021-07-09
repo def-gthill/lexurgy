@@ -232,26 +232,9 @@ class StandardNamedRule(
     val mainBlock: ChangeRule,
     override val ruleType: RuleType = RuleType.NORMAL,
     val filter: ((Segment) -> Boolean)? = null,
-    val propagate: Boolean = false,
 ) : NamedRule {
-    private val maxPropagateSteps = 100
-
-    override operator fun invoke(phrase: Phrase): Phrase {
-        if (propagate) {
-            var curPhrase = phrase
-            val steps = mutableSetOf(curPhrase)
-            for (i in 1..maxPropagateSteps) {
-                val newPhrase = mainBlock(curPhrase) ?: curPhrase
-                if (newPhrase == curPhrase) return newPhrase
-                if (newPhrase in steps) throw LscDivergingPropagation(this, phrase.string, steps.map { it.string })
-                steps += newPhrase
-                curPhrase = newPhrase
-            }
-            throw LscDivergingPropagation(this, phrase.string, steps.map { it.string }.takeLast(5))
-        } else {
-            return mainBlock(phrase) ?: phrase
-        }
-    }
+    override operator fun invoke(phrase: Phrase): Phrase =
+        mainBlock(phrase) ?: phrase
 
     override fun toString(): String = "Rule $name: $mainBlock"
 }
@@ -409,6 +392,29 @@ class WithinWordBlock(
             subrule(Phrase(it))?.single()?.also { somethingMatched = true } ?: it
         }
         return Phrase(result).takeIf { somethingMatched }
+    }
+}
+
+/**
+ * A block that runs its rule repeatedly until the phrase
+ * stops changing
+ */
+class PropagateBlock(
+    val subrule: ChangeRule
+) : ChangeRule {
+    private val maxPropagateSteps = 100
+
+    override fun invoke(phrase: Phrase): Phrase? {
+        var curPhrase = phrase
+        val steps = mutableSetOf(curPhrase)
+        for (i in 1..maxPropagateSteps) {
+            val newPhrase = subrule(curPhrase) ?: return if (i == 1) null else curPhrase
+            if (newPhrase == curPhrase) return newPhrase
+            if (newPhrase in steps) throw LscDivergingPropagation(this, phrase.string, steps.map { it.string })
+            steps += newPhrase
+            curPhrase = newPhrase
+        }
+        throw LscDivergingPropagation(this, phrase.string, steps.map { it.string }.takeLast(5))
     }
 }
 

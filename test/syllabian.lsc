@@ -32,3 +32,5 @@ stress:
         Else:
         <syl>&[!primary] => [secondary] / $ <syl>&[!primary] _
     )
+    Then propagate:
+        <syl>&[unstressed] => [secondary] / <syl>&[secondary] <syl>&[unstressed] _
