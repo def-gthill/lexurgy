@@ -13,6 +13,7 @@ Class liquid {r, l, w, j}
 Class cons {@stop, s, m, n, @liquid}
 
 deromanizer:
+    {aa, ee, ii, oo, uu} => {aː, eː, iː, oː, uː}
     g => ɡ
     y => j
 
@@ -34,3 +35,13 @@ stress:
     )
     Then propagate:
         <syl>&[unstressed] => [secondary] / <syl>&[secondary] <syl>&[unstressed] _
+
+syncope:
+    @vowel&[-long unstressed] => *
+
+Syllables:
+    (@cons // @vowel _)? @cons? @vowel @cons? @cons?
+
+drop-syllable-features:
+    <syl>&[+heavy] => [-heavy]
+    <syl>&[secondary] => [unstressed]

@@ -140,6 +140,24 @@ class TestSyllables : StringSpec({
         ch2("salamanka") shouldBe "sa.lˈa.man.ka"
     }
 
+    "<syl> should match the entirety of a one-syllable word" {
+        val ch = lsc(
+            """
+                Class vowel {a, e, i, o, u}
+                Class cons {p, t, k, s, m, n, l, r}
+                Syllables:
+                    @cons? @vowel @cons?
+                    I+ / _ $
+                tally-syllables:
+                    <syl> => I
+            """.trimIndent()
+        )
+
+        ch("kopiko") shouldBe "III"
+        ch("sampo") shouldBe "II"
+        ch("tal") shouldBe "I"
+    }
+
     "We should be able to declare and reference syllable-level features" {
         val ch = lsc(
             """
@@ -193,6 +211,22 @@ class TestSyllables : StringSpec({
         ch("pueroː") shouldBe "ˈpu¹.e¹.roː²"
         ch("wolukris") shouldBe "wo¹.ˈlu¹.ris²"
         ch("wideːre") shouldBe "wi¹.ˈdeː².re¹"
+    }
+
+    "We should be able to return syllable-level features to their default values" {
+        val ch = lsc(
+            """
+                Feature (syllable) +stress
+                Diacritic ˈ (before) [+stress]
+                Syllables:
+                    explicit
+                remove-stress:
+                    <syl>&[+stress] => [-stress]
+            """.trimIndent()
+        )
+
+        ch("ˈfu.ba") shouldBe "fu.ba"
+        ch("ka.lu.ˈma") shouldBe "ka.lu.ma"
     }
 
     "Syllable-level features should stay as close to their original sounds as possible when resyllabifying" {

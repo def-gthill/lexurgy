@@ -630,174 +630,28 @@ private class Syllabification(
                 (if (syllableBreakAtEnd()) "//" else "")
 }
 
-//
-//class SyllabifiedWord(
-//    override val segments: List<Segment>,
-//    val syllableBreaks: List<Int>,
-//    val syllableModifiers: Map<Int, List<Modifier>> = emptyMap(),
-//) : Word {
-//
-//    constructor(
-//        word: Word,
-//        syllableBreaks: List<Int>,
-//        syllableModifiers: Map<Int, List<Modifier>> = emptyMap()
-//    ) : this(word.segments, syllableBreaks, syllableModifiers)
-//
-//    override val string: String
-//        get() = syllablesAsWords.mapIndexed {
-//                i, syl -> syl.string.modify(syllableModifiers[i] ?: emptyList())
-//        }.joinToString(".")
-//
-//    override val length: Int = segments.size
-//
-//    val syllablesAsWords: List<Word>
-//        get() = syllableBreaksAndBoundaries.zipWithNext { startIndex, endIndex ->
-//            StandardWord(segments.slice(startIndex until endIndex))
-//        }
-//
-//    private val syllableBreaksAndBoundaries =
-//        (if (syllableBreakAtStart()) emptyList() else listOf(0)) +
-//                syllableBreaks +
-//                (if (syllableBreakAtEnd()) emptyList() else listOf(length))
-//
-//    private fun syllableBreakAtStart(): Boolean =
-//        syllableBreaks.firstOrNull() == 0
-//
-//    private fun syllableBreakAtEnd(): Boolean =
-//        syllableBreaks.lastOrNull() == length
-//
-//    fun modifiersAt(index: Int): List<Modifier> =
-//        syllableModifiers[syllableNumberAt(index)] ?: emptyList()
-//
-//    fun syllableNumberAt(index: Int): Int =
-//        syllableBreaks.indexOfFirst { it > index } - (if (syllableBreakAtStart()) 1 else 0)
-//
-//    override fun normalize(parser: PhoneticParser): Word =
-//        SyllabifiedWord(
-//            segments.map { it.normalizeDecompose(parser) }, syllableBreaks
-//        )
-//
-//    override fun forceReversed(): Word =
-//        SyllabifiedWord(
-//            segments.reversed(),
-//            syllableBreaks.reversed().map { length - it }
-//        )
-//
-//    override fun slice(indices: IntRange): Word =
-//        SyllabifiedWord(
-//            segments.slice(indices),
-//            syllableBreaks.filter {
-//                it >= indices.first &&
-//                        it <= indices.last + 1
-//            }.map { it - indices.first },
-//            syllableModifiers.filterKeys {
-//                it >= syllableNumberAt(indices.first) &&
-//                        it <= syllableNumberAt(indices.last)
-//            }.mapKeys { it.key - syllableNumberAt(indices.first) },
-//        )
-//
-//    override fun take(n: Int): Word =
-//        SyllabifiedWord(
-//            segments.take(n),
-//            syllableBreaks.filter { it <= n },
-//            syllableModifiers.filterKeys { it <= syllableNumberAt(n) },
-//        )
-//
-//    override fun drop(n: Int): Word =
-//        SyllabifiedWord(
-//            segments.drop(n),
-//            syllableBreaks.map { it - n }.filter { it >= 0 },
-//            syllableModifiers.mapKeys {
-//                it.key - syllableNumberAt(n)
-//            }.filterKeys { it >= 0 },
-//        )
-//
-//    override fun concat(
-//        other: Word,
-//        syllableModifierCombiner: (List<Modifier>, List<Modifier>) -> List<Modifier>
-//    ): Word =
-//        other.asSyllabified()?.let { sylOther ->
-//            var otherSyllableBreaks = sylOther.syllableBreaks.map { it + length }
-//            if (this.syllableBreakAtEnd() && sylOther.syllableBreakAtStart()) {
-//                otherSyllableBreaks = otherSyllableBreaks.drop(1)
-//            }
-//            val combinedSyllableModifiers =
-//                if(this.syllableBreakAtEnd() || sylOther.syllableBreakAtStart()) {
-//                    this.syllableModifiers + sylOther.syllableModifiers.mapKeys {
-//                        it.key + syllableBreaks.size + if (this.syllableBreakAtEnd()) 0 else 1
-//                    }
-//                } else {
-//                    (this.syllableModifiers - syllableBreaks.size) +
-//                            (syllableBreaks.size to syllableModifierCombiner(
-//                                this.syllableModifiers[syllableBreaks.size] ?: emptyList(),
-//                                sylOther.syllableModifiers[0] ?: emptyList(),
-//                            )) +
-//                            (sylOther.syllableModifiers - 0).mapKeys {
-//                                it.key + syllableBreaks.size + 1
-//                            }
-//                }
-//            SyllabifiedWord(
-//                segments + sylOther.segments,
-//                syllableBreaks + otherSyllableBreaks,
-//                combinedSyllableModifiers,
-//            )
-//        } ?: SyllabifiedWord(
-//            segments + other.segments,
-//            syllableBreaks,
-//            syllableModifiers,
-//        )
-//
-//    override fun recoverStructure(other: Word): Word =
-//        other.asSyllabified() ?: SyllabifiedWord(
-//            other.segments,
-//            syllableBreaks.filter { it <= other.length }
-//        )
-//
-//    override fun isSyllabified(): Boolean = true
-//
-//    override fun asSyllabified(): SyllabifiedWord = this
-//
-//    override fun toString(): String =
-//        syllablesAsWords.joinToString("//")
-//
-//    override fun equals(other: Any?): Boolean {
-//        if (this === other) return true
-//        if (other !is SyllabifiedWord) return false
-//        return segments == other.segments &&
-//                syllableBreaks == other.syllableBreaks
-//    }
-//
-//    override fun hashCode(): Int {
-//        var result = segments.hashCode()
-//        result = 31 * result + syllableBreaks.hashCode()
-//        return result
-//    }
-//}
-
 class PhoneticParser(
     val segments: List<String>,
-    val beforeDiacritics: List<String> = emptyList(),
-    val firstDiacritics: List<String> = emptyList(),
-    val afterDiacritics: List<String> = emptyList(),
+    val modifiers: List<Modifier>,
     val syllableSeparator: String? = null,
+    val syllableModifiers: List<Modifier> = emptyList(),
 ) {
-    private val fullDict = segments.associateWith { 0 } +
-            beforeDiacritics.associateWith { ModifierPosition.BEFORE } +
-            firstDiacritics.associateWith { ModifierPosition.FIRST } +
-            afterDiacritics.associateWith { ModifierPosition.AFTER }
+    private val fullDict = segments.associateWith { Core } +
+            modifiers.associate { it.string to SegmentModifier(it.position) } +
+            syllableModifiers.associate { it.string to SyllableModifier(it.position) }
 
     private val tree = SegmentTree(fullDict)
 
     fun parse(string: String): Word {
-        var cursor = 0
         var unparsedString = string
 
         var core: String? = null
         val diacritics = mutableListOf<Modifier>()
+        val syllableDiacritics = mutableListOf<Modifier>()
 
         val parsedSegments = mutableListOf<Segment>()
-        var syllableOffset = 0
         val syllableBreaks = mutableListOf<Int>()
+        val finalSyllableModifiers = mutableMapOf<Int, MutableList<Modifier>>()
 
         fun doneSegment() {
             parsedSegments += Segment(core!!, diacritics.toList())
@@ -805,81 +659,128 @@ class PhoneticParser(
             diacritics.clear()
         }
 
-        fun doneSyllable() {
-            syllableBreaks += cursor - syllableOffset
+        fun doneSyllable(addSyllableBreak: Boolean = true) {
+            finalSyllableModifiers.getOrPut(syllableBreaks.size) {
+                mutableListOf()
+            } += syllableDiacritics
+            if (addSyllableBreak) {
+                syllableBreaks += parsedSegments.size
+            }
+            syllableDiacritics.clear()
         }
 
-        while (cursor < string.length) {
+        while (unparsedString.isNotEmpty()) {
+            val cursor = string.length - unparsedString.length
+            val match = tree.tryMatch(unparsedString)
             if (syllableSeparator != null) {
                 if (unparsedString.startsWith(syllableSeparator)) {
                     if (core != null) doneSegment()
                     doneSyllable()
-                    cursor += syllableSeparator.length
                     unparsedString = unparsedString.drop(syllableSeparator.length)
-                    syllableOffset += syllableSeparator.length
                     continue
-                }
+                } else if (
+                    syllableDiacritics.any { it.position == ModifierPosition.AFTER } &&
+                            match?.second != SyllableModifier(ModifierPosition.AFTER)
+                ) throw DanglingDiacritic(
+                    string, cursor, match?.first ?: unparsedString.first().toString()
+                )
             }
-            val match = tree.tryMatch(unparsedString)
             if (match == null) {
                 if (core != null) doneSegment()
-                core = string[cursor].toString()
-                cursor++
+                core = unparsedString.first().toString()
                 unparsedString = unparsedString.drop(1)
             } else {
                 val (matchString, matchType) = match
                 when (matchType) {
-                    ModifierPosition.BEFORE -> {
-                        // Before diacritic
-                        if (core != null) doneSegment()
-                        val matchEnd = cursor + matchString.length
-                        if (matchEnd >= string.length)
-                            throw DanglingDiacritic(string, cursor, matchString)
-                        diacritics += Modifier(
-                            matchString,
-                            ModifierPosition.BEFORE,
-                        )
-                        cursor = matchEnd
-                        unparsedString = unparsedString.drop(matchString.length)
-                    }
-                    0 -> {
-                        // Core symbol
+                    Core -> {
                         if (core != null) doneSegment()
                         core = matchString
-                        cursor += matchString.length
                         unparsedString = unparsedString.drop(matchString.length)
                     }
-                    ModifierPosition.FIRST -> {
-                        // First-character diacritic
-                        if (core != null && core!!.length == 1) {
-                            unparsedString = core!! + unparsedString.drop(matchString.length)
-                            core = null
-                            diacritics += Modifier(matchString, ModifierPosition.FIRST)
-                        } else throw DanglingDiacritic(string, cursor, matchString)
-                    }
-                    ModifierPosition.AFTER -> {
-                        // After diacritic
-                        if (core != null) {
+                    is SegmentModifier -> when (matchType.position) {
+                        ModifierPosition.BEFORE -> {
+                            if (core != null) doneSegment()
+                            if (matchString.length >= unparsedString.length)
+                                throw DanglingDiacritic(string, cursor, matchString)
                             diacritics += Modifier(
                                 matchString,
-                                ModifierPosition.AFTER,
+                                ModifierPosition.BEFORE,
                             )
-                            cursor += matchString.length
                             unparsedString = unparsedString.drop(matchString.length)
-                        } else throw DanglingDiacritic(string, cursor, matchString)
+                        }
+                        ModifierPosition.FIRST -> {
+                            if (core != null && core!!.length == 1) {
+                                unparsedString = core!! + unparsedString.drop(matchString.length)
+                                core = null
+                                diacritics += Modifier(matchString, ModifierPosition.FIRST)
+                            } else throw DanglingDiacritic(string, cursor, matchString)
+                        }
+                        ModifierPosition.NUCLEUS -> throw AssertionError()
+                        ModifierPosition.AFTER -> {
+                            if (core != null) {
+                                diacritics += Modifier(
+                                    matchString,
+                                    ModifierPosition.AFTER,
+                                )
+                                unparsedString = unparsedString.drop(matchString.length)
+                            } else throw DanglingDiacritic(string, cursor, matchString)
+                        }
                     }
-                    else -> throw AssertionError()
+                    is SyllableModifier -> when (matchType.position) {
+                        ModifierPosition.BEFORE -> {
+                            if (core != null) doneSegment()
+                            if (cursor != syllableBreaks.lastOrNull() ?: 0)
+                                throw DanglingDiacritic(string, cursor, matchString)
+                            if (matchString.length >= unparsedString.length)
+                                throw DanglingDiacritic(string, cursor, matchString)
+                            syllableDiacritics += Modifier(
+                                matchString,
+                                ModifierPosition.BEFORE,
+                            )
+                            unparsedString = unparsedString.drop(matchString.length)
+                        }
+                        ModifierPosition.FIRST -> {
+                            if (core != null && core!!.length == 1) {
+                                unparsedString = core!! + unparsedString.drop(matchString.length)
+                                core = null
+                                syllableDiacritics += Modifier(matchString, ModifierPosition.FIRST)
+                            } else throw DanglingDiacritic(string, cursor, matchString)
+                        }
+                        ModifierPosition.NUCLEUS -> throw AssertionError()
+                        ModifierPosition.AFTER -> {
+                            if (core != null) {
+                                syllableDiacritics += Modifier(
+                                    matchString,
+                                    ModifierPosition.AFTER,
+                                )
+                                unparsedString = unparsedString.drop(matchString.length)
+                            } else throw DanglingDiacritic(string, cursor, matchString)
+                        }
+                    }
                 }
             }
         }
 
         if (core != null) doneSegment()
+        doneSyllable(addSyllableBreak = false)
+
         return if (syllableSeparator == null) {
             StandardWord(parsedSegments)
         } else {
-            StandardWord(parsedSegments).withSyllabification(syllableBreaks)
+            StandardWord(parsedSegments).withSyllabification(
+                syllableBreaks,
+                finalSyllableModifiers,
+            )
         }
     }
+
+    private sealed class MatchType
+
+    private object Core : MatchType()
+
+    private data class SegmentModifier(val position: ModifierPosition) : MatchType()
+
+    private data class SyllableModifier(val position: ModifierPosition) : MatchType()
 }
 
 class DanglingDiacritic(word: String, position: Int, diacritic: String) :

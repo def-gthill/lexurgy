@@ -86,8 +86,7 @@ class Declarations(
 
     private val phoneticParser = PhoneticParser(
         symbols.map { it.name },
-        beforeDiacritics = diacritics.filter { it.before }.map { it.name },
-        afterDiacritics = diacritics.filterNot { it.before }.map { it.name },
+        diacritics.map { it.toModifier() },
         syllableSeparator = syllabifier?.let { "." },
     )
 

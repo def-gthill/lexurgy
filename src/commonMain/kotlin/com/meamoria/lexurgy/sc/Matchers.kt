@@ -814,7 +814,7 @@ object SyllableMatcher : SimpleMatcher() {
         val syllableIndex = word.syllableBreaks.indexOf(start)
         return listOfNotNull(
                 when {
-                start == 0 && word.numSyllables == 0 -> word.length
+                start == 0 && word.numSyllables <= 1 -> word.length
                 start == 0 -> word.syllableBreaks[0]
                 syllableIndex < 0 -> null
                 syllableIndex + 1 == word.syllableBreaks.size -> word.length

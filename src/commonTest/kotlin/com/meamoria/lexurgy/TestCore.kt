@@ -47,20 +47,47 @@ class TestCore : StringSpec({
 
     "We should be able to parse a word into its segments using a PhoneticParser" {
         val segments = listOf("ᵐb", "ⁿd", "ᵑg", "ou")
-        val beforeDiacritics = listOf("ˈ")
-        val firstDiacritics = listOf("́")
-        val afterDiacritics = listOf("ʼ", "ʰ")
+        val diacritics = listOf(
+            Modifier("ˈ", ModifierPosition.BEFORE),
+            Modifier("́", ModifierPosition.FIRST),
+            Modifier("ʼ", ModifierPosition.AFTER),
+            Modifier("ʰ", ModifierPosition.AFTER),
+        )
 
         val parser = PhoneticParser(
             segments,
-            beforeDiacritics = beforeDiacritics,
-            firstDiacritics = firstDiacritics,
-            afterDiacritics = afterDiacritics,
+            modifiers = diacritics,
         )
 
         parser.parse("ⁿdapʰi") shouldBe StandardWord.fromSchematic("ⁿd/a/p)ʰ/i")
         parser.parse("tʼˈóula") shouldBe StandardWord.fromSchematic("t)ʼ/ˈ(ou|́/l/a")
         shouldThrow<DanglingDiacritic> { parser.parse("ʰana") }
         shouldThrow<DanglingDiacritic> { parser.parse("anaˈ") }
+    }
+
+    "We should be able to parse a word with syllable-level diacritics using a PhoneticParser" {
+        val segments = listOf("nʲ")
+        val diacritics = listOf(
+            Modifier("ⁿ", ModifierPosition.BEFORE),
+            Modifier("̥", ModifierPosition.FIRST),
+            Modifier("ʼ", ModifierPosition.AFTER),
+        )
+        val syllableDiacritics = listOf(
+            Modifier("ˈ", ModifierPosition.BEFORE),
+            Modifier("ʰ", ModifierPosition.FIRST),
+            Modifier("ˠ", ModifierPosition.AFTER),
+        )
+        val parser = PhoneticParser(
+            segments,
+            diacritics,
+            syllableSeparator = ".",
+            syllableModifiers = syllableDiacritics,
+        )
+
+        parser.parse("ⁿda.pʰi") shouldBe StandardWord.fromSchematic("ⁿ(d/a//p/i||ʰ")
+        parser.parse("ˈtʼou.n̥ʲaˠ") shouldBe StandardWord.fromSchematic("ˈ((t)ʼ/o/u//nʲ|̥/a))ˠ")
+        shouldThrow<DanglingDiacritic> { parser.parse("aˈn") }
+        shouldThrow<DanglingDiacritic> { parser.parse("ʰan") }
+        shouldThrow<DanglingDiacritic> { parser.parse("aˠn") }
     }
 })
