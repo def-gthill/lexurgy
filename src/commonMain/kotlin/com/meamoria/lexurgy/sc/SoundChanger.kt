@@ -270,12 +270,10 @@ class SimpleChangeRule(
             if (cursor > transformation.start) continue
             result = result.concat(
                 phrase.slice(cursor, transformation.start),
-                declarations::spreadRightward
-            )
+            ) { left, _ -> left }
             result = result.concat(
                 transformation.result,
-                declarations::spreadLeftward
-            )
+            ) { _, right -> right }
             cursor = transformation.end
         }
         result = result.concat(

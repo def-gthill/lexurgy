@@ -541,7 +541,8 @@ private class Syllabification(
 
     fun syllableNumberAt(index: Int): Int =
         if (syllableBreaks.isEmpty()) 0
-        else syllableBreaks.indexOfFirst { it > index } - (if (syllableBreakAtStart()) 1 else 0)
+        else (syllableBreaks + length).indexOfFirst { it > index } -
+                (if (syllableBreakAtStart()) 1 else 0)
 
     fun reversed(): Syllabification =
         Syllabification(
@@ -729,7 +730,7 @@ class PhoneticParser(
                     is SyllableModifier -> when (matchType.position) {
                         ModifierPosition.BEFORE -> {
                             if (core != null) doneSegment()
-                            if (cursor != syllableBreaks.lastOrNull() ?: 0)
+                            if (parsedSegments.size != syllableBreaks.lastOrNull() ?: 0)
                                 throw DanglingDiacritic(string, cursor, matchString)
                             if (matchString.length >= unparsedString.length)
                                 throw DanglingDiacritic(string, cursor, matchString)
@@ -899,6 +900,11 @@ class Phrase(val words: List<Word>) : Iterable<Word> {
 
     fun fullyReversed(): Phrase = fullyReversed
 
+    fun recoverStructure(other: Phrase): Phrase =
+        if (size == 1 && other.size == 1) {
+            Phrase(this[0].recoverStructure(other[0]))
+        } else other
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is Phrase) return false
@@ -929,9 +935,9 @@ class Phrase(val words: List<Word>) : Iterable<Word> {
     }
 }
 
-enum class WordLevel {
-    SEGMENT,
-    SYLLABLE,
-    WORD,
-    PHRASE,
+enum class WordLevel(val text: String) {
+    SEGMENT("segment"),
+    SYLLABLE("syllable"),
+    WORD("word"),
+    PHRASE("phrase"),
 }

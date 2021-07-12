@@ -180,6 +180,18 @@ class TestSyllables : StringSpec({
         ch("salamanka") shouldBe "sa.la.ˈmæn.ka"
     }
 
+    "We should get an error if we try to mix features from different levels on a diacritic" {
+        shouldThrow<LscInvalidFeatureLevel> {
+            lsc("Feature (syllable) +stress\nFeature +long\nDiacritic ˈː [+stress +long]")
+        }
+    }
+
+    "We should get an error if we try to give symbols syllable-level diacritics" {
+        shouldThrow<LscInvalidFeatureLevel> {
+            lsc("Feature (syllable) +stress\nSymbol o [+stress]")
+        }
+    }
+
     "We should be able to assign syllable-level features in the syllabification rules" {
         val ch = lsc(
             """

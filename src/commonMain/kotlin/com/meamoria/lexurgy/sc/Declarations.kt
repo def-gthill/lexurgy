@@ -63,8 +63,21 @@ class Declarations(
     private val classNameToClass = classes.associateBy { it.name }
 
     private fun checkUndefinedFeatures(matrices: List<Matrix>) {
-        for (value in matrices.flatMap { it.valueList }) {
-            (value as? SimpleValue)?.name?.toSimpleValue()
+        for (value in matrices.flatMap { it.explicitSimpleValues }) {
+            value.name.toSimpleValue()
+        }
+    }
+
+    private fun checkNonSegmentFeatures(matrices: List<Matrix>) {
+        for (value in matrices.flatMap { it.explicitSimpleValues }) {
+            if (value.wordLevel(this) != WordLevel.SEGMENT) {
+                throw LscInvalidFeatureLevel(
+                    value.name,
+                    "a symbol",
+                    value.wordLevel(this),
+                    listOf(WordLevel.SEGMENT),
+                )
+            }
         }
     }
 
@@ -84,10 +97,32 @@ class Declarations(
         return result
     }
 
+    init {
+        checkNonSegmentFeatures(symbols.map { it.matrix })
+    }
+
+    private val diacriticsByLevel = diacritics.groupBy { diacritic ->
+            val values = diacritic.matrix.explicitSimpleValues
+            val level = values.first().wordLevel(this)
+            val firstConflictingValue = values.firstOrNull { it.wordLevel(this) != level }
+            if (firstConflictingValue != null) {
+                throw LscInvalidFeatureLevel(
+                    firstConflictingValue.name,
+                    "a ${level.text}-level diacritic",
+                    firstConflictingValue.wordLevel(this),
+                    listOf(level),
+                )
+            }
+            level
+        }
+
     private val phoneticParser = PhoneticParser(
         symbols.map { it.name },
-        diacritics.map { it.toModifier() },
+        diacriticsByLevel[WordLevel.SEGMENT]?.map { it.toModifier() } ?: emptyList(),
         syllableSeparator = syllabifier?.let { "." },
+        syllableModifiers = diacriticsByLevel[WordLevel.SYLLABLE]?.map {
+            it.toModifier()
+        } ?: emptyList()
     )
 
     fun withSyllabifier(syllabifier: Syllabifier?): Declarations =
@@ -216,6 +251,10 @@ class Declarations(
         diacritics.map { it.toModifier() }
     )
 
+    /**
+     * Returns all of this matrix's values as a list, including feature variables etc.
+     * and implicit defaults
+     */
     val Matrix.fullValueList: List<MatrixValue>
         get() {
             val explicitFeatures = valueList.mapNotNull { valueToFeature[it] }.toSet()
@@ -223,12 +262,20 @@ class Declarations(
             return (valueList + implicitDefaults)
         }
 
+    /**
+     * Returns all of this matrix's values as a set, including feature variables etc.
+     * and implicit defaults
+     */
     val Matrix.fullValueSet: Set<MatrixValue>
         get() {
             matrixFullValueSetCache[this]?.let { return it }
             return fullValueList.toSet().also { matrixFullValueSetCache[this] = it }
         }
 
+    /**
+     * Returns this matrix's feature values as a set, including implicit
+     * defaults
+     */
     val Matrix.simpleValues: Set<SimpleValue>
         get() {
             matrixSimpleValueCache[this]?.let { return it }
@@ -421,6 +468,16 @@ class LscUndefinedName(val nameType: String, val undefinedName: String) :
 
 class LscDuplicateName(val nameType: String, val duplicateName: String) :
     LscUserError("The $nameType \"$duplicateName\" is defined more than once")
+
+class LscInvalidFeatureLevel(
+    val valueName: String,
+    val context: String,
+    val invalidLevel: WordLevel,
+    val allowedLevels: List<WordLevel>,
+) : LscUserError(
+    "The ${invalidLevel.text}-level value $valueName can't be used in $context; " +
+            "values must be at the level of ${allowedLevels.joinToString(" or ") { it.text }}"
+)
 
 class LscDuplicateMatrices(
     matrix: Matrix, declarationType: String, newDeclaration: String, existingDeclaration: String

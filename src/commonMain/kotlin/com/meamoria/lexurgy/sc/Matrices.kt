@@ -7,6 +7,12 @@ class Matrix(val valueList: List<MatrixValue>) {
     private val valueSet = valueList.toSet()
     private val hashCode = valueSet.hashCode()
 
+    /**
+     * Returns this matrix's explicit feature values.
+     */
+    val explicitSimpleValues: List<SimpleValue>
+        get() = valueList.filterIsInstance<SimpleValue>()
+
     fun bindVariables(bindings: Bindings): Matrix {
         var updated = false
         val values = valueList.toMutableList()

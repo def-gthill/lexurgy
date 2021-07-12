@@ -280,8 +280,16 @@ class IndependentTransformer(
         bindings: Bindings
     ): List<UnboundTransformation> {
         val claimEnds = matcher.claim(declarations, phrase, start, bindings)
+        fun result(claimEnd: PhraseIndex, finalBindings: Bindings): Phrase =
+            phrase.slice(start, claimEnd).recoverStructure(emitter.result()(finalBindings))
         return claimEnds.map { claimEnd ->
-            UnboundTransformation(order, start, claimEnd.index, emitter.result(), claimEnd.returnBindings)
+            UnboundTransformation(
+                order,
+                start,
+                claimEnd.index,
+                { finalBindings -> result(claimEnd.index, finalBindings) },
+                claimEnd.returnBindings,
+            )
         }
     }
 
