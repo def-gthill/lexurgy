@@ -122,3 +122,4 @@ hs_err_pid*
 /.idea/compiler.xml
 /.idea/misc.xml
 **/jsMain/**/Meta*
+/test/proto-syllabian_before-syncope.wli

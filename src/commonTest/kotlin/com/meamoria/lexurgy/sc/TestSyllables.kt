@@ -228,7 +228,7 @@ class TestSyllables : StringSpec({
     "We should be able to return syllable-level features to their default values" {
         val ch = lsc(
             """
-                Feature (syllable) +stress, +test
+                Feature (syllable) +stress, (syllable) +test
                 Diacritic ˈ (before) [+stress]
                 Diacritic ^ [+test]
                 Syllables:

@@ -135,14 +135,18 @@ class SyllableMatrixEmitter(val matrix: Matrix) : ConditionalEmitter {
         declarations: Declarations, matcher: SimpleMatcher, original: Word
     ): UnboundResult =
         {
-            val syllableFeatures = with(declarations) {
-                matrix.toModifiers()
-            }
-            Phrase(
-                original.toStandard().withSyllabification(
-                    emptyList(), syllableModifiers = mapOf(0 to syllableFeatures)
+            with(declarations) {
+                val originalModifiers = original.syllableModifiers
+                val newModifiers = (0 until original.numSyllables).associateWith { syllableNumber ->
+                    val originalMatrix = originalModifiers[syllableNumber]?.toMatrix() ?: Matrix.EMPTY
+                    originalMatrix.update(matrix).toModifiers()
+                }
+                Phrase(
+                    original.toStandard().withSyllabification(
+                        emptyList(), newModifiers
+                    )
                 )
-            )
+            }
         }
 
     override fun toString(): String = matrix.toString()
