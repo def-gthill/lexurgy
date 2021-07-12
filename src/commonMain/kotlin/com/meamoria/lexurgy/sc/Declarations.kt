@@ -393,12 +393,6 @@ class Declarations(
     fun List<Modifier>.toMatrix(): Matrix =
         ComplexSymbol(null, map { it.toDiacritic() }).toMatrix()
 
-    fun spreadLeftward(left: List<Modifier>, right: List<Modifier>): List<Modifier> =
-        left.toMatrix().update(right.toMatrix()).toModifiers()
-
-    fun spreadRightward(left: List<Modifier>, right: List<Modifier>): List<Modifier> =
-        spreadLeftward(right, left)
-
     companion object {
         val empty: Declarations = Declarations(emptyList(), emptyList(), emptyList(), emptyList())
     }

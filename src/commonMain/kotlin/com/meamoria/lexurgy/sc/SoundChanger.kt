@@ -278,8 +278,7 @@ class SimpleChangeRule(
         }
         result = result.concat(
             phrase.dropUntil(cursor),
-            declarations::spreadRightward
-        )
+        ) { left, _ -> left}
         return result
     }
 

@@ -36,6 +36,9 @@ stress:
     Then propagate:
         <syl>&[unstressed] => [secondary] / <syl>&[secondary] <syl>&[unstressed] _
 
+Romanizer-before-syncope:
+    unchanged
+
 syncope:
     @vowel&[-long unstressed] => *
 

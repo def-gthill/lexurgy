@@ -228,8 +228,9 @@ class TestSyllables : StringSpec({
     "We should be able to return syllable-level features to their default values" {
         val ch = lsc(
             """
-                Feature (syllable) +stress
+                Feature (syllable) +stress, +test
                 Diacritic ˈ (before) [+stress]
+                Diacritic ^ [+test]
                 Syllables:
                     explicit
                 remove-stress:
@@ -239,6 +240,8 @@ class TestSyllables : StringSpec({
 
         ch("ˈfu.ba") shouldBe "fu.ba"
         ch("ka.lu.ˈma") shouldBe "ka.lu.ma"
+        ch("con.ˈtest^") shouldBe "con.test^"
+        ch("ˈtest^") shouldBe "test^"
     }
 
     "Syllable-level features should stay as close to their original sounds as possible when resyllabifying" {
@@ -254,11 +257,15 @@ class TestSyllables : StringSpec({
                     <syl> => [+stress] / _ <syl> $
                 syncope:
                     @vowel => * / _ <syl>&[+stress]
+                final-mid-loss:
+                    {e, o} => * / _ $
             """.trimIndent()
         )
 
         ch("kamina") shouldBe "ˈkmi.na"
         ch("arensa") shouldBe "ˈren.sa"
+        ch("akamina") shouldBe "ak.ˈmi.na"
+        ch("akamine") shouldBe "ak.ˈmin"
     }
 
     "We should be able to change syllable structure partway through the rules" {
