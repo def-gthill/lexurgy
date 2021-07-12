@@ -47,4 +47,5 @@ Syllables:
 
 drop-syllable-features:
     <syl>&[+heavy] => [-heavy]
+    Then:
     <syl>&[secondary] => [unstressed]
