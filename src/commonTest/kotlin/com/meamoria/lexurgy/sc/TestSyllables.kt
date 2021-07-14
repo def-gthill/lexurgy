@@ -244,6 +244,25 @@ class TestSyllables : StringSpec({
         ch("ˈtest^") shouldBe "test^"
     }
 
+    "Syllable-level features should persist through other kind of rules" {
+        val ch = lsc(
+            """
+                Feature +long, (syllable) +stress
+                Diacritic ˈ (before) [+stress]
+                Diacritic ː [+long]
+                Syllables:
+                    explicit
+                shorten:
+                    [+long] => [-long]
+                vowel-shift:
+                    u! => y
+            """.trimIndent()
+        )
+
+        ch("ˈfoː.baːr") shouldBe "ˈfo.bar"
+        ch("ˈfu.bar") shouldBe "ˈfy.bar"
+    }
+
     "Syllable-level features should stay as close to their original sounds as possible when resyllabifying" {
         val ch = lsc(
             """

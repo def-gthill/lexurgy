@@ -114,7 +114,9 @@ class MatrixEmitter(val matrix: Matrix) : ConditionalEmitter {
                         val resultSegments = original.segments.map {
                             it.toMatrix().update(boundMatrix).toSymbol()
                         }
-                        StandardWord(resultSegments)
+                        original.recoverStructure(
+                            StandardWord(resultSegments)
+                        )
                     }
                 }
             )

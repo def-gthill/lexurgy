@@ -643,7 +643,8 @@ class PhoneticParser(
 
     private val tree = SegmentTree(fullDict)
 
-    fun parse(string: String): Word {
+    fun parse(string: String, syllabify: Boolean = true): Word {
+        val reallySyllabify = (syllableSeparator != null) && syllabify
         var unparsedString = string
 
         var core: String? = null
@@ -673,8 +674,8 @@ class PhoneticParser(
         while (unparsedString.isNotEmpty()) {
             val cursor = string.length - unparsedString.length
             val match = tree.tryMatch(unparsedString)
-            if (syllableSeparator != null) {
-                if (unparsedString.startsWith(syllableSeparator)) {
+            if (reallySyllabify) {
+                if (unparsedString.startsWith(syllableSeparator!!)) {
                     if (core != null) doneSegment()
                     doneSyllable()
                     unparsedString = unparsedString.drop(syllableSeparator.length)
@@ -765,13 +766,13 @@ class PhoneticParser(
         if (core != null) doneSegment()
         doneSyllable(addSyllableBreak = false)
 
-        return if (syllableSeparator == null) {
-            StandardWord(parsedSegments)
-        } else {
+        return if (reallySyllabify) {
             StandardWord(parsedSegments).withSyllabification(
                 syllableBreaks,
                 finalSyllableModifiers,
             )
+        } else {
+            StandardWord(parsedSegments)
         }
     }
 

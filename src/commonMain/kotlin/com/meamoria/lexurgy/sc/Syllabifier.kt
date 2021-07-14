@@ -10,7 +10,7 @@ class Syllabifier(
     val patterns: List<Pattern>,
 ) {
     fun syllabify(word: Word): Word =
-        if (patterns.isEmpty() && word.isSyllabified()) word else {
+        if (patterns.isEmpty()) word else {
             val syllableSequence = findBestSyllableSequence(word)
             val patternMatches = syllableSequence.patternMatches
             val newSyllableBreaks = patternMatches.dropLast(1).map { it.end }

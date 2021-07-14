@@ -7,10 +7,11 @@ Diacritic ˈ (before) [primary]
 Diacritic ˌ (before) [secondary]
 Diacritic ² [+heavy]
 
-Class vowel {a, e, i, o, u}
+Class vowel {a, ɛ, e, i, ɔ, o, u}
 Class stop {p, t, k, b, d, ɡ}
 Class liquid {r, l, w, j}
-Class cons {@stop, s, m, n, @liquid}
+Class nasal {m, n, ŋ}
+Class cons {@stop, s, @nasal, @liquid}
 
 deromanizer:
     {aa, ee, ii, oo, uu} => {aː, eː, iː, oː, uː}
@@ -36,11 +37,16 @@ stress:
     Then propagate:
         <syl>&[unstressed] => [secondary] / <syl>&[secondary] <syl>&[unstressed] _
 
+make-primary-stress-heavy:
+    @vowel&[primary -heavy] => [+long]
+
 Romanizer-before-syncope:
     unchanged
 
 syncope:
     @vowel&[-long unstressed] => *
+    Then:
+    @cons => * / {$ @cons _ @cons, @cons _ @cons $}
 
 Syllables:
     (@cons // @vowel _)? @cons? @vowel @cons? @cons?
@@ -49,3 +55,13 @@ drop-syllable-features:
     <syl>&[+heavy] => [-heavy]
     Then:
     <syl>&[secondary] => [unstressed]
+
+nasal-assimilation:
+    @nasal => m / _ {p, b, m}
+    @nasal => n / _ {t, d, n}
+    @nasal => ŋ / _ {k, ɡ, w, ŋ}
+
+shorten:
+    {e!, o!} => {ɛ, ɔ}
+    Then:
+    [+long] => [-long]

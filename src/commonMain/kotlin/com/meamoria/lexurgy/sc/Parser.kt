@@ -1612,12 +1612,12 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         override val publicName: String = "literal text"
 
         override fun matcher(context: RuleContext, declarations: Declarations): Matcher =
-            declarations.parsePhonetic(literalText).let {
+            declarations.parsePhonetic(literalText, syllabify = false).let {
                 if (exact) TextMatcher(it) else SymbolMatcher(it)
             }
 
         override fun emitter(declarations: Declarations): Emitter =
-            declarations.parsePhonetic(literalText).let {
+            declarations.parsePhonetic(literalText, syllabify = false).let {
                 if (exact) TextEmitter(it) else SymbolEmitter(it)
             }
     }

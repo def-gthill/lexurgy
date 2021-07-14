@@ -142,8 +142,8 @@ class Declarations(
         syllabifier ?: this.syllabifier,
     )
 
-    fun parsePhonetic(text: String): Word =
-        phoneticParser.parse(text).normalize(phoneticParser)
+    fun parsePhonetic(text: String, syllabify: Boolean = true): Word =
+        phoneticParser.parse(text, syllabify).normalize(phoneticParser)
 
     fun parsePhonetic(word: Word): Word = parsePhonetic(word.string)
 
