@@ -67,6 +67,7 @@ expect class LscParser(input: TokenStream) : Parser {
     fun absentFeature(): AbsentFeatureContext
     fun featureVariable(): FeatureVariableContext
     fun empty(): EmptyContext
+    fun sylBoundary(): SylBoundaryContext
     fun boundary(): BoundaryContext
     fun betweenWords(): BetweenWordsContext
     fun repeaterType(): RepeaterTypeContext
@@ -139,6 +140,7 @@ expect open class LscBaseVisitor<T>(){
     open fun visitAbsentFeature(ctx: AbsentFeatureContext): T
     open fun visitFeatureVariable(ctx: FeatureVariableContext): T
     open fun visitEmpty(ctx: EmptyContext): T
+    open fun visitSylBoundary(ctx: SylBoundaryContext): T
     open fun visitBoundary(ctx: BoundaryContext): T
     open fun visitBetweenWords(ctx: BetweenWordsContext): T
     open fun visitRepeaterType(ctx: RepeaterTypeContext): T
@@ -507,6 +509,7 @@ expect class SimpleContext : ParserRuleContext {
     fun captureRef(): CaptureRefContext?
     fun fancyMatrix(): FancyMatrixContext?
     fun empty(): EmptyContext?
+    fun sylBoundary(): SylBoundaryContext?
     fun boundary(): BoundaryContext?
     fun betweenWords(): BetweenWordsContext?
     fun text(): TextContext?
@@ -566,6 +569,11 @@ expect class FeatureVariableContext : ParserRuleContext {
 
 expect class EmptyContext : ParserRuleContext {
     fun NULL(): TerminalNode
+}
+
+
+expect class SylBoundaryContext : ParserRuleContext {
+    fun SYLLABLE_BOUNDARY(): TerminalNode
 }
 
 

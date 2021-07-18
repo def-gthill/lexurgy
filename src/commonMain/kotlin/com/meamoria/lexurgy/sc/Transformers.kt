@@ -311,7 +311,9 @@ class IndependentSequenceTransformer(
             val resultBits = emitter.resultBits(order, start, claimEnd)
 
             fun result(finalBindings: Bindings): Phrase =
-                Phrase.fromSubPhrases(resultBits.map { it.result(finalBindings) })
+                phrase.slice(start, claimEnd.index).recoverStructure(
+                    Phrase.fromSubPhrases(resultBits.map { it.result(finalBindings) })
+                )
             UnboundTransformation(
                 order, start, claimEnd.index, ::result,
                 claimEnd.returnBindings, resultBits,

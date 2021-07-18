@@ -77,7 +77,7 @@ capture: (bounded | negated | simple) captureRef;
 repeater: (bounded | simple) repeaterType;
 
 // "Simple" elements can't have other elements inside them
-simple: anySyllable | classRef | captureRef | fancyMatrix | empty | boundary | betweenWords | text;
+simple: anySyllable | classRef | captureRef | fancyMatrix | empty | sylBoundary | boundary | betweenWords | text;
 anySyllable: ANY_SYLLABLE;
 classRef: CLASSREF name;
 captureRef: WORD_BOUNDARY NUMBER;
@@ -89,6 +89,7 @@ absentFeature: NULL name;
 featureVariable: WORD_BOUNDARY name;
 
 empty: NULL;
+sylBoundary: SYLLABLE_BOUNDARY;
 boundary: WORD_BOUNDARY;
 betweenWords: BETWEEN_WORDS;
 repeaterType: AT_LEAST_ONE | NULL | OPTIONAL;
@@ -119,6 +120,7 @@ OPTIONAL: '?';
 HYPHEN: '-';
 RULE_START: ':';
 NEGATION: '!';
+SYLLABLE_BOUNDARY: '.';
 WORD_BOUNDARY: '$';
 BETWEEN_WORDS: '$$';
 CLASSREF: '@';
@@ -147,5 +149,5 @@ STR: ANY+;
 
 fragment CHAR: [A-Za-z0-9];
 fragment DIGIT: [0-9];
-fragment ANY: ('\\' .) | ~[ \\,=>()*[\]{}+?/\-_:!$@#&\n\r];
+fragment ANY: ('\\' .) | ~[ \\,.=>()*[\]{}+?/\-_:!$@#&\n\r];
 fragment COMMENT_START: '#';

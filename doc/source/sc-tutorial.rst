@@ -509,7 +509,7 @@ two, five, and four values respectively. With multivalent features, each value h
 rather than writing ``[+place]`` or ``[-manner]``, which wouldn't make
 sense, you have to use the names, like ``[labial nasal]``.
 
-With these definitons, you can write rules like this::
+With these definitions, you can write rules like this::
 
     Class vowel {a, e, i, o, u}
     intervocalic-lenition:

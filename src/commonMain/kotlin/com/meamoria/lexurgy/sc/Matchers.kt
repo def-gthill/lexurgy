@@ -639,6 +639,24 @@ object WordEndMatcher : SimpleMatcher() {
     override fun toString(): String = "$"
 }
 
+object SyllableBoundaryMatcher : SimpleMatcher() {
+    override fun claim(
+        declarations: Declarations,
+        word: Word,
+        start: Int,
+        bindings: Bindings
+    ): List<WordMatchEnd> =
+        if (word.isSyllabified()) {
+            if (start == 0 || start == word.length || start in word.syllableBreaks) {
+                listOf(WordMatchEnd(start, bindings))
+            } else emptyList()
+        } else emptyList()
+
+    override fun reversed(): Matcher = this
+
+    override fun toString(): String = "."
+}
+
 class CaptureReferenceMatcher(val number: Int, val isReversed: Boolean = false) : SimpleMatcher() {
     override fun claim(
         declarations: Declarations,

@@ -490,6 +490,8 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     override fun visitEmpty(ctx: EmptyContext): ParseNode = walkEmpty()
 
+    override fun visitSylBoundary(ctx: SylBoundaryContext): ParseNode = walkSyllableBoundary()
+
     override fun visitBoundary(ctx: BoundaryContext): ParseNode = walkBoundary()
 
     override fun visitBetweenWords(ctx: BetweenWordsContext): ParseNode = walkBetweenWords()
@@ -912,6 +914,8 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         )
 
     private fun walkEmpty(): ParseNode = EmptyElement
+
+    private fun walkSyllableBoundary(): ParseNode = SyllableBoundaryElement
 
     private fun walkBoundary(): ParseNode = WordBoundaryElement
 
@@ -1464,6 +1468,13 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
         override fun emitter(declarations: Declarations): Emitter =
             NeverEmitter
+    }
+
+    private object SyllableBoundaryElement : BaseParseNode("."), RuleElement {
+        override val publicName: String = "a syllable boundary"
+
+        override fun matcher(context: RuleContext, declarations: Declarations): Matcher =
+            SyllableBoundaryMatcher
     }
 
     private object WordBoundaryElement : BaseParseNode("$"), RuleElement {

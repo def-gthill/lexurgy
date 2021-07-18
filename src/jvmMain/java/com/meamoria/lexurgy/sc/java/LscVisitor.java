@@ -359,6 +359,12 @@ public interface LscVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitEmpty(LscParser.EmptyContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link LscParser#sylBoundary}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitSylBoundary(LscParser.SylBoundaryContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link LscParser#boundary}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

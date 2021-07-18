@@ -67,6 +67,7 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     actual fun absentFeature(): AbsentFeatureContext
     actual fun featureVariable(): FeatureVariableContext
     actual fun empty(): EmptyContext
+    actual fun sylBoundary(): SylBoundaryContext
     actual fun boundary(): BoundaryContext
     actual fun betweenWords(): BetweenWordsContext
     actual fun repeaterType(): RepeaterTypeContext
@@ -406,6 +407,7 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
         fun captureRef(): CaptureRefContext?
         fun fancyMatrix(): FancyMatrixContext?
         fun empty(): EmptyContext?
+        fun sylBoundary(): SylBoundaryContext?
         fun boundary(): BoundaryContext?
         fun betweenWords(): BetweenWordsContext?
         fun text(): TextContext?
@@ -457,6 +459,10 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
 
     class EmptyContext : ParserRuleContext {
         fun NULL(): TerminalNode
+    }
+
+    class SylBoundaryContext : ParserRuleContext {
+        fun SYLLABLE_BOUNDARY(): TerminalNode
     }
 
     class BoundaryContext : ParserRuleContext {
@@ -568,6 +574,7 @@ open external class LscVisitor<T>{
     open fun visitAbsentFeature(ctx: AbsentFeatureContext): T
     open fun visitFeatureVariable(ctx: FeatureVariableContext): T
     open fun visitEmpty(ctx: EmptyContext): T
+    open fun visitSylBoundary(ctx: SylBoundaryContext): T
     open fun visitBoundary(ctx: BoundaryContext): T
     open fun visitBetweenWords(ctx: BetweenWordsContext): T
     open fun visitRepeaterType(ctx: RepeaterTypeContext): T
@@ -728,6 +735,8 @@ actual typealias AbsentFeatureContext = LscParser.AbsentFeatureContext
 actual typealias FeatureVariableContext = LscParser.FeatureVariableContext
 
 actual typealias EmptyContext = LscParser.EmptyContext
+
+actual typealias SylBoundaryContext = LscParser.SylBoundaryContext
 
 actual typealias BoundaryContext = LscParser.BoundaryContext
 

@@ -360,6 +360,12 @@ LscVisitor.prototype.visitEmpty = function(ctx) {
 };
 
 
+// Visit a parse tree produced by LscParser#sylBoundary.
+LscVisitor.prototype.visitSylBoundary = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
 // Visit a parse tree produced by LscParser#boundary.
 LscVisitor.prototype.visitBoundary = function(ctx) {
   return this.visitChildren(ctx);

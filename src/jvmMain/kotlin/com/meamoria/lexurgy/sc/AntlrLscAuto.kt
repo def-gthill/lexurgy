@@ -162,6 +162,8 @@ actual typealias FeatureVariableContext = LscParser.FeatureVariableContext
 
 actual typealias EmptyContext = LscParser.EmptyContext
 
+actual typealias SylBoundaryContext = LscParser.SylBoundaryContext
+
 actual typealias BoundaryContext = LscParser.BoundaryContext
 
 actual typealias BetweenWordsContext = LscParser.BetweenWordsContext

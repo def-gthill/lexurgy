@@ -158,6 +158,38 @@ class TestSyllables : StringSpec({
         ch("tal") shouldBe "I"
     }
 
+    "The . matcher should match the edge of any syllable" {
+        val ch = lsc(
+            """
+                Feature +aspir
+                Diacritic ʰ [+aspir]
+                Class cons {p, t, k, s, m, n, l, r} 
+                Syllables:
+                    explicit
+                drop-codas:
+                    @cons => * / _ .
+                aspirate-onset:
+                    {p, t, k} => [+aspir] / . _
+            """.trimIndent()
+        )
+
+        ch("tu.kar") shouldBe "tʰu.kʰa"
+        ch("tuk.ar") shouldBe "tʰu.a"
+    }
+
+    "We should be able to use the . matcher on the input side without the syllabification being affected" {
+        val ch = lsc(
+            """
+                Syllables:
+                    explicit
+                input-syllable-boundary:
+                    a . b => e d
+            """.trimIndent()
+        )
+
+        ch("ba.ba") shouldBe "be.da"
+    }
+
     "We should be able to declare and reference syllable-level features" {
         val ch = lsc(
             """
