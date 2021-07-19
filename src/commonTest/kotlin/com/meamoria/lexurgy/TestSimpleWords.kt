@@ -59,6 +59,7 @@ class TestSimpleWords : StringSpec({
     "We should be able to concatenate simple words" {
         (banana + shine).string shouldBe "bananaschein"
         (banana + potato).string shouldBe "bananapʰóuⁿtèito"
+        (banana + shine).isSyllabified() shouldBe false
     }
 
     "We should be able to slice simple words" {

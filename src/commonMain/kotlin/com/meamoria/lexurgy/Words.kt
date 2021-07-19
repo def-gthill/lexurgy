@@ -263,10 +263,12 @@ class StandardWord private constructor(
         val otherStandard = other.toStandard()
         return StandardWord(
             segments + other.segments,
-            forcedSyllabification.concat(
-                otherStandard.forcedSyllabification,
-                syllableModifierCombiner,
-            )
+            if (isSyllabified() || other.isSyllabified()) {
+                forcedSyllabification.concat(
+                    otherStandard.forcedSyllabification,
+                    syllableModifierCombiner,
+                )
+            } else null
         )
     }
 
