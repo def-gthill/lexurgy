@@ -659,12 +659,11 @@ private class Syllabification(
     fun recoverStructure(other: Word): Word =
         if (other.isSyllabified()) other
         else {
-            // Only allow syllable breaks to be recovered at the end
-            // if the lengths are the same
-            val maxSyllableBreakPosition =
-                if (length == other.length) other.length else other.length - 1
-
-            val newSyllableBreaks = syllableBreaks.filter { it <= maxSyllableBreakPosition }
+            val newSyllableBreaks = syllableBreaks.filter { it < other.length } +
+                    if (length >= other.length && syllableBreaks.any { it >= other.length} ) {
+                        // Maintain syllable breaks if they've been pushed off the end
+                        listOf(other.length)
+                    } else emptyList()
             val newSyllableCount =
                 newSyllableBreaks.size + 1 -
                         (if (newSyllableBreaks.firstOrNull() == 0) 1 else 0)

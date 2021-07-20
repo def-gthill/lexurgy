@@ -28,6 +28,8 @@ stress:
         <syl> => [primary] / _ <syl>&[-heavy] <syl>&[-heavy] $
         Else:
         <syl> => [primary] / _ <syl> $
+        Else:
+        <syl> => [primary]
     )
     Then:
     (
@@ -72,10 +74,13 @@ nasalization:
     Then:
     {e, i, o, u}&[+nasalized] => {ɛ, e, ɔ, o}
 
+Romanizer-before-glomination:
+    unchanged
+
+glomination:
+    (@liquid / @cons _)? $$ => *
+
 stress-shift:
     <syl>&[primary] => [unstressed]
     Then:
     <syl> => [primary] / $ _
-
-glomination:
-    (@liquid / @cons _)? $$ => *
