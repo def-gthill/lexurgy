@@ -81,7 +81,7 @@ interface ConditionalEmitter : Emitter {
 object BetweenWordsEmitter :
     IndependentEmitter {
     override fun result(): UnboundResult =
-        { Phrase(StandardWord.empty, StandardWord.empty) }
+        { Phrase(StandardWord.EMPTY, StandardWord.EMPTY) }
 }
 
 class CaptureReferenceEmitter(val number: Int) : IndependentEmitter {
@@ -216,7 +216,7 @@ class TextEmitter(val text: Word) : IndependentEmitter {
 
 object EmptyEmitter : IndependentEmitter {
     override fun result(): UnboundResult =
-        { Phrase(StandardWord.empty) }
+        { Phrase(StandardWord.EMPTY) }
 
     override fun toString(): String = "*"
 }

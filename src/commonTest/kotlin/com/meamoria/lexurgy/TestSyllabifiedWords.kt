@@ -118,4 +118,28 @@ class TestSyllabifiedWords : StringSpec({
         excellent.drop(5).string shouldBe "ˈen.te"
         shine.drop(1).string shouldBe "eʰin`"
     }
+
+    "We should be able to recover structures in phrases" {
+        val plainWord = Phrase(StandardWord.fromSchematic("b/a/n/a/n/a"))
+        val plainPhrase = Phrase(
+            listOf(
+                StandardWord.fromSchematic("b/a/n/a/n/a"),
+                StandardWord.fromSchematic("sch/ei/n"),
+                StandardWord.fromSchematic("p)ʰ/ou|́/ⁿ(t/ei|̀/t/o")
+            )
+        )
+
+        Phrase(banana).recoverStructure(plainWord).string shouldBe "ba.na.na"
+        Phrase(excellent).recoverStructure(plainWord).string shouldBe "ba.na.ˈna"
+        Phrase(shine).recoverStructure(plainWord).string shouldBe "bʰanana`"
+        Phrase(endBreak).recoverStructure(plainWord).string shouldBe "ba.nana"
+        Phrase(listOf(startBreak, banana)).recoverStructure(plainWord).string shouldBe ".ba.na.na"
+        Phrase(endBreak).recoverStructure(
+            plainWord.slice(PhraseIndex(0, 0), PhraseIndex(0, 2))
+        ).string shouldBe "ba."
+        Phrase(banana).recoverStructure(plainPhrase).string shouldBe "ba.na.na schein pʰóuⁿtèito"
+        Phrase(excellent).recoverStructure(plainPhrase).string shouldBe "ba.na.ˈna ˈsch.ein pʰóuⁿtèito"
+        Phrase(shine).recoverStructure(plainPhrase).string shouldBe "bʰanana` sʰchein` pʰʰóuⁿtèito`"
+        Phrase(listOf(startBreak, banana, shine)).recoverStructure(plainPhrase).string shouldBe ".ba.na.na schei.nʰ` pʰʰóuⁿtèito`"
+    }
 })

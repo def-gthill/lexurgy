@@ -56,6 +56,10 @@ interface Word {
 
     fun drop(n: Int): Word
 
+    fun removeLeadingBreak(): Word
+
+    fun removeTrailingBreak(): Word
+
     operator fun plus(other: Word): Word = concat(other)
 
     /**
@@ -92,7 +96,7 @@ interface Word {
 
     companion object {
         fun join(words: List<Word>): Word =
-            if (words.isEmpty()) StandardWord.empty
+            if (words.isEmpty()) StandardWord.EMPTY
             else {
                 var result = words.first()
                 for (word in words.drop(1)) {
@@ -152,6 +156,12 @@ private class ReversedWord(val inner: Word) : Word {
         ReversedWord(
             inner.take(inner.length - n)
         )
+
+    override fun removeLeadingBreak(): Word =
+        ReversedWord(inner.removeTrailingBreak())
+
+    override fun removeTrailingBreak(): Word =
+        ReversedWord(inner.removeLeadingBreak())
 
     override fun concat(
         other: Word,
@@ -256,6 +266,18 @@ class StandardWord private constructor(
             syllabification?.drop(n),
         )
 
+    override fun removeLeadingBreak(): Word =
+        StandardWord(
+            segments,
+            syllabification?.removeLeadingBreak(),
+        )
+
+    override fun removeTrailingBreak(): Word =
+        StandardWord(
+            segments,
+            syllabification?.removeTrailingBreak(),
+        )
+
     override fun concat(
         other: Word,
         syllableModifierCombiner: (List<Modifier>, List<Modifier>) -> List<Modifier>
@@ -289,7 +311,10 @@ class StandardWord private constructor(
     override fun hashCode(): Int = segments.hashCode()
 
     companion object {
-        val empty: StandardWord = StandardWord(emptyList())
+        val EMPTY: StandardWord = StandardWord(emptyList())
+        val SYLLABLE_BREAK_ONLY: StandardWord = StandardWord(
+            emptyList(), Syllabification(emptyList(), listOf(0), emptyMap())
+        )
 
         fun single(segment: Segment): StandardWord =
             StandardWord(listOf(segment))
@@ -567,20 +592,38 @@ private class Syllabification(
         )
 
     fun take(n: Int): Syllabification =
-        Syllabification(
-            segments.take(n),
-            syllableBreaks.filter { it <= n },
-            syllableModifiers.filterKeys { it <= syllableNumberAt(n) },
-        )
+        when (n) {
+            0 -> EMPTY
+            length -> this
+            else -> Syllabification(
+                segments.take(n),
+                syllableBreaks.filter { it <= n },
+                syllableModifiers.filterKeys { it <= syllableNumberAt(n) },
+            )
+        }
 
     fun drop(n: Int): Syllabification =
-        Syllabification(
-            segments.drop(n),
-            syllableBreaks.map { it - n }.filter { it >= 0 },
-            syllableModifiers.mapKeys {
-                it.key - syllableNumberAt(n)
-            }.filterKeys { it >= 0 },
-        )
+        when (n) {
+            0 -> this
+            length -> EMPTY
+            else -> Syllabification(
+                segments.drop(n),
+                syllableBreaks.map { it - n }.filter { it >= 0 },
+                syllableModifiers.mapKeys {
+                    it.key - syllableNumberAt(n)
+                }.filterKeys { it >= 0 },
+            )
+        }
+
+    fun removeLeadingBreak(): Syllabification =
+        if (syllableBreakAtStart()) {
+            Syllabification(segments, syllableBreaks.drop(1), syllableModifiers)
+        } else this
+
+    fun removeTrailingBreak(): Syllabification =
+        if (syllableBreakAtEnd()) {
+            Syllabification(segments, syllableBreaks.dropLast(1), syllableModifiers)
+        } else this
 
     fun concat(
         other: Syllabification,
@@ -615,10 +658,21 @@ private class Syllabification(
 
     fun recoverStructure(other: Word): Word =
         if (other.isSyllabified()) other
-        else StandardWord(other.segments).withSyllabification(
-            syllableBreaks.filter { it <= other.length },
-            syllableModifiers.filterKeys { it <= other.numSyllables }
-        )
+        else {
+            // Only allow syllable breaks to be recovered at the end
+            // if the lengths are the same
+            val maxSyllableBreakPosition =
+                if (length == other.length) other.length else other.length - 1
+
+            val newSyllableBreaks = syllableBreaks.filter { it <= maxSyllableBreakPosition }
+            val newSyllableCount =
+                newSyllableBreaks.size + 1 -
+                        (if (newSyllableBreaks.firstOrNull() == 0) 1 else 0)
+            StandardWord(other.segments).withSyllabification(
+                newSyllableBreaks,
+                syllableModifiers.filterKeys { it < newSyllableCount }
+            )
+        }
 
     override fun toString(): String =
         (if (syllableBreakAtStart()) "//" else "") +
@@ -631,6 +685,10 @@ private class Syllabification(
                     )
                 }.joinToString("//") +
                 (if (syllableBreakAtEnd()) "//" else "")
+
+    companion object {
+        val EMPTY = Syllabification(emptyList(), emptyList(), emptyMap())
+    }
 }
 
 class PhoneticParser(
@@ -899,14 +957,44 @@ class Phrase(val words: List<Word>) : Iterable<Word> {
             )
     }
 
+    /**
+     * Joins this phrase into a single word
+     */
+    fun join(): Word = Word.join(words)
+
+    /**
+     * Joins this phrase into a single word, putting
+     * syllable breaks between the original words
+     */
+    fun joinWithSyllableBreaks(): Word {
+        var result = words[0]
+        for (word in words.drop(1)) {
+            result += StandardWord.SYLLABLE_BREAK_ONLY
+            result += word
+        }
+        return result
+    }
+
     private val fullyReversed: Phrase by lazy { Phrase(reversed().map { it.reversed() }) }
 
     fun fullyReversed(): Phrase = fullyReversed
 
     fun recoverStructure(other: Phrase): Phrase =
-        if (size == 1 && other.size == 1) {
-            Phrase(this[0].recoverStructure(other[0]))
-        } else other
+        other.resplit(joinWithSyllableBreaks().recoverStructure(other.join()))
+
+    private fun resplit(other: Word): Phrase {
+        val resultWords = mutableListOf<Word>()
+        var remaining = other
+        for (word in words) {
+            if (word.length >= remaining.length)
+                resultWords += remaining
+            else {
+                resultWords += remaining.take(word.length).removeTrailingBreak()
+                remaining = remaining.drop(word.length).removeLeadingBreak()
+            }
+        }
+        return Phrase(resultWords)
+    }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

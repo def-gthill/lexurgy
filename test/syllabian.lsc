@@ -1,8 +1,9 @@
-Feature +long
+Feature +long, +nasalized
 Feature (syllable) stress(*unstressed, primary, secondary)
 Feature (syllable) +heavy
 
 Diacritic ː (floating) [+long]
+Diacritic ̃  (floating) [+nasalized]
 Diacritic ˈ (before) [primary]
 Diacritic ˌ (before) [secondary]
 Diacritic ² [+heavy]
@@ -65,3 +66,16 @@ shorten:
     {e!, o!} => {ɛ, ɔ}
     Then:
     [+long] => [-long]
+
+nasalization:
+    @vowel @nasal => [+nasalized] * / _ @cons? .
+    Then:
+    {e, i, o, u}&[+nasalized] => {ɛ, e, ɔ, o}
+
+stress-shift:
+    <syl>&[primary] => [unstressed]
+    Then:
+    <syl> => [primary] / $ _
+
+glomination:
+    (@liquid / @cons _)? $$ => *
