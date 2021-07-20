@@ -966,14 +966,15 @@ class Phrase(val words: List<Word>) : Iterable<Word> {
      * Joins this phrase into a single word, putting
      * syllable breaks between the original words
      */
-    fun joinWithSyllableBreaks(): Word {
-        var result = words[0]
-        for (word in words.drop(1)) {
-            result += StandardWord.SYLLABLE_BREAK_ONLY
-            result += word
-        }
-        return result
-    }
+    fun joinWithSyllableBreaks(): Word =
+        if (words.any { it.isSyllabified() }) {
+            var result = words[0]
+            for (word in words.drop(1)) {
+                result += StandardWord.SYLLABLE_BREAK_ONLY
+                result += word
+            }
+            result
+        } else join()
 
     private val fullyReversed: Phrase by lazy { Phrase(reversed().map { it.reversed() }) }
 
