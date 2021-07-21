@@ -357,4 +357,27 @@ class TestSyllables : StringSpec({
         ch("kamina") shouldBe "ˈkmi.na"
         ch("arensa") shouldBe "ˈren.sa"
     }
+
+    "We should be able to remove syllabification entirely by specifying \"clear\"" {
+        val ch = lsc(
+            """
+                Feature (syllable) +stress, +vowelstress
+                Diacritic ˈ (before) [+stress]
+                Diacritic ́  (first) [+vowelstress]
+                Class vowel {a, e, i, o, u}
+                Class cons {p, t, k, s, m, n, l, r}
+                Syllables:
+                    @cons? @vowel @cons?
+                stress-penult:
+                    <syl> => [+stress] / _ <syl> $
+                stress-on-vowel:
+                    @vowel&[+stress] => [+vowelstress]
+                Syllables:
+                    clear
+            """.trimIndent()
+        )
+
+        ch("kalami") shouldBe "kalámi"
+        ch("solkan") shouldBe "sólkan"
+    }
 })

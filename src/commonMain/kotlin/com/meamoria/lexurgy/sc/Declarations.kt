@@ -437,10 +437,7 @@ data class ComplexSymbol internal constructor(
     // into something else, usually a PhoneticSegment.
     // So compute only as needed.
     val string
-        get() = (diacritics.filter { it.before }.map { it.name } +
-                listOfNotNull(symbol?.name) +
-                diacritics.filterNot { it.before }.map { it.name }
-                ).joinToString("")
+        get() = (symbol?.name ?: "").modify(diacritics.map { it.toModifier() })
 
     override fun toString(): String = string
 }
@@ -448,13 +445,13 @@ data class ComplexSymbol internal constructor(
 data class Diacritic(
     val name: String,
     val matrix: Matrix,
-    val before: Boolean,
+    val position: ModifierPosition,
     val floating: Boolean
 ) {
-    fun normalize() = Diacritic(name.normalizeDecompose(), matrix, before, floating)
+    fun normalize() = Diacritic(name.normalizeDecompose(), matrix, position, floating)
 
     fun toModifier(): Modifier =
-        Modifier(name, if (before) ModifierPosition.BEFORE else ModifierPosition.AFTER)
+        Modifier(name, position)
 }
 
 class LscUndefinedName(val nameType: String, val undefinedName: String) :

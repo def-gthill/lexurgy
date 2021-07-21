@@ -425,7 +425,7 @@ data class Modifier(val string: String, val position: ModifierPosition) {
 private fun List<Modifier>?.concat(): String =
     (this ?: emptyList()).joinToString("") { it.string }
 
-private fun String.modify(modifiers: List<Modifier>): String {
+internal fun String.modify(modifiers: List<Modifier>): String {
     val modifiersByPosition = modifiers.groupBy { it.position }
     return modifiersByPosition[ModifierPosition.BEFORE].concat() +
             (firstOrNull() ?: "") +

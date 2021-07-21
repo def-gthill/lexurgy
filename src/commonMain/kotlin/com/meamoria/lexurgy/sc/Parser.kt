@@ -194,13 +194,17 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     override fun visitDiacriticDecl(ctx: DiacriticDeclContext): ParseNode {
         val modifiers = ctx.allDiacriticModifiers()
-        val before = modifiers.any { it.DIA_BEFORE() != null }
+        val position = when {
+            modifiers.any { it.DIA_BEFORE() != null } -> ModifierPosition.BEFORE
+            modifiers.any { it.DIA_FIRST() != null } -> ModifierPosition.FIRST
+            else -> ModifierPosition.AFTER
+        }
         val floating = modifiers.any { it.DIA_FLOATING() != null }
         return walkDiacriticDeclaration(
             ctx.getText(),
             removeEscapes(ctx.text().getText()),
             visit(ctx.matrix()),
-            before,
+            position,
             floating,
         )
     }
@@ -643,12 +647,12 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         text: String,
         diacritic: String,
         matrix: ParseNode,
-        before: Boolean,
+        position: ModifierPosition,
         floating: Boolean,
     ): ParseNode =
         DiacriticDeclarationNode(
             text,
-            Diacritic(diacritic, (matrix as MatrixNode).matrix, before, floating),
+            Diacritic(diacritic, (matrix as MatrixNode).matrix, position, floating),
         )
 
     private fun walkSymbolDeclaration(

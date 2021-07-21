@@ -18,7 +18,7 @@ nullAlias: NULL featureValue;
 diacriticDecl:
     DIACRITIC WHITESPACE text WHITESPACE
     (diacriticModifier WHITESPACE)* matrix (WHITESPACE diacriticModifier)*;
-diacriticModifier: DIA_BEFORE | DIA_FLOATING;
+diacriticModifier: DIA_BEFORE | DIA_FIRST | DIA_FLOATING;
 symbolDecl: SYMBOL WHITESPACE symbolName ((SEP symbolName)* | WHITESPACE matrix);
 symbolName: text;
 
@@ -130,6 +130,7 @@ FEATURE_DECL: 'Feature' | 'feature';
 SYLLABLE_FEATURE: '(Syllable)' | '(syllable)';
 DIACRITIC: 'Diacritic' | 'diacritic';
 DIA_BEFORE: '(Before)' | '(before)';
+DIA_FIRST: '(First)' | '(first)';
 DIA_FLOATING: '(Floating)' | '(floating)';
 SYMBOL: 'Symbol' | 'symbol';
 SYLLABLE_DECL: 'Syllables';

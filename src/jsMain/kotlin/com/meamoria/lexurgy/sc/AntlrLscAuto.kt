@@ -151,6 +151,7 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
 
     class DiacriticModifierContext : ParserRuleContext {
         fun DIA_BEFORE(): TerminalNode?
+        fun DIA_FIRST(): TerminalNode?
         fun DIA_FLOATING(): TerminalNode?
     }
 

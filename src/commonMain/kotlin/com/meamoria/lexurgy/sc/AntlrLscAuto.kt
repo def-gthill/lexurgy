@@ -229,6 +229,7 @@ expect fun DiacriticDeclContext.allDiacriticModifiers(): List<DiacriticModifierC
 
 expect class DiacriticModifierContext : ParserRuleContext {
     fun DIA_BEFORE(): TerminalNode?
+    fun DIA_FIRST(): TerminalNode?
     fun DIA_FLOATING(): TerminalNode?
 }
 

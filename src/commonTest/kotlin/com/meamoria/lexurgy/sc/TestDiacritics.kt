@@ -66,6 +66,23 @@ class TestDiacritics : StringSpec({
         ch("anʰtanʰpaʰpa") shouldBe "aⁿtaⁿpaʰpa"
     }
 
+    "Diacritics declared with (first) should go after the first character of the symbol" {
+        val ch = lsc(
+            """
+                Feature +hightone
+                Diacritic ́  (first) [+hightone]
+                Symbol ou, ei
+                Class vowel {a, e, ei, i, o, ou, u}
+                hightone:
+                    @vowel => [+hightone] / _ {p, t, k}
+                    {b, d, g} => {p, t, k}
+            """.trimIndent()
+        )
+
+        ch("pakeit") shouldBe "pákéit"
+        ch("pageid") shouldBe "pakeit"
+    }
+
     "Diacritics should be able to give a diacritic feature to an undeclared symbol" {
         val ch = lsc(
             """

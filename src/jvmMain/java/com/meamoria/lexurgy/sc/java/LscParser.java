@@ -22,10 +22,10 @@ public class LscParser extends Parser {
 		LIST_START=14, LIST_END=15, AT_LEAST_ONE=16, OPTIONAL=17, HYPHEN=18, RULE_START=19, 
 		NEGATION=20, SYLLABLE_BOUNDARY=21, WORD_BOUNDARY=22, BETWEEN_WORDS=23, 
 		CLASSREF=24, INTERSECTION=25, CLASS_DECL=26, FEATURE_DECL=27, SYLLABLE_FEATURE=28, 
-		DIACRITIC=29, DIA_BEFORE=30, DIA_FLOATING=31, SYMBOL=32, SYLLABLE_DECL=33, 
-		EXPLICIT_SYLLABLES=34, ANY_SYLLABLE=35, DEROMANIZER=36, ROMANIZER=37, 
-		ALL_MATCHING=38, FIRST_MATCHING=39, PROPAGATE=40, LITERAL=41, UNCHANGED=42, 
-		NUMBER=43, NAME=44, STR1=45, STR=46;
+		DIACRITIC=29, DIA_BEFORE=30, DIA_FIRST=31, DIA_FLOATING=32, SYMBOL=33, 
+		SYLLABLE_DECL=34, EXPLICIT_SYLLABLES=35, ANY_SYLLABLE=36, DEROMANIZER=37, 
+		ROMANIZER=38, ALL_MATCHING=39, FIRST_MATCHING=40, PROPAGATE=41, LITERAL=42, 
+		UNCHANGED=43, NUMBER=44, NAME=45, STR1=46, STR=47;
 	public static final int
 		RULE_lscFile = 0, RULE_statement = 1, RULE_classDecl = 2, RULE_classElement = 3, 
 		RULE_featureDecl = 4, RULE_featureModifier = 5, RULE_plusFeature = 6, 
@@ -70,7 +70,7 @@ public class LscParser extends Parser {
 			null, null, null, null, null, null, "'_'", null, null, "'('", "')'", 
 			"'*'", "'['", "']'", "'{'", "'}'", "'+'", "'?'", "'-'", "':'", "'!'", 
 			"'.'", "'$'", "'$$'", "'@'", "'&'", null, null, null, null, null, null, 
-			null, "'Syllables'", "'explicit'"
+			null, null, "'Syllables'", "'explicit'"
 		};
 	}
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
@@ -81,7 +81,7 @@ public class LscParser extends Parser {
 			"MATRIX_END", "LIST_START", "LIST_END", "AT_LEAST_ONE", "OPTIONAL", "HYPHEN", 
 			"RULE_START", "NEGATION", "SYLLABLE_BOUNDARY", "WORD_BOUNDARY", "BETWEEN_WORDS", 
 			"CLASSREF", "INTERSECTION", "CLASS_DECL", "FEATURE_DECL", "SYLLABLE_FEATURE", 
-			"DIACRITIC", "DIA_BEFORE", "DIA_FLOATING", "SYMBOL", "SYLLABLE_DECL", 
+			"DIACRITIC", "DIA_BEFORE", "DIA_FIRST", "DIA_FLOATING", "SYMBOL", "SYLLABLE_DECL", 
 			"EXPLICIT_SYLLABLES", "ANY_SYLLABLE", "DEROMANIZER", "ROMANIZER", "ALL_MATCHING", 
 			"FIRST_MATCHING", "PROPAGATE", "LITERAL", "UNCHANGED", "NUMBER", "NAME", 
 			"STR1", "STR"
@@ -883,7 +883,7 @@ public class LscParser extends Parser {
 			setState(257);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			while (_la==DIA_BEFORE || _la==DIA_FLOATING) {
+			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << DIA_BEFORE) | (1L << DIA_FIRST) | (1L << DIA_FLOATING))) != 0)) {
 				{
 				{
 				setState(252);
@@ -929,6 +929,7 @@ public class LscParser extends Parser {
 
 	public static class DiacriticModifierContext extends ParserRuleContext {
 		public TerminalNode DIA_BEFORE() { return getToken(LscParser.DIA_BEFORE, 0); }
+		public TerminalNode DIA_FIRST() { return getToken(LscParser.DIA_FIRST, 0); }
 		public TerminalNode DIA_FLOATING() { return getToken(LscParser.DIA_FLOATING, 0); }
 		public DiacriticModifierContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -950,7 +951,7 @@ public class LscParser extends Parser {
 			{
 			setState(268);
 			_la = _input.LA(1);
-			if ( !(_la==DIA_BEFORE || _la==DIA_FLOATING) ) {
+			if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << DIA_BEFORE) | (1L << DIA_FIRST) | (1L << DIA_FLOATING))) != 0)) ) {
 			_errHandler.recoverInline(this);
 			}
 			else {
@@ -4493,7 +4494,7 @@ public class LscParser extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3\60\u02a2\4\2\t\2"+
+		"\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3\61\u02a2\4\2\t\2"+
 		"\4\3\t\3\4\4\t\4\4\5\t\5\4\6\t\6\4\7\t\7\4\b\t\b\4\t\t\t\4\n\t\n\4\13"+
 		"\t\13\4\f\t\f\4\r\t\r\4\16\t\16\4\17\t\17\4\20\t\20\4\21\t\21\4\22\t\22"+
 		"\4\23\t\23\4\24\t\24\4\25\t\25\4\26\t\26\4\27\t\27\4\30\t\30\4\31\t\31"+
@@ -4545,8 +4546,8 @@ public class LscParser extends Parser {
 		"@\u0288\n@\3@\3@\7@\u028c\n@\f@\16@\u028f\13@\3@\3@\3A\3A\5A\u0295\nA"+
 		"\3B\3B\3B\3C\3C\3D\3D\3E\3E\5E\u02a0\nE\3E\2\2F\2\4\6\b\n\f\16\20\22\24"+
 		"\26\30\32\34\36 \"$&(*,.\60\62\64\668:<>@BDFHJLNPRTVXZ\\^`bdfhjlnprtv"+
-		"xz|~\u0080\u0082\u0084\u0086\u0088\2\b\3\2 !\3\2()\3\2-.\4\2\r\r\22\23"+
-		"\4\2\22\22\24\24\3\2.\60\2\u02c5\2\u00a6\3\2\2\2\4\u00b1\3\2\2\2\6\u00b3"+
+		"xz|~\u0080\u0082\u0084\u0086\u0088\2\b\3\2 \"\3\2)*\3\2./\4\2\r\r\22\23"+
+		"\4\2\22\22\24\24\3\2/\61\2\u02c5\2\u00a6\3\2\2\2\4\u00b1\3\2\2\2\6\u00b3"+
 		"\3\2\2\2\b\u00c4\3\2\2\2\n\u00c6\3\2\2\2\f\u00eb\3\2\2\2\16\u00f0\3\2"+
 		"\2\2\20\u00f7\3\2\2\2\22\u00fa\3\2\2\2\24\u010e\3\2\2\2\26\u0110\3\2\2"+
 		"\2\30\u011e\3\2\2\2\32\u0120\3\2\2\2\34\u0134\3\2\2\2\36\u013b\3\2\2\2"+
@@ -4607,30 +4608,30 @@ public class LscParser extends Parser {
 		"\u0103\3\2\2\2\u0106\u010b\5~@\2\u0107\u0108\7\n\2\2\u0108\u010a\5\24"+
 		"\13\2\u0109\u0107\3\2\2\2\u010a\u010d\3\2\2\2\u010b\u0109\3\2\2\2\u010b"+
 		"\u010c\3\2\2\2\u010c\23\3\2\2\2\u010d\u010b\3\2\2\2\u010e\u010f\t\2\2"+
-		"\2\u010f\25\3\2\2\2\u0110\u0111\7\"\2\2\u0111\u0112\7\n\2\2\u0112\u011c"+
+		"\2\u010f\25\3\2\2\2\u0110\u0111\7#\2\2\u0111\u0112\7\n\2\2\u0112\u011c"+
 		"\5\30\r\2\u0113\u0114\7\4\2\2\u0114\u0116\5\30\r\2\u0115\u0113\3\2\2\2"+
 		"\u0116\u0119\3\2\2\2\u0117\u0115\3\2\2\2\u0117\u0118\3\2\2\2\u0118\u011d"+
 		"\3\2\2\2\u0119\u0117\3\2\2\2\u011a\u011b\7\n\2\2\u011b\u011d\5~@\2\u011c"+
 		"\u0117\3\2\2\2\u011c\u011a\3\2\2\2\u011d\27\3\2\2\2\u011e\u011f\5\u0088"+
-		"E\2\u011f\31\3\2\2\2\u0120\u0121\7#\2\2\u0121\u0132\7\25\2\2\u0122\u0124"+
+		"E\2\u011f\31\3\2\2\2\u0120\u0121\7$\2\2\u0121\u0132\7\25\2\2\u0122\u0124"+
 		"\7\t\2\2\u0123\u0122\3\2\2\2\u0124\u0125\3\2\2\2\u0125\u0123\3\2\2\2\u0125"+
-		"\u0126\3\2\2\2\u0126\u0127\3\2\2\2\u0127\u0133\7$\2\2\u0128\u012a\7\t"+
+		"\u0126\3\2\2\2\u0126\u0127\3\2\2\2\u0127\u0133\7%\2\2\u0128\u012a\7\t"+
 		"\2\2\u0129\u0128\3\2\2\2\u012a\u012b\3\2\2\2\u012b\u0129\3\2\2\2\u012b"+
 		"\u012c\3\2\2\2\u012c\u012d\3\2\2\2\u012d\u012f\5\34\17\2\u012e\u0129\3"+
 		"\2\2\2\u012f\u0130\3\2\2\2\u0130\u012e\3\2\2\2\u0130\u0131\3\2\2\2\u0131"+
 		"\u0133\3\2\2\2\u0132\u0123\3\2\2\2\u0132\u012e\3\2\2\2\u0133\33\3\2\2"+
 		"\2\u0134\u0137\5:\36\2\u0135\u0136\7\5\2\2\u0136\u0138\5~@\2\u0137\u0135"+
 		"\3\2\2\2\u0137\u0138\3\2\2\2\u0138\u0139\3\2\2\2\u0139\u013a\5H%\2\u013a"+
-		"\35\3\2\2\2\u013b\u013e\7&\2\2\u013c\u013d\7\n\2\2\u013d\u013f\7+\2\2"+
+		"\35\3\2\2\2\u013b\u013e\7\'\2\2\u013c\u013d\7\n\2\2\u013d\u013f\7,\2\2"+
 		"\u013e\u013c\3\2\2\2\u013e\u013f\3\2\2\2\u013f\u0140\3\2\2\2\u0140\u0142"+
 		"\7\25\2\2\u0141\u0143\7\t\2\2\u0142\u0141\3\2\2\2\u0143\u0144\3\2\2\2"+
 		"\u0144\u0142\3\2\2\2\u0144\u0145\3\2\2\2\u0145\u0146\3\2\2\2\u0146\u0147"+
-		"\5*\26\2\u0147\37\3\2\2\2\u0148\u014b\7\'\2\2\u0149\u014a\7\n\2\2\u014a"+
-		"\u014c\7+\2\2\u014b\u0149\3\2\2\2\u014b\u014c\3\2\2\2\u014c\u014d\3\2"+
+		"\5*\26\2\u0147\37\3\2\2\2\u0148\u014b\7(\2\2\u0149\u014a\7\n\2\2\u014a"+
+		"\u014c\7,\2\2\u014b\u0149\3\2\2\2\u014b\u014c\3\2\2\2\u014c\u014d\3\2"+
 		"\2\2\u014d\u014f\7\25\2\2\u014e\u0150\7\t\2\2\u014f\u014e\3\2\2\2\u0150"+
 		"\u0151\3\2\2\2\u0151\u014f\3\2\2\2\u0151\u0152\3\2\2\2\u0152\u0153\3\2"+
-		"\2\2\u0153\u0154\5*\26\2\u0154!\3\2\2\2\u0155\u0156\7\'\2\2\u0156\u0157"+
-		"\7\24\2\2\u0157\u015a\5\62\32\2\u0158\u0159\7\n\2\2\u0159\u015b\7+\2\2"+
+		"\2\2\u0153\u0154\5*\26\2\u0154!\3\2\2\2\u0155\u0156\7(\2\2\u0156\u0157"+
+		"\7\24\2\2\u0157\u015a\5\62\32\2\u0158\u0159\7\n\2\2\u0159\u015b\7,\2\2"+
 		"\u015a\u0158\3\2\2\2\u015a\u015b\3\2\2\2\u015b\u015c\3\2\2\2\u015c\u015e"+
 		"\7\25\2\2\u015d\u015f\7\t\2\2\u015e\u015d\3\2\2\2\u015f\u0160\3\2\2\2"+
 		"\u0160\u015e\3\2\2\2\u0160\u0161\3\2\2\2\u0161\u0162\3\2\2\2\u0162\u0163"+
@@ -4640,7 +4641,7 @@ public class LscParser extends Parser {
 		"\u016e\7\25\2\2\u016d\u016c\3\2\2\2\u016d\u016e\3\2\2\2\u016e\u0170\3"+
 		"\2\2\2\u016f\u0171\7\t\2\2\u0170\u016f\3\2\2\2\u0171\u0172\3\2\2\2\u0172"+
 		"\u0170\3\2\2\2\u0172\u0173\3\2\2\2\u0173\u0174\3\2\2\2\u0174\u0175\5*"+
-		"\26\2\u0175%\3\2\2\2\u0176\u0179\5(\25\2\u0177\u0179\7*\2\2\u0178\u0176"+
+		"\26\2\u0175%\3\2\2\2\u0176\u0179\5(\25\2\u0177\u0179\7+\2\2\u0178\u0176"+
 		"\3\2\2\2\u0178\u0177\3\2\2\2\u0179\'\3\2\2\2\u017a\u017d\5f\64\2\u017b"+
 		"\u017d\5j\66\2\u017c\u017a\3\2\2\2\u017c\u017b\3\2\2\2\u017d)\3\2\2\2"+
 		"\u017e\u0192\5,\27\2\u017f\u0181\7\t\2\2\u0180\u017f\3\2\2\2\u0181\u0182"+
@@ -4657,14 +4658,14 @@ public class LscParser extends Parser {
 		"\u01a3\3\2\2\2\u01a1\u019f\3\2\2\2\u01a1\u01a2\3\2\2\2\u01a2\u01a4\3\2"+
 		"\2\2\u01a3\u01a1\3\2\2\2\u01a4\u01a5\7\f\2\2\u01a5\u01a7\3\2\2\2\u01a6"+
 		"\u0195\3\2\2\2\u01a6\u0196\3\2\2\2\u01a7-\3\2\2\2\u01a8\u01ab\t\3\2\2"+
-		"\u01a9\u01aa\7\n\2\2\u01aa\u01ac\7*\2\2\u01ab\u01a9\3\2\2\2\u01ab\u01ac"+
+		"\u01a9\u01aa\7\n\2\2\u01aa\u01ac\7+\2\2\u01ab\u01a9\3\2\2\2\u01ab\u01ac"+
 		"\3\2\2\2\u01ac/\3\2\2\2\u01ad\u01b6\5\64\33\2\u01ae\u01b0\7\t\2\2\u01af"+
 		"\u01ae\3\2\2\2\u01b0\u01b1\3\2\2\2\u01b1\u01af\3\2\2\2\u01b1\u01b2\3\2"+
 		"\2\2\u01b2\u01b3\3\2\2\2\u01b3\u01b5\5\64\33\2\u01b4\u01af\3\2\2\2\u01b5"+
 		"\u01b8\3\2\2\2\u01b6\u01b4\3\2\2\2\u01b6\u01b7\3\2\2\2\u01b7\61\3\2\2"+
-		"\2\u01b8\u01b6\3\2\2\2\u01b9\u01be\7.\2\2\u01ba\u01bb\7\24\2\2\u01bb\u01bd"+
+		"\2\u01b8\u01b6\3\2\2\2\u01b9\u01be\7/\2\2\u01ba\u01bb\7\24\2\2\u01bb\u01bd"+
 		"\t\4\2\2\u01bc\u01ba\3\2\2\2\u01bd\u01c0\3\2\2\2\u01be\u01bc\3\2\2\2\u01be"+
-		"\u01bf\3\2\2\2\u01bf\63\3\2\2\2\u01c0\u01be\3\2\2\2\u01c1\u01c8\7,\2\2"+
+		"\u01bf\3\2\2\2\u01bf\63\3\2\2\2\u01c0\u01be\3\2\2\2\u01c1\u01c8\7-\2\2"+
 		"\u01c2\u01c3\5\66\34\2\u01c3\u01c4\7\5\2\2\u01c4\u01c5\58\35\2\u01c5\u01c6"+
 		"\5H%\2\u01c6\u01c8\3\2\2\2\u01c7\u01c1\3\2\2\2\u01c7\u01c2\3\2\2\2\u01c8"+
 		"\65\3\2\2\2\u01c9\u01ca\5:\36\2\u01ca\67\3\2\2\2\u01cb\u01cc\5:\36\2\u01cc"+
@@ -4715,9 +4716,9 @@ public class LscParser extends Parser {
 		"\u0255\5z>\2\u0253\u0255\5\u0088E\2\u0254\u024b\3\2\2\2\u0254\u024c\3"+
 		"\2\2\2\u0254\u024d\3\2\2\2\u0254\u024e\3\2\2\2\u0254\u024f\3\2\2\2\u0254"+
 		"\u0250\3\2\2\2\u0254\u0251\3\2\2\2\u0254\u0252\3\2\2\2\u0254\u0253\3\2"+
-		"\2\2\u0255c\3\2\2\2\u0256\u0257\7%\2\2\u0257e\3\2\2\2\u0258\u0259\7\32"+
+		"\2\2\u0255c\3\2\2\2\u0256\u0257\7&\2\2\u0257e\3\2\2\2\u0258\u0259\7\32"+
 		"\2\2\u0259\u025a\5\u0086D\2\u025ag\3\2\2\2\u025b\u025c\7\30\2\2\u025c"+
-		"\u025d\7-\2\2\u025di\3\2\2\2\u025e\u0260\7\16\2\2\u025f\u0261\5l\67\2"+
+		"\u025d\7.\2\2\u025di\3\2\2\2\u025e\u0260\7\16\2\2\u025f\u0261\5l\67\2"+
 		"\u0260\u025f\3\2\2\2\u0260\u0261\3\2\2\2\u0261\u0266\3\2\2\2\u0262\u0263"+
 		"\7\n\2\2\u0263\u0265\5l\67\2\u0264\u0262\3\2\2\2\u0265\u0268\3\2\2\2\u0266"+
 		"\u0264\3\2\2\2\u0266\u0267\3\2\2\2\u0267\u0269\3\2\2\2\u0268\u0266\3\2"+
@@ -4737,7 +4738,7 @@ public class LscParser extends Parser {
 		"\u0295\5\u0082B\2\u0293\u0295\5\u0084C\2\u0294\u0292\3\2\2\2\u0294\u0293"+
 		"\3\2\2\2\u0295\u0081\3\2\2\2\u0296\u0297\t\6\2\2\u0297\u0298\5\u0086D"+
 		"\2\u0298\u0083\3\2\2\2\u0299\u029a\5\u0086D\2\u029a\u0085\3\2\2\2\u029b"+
-		"\u029c\7.\2\2\u029c\u0087\3\2\2\2\u029d\u029f\t\7\2\2\u029e\u02a0\7\26"+
+		"\u029c\7/\2\2\u029c\u0087\3\2\2\2\u029d\u029f\t\7\2\2\u029e\u02a0\7\26"+
 		"\2\2\u029f\u029e\3\2\2\2\u029f\u02a0\3\2\2\2\u02a0\u0089\3\2\2\2N\u008e"+
 		"\u0092\u0097\u009c\u00a2\u00a6\u00b1\u00bd\u00c4\u00cd\u00d3\u00d7\u00dd"+
 		"\u00e4\u00e9\u00f0\u00f3\u0103\u010b\u0117\u011c\u0125\u012b\u0130\u0132"+

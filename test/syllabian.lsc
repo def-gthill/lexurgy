@@ -84,3 +84,6 @@ stress-shift:
     <syl>&[primary] => [unstressed]
     Then:
     <syl> => [primary] / $ _
+
+Syllables:
+    clear
