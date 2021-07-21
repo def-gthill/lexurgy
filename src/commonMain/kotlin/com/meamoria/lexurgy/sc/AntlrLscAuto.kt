@@ -250,6 +250,7 @@ expect class SyllableDeclContext : ParserRuleContext {
     fun SYLLABLE_DECL(): TerminalNode
     fun RULE_START(): TerminalNode
     fun EXPLICIT_SYLLABLES(): TerminalNode?
+    fun CLEAR_SYLLABLES(): TerminalNode?
 }
 
 expect fun SyllableDeclContext.allSyllablePatterns(): List<SyllablePatternContext>

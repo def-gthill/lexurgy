@@ -223,7 +223,8 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     override fun visitSyllableDecl(ctx: SyllableDeclContext): ParseNode =
         walkSyllableDecl(
             ctx.getText(),
-            listVisit(ctx.allSyllablePatterns()),
+            if (ctx.CLEAR_SYLLABLES() != null) null
+            else listVisit(ctx.allSyllablePatterns()),
         )
 
     override fun visitSyllablePattern(ctx: SyllablePatternContext): ParseNode =
@@ -667,9 +668,9 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     private fun walkSyllableDecl(
         text: String,
-        patterns: List<ParseNode>,
+        patterns: List<ParseNode>?,
     ): ParseNode =
-        SyllableStructureNode(text, patterns.map { it as SyllablePatternNode })
+        SyllableStructureNode(text, patterns?.map { it as SyllablePatternNode })
 
     private fun walkSyllablePattern(
         text: String,
@@ -1090,13 +1091,15 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     private class SyllableStructureNode(
         text: String,
-        val patterns: List<SyllablePatternNode>,
+        val patterns: List<SyllablePatternNode>?,
     ) : BaseParseNode(text) {
-        fun syllabifier(declarations: Declarations): Syllabifier =
-            Syllabifier(
-                declarations,
-                patterns.map { it.syllabifierPattern(declarations) }
-            )
+        fun syllabifier(declarations: Declarations): Syllabifier? =
+            patterns?.let { notNullPatterns ->
+                Syllabifier(
+                    declarations,
+                    notNullPatterns.map { it.syllabifierPattern(declarations) }
+                )
+            }
     }
 
     private class SyllablePatternNode(

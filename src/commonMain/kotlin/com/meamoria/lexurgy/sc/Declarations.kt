@@ -148,7 +148,7 @@ class Declarations(
     fun parsePhonetic(word: Word): Word = parsePhonetic(word.string)
 
     fun syllabify(word: Word): Word =
-        syllabifier?.syllabify(word) ?: word
+        syllabifier?.syllabify(word) ?: word.toSimple()
 
     fun syllabify(phrase: Phrase): Phrase =
         Phrase(phrase.map(::syllabify))
