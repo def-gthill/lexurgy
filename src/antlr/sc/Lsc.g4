@@ -22,7 +22,8 @@ diacriticModifier: DIA_BEFORE | DIA_FIRST | DIA_FLOATING;
 symbolDecl: SYMBOL WHITESPACE symbolName ((SEP symbolName)* | WHITESPACE matrix);
 symbolName: text;
 
-syllableDecl: SYLLABLE_DECL RULE_START (NEWLINE+ EXPLICIT_SYLLABLES | (NEWLINE+ syllablePattern)+);
+syllableDecl:
+    SYLLABLE_DECL RULE_START (NEWLINE+ (EXPLICIT_SYLLABLES | CLEAR_SYLLABLES) | (NEWLINE+ syllablePattern)+);
 syllablePattern: ruleElement (CHANGE matrix)? compoundEnvironment;
 
 deromanizer: DEROMANIZER (WHITESPACE LITERAL)? RULE_START NEWLINE+ block;
@@ -135,6 +136,7 @@ DIA_FLOATING: '(Floating)' | '(floating)';
 SYMBOL: 'Symbol' | 'symbol';
 SYLLABLE_DECL: 'Syllables';
 EXPLICIT_SYLLABLES: 'explicit';
+CLEAR_SYLLABLES: 'clear';
 ANY_SYLLABLE: '<Syl>' | '<syl>';
 DEROMANIZER: 'Deromanizer' | 'deromanizer';
 ROMANIZER: 'Romanizer' | 'romanizer';

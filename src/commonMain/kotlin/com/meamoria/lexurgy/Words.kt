@@ -87,6 +87,11 @@ interface Word {
     fun isSyllabified(): Boolean
 
     /**
+     * Returns a word with just this word's segments (no structure)
+     */
+    fun toSimple(): Word
+
+    /**
      * Returns the word represented by this ``Word`` as
      * a plain string (as per ``string``) but with the
      * specified segment made prominent
@@ -183,6 +188,8 @@ private class ReversedWord(val inner: Word) : Word {
         }
 
     override fun isSyllabified(): Boolean = inner.isSyllabified()
+
+    override fun toSimple(): Word = ReversedWord(inner.toSimple())
 
     override fun toString(): String =
         force().toString() + " (reversed)"
@@ -298,6 +305,8 @@ class StandardWord private constructor(
         syllabification?.recoverStructure(other) ?: other
 
     override fun isSyllabified(): Boolean = syllabification != null
+
+    override fun toSimple(): Word = StandardWord(segments)
 
     override fun toString(): String =
         syllabification?.toString() ?: segments.joinToString(separator = "/")

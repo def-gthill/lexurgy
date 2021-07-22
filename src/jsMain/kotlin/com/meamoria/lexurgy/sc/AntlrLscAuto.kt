@@ -172,6 +172,7 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
         fun RULE_START(): TerminalNode
         fun NEWLINE(): Array<TerminalNode>
         fun EXPLICIT_SYLLABLES(): TerminalNode?
+        fun CLEAR_SYLLABLES(): TerminalNode?
         fun syllablePattern(): Array<SyllablePatternContext>
     }
 
