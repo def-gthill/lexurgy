@@ -375,6 +375,8 @@ you can use the special rule "unchanged"::
     For the command-line tool, you need to specify the :option:`-m` command-line argument
     in order for intermediate romanizers to activate.
 
+.. _sc-features:
+
 Using Features
 ~~~~~~~~~~~~~~~
 
@@ -626,6 +628,13 @@ matrix), it will go before the base symbol. For example, if you define
 ``Diacritic ⁿ (before) [+prenasalized]`` (or ``Diacritic ⁿ [+prenasalized] (before)``),
 then the prenasalized version of [d] will show up as ``ⁿd`` rather than ``dⁿ``.
 
+Similarly, if you add ``(first)`` to a diacritic declaration,
+it will go *after the first character* of the symbol. This is
+useful for applying diacritics to diphthongs: applying
+``́`` to the symbol ``aj`` will produce the undesirable ``aj́``. Declaring
+it ``(first)`` will produce ``áj`` instead. (On single-character symbols,
+"first" diacritics act the same as "after" diacritics.)
+
 Diacritics can even be applied to symbols that aren't declared with feature
 matrices, in which case you can change the diacritics using matrix rules but
 not the base symbol. For example,
@@ -736,6 +745,22 @@ any glides or consonants at the end::
 
     stress-last-syllable:
         @vowel => [+stress] / _ {@glide, @consonant}* $
+
+.. warning::
+
+    Overly complicated combinations of optionals and repeaters can
+    force Lexurgy to try too many possibilities. Take this rule::
+
+        silly:
+            (x+ x+)+ => *
+
+    If you apply this rule to a word with a long sequence of x's
+    (say, ``soxxxxxxxxxxxxx``), then Lexurgy doesn't know how to
+    divide up the x's between the repeaters: it could be
+    ``[(xxx)(xx)][(xxxxx)(xxx)]``, or ``[(x)(xx)][(xxx)(xxxx)][(xxx)]``,
+    or any number of other possible combinations. Instead of running
+    for a long time and hanging the app, Lexurgy will give up and report
+    a "too many possibilities" error.
 
 Intermediatese
 ~~~~~~~~~~~~~~~
@@ -878,6 +903,22 @@ Currently you can do this with literal text (``!r`` matches anything but the sou
 classes (``!@vowel`` matches anything not in the ``vowel`` class), and capture references
 (``!$1`` matches anything except what was captured in the ``$1`` variable).
 
+Nested Environments
+~~~~~~~~~~~~~~~~~~~~
+
+Environments can be nested inside other structures. For example,
+the following is a compact way of writing the rule "voiced stops word finally,
+and aspirated stops unconditionally, both become voiceless stops"::
+
+    nested-environment:
+        {({b, d, g} / _ $), {pʰ, tʰ, kʰ}} => {p, t, k}
+
+.. note::
+
+    Due to current limitations in the parser, you have
+    to put nested environments in parentheses;
+    ``{{b, d, g} / _ $, {pʰ, tʰ, kʰ}}`` is a syntax error.
+
 .. _sc-filters:
 
 Rule Filters
@@ -946,9 +987,16 @@ rule::
     vowel-harmony [vowel] propagate:
         [!central] => [$frontness] / [!central $frontness] _
 
-Note that it's impossible to tell in general whether a propagating rule will ever
-terminate. So Lexurgy is conservative and stops with an error message if a
-rule runs a hundred times without settling on a result.
+You can also put ``propagate`` on a ``Then:`` block to propagate
+only the statements in the block.
+
+.. warning::
+
+    It's impossible to tell in general whether a propagating rule will ever
+    terminate. So Lexurgy is conservative and stops with an error message if a
+    rule runs a hundred times without settling on a result.
+
+Now you should be able to follow the *Advancedish* example in the web app.
 
 Interactions Between Words
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -999,5 +1047,281 @@ to how it works in Irish::
 
     Class vowel {a, e, i, o, u}
     lenition:
-        {p, t, k, b, d, g} => {f, h, x, v, j, ɣ} / @vowel $$ _ @vowel
+        {p, t, k, b, d, ɡ} => {f, h, x, v, j, ɣ} / @vowel $$ _ @vowel
 
+Syllables
+~~~~~~~~~~
+
+Lexurgy can understand words that are broken up into syllables, using
+periods (``.``) to separate syllables. You can also specify syllabification
+rules and have Lexurgy automatically break up words into syllables.
+This capability is demonstrated by the *Syllabian* example in the web app.
+
+Enabling Syllables
+*******************
+
+To enable syllable-based processing, you have to provide a ``Syllables:``
+declaration. Take this sound change::
+
+    Class vowel {a, e, i, o, u}
+    intervocalic-voicing:
+        {p, t, k} => {b, d, ɡ} / @vowel _ @vowel
+
+This turns e.g. ``kipo`` into ``kibo``. But
+if we put syllable breaks in (``ki.po``), the rule stops
+working, because the [p] is no longer between two vowels:
+it's between a ``.`` and a vowel. To fix this, add *explicit syllables*::
+
+    Class vowel {a, e, i, o, u}
+    Syllables:
+        explicit
+    intervocalic-voicing:
+        {p, t, k} => {b, d, ɡ} / @vowel _ @vowel
+
+Now Lexurgy will treat all ``.`` characters in the input as syllable
+breaks. It sees the [p] in ``ki.po`` as directly following the
+[i] and correctly produces ``ki.bo``.
+
+If you want to get rid of syllable breaks once you're done with them,
+*clear syllables*::
+
+    Class vowel {a, e, i, o, u}
+    Syllables:
+        explicit
+    intervocalic-voicing:
+        {p, t, k} => {b, d, ɡ} / @vowel _ @vowel
+    Syllables:
+        clear
+
+This turns ``ki.po`` into ``kibo``.
+
+Matching Syllable Breaks
+*************************
+
+You can use the ``.`` character in rules to match syllable boundaries.
+For example, it's common for a rule to affect only *coda* consonants.
+This rule nasalizes vowels before a coda nasal::
+
+    Feature +nasalized
+    Diacritic ̃  (floating) [+nasalized]
+    Class vowel {a, e, i, o, u}
+    Class nasal {m, n}
+    Syllables:
+        explicit
+    nasalization:
+        @vowel => [+nasalized] / _ @nasal .
+
+This turns ``ban.ta`` into ``bãn.ta`` and ``ton`` into ``tõn``, but
+leaves ``ba.na.na`` unchanged. Note that the ``.`` character matches
+word boundaries too, not just syllable breaks within a word.
+
+Matching Entire Syllables
+**************************
+
+If you want to match an entire syllable, use ``<syl>`` in the rule.
+For example, this rule converts words into tallies of their syllables::
+
+    Syllables:
+        explicit
+    tally-syllables:
+        <syl> => I
+    Syllables:
+        clear
+
+This converts ``ki.po`` into ``II`` and ``ba.na.na`` into ``III``.
+
+Syllabification Rules
+***********************
+
+The above assumes that you've manually put syllable breaks in the input.
+But you can have Lexurgy do this for you by specifying what syllable shapes
+are allowed, using the same syntax as any other rule. Here's
+a syllable declaration for a language with strictly open syllables
+and no clusters::
+
+    Class consonant {p, t, k, s, m, n, l}
+    Class vowel {a, e, i, o, u}
+    Syllables:
+        @consonant? @vowel
+
+The pattern ``@consonant? @vowel`` describes the valid syllable
+shapes: an optional consonant followed by a mandatory vowel.
+This will automatically break up ``kamina`` as ``ka.mi.na``
+and ``ekipoa`` as ``e.ki.po.a``. But if you try to pass in a
+word like ``kantu`` that violates the syllable structure,
+you'll get an error.
+
+Here's a more complicated example that allows certain coda
+consonants::
+
+    Class consonant {p, t, k, s, m, n, l}
+    Class vowel {a, e, i, o, u}
+    Syllables:
+        @consonant? @vowel {m, n, l}?
+
+This will still automatically break up ``kamina`` as ``ka.mi.na``
+and ``ekipoa`` as ``e.ki.po.a``, but it will also allow
+words like ``kantu`` and ``pasel``, breaking them up as ``kan.tu``
+and ``pa.sel``.
+
+This example also illustrates that, when faced with multiple possible
+ways of breaking a word into syllables, Lexurgy will always put the
+syllable breaks *as early as possible*. Notice that ``kamina`` could equally well
+be broken up as ``kam.in.a``, since ``kam``, ``in``, and ``a`` are
+all valid syllables. But breaking it up as ``ka.mi.na`` puts the
+syllable breaks earlier.
+
+Resyllabification
+******************
+
+Syllabification rules are automatically reapplied after every
+named sound change. Take the example with codas again,
+but this time let's add a sound change::
+
+    Class consonant {p, t, k, s, m, n, l}
+    Class vowel {a, e, i, o, u}
+    Syllables:
+        @consonant? @vowel {m, n, l}?
+    drop-stop-after-nasal:
+        {p, t, k} => * / {m, n} _
+
+A word like ``kantu`` gets syllabified into ``kan.tu``, and then the
+sound change deletes the ``t``, leaving ``kan.u``. But after the rule
+finishes, the syllabification rule applies again, resulting in ``ka.nu``.
+
+Changing Syllabification Rules
+*******************************
+
+However, sometimes sound changes affect the syllable structure. Let's
+add a vowel-deletion change to the language with strictly open syllables::
+
+    Class consonant {p, t, k, s, m, n, l}
+    Class vowel {a, e, i, o, u}
+    Syllables:
+        @consonant? @vowel
+    syncope:
+        @vowel => * / $ <syl> @consonant _ @consonant
+
+This rule deletes the vowel in the second syllable if it's
+between two consonants. But if you try to apply it to a word like
+``kamina``, you'll get an error; the new word, ``kamna``, now
+has an illegal coda consonant!
+
+To solve this, add a new syllable declaration after the syncope
+rule::
+
+    Class consonant {p, t, k, s, m, n, l}
+    Class vowel {a, e, i, o, u}
+    Syllables:
+        @consonant? @vowel
+    syncope:
+        @vowel => * / $ <syl> @consonant _ @consonant
+    Syllables:
+        @consonant? @vowel @consonant?
+
+Now the words ``kamina`` and ``ekipoa`` correctly become
+``kam.na`` and ``ek.po.a``, with the syllabification adjusted
+to the new structure.
+
+You can also stop resyllabification completely with special
+syllable declarations. This stops automatic resyllabification
+but leaves any existing syllable breaks where they are::
+
+    Syllables:
+        explicit
+
+This removes all syllable breaks::
+
+    Syllables:
+        clear
+
+Syllable-Level Features
+*************************
+
+You can declare :ref:`features <sc-features>` and
+:ref:`diacritics <sc-diacritics>` that operate on entire
+syllables. Here's an example::
+
+    Feature (syllable) +stress
+    Diacritic ˈ (before) [+stress]
+    Syllables:
+        explicit
+    stress-shift:
+        {ɛ, ɔ}&[+stress] => {e, o}
+
+The line ``Feature (syllable) +stress`` declares the ``stress``
+feature to be a syllable-level feature. This feature needs a diacritic
+to mark it, provided by the line ``Diacritic ˈ (before) [+stress]``.
+The ``(before)`` modifier means that the diacritic must go before the
+beginning of the syllable, which is where the IPA puts it. (The default
+location is after the end of the syllable.)
+
+If you pass in words like ``ˈkɛ.tɔ`` and ``kɛ.ˈtɔ``, which differ
+only by stress location, the above changes will turn them into
+``ˈke.tɔ`` and ``kɛ.ˈto``.
+
+You can assign a syllable-level feature to a syllable in a rule by
+changing any sound in the syllable (or the entire syllable) to a matrix
+containing the feature. This rule assigns stress on the first syllable
+by assigning it to the first sound::
+
+    Feature (syllable) +stress
+    Diacritic ˈ (before) [+stress]
+    Syllables:
+        explicit
+    stress-first:
+        [] => [+stress] / $ _
+
+You can replace the last line with ``<syl> => [+stress] / $ _``,
+applying the rule to the entire first syllable, and the result is the same.
+Use whichever strategy works best for your case.
+
+Syllable-Level Features in Syllabification Rules
+*************************************************
+
+You can also assign syllable-level features directly in
+the syllabification rules. The following uses the syllabifier
+to distinguish "heavy" syllables (with a long vowel or coda)
+from "light" syllables (all others)::
+
+    Feature (syllable) +heavy, +long
+    Diacritic ² [+heavy]
+    Diacritic ː (floating) [+long]
+    Class consonant {p, t, k, s, m, n, l}
+    Class vowel {a, e, i, o, u}
+
+    Syllables:
+        @consonant? {@vowel&[+long], @vowel @consonant} => [+heavy]
+        @consonant? @vowel
+
+The first line finds syllables that end in a long vowel or a vowel
+and a consonant, and applies the ``+heavy`` feature (notated with
+a ``²``). The second line says that consonant-vowel syllables
+are also allowed, but these aren't ``+heavy``.
+This syllabification rule turns ``kamina`` into ``ka.mi.na`` (because all its
+syllables are light), but ``kaːtantu`` into ``kaː².tan².tu`` (because the
+first two syllables are heavy).
+
+Syllable-level features allow complex stress rules to be written compactly.
+The following implements the rule "stress the third-last syllable if
+the last two syllables are light, otherwise stress the second-last syllable"::
+
+    Feature (syllable) +heavy, (syllable) +stress, +long
+    Diacritic ² [+heavy]
+    Diacritic ˈ (before) [+stress]
+    Diacritic ː (floating) [+long]
+    Class consonant {p, t, k, s, m, n, l}
+    Class vowel {a, e, i, o, u}
+
+    Syllables:
+        @consonant? {@vowel&[+long], @vowel @consonant} => [+heavy]
+        @consonant? @vowel
+
+    assign-stress:
+        <syl> => [+stress] / _ <syl>&[-heavy] <syl>&[-heavy] $
+        Else:
+        <syl> => [+stress] / _ <syl> $
+
+This turns ``kamina`` into ``ˈka.mi.na``, stressing the first
+syllable, but ``kaːtantu`` into ``kaː².ˈtan².tu``, stressing the second
+syllable.

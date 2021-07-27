@@ -64,6 +64,21 @@ class TestVariables : StringSpec({
         ch("fnitficuts") shouldBe "fnifticuts"
     }
 
+    "We should be able to capture literal text (to pick up floating diacritics)" {
+        val ch = lsc(
+            """
+                Feature +long
+                Diacritic ː (floating) [+long]
+                Class cons {p, t, k, s, m, n, l, r}
+                echo-vowel:
+                    * => $1 / e$1 @cons _ $
+            """.trimIndent()
+        )
+
+        ch("pek") shouldBe "peke"
+        ch("peːk") shouldBe "peːkeː"
+    }
+
     "We should be able to reference captured segments in the before environment" {
         val ch = lsc(
             """
