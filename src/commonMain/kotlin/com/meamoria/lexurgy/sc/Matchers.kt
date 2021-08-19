@@ -377,8 +377,6 @@ class SequenceMatcher(val elements: List<Matcher>) : BaseMatcher() {
 class RepeaterMatcher(
     val element: Matcher,
     val type: RepeaterType,
-    val precedingMatcher: Matcher?,
-    val followingMatcher: Matcher?,
 ) : LiftingMatcher() {
     override fun claim(
         declarations: Declarations,
@@ -402,8 +400,6 @@ class RepeaterMatcher(
         RepeaterMatcher(
             element.reversed(),
             type,
-            followingMatcher?.reversed(),
-            precedingMatcher?.reversed(),
         )
 
     override fun toString(): String = "$element${type.string}"

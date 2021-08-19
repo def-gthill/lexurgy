@@ -139,7 +139,6 @@ class AlternativeTransformer(
 class RepeaterTransformer(
     val transformer: Transformer,
     val type: RepeaterType,
-    val followingMatcher: Matcher?,
 ) : Transformer {
 
     constructor(
@@ -149,7 +148,6 @@ class RepeaterTransformer(
     ) : this(
         matcher.element.transformerTo(emitter, filtered),
         matcher.type,
-        matcher.followingMatcher,
     )
 
     override fun transform(

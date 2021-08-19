@@ -1423,16 +1423,12 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
             fun rightAfterAnchor(): RuleContext =
                 RuleContext(RuleSection.ENVIRON, ContextElement.Anchor, ContextElement.None)
-
-            fun nowhere(): RuleContext =
-                RuleContext(RuleSection.NOWHERE, ContextElement.None, ContextElement.None)
         }
     }
 
     internal enum class RuleSection {
         MAIN,
         ENVIRON,
-        NOWHERE,
     }
 
     internal sealed class ContextElement {
@@ -1575,8 +1571,6 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             return RepeaterMatcher(
                 element.matcher(context, declarations),
                 repeaterType.type,
-                removeAnchor(context.precedingElement)?.matcher(RuleContext.nowhere(), declarations),
-                removeAnchor(context.followingElement)?.matcher(RuleContext.nowhere(), declarations),
             )
         }
 
@@ -1588,12 +1582,6 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                 throw LscPeripheralRepeater(text)
             }
         }
-
-        private fun removeAnchor(element: ContextElement): RuleElement? =
-            when (element) {
-                is ContextElement.Some -> element.element
-                else -> null
-            }
     }
 
     private class AlternativeElement(
