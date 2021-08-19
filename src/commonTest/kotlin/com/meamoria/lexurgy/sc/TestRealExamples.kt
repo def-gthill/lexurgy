@@ -1419,6 +1419,144 @@ class TestRealExamples : StringSpec({
         }
     }
 
+    "The Syllabian example in the web app should work" {
+        val ch = lsc(
+            """
+                Feature +long, +nasalized
+                Feature (syllable) stress(*unstressed, primary, secondary)
+                Feature (syllable) +heavy
+                
+                Diacritic ː (floating) [+long]
+                Diacritic ̃  (floating) [+nasalized]
+                Diacritic ˈ (before) [primary]
+                Diacritic ˌ (before) [secondary]
+                Diacritic ² [+heavy]
+                
+                Class vowel {a, ɛ, e, i, ɔ, o, u}
+                Class stop {p, t, k, b, d, ɡ}
+                Class liquid {r, l, w, j}
+                Class nasal {m, n, ŋ}
+                Class cons {@stop, s, @nasal, @liquid}
+                
+                deromanizer:
+                    {aa, ee, ii, oo, uu} => {aː, eː, iː, oː, uː}
+                    g => ɡ
+                    y => j
+                
+                Syllables:
+                    {@cons, @liquid, (@cons @liquid // @vowel _), *} {@vowel @cons, @vowel&[+long]} => [+heavy]
+                    {@cons, @liquid, (@cons @liquid // @vowel _), *} @vowel
+                
+                stress:
+                    (
+                        <syl> => [primary] / _ <syl>&[-heavy] <syl>&[-heavy] ${'$'}
+                        Else:
+                        <syl> => [primary] / _ <syl> ${'$'}
+                        Else:
+                        <syl> => [primary]
+                    )
+                    Then:
+                    (
+                        <syl>&[+heavy !primary] => [secondary] / ${'$'} _
+                        Else:
+                        <syl>&[!primary] => [secondary] / ${'$'} <syl>&[!primary] _
+                    )
+                    Then propagate:
+                        <syl>&[unstressed] => [secondary] / <syl>&[secondary] <syl>&[unstressed] _
+                
+                make-primary-stress-heavy:
+                    @vowel&[primary -heavy] => [+long]
+                
+                Romanizer-before-syncope:
+                    unchanged
+                
+                syncope:
+                    @vowel&[-long unstressed] => *
+                    Then:
+                    @cons => * / {${'$'} @cons _ @cons, @cons _ @cons ${'$'}}
+                
+                Syllables:
+                    (@cons // @vowel _)? @cons? @vowel @cons? @cons?
+                
+                drop-syllable-features:
+                    <syl>&[+heavy] => [-heavy]
+                    Then:
+                    <syl>&[secondary] => [unstressed]
+                
+                nasal-assimilation:
+                    @nasal => m / _ {p, b, m}
+                    @nasal => n / _ {t, d, n}
+                    @nasal => ŋ / _ {k, ɡ, w, ŋ}
+                
+                shorten:
+                    {e!, o!} => {ɛ, ɔ}
+                    Then:
+                    [+long] => [-long]
+                
+                nasalization:
+                    @vowel @nasal => [+nasalized] * / _ @cons? .
+                    Then:
+                    {e, i, o, u}&[+nasalized] => {ɛ, e, ɔ, o}
+                
+                Romanizer-before-glomination:
+                    unchanged
+                
+                glomination:
+                    (@liquid / @cons _)? ${'$'}${'$'} => *
+                
+                stress-shift:
+                    <syl>&[primary] => [unstressed]
+                    Then:
+                    <syl> => [primary] / ${'$'} _
+                
+                Syllables:
+                    clear
+            """.trimIndent()
+        )
+
+        val input = listOf(
+            "pan",
+            "pana",
+            "epina",
+            "karapuna",
+            "sebnakulia",
+            "salimiska",
+            "kalima",
+            "mataratagunta",
+            "santabratagunta",
+            "taapiruuga",
+            "keemiitasa",
+            "teyoomi",
+            "lademura",
+            "lademsura",
+            "ladetura mat",
+            "ladetsura mat",
+        )
+
+        val expected = listOf(
+            "pã",
+            "pã",
+            "epn",
+            "krapn",
+            "sɛbŋkul",
+            "slimisk",
+            "kalm",
+            "ntartaɡõt",
+            "sãtbratɡõt",
+            "tapruɡ",
+            "kemits",
+            "tjɔ̃",
+            "ldɛ̃r",
+            "ldɛ̃r",
+            "ldetmat",
+            "ldɛtmat",
+        )
+
+        for ((expectedWord, originalWord) in expected.zip(input)) {
+            ch(originalWord) shouldBe expectedWord
+        }
+    }
+
     "This silly test should work" {
         val ch = lsc(
             """
