@@ -314,7 +314,8 @@ class StandardWord private constructor(
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is StandardWord) return false
-        return segments == other.segments
+        return segments == other.segments &&
+                syllabification == other.syllabification
     }
 
     override fun hashCode(): Int = segments.hashCode()
@@ -521,9 +522,10 @@ enum class ModifierPosition {
 private class Syllabification(
     private val segments: List<Segment>,
     val syllableBreaks: List<Int>,
-    val syllableModifiers: Map<Int, List<Modifier>> = emptyMap(),
+    syllableModifiers: Map<Int, List<Modifier>> = emptyMap(),
 ) {
     val length: Int = segments.size
+    val syllableModifiers = syllableModifiers.filterValues { it.isNotEmpty() }
 
     val string: String
         get() = (if (syllableBreakAtStart()) "." else "") +
@@ -681,6 +683,19 @@ private class Syllabification(
                 syllableModifiers.filterKeys { it < newSyllableCount }
             )
         }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is Syllabification) return false
+        return syllableBreaks == other.syllableBreaks &&
+                syllableModifiers == other.syllableModifiers
+    }
+
+    override fun hashCode(): Int {
+        var result = syllableBreaks.hashCode()
+        result = 31 * result + syllableModifiers.hashCode()
+        return result
+    }
 
     override fun toString(): String =
         (if (syllableBreakAtStart()) "//" else "") +

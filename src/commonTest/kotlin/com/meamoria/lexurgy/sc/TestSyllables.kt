@@ -257,6 +257,26 @@ class TestSyllables : StringSpec({
         ch("wideːre") shouldBe "wi¹.ˈdeː².re¹"
     }
 
+    "We should be able to use propagate when assigning stress" {
+        val ch = lsc(
+            """
+                Feature type(*cons, vowel)
+                Feature (syllable) stress(*unstressed, secondary, primary)
+                Diacritic ˈ (before) [primary]
+                Diacritic ˌ (before) [secondary]
+                Symbol a [vowel]
+                Syllables:
+                    [cons]? [vowel]
+                primary-stress-second-last-syllable:
+                    <syl> => [primary] / _ <syl> ${'$'}
+                add-secondary-stress propagate:
+                    <syl> => [secondary] / _ <syl> {[primary], [secondary]}
+            """.trimIndent()
+        )
+
+        ch("papapapapapapapa") shouldBe "ˌpa.pa.ˌpa.pa.ˌpa.pa.ˈpa.pa"
+    }
+
     "We should be able to return syllable-level features to their default values" {
         val ch = lsc(
             """

@@ -771,7 +771,7 @@ class TextMatcher(text: Word) : AbstractTextMatcher(text) {
         bindings: Bindings
     ): List<WordMatchEnd> {
         val wordStart = word.drop(start).take(text.length)
-        return if (wordStart == text) {
+        return if (wordStart.segments == text.segments) {
             listOf(WordMatchEnd(start + text.length, bindings))
         } else emptyList()
     }
