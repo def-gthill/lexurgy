@@ -3,7 +3,6 @@ package com.meamoria.lexurgy
 import com.github.ajalt.clikt.output.TermUi.echo
 import com.sun.jna.Native
 import com.sun.jna.Platform
-import com.sun.jna.Pointer
 import com.sun.jna.platform.win32.Kernel32
 import com.sun.jna.platform.win32.WinNT
 import com.sun.jna.ptr.IntByReference
@@ -46,9 +45,6 @@ object UnicodeLogger {
             }
         }
 
-    val debugFilePathIsInitialized
-        get() = this::debugFilePath.isInitialized
-
     fun unicodeEcho(message: String, trailingNewline: Boolean = true) {
         debugPrinter.print(message, trailingNewline = trailingNewline)
     }
@@ -76,22 +72,12 @@ object UnicodeLogger {
             if (kernel.GetConsoleMode(consoleHandle, mode)) {
                 val chars = (message + if (trailingNewline) System.lineSeparator() else "").toCharArray()
                 if (!kernel.WriteConsoleW(consoleHandle.pointer, chars, chars.size, IntByReference(), null)) {
+                    print("Write console failed")
                     echo(message, trailingNewline = trailingNewline)
                 }
             } else {
                 echo(message, trailingNewline = trailingNewline)
             }
         }
-    }
-
-    private interface KernelWithUnicode : Kernel32 {
-        @Suppress("FunctionName")
-        fun WriteConsoleW(
-            hConsoleOutput: Pointer?,
-            lpBuffer: CharArray?,
-            nNumberOfCharsToWrite: Int,
-            lpNumberOfCharsWritten: IntByReference?,
-            lpReserved: Pointer?
-        ): Boolean
     }
 }

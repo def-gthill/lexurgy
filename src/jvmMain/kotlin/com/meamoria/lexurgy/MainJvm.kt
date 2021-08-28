@@ -115,4 +115,7 @@ class SC : CliktCommand(
     }
 }
 
-fun main(args: Array<String>) = Lexurgy().subcommands(SC()).main(args)
+fun main(args: Array<String>) {
+    val realArgs = getArgs(args)
+    Lexurgy().subcommands(SC()).main(realArgs)
+}
