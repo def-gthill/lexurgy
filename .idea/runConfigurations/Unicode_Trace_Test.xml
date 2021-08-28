@@ -1,0 +1,10 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Unicode Trace Test" type="JetRunConfigurationType">
+    <option name="MAIN_CLASS_NAME" value="com.meamoria.lexurgy.MainJvmKt" />
+    <module name="lexurgy.jvmMain" />
+    <option name="PROGRAM_PARAMETERS" value="sc test/unicode.lsc test/test_robust_length.wli -t pʰaz" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
