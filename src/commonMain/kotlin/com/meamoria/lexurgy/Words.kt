@@ -525,14 +525,24 @@ private class Syllabification(
     syllableModifiers: Map<Int, List<Modifier>> = emptyMap(),
 ) {
     val length: Int = segments.size
-    val syllableModifiers = syllableModifiers.filterValues { it.isNotEmpty() }
+    val syllableModifiers = if (length == 0) {
+        // A word with no segments can't carry syllable modifiers
+        emptyMap()
+    } else {
+        // A syllable with no modifiers shouldn't have an entry in the map
+        syllableModifiers.filterValues { it.isNotEmpty() }
+    }
 
     val string: String
-        get() = (if (syllableBreakAtStart()) "." else "") +
-                syllablesAsWords.mapIndexed { i, syl ->
-                    syl.string.modify(syllableModifiers[i] ?: emptyList())
-                }.joinToString(".") +
-                (if (syllableBreakAtEnd()) "." else "")
+        get() = if (length == 0) {
+            if (syllableBreakAtStart() || syllableBreakAtEnd()) "." else ""
+        } else {
+            (if (syllableBreakAtStart()) "." else "") +
+                    syllablesAsWords.mapIndexed { i, syl ->
+                        syl.string.modify(syllableModifiers[i] ?: emptyList())
+                    }.joinToString(".") +
+                    (if (syllableBreakAtEnd()) "." else "")
+        }
 
     private fun String.modify(modifiers: List<Modifier>): String {
         val modifiersByPosition = modifiers.groupBy { it.position }
@@ -698,16 +708,20 @@ private class Syllabification(
     }
 
     override fun toString(): String =
-        (if (syllableBreakAtStart()) "//" else "") +
-                syllablesAsWords.mapIndexed { i, syl ->
-                    syl.toString().modifySchematic(
-                        syllableModifiers[i] ?: emptyList(),
-                        beforeSeparator = "((",
-                        firstSeparator = "||",
-                        afterSeparator = "))",
-                    )
-                }.joinToString("//") +
-                (if (syllableBreakAtEnd()) "//" else "")
+        if (length == 0) {
+            if (syllableBreakAtStart() || syllableBreakAtEnd()) "//" else ""
+        } else {
+            (if (syllableBreakAtStart()) "//" else "") +
+                    syllablesAsWords.mapIndexed { i, syl ->
+                        syl.toString().modifySchematic(
+                            syllableModifiers[i] ?: emptyList(),
+                            beforeSeparator = "((",
+                            firstSeparator = "||",
+                            afterSeparator = "))",
+                        )
+                    }.joinToString("//") +
+                    (if (syllableBreakAtEnd()) "//" else "")
+        }
 
     companion object {
         val EMPTY = Syllabification(emptyList(), emptyList(), emptyMap())

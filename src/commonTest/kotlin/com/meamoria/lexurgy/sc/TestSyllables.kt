@@ -356,6 +356,25 @@ class TestSyllables : StringSpec({
         ch("akamine") shouldBe "ak.ˈmin"
     }
 
+    "Coda dropping should work without syllable features bleeding onto the next syllable" {
+        val ch = lsc(
+            """
+                Feature (syllable) +stress
+                Diacritic ˈ (before) [+stress]
+                Class vowel {a, e, i, o, u}
+                Class cons {p, t, k, s, m, n, l, r}
+                Syllables:
+                    @cons? @vowel @cons?
+                drop-coda:
+                    @cons => * / _ .
+                Syllables:
+                    @cons? @vowel
+            """.trimIndent()
+        )
+
+        ch("ˈpista") shouldBe "ˈpi.ta"
+    }
+
     "We should be able to change syllable structure partway through the rules" {
         val ch = lsc(
             """
