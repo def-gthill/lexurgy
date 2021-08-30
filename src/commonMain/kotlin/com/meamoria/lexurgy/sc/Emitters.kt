@@ -78,10 +78,14 @@ interface ConditionalEmitter : Emitter {
     override fun isIndependent(): Boolean = false
 }
 
-object BetweenWordsEmitter :
-    IndependentEmitter {
+object BetweenWordsEmitter : IndependentEmitter {
     override fun result(): UnboundResult =
         { Phrase(StandardWord.EMPTY, StandardWord.EMPTY) }
+}
+
+object SyllableBoundaryEmitter : IndependentEmitter {
+    override fun result(): UnboundResult =
+        { Phrase(StandardWord.SYLLABLE_BREAK_ONLY) }
 }
 
 class CaptureReferenceEmitter(val number: Int) : IndependentEmitter {

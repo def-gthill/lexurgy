@@ -290,16 +290,23 @@ class StandardWord private constructor(
         syllableModifierCombiner: (List<Modifier>, List<Modifier>) -> List<Modifier>
     ): Word {
         val otherStandard = other.toStandard()
+        val combiner = when {
+            // Empty words shouldn't influence syllable-level features
+            this.isEmpty() -> { _, right -> right }
+            other.isEmpty() -> { left, _ -> left }
+            else -> syllableModifierCombiner
+        }
         return StandardWord(
             segments + other.segments,
             if (isSyllabified() || other.isSyllabified()) {
                 forcedSyllabification.concat(
                     otherStandard.forcedSyllabification,
-                    syllableModifierCombiner,
+                    combiner,
                 )
             } else null
         )
     }
+
 
     override fun recoverStructure(other: Word): Word =
         syllabification?.recoverStructure(other) ?: other
@@ -678,7 +685,7 @@ private class Syllabification(
     }
 
     fun recoverStructure(other: Word): Word =
-        if (other.isSyllabified()) other
+        if (other.isSyllabified() || other.isEmpty()) other
         else {
             val newSyllableBreaks = syllableBreaks.filter { it < other.length } +
                     if (length >= other.length && syllableBreaks.any { it >= other.length} ) {

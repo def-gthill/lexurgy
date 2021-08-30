@@ -2,6 +2,7 @@ package com.meamoria.lexurgy.sc
 
 import com.meamoria.lexurgy.SyllableStructureViolated
 import com.meamoria.mpp.kotest.StringSpec
+import com.meamoria.mpp.kotest.fail
 import com.meamoria.mpp.kotest.shouldBe
 import com.meamoria.mpp.kotest.shouldThrow
 
@@ -26,6 +27,85 @@ class TestSyllables : StringSpec({
         ch("k.opi.mo") shouldBe "k.obi.mo"
         ch("ko.pi.ko") shouldBe "ko.bi.go"
         ch("kop.tik.to") shouldBe "kot.tit.to"
+    }
+
+    "We should be able to insert explicit syllable boundaries with rules" {
+        val ch = lsc(
+            """
+                Class vowel {a, e, i, o, u}
+                Syllables:
+                    explicit
+                insert-syllable-break:
+                    * => . / @vowel _ @vowel
+            """.trimIndent()
+        )
+
+        ch("muo") shouldBe "mu.o"
+    }
+
+    "We should be able to insert syllable boundary characters when not using syllables" {
+        val ch = lsc(
+            """
+                Class vowel {a, e, i, o, u}
+                insert-syllable-break:
+                    * => . / @vowel _ @vowel
+            """.trimIndent()
+        )
+
+        ch("muo") shouldBe "mu.o"
+    }
+
+    "We should be able to delete explicit syllable boundaries with rules" {
+        val ch = lsc(
+            """
+                Class vowel {a, e, i, o, u}
+                Syllables:
+                    explicit
+                make-diphthongs:
+                    . => * / @vowel _ @vowel
+            """.trimIndent()
+        )
+
+        ch("mu.o.ti") shouldBe "muo.ti"
+
+        val ch2 = lsc(
+            """
+                Class vowel {a, e, i, o, u}
+                Syllables:
+                    explicit
+                swallow-vowel:
+                    . @vowel => * / @vowel _
+            """.trimIndent()
+        )
+
+        ch2("mu.o.tia") shouldBe "mu.tia"
+    }
+
+    "We should be able to delete syllable boundary characters when not using syllables" {
+        val ch = lsc(
+            """
+                Class vowel {a, e, i, o, u}
+                make-diphthongs:
+                    . => * / @vowel _ @vowel
+            """.trimIndent()
+        )
+
+        ch("mu.o.ti") shouldBe "muo.ti"
+    }
+
+    "Captures should work across syllable boundaries" {
+        val ch = lsc(
+            """
+                feature +long
+                diacritic ː [+long]
+                Syllables:
+                 explicit
+                coalesce:
+                 []$1 $1 => [+long] *
+            """.trimIndent()
+        )
+
+        ch("to.o") shouldBe "toː"
     }
 
     "We should be able to define automatic syllabification rules" {
@@ -323,8 +403,8 @@ class TestSyllables : StringSpec({
                 Syllables:
                     explicit
                 glomination:
-                    r $$ => *
-                    $$ => *
+                    r $$ => .
+                    $$ => .
             """.trimIndent()
         )
 
@@ -372,7 +452,8 @@ class TestSyllables : StringSpec({
             """.trimIndent()
         )
 
-        ch("ˈpista") shouldBe "ˈpi.ta"
+        ch("ˈpis.ta") shouldBe "ˈpi.ta"
+        ch("kam.ˈpis") shouldBe "ka.ˈpi"
     }
 
     "We should be able to change syllable structure partway through the rules" {

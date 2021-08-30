@@ -1473,11 +1473,18 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             NeverEmitter
     }
 
-    private object SyllableBoundaryElement : BaseParseNode("."), RuleElement {
+    private object SyllableBoundaryElement : BaseParseNode("."), ResultElement {
         override val publicName: String = "a syllable boundary"
 
         override fun matcher(context: RuleContext, declarations: Declarations): Matcher =
-            SyllableBoundaryMatcher
+            if (declarations.syllabifier == null) {
+                TextElement(".", ".").matcher(context, declarations)
+            } else SyllableBoundaryMatcher
+
+        override fun emitter(declarations: Declarations): Emitter =
+            if (declarations.syllabifier == null) {
+                TextElement(".", ".").emitter(declarations)
+            } else SyllableBoundaryEmitter
     }
 
     private object WordBoundaryElement : BaseParseNode("$"), RuleElement {
