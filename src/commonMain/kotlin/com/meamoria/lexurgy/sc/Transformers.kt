@@ -78,20 +78,7 @@ class SequenceTransformer(
             if (resultBits.isEmpty()) return emptyList()
         }
 
-        fun result(singleResultBits: List<UnboundTransformation>, finalBindings: Bindings): Phrase =
-            Phrase.fromSubPhrases(singleResultBits.map { it.result(finalBindings) })
-
-        return resultBits.map { singleResultBits ->
-
-            UnboundTransformation(
-                order,
-                start,
-                singleResultBits.last().end,
-                { bindings -> result(singleResultBits, bindings) },
-                singleResultBits.last().returnBindings,
-                singleResultBits,
-            )
-        }
+        return resultBits.map(UnboundTransformation::fromSubTransformations)
     }
 
     override fun toString(): String = elements.joinToString(" ") { "($it)" }
@@ -260,7 +247,14 @@ class SimpleConditionalTransformer(
         matcher.claim(declarations, phrase, start, bindings).map { claimEnd ->
             val claim = phrase.slice(start, claimEnd.index)
             val result = emitter.result(declarations, matcher, claim)
-            UnboundTransformation(order, start, claimEnd.index, result, claimEnd.returnBindings)
+            UnboundTransformation(
+                order,
+                start,
+                claimEnd.index,
+                result,
+                claimEnd.returnBindings,
+                removesSyllableBreaks = claimEnd.matchedSyllableBreaks,
+            )
         }
 
     override fun toString(): String = "$matcher => $emitter"
@@ -278,15 +272,21 @@ class IndependentTransformer(
         bindings: Bindings
     ): List<UnboundTransformation> {
         val claimEnds = matcher.claim(declarations, phrase, start, bindings)
-        fun result(claimEnd: PhraseIndex, finalBindings: Bindings): Phrase =
-            phrase.slice(start, claimEnd).recoverStructure(emitter.result()(finalBindings))
+        fun result(claimEnd: PhraseMatchEnd, finalBindings: Bindings): Phrase =
+            phrase.slice(start, claimEnd.index).recoverStructure(
+                emitter.result()(finalBindings),
+                exceptSyllableBreaks = claimEnd.matchedSyllableBreaks.map {
+                    phrase.relativeIndex(it, start)
+                }
+            )
         return claimEnds.map { claimEnd ->
             UnboundTransformation(
                 order,
                 start,
                 claimEnd.index,
-                { finalBindings -> result(claimEnd.index, finalBindings) },
+                { finalBindings -> result(claimEnd, finalBindings) },
                 claimEnd.returnBindings,
+                removesSyllableBreaks = claimEnd.matchedSyllableBreaks,
             )
         }
     }
@@ -310,11 +310,18 @@ class IndependentSequenceTransformer(
 
             fun result(finalBindings: Bindings): Phrase =
                 phrase.slice(start, claimEnd.index).recoverStructure(
-                    Phrase.fromSubPhrases(resultBits.map { it.result(finalBindings) })
+                    Phrase.fromSubPhrases(resultBits.map { it.result(finalBindings) }),
+                    exceptSyllableBreaks = claimEnd.matchedSyllableBreaks.map {
+                        phrase.relativeIndex(it, start)
+                    },
                 )
             UnboundTransformation(
-                order, start, claimEnd.index, ::result,
-                claimEnd.returnBindings, resultBits,
+                order,
+                start,
+                claimEnd.index,
+                ::result,
+                claimEnd.returnBindings,
+                resultBits,
             )
         }
 
@@ -337,13 +344,27 @@ class IndependentSequenceTransformer(
         }
 }
 
+/**
+ * An instruction to replace a part of a phrase with new sounds.
+ * @param order: The precedence order of the transformation - lower numbers are applied first.
+ * @param start: The first index of the original phrase that needs to be replaced.
+ * @param end: The first index of the original phrase after the end of section to be replaced.
+ * @param result: The new phrase to insert.
+ * @param subs: Sub-transformations, if any.
+ * @param removesSyllableBreaks: List of syllable break indices that were explicitly
+ * matched and need to be suppressed in the output.
+ */
 data class Transformation(
     val order: Int,
     val start: PhraseIndex,
     val end: PhraseIndex,
     val result: Phrase,
     val subs: List<Transformation> = emptyList(),
+    val removesSyllableBreaks: List<PhraseIndex> = emptyList(),
 ) {
+    val removesSyllableBreakBefore: Boolean = removesSyllableBreaks.firstOrNull() == start
+    val removesSyllableBreakAfter: Boolean = removesSyllableBreaks.lastOrNull() == end
+
     val elementalSubs: List<Transformation>
         get() = if (subs.isEmpty()) listOf(this) else subs.flatMap { it.elementalSubs }
 }
@@ -355,7 +376,11 @@ data class UnboundTransformation(
     val result: UnboundResult,
     val returnBindings: Bindings,
     val subs: List<UnboundTransformation> = emptyList(),
+    val removesSyllableBreaks: List<PhraseIndex> = emptyList(),
 ) : WithBindings<UnboundTransformation> {
+    val removesSyllableBreakBefore: Boolean = removesSyllableBreaks.firstOrNull() == start
+    val removesSyllableBreakAfter: Boolean = removesSyllableBreaks.lastOrNull() == end
+
     fun bindVariables(bindings: Bindings = returnBindings): Transformation =
         Transformation(
             order,
@@ -363,6 +388,7 @@ data class UnboundTransformation(
             end,
             result(bindings),
             subs.map { it.bindVariables(bindings) },
+            removesSyllableBreaks,
         )
 
     override fun replaceBindings(bindings: Bindings): UnboundTransformation =
@@ -381,5 +407,37 @@ data class UnboundTransformation(
             "<unbound>"
         }
         return "UnboundTransformation($order, $start to $end, $tryResult, binding $returnBindings, ${subs.size} subs"
+    }
+
+    companion object {
+        fun fromSubTransformations(subs: List<UnboundTransformation>): UnboundTransformation {
+            fun result(bindings: Bindings): Phrase {
+                val subPhrases = mutableListOf<Phrase>()
+                for (i in subs.indices) {
+                    val sub = subs[i]
+                    var subPhrase = sub.result(bindings)
+                    if (
+                        sub.removesSyllableBreakBefore ||
+                        (i > 0 && subs[i - 1].removesSyllableBreakAfter)
+                    ) subPhrase = subPhrase.removeLeadingBreak()
+                    if (
+                        sub.removesSyllableBreakAfter ||
+                        (i < subs.indices.last && subs[i + 1].removesSyllableBreakBefore)
+                    ) subPhrase = subPhrase.removeTrailingBreak()
+                    subPhrases += subPhrase
+                }
+                return Phrase.fromSubPhrases(subPhrases)
+            }
+
+            return UnboundTransformation(
+                subs.first().order,
+                subs.first().start,
+                subs.last().end,
+                ::result,
+                subs.last().returnBindings,
+                subs,
+                subs.flatMap { it.removesSyllableBreaks }.distinct(),
+            )
+        }
     }
 }

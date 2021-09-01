@@ -81,6 +81,46 @@ class TestSyllables : StringSpec({
         ch2("mu.o.tia") shouldBe "mu.tia"
     }
 
+    "Explicit syllable breaks in sequences should be removed" {
+        val ch = lsc(
+            """
+                Feature +foo
+                Diacritic ǃ [+foo]
+                Syllables:
+                    explicit
+                syllable-break-in-sequence:
+                    . a => e [+foo]
+            """.trimIndent()
+        )
+
+        ch("fi.an") shouldBe "fieaǃn"
+
+        val ch2 = lsc(
+            """
+                Syllables:
+                    explicit
+                foo:
+                    ab . ce => i
+            """.trimIndent()
+        )
+
+        ch2("dab.cef") shouldBe "dif"
+        ch2("du.ab.cef") shouldBe "du.if"
+        ch2("dab.ce.uf") shouldBe "di.uf"
+
+        val ch3 = lsc(
+            """
+                Class vowel {a, e, i, o, u}
+                Syllables:
+                    explicit
+                swap-coalesce:
+                    @vowel$1 . @vowel$2 => $2 $1
+            """.trimIndent()
+        )
+
+        ch3("ma.i.tu.a") shouldBe "mia.tau"
+    }
+
     "We should be able to delete syllable boundary characters when not using syllables" {
         val ch = lsc(
             """
@@ -105,6 +145,7 @@ class TestSyllables : StringSpec({
             """.trimIndent()
         )
 
+        ch("to.o.nat") shouldBe "toː.nat"
         ch("to.o") shouldBe "toː"
     }
 
@@ -255,19 +296,6 @@ class TestSyllables : StringSpec({
 
         ch("tu.kar") shouldBe "tʰu.kʰa"
         ch("tuk.ar") shouldBe "tʰu.a"
-    }
-
-    "We should be able to use the . matcher on the input side without the syllabification being affected" {
-        val ch = lsc(
-            """
-                Syllables:
-                    explicit
-                input-syllable-boundary:
-                    a . b => e d
-            """.trimIndent()
-        )
-
-        ch("ba.ba") shouldBe "be.da"
     }
 
     "We should be able to declare and reference syllable-level features" {

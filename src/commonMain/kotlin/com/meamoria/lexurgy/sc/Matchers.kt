@@ -319,8 +319,10 @@ class SequenceMatcher(val elements: List<Matcher>) : BaseMatcher() {
     ): List<PhraseMatchEnd> {
         var ends = listOf(PhraseMatchEnd(start, bindings))
         for (element in elements) {
-            ends = ends.flatMap { (end, prevBindings) ->
-                element.claim(declarations, phrase, end, prevBindings)
+            ends = ends.flatMap { end ->
+                element.claim(
+                    declarations, phrase, end.index, end.returnBindings
+                ).map { it.precededBy(end) }
             }.checkTooManyOptions()
             if (ends.isEmpty()) return emptyList()
         }
@@ -530,7 +532,7 @@ class CaptureMatcher(
             throw LscReboundCapture(number)
         } else {
             element.claim(declarations, word, start, bindings).map { end ->
-                val capture = word.slice(start until end.index)
+                val capture = word.slice(start until end.index).removeBoundingBreaks()
                 end.replaceBindings(
                     end.returnBindings.bindCapture(
                         number,
@@ -644,7 +646,13 @@ object SyllableBoundaryMatcher : SimpleMatcher() {
     ): List<WordMatchEnd> =
         if (word.isSyllabified()) {
             if (start == 0 || start == word.length || start in word.syllableBreaks) {
-                listOf(WordMatchEnd(start, bindings))
+                listOf(
+                    WordMatchEnd(
+                        start,
+                        bindings,
+                        listOf(start),
+                    )
+                )
             } else emptyList()
         } else emptyList()
 
@@ -662,7 +670,7 @@ class CaptureReferenceMatcher(val number: Int, val isReversed: Boolean = false) 
     ): List<WordMatchEnd> =
         bindings.captures[number]?.let { capturedText ->
             val orientedCapturedText = if (isReversed) capturedText.reversed() else capturedText
-            return if (word.drop(start).take(capturedText.length) == orientedCapturedText) {
+            return if (word.drop(start).take(capturedText.length).segments == orientedCapturedText.segments) {
                 listOf(WordMatchEnd(start + capturedText.length, bindings))
             } else emptyList()
         } ?: throw LscUnboundCapture(number)
@@ -871,25 +879,64 @@ interface WithBindings<T : WithBindings<T>> {
     fun updateBindings(bindings: Bindings): T
 }
 
-data class WordMatchEnd(val index: Int, val returnBindings: Bindings) : WithBindings<WordMatchEnd> {
+data class WordMatchEnd(
+    val index: Int,
+    val returnBindings: Bindings,
+    val matchedSyllableBreaks: List<Int> = emptyList(),
+) : WithBindings<WordMatchEnd> {
     fun withWordIndex(wordIndex: Int) =
-        PhraseMatchEnd(PhraseIndex(wordIndex, index), returnBindings)
+        PhraseMatchEnd(
+            PhraseIndex(wordIndex, index),
+            returnBindings,
+            matchedSyllableBreaks.map { PhraseIndex(wordIndex, it) },
+        )
 
     override fun replaceBindings(bindings: Bindings) =
-        WordMatchEnd(index, bindings)
+        WordMatchEnd(
+            index,
+            bindings,
+            matchedSyllableBreaks,
+        )
 
     override fun updateBindings(bindings: Bindings) =
-        WordMatchEnd(index, returnBindings.combine(bindings))
+        WordMatchEnd(
+            index,
+            returnBindings.combine(bindings),
+            matchedSyllableBreaks,
+        )
 }
 
-data class PhraseMatchEnd(val index: PhraseIndex, val returnBindings: Bindings) : WithBindings<PhraseMatchEnd> {
-    val segmentIndex = WordMatchEnd(index.segmentIndex, returnBindings)
+data class PhraseMatchEnd(
+    val index: PhraseIndex,
+    val returnBindings: Bindings,
+    val matchedSyllableBreaks: List<PhraseIndex> = emptyList(),
+) : WithBindings<PhraseMatchEnd> {
+    val segmentIndex = WordMatchEnd(
+        index.segmentIndex,
+        returnBindings,
+        matchedSyllableBreaks.map { it.segmentIndex },
+    )
 
     override fun replaceBindings(bindings: Bindings) =
-        PhraseMatchEnd(index, bindings)
+        PhraseMatchEnd(
+            index,
+            bindings,
+            matchedSyllableBreaks,
+        )
 
     override fun updateBindings(bindings: Bindings) =
-        PhraseMatchEnd(index, returnBindings.combine(bindings))
+        PhraseMatchEnd(
+            index,
+            returnBindings.combine(bindings),
+            matchedSyllableBreaks,
+        )
+
+    fun precededBy(previous: PhraseMatchEnd): PhraseMatchEnd =
+        PhraseMatchEnd(
+            index,
+            returnBindings,
+            (previous.matchedSyllableBreaks + matchedSyllableBreaks).distinct()
+        )
 }
 
 fun <T> checkTooManyOptions(matcher: Any, options: List<T>): List<T> =

@@ -60,6 +60,8 @@ interface Word {
 
     fun removeTrailingBreak(): Word
 
+    fun removeBoundingBreaks(): Word = removeLeadingBreak().removeTrailingBreak()
+
     operator fun plus(other: Word): Word = concat(other)
 
     /**
@@ -76,10 +78,13 @@ interface Word {
 
     /**
      * Returns a word with the same segments as ``other``,
-     * but structures copied from this word if those structures
-     * are missing in ``other``.
+     * but structures copied from this word.
+     * Syllable breaks in ``exceptSyllableBreaks`` aren't copied.
      */
-    fun recoverStructure(other: Word): Word
+    fun recoverStructure(
+        other: Word,
+        exceptSyllableBreaks: List<Int> = emptyList()
+    ): Word
 
     /**
      * Checks whether this word has syllable structure
@@ -132,7 +137,10 @@ private class ReversedWord(val inner: Word) : Word {
         get() = inner.numSyllables
 
     override val syllableBreaks: List<Int>
-        get() = inner.syllableBreaks.reversed().map { inner.length - it }
+        get() = reversedSyllableBreaks(inner.syllableBreaks)
+
+    private fun reversedSyllableBreaks(syllableBreaks: List<Int>): List<Int> =
+        syllableBreaks.reversed().map { inner.length - it }
 
     override val syllableModifiers: Map<Int, List<Modifier>>
         get() = inner.syllableModifiers.mapKeys { inner.numSyllables - it.key - 1 }
@@ -181,10 +189,15 @@ private class ReversedWord(val inner: Word) : Word {
             else -> force().concat(other, syllableModifierCombiner)
         }
 
-    override fun recoverStructure(other: Word): Word =
+    override fun recoverStructure(other: Word, exceptSyllableBreaks: List<Int>): Word =
         when (other) {
-            is ReversedWord -> ReversedWord(inner.recoverStructure(other.inner))
-            else -> force().recoverStructure(other)
+            is ReversedWord -> ReversedWord(
+                inner.recoverStructure(
+                    other.inner,
+                    reversedSyllableBreaks(exceptSyllableBreaks)
+                )
+            )
+            else -> force().recoverStructure(other, exceptSyllableBreaks)
         }
 
     override fun isSyllabified(): Boolean = inner.isSyllabified()
@@ -308,8 +321,8 @@ class StandardWord private constructor(
     }
 
 
-    override fun recoverStructure(other: Word): Word =
-        syllabification?.recoverStructure(other) ?: other
+    override fun recoverStructure(other: Word, exceptSyllableBreaks: List<Int>): Word =
+        syllabification?.recoverStructure(other, exceptSyllableBreaks) ?: other
 
     override fun isSyllabified(): Boolean = syllabification != null
 
@@ -645,7 +658,11 @@ private class Syllabification(
 
     fun removeLeadingBreak(): Syllabification =
         if (syllableBreakAtStart()) {
-            Syllabification(segments, syllableBreaks.drop(1), syllableModifiers)
+            Syllabification(
+                segments,
+                syllableBreaks.drop(1),
+                syllableModifiers.mapKeys { it.key - 1 }
+            )
         } else this
 
     fun removeTrailingBreak(): Syllabification =
@@ -684,11 +701,12 @@ private class Syllabification(
         )
     }
 
-    fun recoverStructure(other: Word): Word =
+    fun recoverStructure(other: Word, exceptSyllableBreaks: List<Int>): Word =
         if (other.isSyllabified() || other.isEmpty()) other
         else {
-            val newSyllableBreaks = syllableBreaks.filter { it < other.length } +
-                    if (length >= other.length && syllableBreaks.any { it >= other.length} ) {
+            val syllableBreaksToTransfer = syllableBreaks.filter { it !in exceptSyllableBreaks }
+            val newSyllableBreaks = syllableBreaksToTransfer.filter { it < other.length } +
+                    if (length >= other.length && syllableBreaksToTransfer.any { it >= other.length} ) {
                         // Maintain syllable breaks if they've been pushed off the end
                         listOf(other.length)
                     } else emptyList()
@@ -928,6 +946,13 @@ class Phrase(val words: List<Word>) : Iterable<Word> {
         index.wordIndex in 0..size &&
                 index.segmentIndex in 0..words[index.wordIndex].length
 
+    fun relativeIndex(index: PhraseIndex, start: PhraseIndex): PhraseIndex =
+        if (index.wordIndex == start.wordIndex) {
+            PhraseIndex(0, index.segmentIndex - start.segmentIndex)
+        } else {
+            PhraseIndex(index.wordIndex - start.wordIndex, index.segmentIndex)
+        }
+
     override fun iterator(): Iterator<Word> = words.iterator()
 
     fun iterateFrom(start: PhraseIndex): Iterator<PhraseIndex> =
@@ -977,6 +1002,18 @@ class Phrase(val words: List<Word>) : Iterable<Word> {
             )
         }
 
+    fun removeLeadingBreak(): Phrase =
+        Phrase(listOf(words.first().removeLeadingBreak()) + words.drop(1))
+
+    fun removeTrailingBreak(): Phrase =
+        Phrase(words.dropLast(1) + words.last().removeTrailingBreak())
+
+    /**
+     * Removes all syllable breaks at the edges of words.
+     */
+    fun removeBoundingBreaks(): Phrase =
+        Phrase(words.map { it.removeBoundingBreaks() })
+
     /**
      * Concatenates the specified phrase to the end of this phrase.
      * ``syllableModifierCombiner`` specifies how to resolve
@@ -1024,8 +1061,27 @@ class Phrase(val words: List<Word>) : Iterable<Word> {
 
     fun fullyReversed(): Phrase = fullyReversed
 
-    fun recoverStructure(other: Phrase): Phrase =
-        other.resplit(joinWithSyllableBreaks().recoverStructure(other.join()))
+    /**
+     * Returns a phrase with the same segments as ``other``,
+     * but structures copied from this phrase.
+     * Syllable breaks in ``exceptSyllableBreaks`` aren't
+     * copied.
+     */
+    fun recoverStructure(
+        other: Phrase,
+        exceptSyllableBreaks: List<PhraseIndex> = emptyList(),
+    ): Phrase {
+        val wordStarts = words.scan(0) { acc, word -> acc + word.length }
+        val combinedExceptSyllableBreaks = exceptSyllableBreaks.map { index ->
+            wordStarts[index.wordIndex] + index.segmentIndex
+        }
+        return other.resplit(
+            joinWithSyllableBreaks().recoverStructure(
+                other.join(),
+                exceptSyllableBreaks = combinedExceptSyllableBreaks
+            )
+        )
+    }
 
     private fun resplit(other: Word): Phrase {
         val resultWords = mutableListOf<Word>()

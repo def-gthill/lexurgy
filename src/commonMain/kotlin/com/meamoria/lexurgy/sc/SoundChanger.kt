@@ -132,7 +132,7 @@ class SoundChanger(
     ): List<Phrase> =
         curPhrases.fastZipMap(origPhrases) { curPhrase, phrase ->
             try {
-                rule(curPhrase)
+                rule(curPhrase).removeBoundingBreaks()
             } catch (e: Exception) {
                 if (e is UserError) throw LscRuleNotApplicable(e, rule.name, phrase, curPhrase.string)
                 else throw LscRuleCrashed(e, rule.name, phrase, curPhrase.string)
@@ -265,20 +265,31 @@ class SimpleChangeRule(
         if (realTransformations.isEmpty()) return null
 
         var result = Phrase()
+        var removeNextSyllableBreak = false
         var cursor = PhraseIndex(0, 0)
+
+        fun addExistingSlice(start: PhraseIndex, end: PhraseIndex? = null) {
+            var existingSlice = end?.let { phrase.slice(start, it) } ?: phrase.dropUntil(start)
+            if (removeNextSyllableBreak)
+                existingSlice = existingSlice.removeLeadingBreak()
+            result = result.concat(
+                existingSlice
+            ) { left, _ -> left }
+        }
+
         for (transformation in realTransformations.sortedBy { it.start }) {
             if (cursor > transformation.start) continue
-            result = result.concat(
-                phrase.slice(cursor, transformation.start),
-            ) { left, _ -> left }
+            addExistingSlice(cursor, transformation.start)
+            if (transformation.removesSyllableBreakBefore) {
+                result = result.removeTrailingBreak()
+            }
             result = result.concat(
                 transformation.result,
             ) { _, right -> right }
+            removeNextSyllableBreak = transformation.removesSyllableBreakAfter
             cursor = transformation.end
         }
-        result = result.concat(
-            phrase.dropUntil(cursor),
-        ) { left, _ -> left}
+        addExistingSlice(cursor)
         return result
     }
 
