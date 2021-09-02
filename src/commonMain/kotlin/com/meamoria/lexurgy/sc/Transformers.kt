@@ -78,7 +78,7 @@ class SequenceTransformer(
             if (resultBits.isEmpty()) return emptyList()
         }
 
-        return resultBits.map(UnboundTransformation::fromSubTransformations)
+        return resultBits.map { UnboundTransformation.fromSubTransformations(it) }
     }
 
     override fun toString(): String = elements.joinToString(" ") { "($it)" }

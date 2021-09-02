@@ -658,11 +658,7 @@ private class Syllabification(
 
     fun removeLeadingBreak(): Syllabification =
         if (syllableBreakAtStart()) {
-            Syllabification(
-                segments,
-                syllableBreaks.drop(1),
-                syllableModifiers.mapKeys { it.key - 1 }
-            )
+            Syllabification(segments, syllableBreaks.drop(1), syllableModifiers)
         } else this
 
     fun removeTrailingBreak(): Syllabification =
@@ -674,6 +670,9 @@ private class Syllabification(
         other: Syllabification,
         syllableModifierCombiner: (List<Modifier>, List<Modifier>) -> List<Modifier>
     ): Syllabification {
+        if (length == 0) {
+            return other
+        }
         var otherSyllableBreaks = other.syllableBreaks.map { it + length }
         if (syllableBreakAtEnd() && other.syllableBreakAtStart()) {
             otherSyllableBreaks = otherSyllableBreaks.drop(1)
@@ -684,6 +683,7 @@ private class Syllabification(
                     it.key + numSyllables
                 }
             } else {
+                // We have to stitch together the last syllable of this and the first syllable of other
                 val syllableOffset = numSyllables - 1
                 (syllableModifiers - syllableOffset) +
                         (syllableOffset to syllableModifierCombiner(
@@ -1061,6 +1061,9 @@ class Phrase(val words: List<Word>) : Iterable<Word> {
 
     fun fullyReversed(): Phrase = fullyReversed
 
+    // Manually telescoped function to appease the JS compiler
+    fun recoverStructure(other: Phrase): Phrase = recoverStructure(other, emptyList())
+
     /**
      * Returns a phrase with the same segments as ``other``,
      * but structures copied from this phrase.
@@ -1069,7 +1072,7 @@ class Phrase(val words: List<Word>) : Iterable<Word> {
      */
     fun recoverStructure(
         other: Phrase,
-        exceptSyllableBreaks: List<PhraseIndex> = emptyList(),
+        exceptSyllableBreaks: List<PhraseIndex>,
     ): Phrase {
         val wordStarts = words.scan(0) { acc, word -> acc + word.length }
         val combinedExceptSyllableBreaks = exceptSyllableBreaks.map { index ->
