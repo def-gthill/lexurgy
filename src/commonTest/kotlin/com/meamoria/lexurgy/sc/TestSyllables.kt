@@ -119,6 +119,43 @@ class TestSyllables : StringSpec({
         )
 
         ch3("ma.i.tu.a") shouldBe "mia.tau"
+
+        val ch4 = lsc(
+            """
+                Syllables:
+                    explicit
+                abc:
+                    . a . => b c
+            """.trimIndent()
+        )
+
+        ch4("mua.a.ah") shouldBe "muabcah"
+    }
+
+    "Explicit syllable breaks in repeaters should be removed" {
+        val ch = lsc(
+            """
+                Feature +foo
+                Diacritic ́  [+foo]
+                Syllables:
+                    explicit
+                syllable-break-in-repeater:
+                    (. a)+ => [+foo]
+            """.trimIndent()
+        )
+
+        ch("pe.a.a.at") shouldBe "peááát"
+
+        val ch2 = lsc(
+            """
+                Syllables:
+                    explicit
+                syllable-break-in-repeater:
+                    (. a)+ => i
+            """.trimIndent()
+        )
+
+        ch2("pe.a.a.at") shouldBe "peit"
     }
 
     "We should be able to delete syllable boundary characters when not using syllables" {

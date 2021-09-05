@@ -78,7 +78,9 @@ class SequenceTransformer(
             if (resultBits.isEmpty()) return emptyList()
         }
 
-        return resultBits.map { UnboundTransformation.fromSubTransformations(it) }
+        return resultBits.map {
+            UnboundTransformation.fromSubTransformations(order, start, bindings, it)
+        }
     }
 
     override fun toString(): String = elements.joinToString(" ") { "($it)" }
@@ -160,19 +162,8 @@ class RepeaterTransformer(
             if (type.maxReps != null && resultBits.size > type.maxReps) break
         }
 
-        fun result(singleResultBits: List<UnboundTransformation>, finalBindings: Bindings): Phrase =
-            Phrase.fromSubPhrases(singleResultBits.map { it.result(finalBindings) })
-
-        return resultBits.drop(type.minReps).reversed().flatten().map { singleResultBits ->
-
-            UnboundTransformation(
-                order,
-                start,
-                singleResultBits.lastOrNull()?.end ?: start,
-                { finalBindings -> result(singleResultBits, finalBindings) },
-                singleResultBits.lastOrNull()?.returnBindings ?: bindings,
-                singleResultBits,
-            )
+        return resultBits.drop(type.minReps).reversed().flatten().map {
+            UnboundTransformation.fromSubTransformations(order, start, bindings, it)
         }
     }
 
@@ -315,6 +306,7 @@ class IndependentSequenceTransformer(
                         phrase.relativeIndex(it, start)
                     },
                 )
+
             UnboundTransformation(
                 order,
                 start,
@@ -322,6 +314,7 @@ class IndependentSequenceTransformer(
                 ::result,
                 claimEnd.returnBindings,
                 resultBits,
+                claimEnd.matchedSyllableBreaks,
             )
         }
 
@@ -335,7 +328,9 @@ class IndependentSequenceTransformer(
                 is SequenceEmitter -> it.resultBits(order, start, claimEnd)
                 else -> listOf(
                     UnboundTransformation(
-                        order, start, claimEnd.index,
+                        order,
+                        start,
+                        claimEnd.index,
                         (it as IndependentEmitter).result(),
                         claimEnd.returnBindings,
                     )
@@ -410,12 +405,17 @@ data class UnboundTransformation(
     }
 
     companion object {
-        fun fromSubTransformations(subs: List<UnboundTransformation>): UnboundTransformation {
-            fun result(bindings: Bindings): Phrase {
+        fun fromSubTransformations(
+            order: Int,
+            start: PhraseIndex,
+            bindings: Bindings,
+            subs: List<UnboundTransformation>,
+        ): UnboundTransformation {
+            fun result(finalBindings: Bindings): Phrase {
                 val subPhrases = mutableListOf<Phrase>()
                 for (i in subs.indices) {
                     val sub = subs[i]
-                    var subPhrase = sub.result(bindings)
+                    var subPhrase = sub.result(finalBindings)
                     if (
                         sub.removesSyllableBreakBefore ||
                         (i > 0 && subs[i - 1].removesSyllableBreakAfter)
@@ -430,11 +430,11 @@ data class UnboundTransformation(
             }
 
             return UnboundTransformation(
-                subs.first().order,
-                subs.first().start,
-                subs.last().end,
+                order,
+                start,
+                subs.lastOrNull()?.end ?: start,
                 ::result,
-                subs.last().returnBindings,
+                subs.lastOrNull()?.returnBindings ?: bindings,
                 subs,
                 subs.flatMap { it.removesSyllableBreaks }.distinct(),
             )

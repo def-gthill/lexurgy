@@ -388,8 +388,10 @@ class RepeaterMatcher(
     ): List<PhraseMatchEnd> {
         val result = mutableListOf(listOf(PhraseMatchEnd(start, bindings)))
         while (true) {
-            val newResult = result.last().flatMap { (end, prevBindings) ->
-                element.claim(declarations, phrase, end, prevBindings)
+            val newResult = result.last().flatMap { end ->
+                element.claim(
+                    declarations, phrase, end.index, end.returnBindings
+                ).map { it.precededBy(end) }
             }.checkTooManyOptions()
             if (newResult.isEmpty()) break
             result += newResult

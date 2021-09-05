@@ -113,7 +113,11 @@ class MatrixEmitter(val matrix: Matrix) : ConditionalEmitter {
                 with(declarations) {
                     val boundMatrix = matrix.bindVariables(bindings)
                     if (original.isEmpty()) {
-                        StandardWord.single(boundMatrix.toSymbol())
+                        try {
+                            StandardWord.single(boundMatrix.toSymbol())
+                        } catch (e: LscInvalidMatrix) {
+                            StandardWord.EMPTY
+                        }
                     } else {
                         val resultSegments = original.segments.map {
                             it.toMatrix().update(boundMatrix).toSymbol()
