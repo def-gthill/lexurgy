@@ -534,7 +534,7 @@ class CaptureMatcher(
             throw LscReboundCapture(number)
         } else {
             element.claim(declarations, word, start, bindings).map { end ->
-                val capture = word.slice(start until end.index).removeBoundingBreaks()
+                val capture = word.slice(start until end.index).toSimple()
                 end.replaceBindings(
                     end.returnBindings.bindCapture(
                         number,

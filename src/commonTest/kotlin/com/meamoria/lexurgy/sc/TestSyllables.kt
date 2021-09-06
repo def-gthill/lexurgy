@@ -478,17 +478,22 @@ class TestSyllables : StringSpec({
                 Feature +long, (syllable) +stress
                 Diacritic ˈ (before) [+stress]
                 Diacritic ː [+long]
+                Class bar {b, d}
+                Class baz {s, z}
                 Syllables:
                     explicit
                 shorten:
                     [+long] => [-long]
                 vowel-shift:
                     u! => y
+                metathesis:
+                    @baz$1 @bar$2 => $2 $1
             """.trimIndent()
         )
 
         ch("ˈfoː.baːr") shouldBe "ˈfo.bar"
         ch("ˈfu.bar") shouldBe "ˈfy.bar"
+        ch("ˈbaz.bar") shouldBe "ˈbab.zar"
     }
 
     "Syllable-level features should persist through glomination" {
