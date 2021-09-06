@@ -441,6 +441,37 @@ class TestSyllables : StringSpec({
         ch("ˈtest^") shouldBe "test^"
     }
 
+    "We should be able to mix segment-level and syllable-level features in matrices" {
+        val ch = lsc(
+            """
+                Feature type(*cons, vowel)
+                Feature height(low, mid, high)
+                Feature frontness(front, central, back)
+                Feature (syllable) +stress
+                Diacritic ˈ (before) [+stress]
+                Symbol a [low central vowel]
+                Symbol e [mid front vowel]
+                Symbol i [high front vowel]
+                Symbol o [mid back vowel]
+                Symbol u [high back vowel]
+                
+                Syllables:
+                    explicit
+                
+                stress-raising:
+                    [mid +stress] => [high]
+                
+                high-stressing-lowering:
+                    [high] => [mid +stress] / _ $
+                    Then:
+                    [vowel +stress] => [-stress] / _ []* [vowel +stress]
+            """.trimIndent()
+        )
+
+        ch("pa.ˈte.na") shouldBe "pa.ˈti.na"
+        ch("pa.ˈta.ni") shouldBe "pa.ta.ˈne"
+    }
+
     "Syllable-level features should persist through other kind of rules" {
         val ch = lsc(
             """

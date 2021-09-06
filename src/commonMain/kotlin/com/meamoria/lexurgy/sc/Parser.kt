@@ -1644,17 +1644,33 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         override fun matcher(context: RuleContext, declarations: Declarations): Matcher =
             with(declarations) {
                 val split = matrix.splitByLevel()
-                split[WordLevel.SYLLABLE]?.let {
-                    SyllableMatrixMatcher(it)
-                } ?: MatrixMatcher(split[WordLevel.SEGMENT] ?: Matrix.EMPTY)
+                val segmentMatcher = split[WordLevel.SEGMENT]?.let { MatrixMatcher(it) }
+                val syllableMatcher = split[WordLevel.SYLLABLE]?.let { SyllableMatrixMatcher(it) }
+                if (syllableMatcher == null) {
+                    segmentMatcher ?: MatrixMatcher(Matrix.EMPTY)
+                } else {
+                    if (segmentMatcher == null) {
+                        syllableMatcher
+                    } else {
+                        IntersectionMatcher(listOf(segmentMatcher, syllableMatcher))
+                    }
+                }
             }
 
         override fun emitter(declarations: Declarations): Emitter =
             with(declarations) {
                 val split = matrix.splitByLevel()
-                split[WordLevel.SYLLABLE]?.let {
-                    SyllableMatrixEmitter(it)
-                } ?: MatrixEmitter(split[WordLevel.SEGMENT] ?: Matrix.EMPTY)
+                val segmentEmitter = split[WordLevel.SEGMENT]?.let { MatrixEmitter(it) }
+                val syllableEmitter = split[WordLevel.SYLLABLE]?.let { SyllableMatrixEmitter(it) }
+                if (syllableEmitter == null) {
+                    segmentEmitter ?: MatrixEmitter(Matrix.EMPTY)
+                } else {
+                    if (segmentEmitter == null) {
+                        syllableEmitter
+                    } else {
+                        MultiConditionalEmitter(listOf(segmentEmitter, syllableEmitter))
+                    }
+                }
             }
     }
 

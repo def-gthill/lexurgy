@@ -78,6 +78,21 @@ interface ConditionalEmitter : Emitter {
     override fun isIndependent(): Boolean = false
 }
 
+class MultiConditionalEmitter(val elements: List<ConditionalEmitter>) : ConditionalEmitter {
+    override fun result(
+        declarations: Declarations,
+        matcher: SimpleMatcher,
+        original: Word
+    ): UnboundResult =
+        { bindings ->
+            var current = original
+            for (element in elements) {
+                current = element.result(declarations, matcher, current)(bindings).first()
+            }
+            Phrase(current)
+        }
+}
+
 object BetweenWordsEmitter : IndependentEmitter {
     override fun result(): UnboundResult =
         { Phrase(StandardWord.EMPTY, StandardWord.EMPTY) }
