@@ -441,6 +441,21 @@ class TestSyllables : StringSpec({
         ch("ˈtest^") shouldBe "test^"
     }
 
+    "Default syllable level features shouldn't match off the end of a word" {
+        val ch = lsc(
+            """
+                Feature (syllable) +foo
+                Diacritic ^ [+foo]
+                Syllables:
+                    explicit
+                foo-everything:
+                    [-foo] => [+foo]
+            """.trimIndent()
+        )
+
+        ch("ba.na.na") shouldBe "ba^.na^.na^"
+    }
+
     "We should be able to mix segment-level and syllable-level features in matrices" {
         val ch = lsc(
             """

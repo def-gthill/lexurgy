@@ -710,11 +710,13 @@ class SyllableMatrixMatcher(val matrix: Matrix) : SimpleMatcher(), LengthHintedM
         start: Int,
         bindings: Bindings
     ): List<WordMatchEnd> =
-        with(declarations) {
-            val boundMatrix = matrix.bindVariables(bindings)
-            word.modifiersAt(start).toMatrix().matches(boundMatrix, bindings)?.let {
-                listOf(WordMatchEnd(start + 1, it))
-            } ?: emptyList()
+        if (start == word.length) emptyList() else {
+            with(declarations) {
+                val boundMatrix = matrix.bindVariables(bindings)
+                word.modifiersAt(start).toMatrix().matches(boundMatrix, bindings)?.let {
+                    listOf(WordMatchEnd(start + 1, it))
+                } ?: emptyList()
+            }
         }
 
     override fun claim(
