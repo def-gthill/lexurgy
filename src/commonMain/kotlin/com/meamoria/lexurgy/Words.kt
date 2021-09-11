@@ -1,5 +1,7 @@
 package com.meamoria.lexurgy
 
+import kotlin.math.max
+
 interface Word {
     /**
      * The word represented by this ``Word`` as a plain string. This is distinct from calling ``toString()``, which
@@ -162,12 +164,12 @@ private class ReversedWord(val inner: Word) : Word {
 
     override fun take(n: Int): Word =
         ReversedWord(
-            inner.drop(inner.length - n)
+            inner.drop(max(inner.length - n, 0))
         )
 
     override fun drop(n: Int): Word =
         ReversedWord(
-            inner.take(inner.length - n)
+            inner.take(max(inner.length - n, 0))
         )
 
     override fun removeLeadingBreak(): Word =

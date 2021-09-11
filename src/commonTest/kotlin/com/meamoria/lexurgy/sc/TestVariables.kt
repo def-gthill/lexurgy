@@ -40,11 +40,13 @@ class TestVariables : StringSpec({
                 h [stop]$1 => $1 $1
                 fricative-degemination:
                 [fricative]$1 => * / _ $1
+                geminate-affrication:
+                [stop]$1 => [fricative] / $1 _
             """.trimIndent()
         )
 
-        ch("ahpessi") shouldBe "appesi"
-        ch("ifsehkasxo") shouldBe "ifsekkasxo"
+        ch("ahpessi") shouldBe "apfesi"
+        ch("tifsehkasxo") shouldBe "tifsekxasxo"
         // Tests that we don't get crashes if the rule is looking for a geminate off the end of the word.
         ch("affes") shouldBe "afes"
     }
