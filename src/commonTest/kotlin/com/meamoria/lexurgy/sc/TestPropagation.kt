@@ -97,5 +97,32 @@ class TestPropagation : StringSpec({
         )
 
         ch("axxxxxxaxaxaxxxx") shouldBe "abbabbabxaxbbab"
+
+        val ch2 = lsc(
+            """
+                sweep:
+                    x => b
+                    Then rtl:
+                        bbb => babb
+                        bab => d
+                    Then:
+                        d => x
+            """.trimIndent()
+        )
+
+        ch2("axxxxxxaxaxaxxxx") shouldBe "ababbabbxaxbabb"
+    }
+
+    "Blocks marked with ltr or rtl with other blocks inside them should trigger an LscIllegalNestedModifier" {
+        shouldThrow<LscIllegalNestedModifier> {
+            lsc(
+                """
+                    bad-sweep ltr:
+                        a => b
+                        Then:
+                        b => c
+                """.trimIndent()
+            )
+        }
     }
 })

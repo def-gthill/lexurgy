@@ -1226,7 +1226,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         if (matchMode == MatchMode.SIMULTANEOUS) this else
         when (this) {
             is UnlinkedSimpleChangeRule -> withMatchMode(matchMode)
-            else -> throw IllegalNestedModifier(matchMode.toString())
+            else -> throw LscIllegalNestedModifier(matchMode.toString())
         }
 
     private class UnlinkedDeromanizer(
@@ -1884,7 +1884,7 @@ class LscMixedBlock(
     "Can't mix ${firstBlockType.text} and ${conflictingBlockType.text} at the same level"
 )
 
-class IllegalNestedModifier(
+class LscIllegalNestedModifier(
     val modifierName: String,
 ) : LscUserError(
     "Blocks with the \"$modifierName\" modifier can't have other blocks inside them"
