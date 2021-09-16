@@ -82,7 +82,7 @@ repeater: (bounded | simple) repeaterType;
 simple: anySyllable | classRef | captureRef | fancyMatrix | empty | sylBoundary | boundary | betweenWords | text;
 anySyllable: ANY_SYLLABLE;
 classRef: CLASSREF name;
-captureRef: WORD_BOUNDARY NUMBER;
+captureRef: INEXACT? WORD_BOUNDARY NUMBER;
 
 fancyMatrix: MATRIX_START fancyValue? (WHITESPACE fancyValue)* MATRIX_END;
 fancyValue: plusFeatureValue | featureValue | negatedValue | absentFeature | featureVariable;
@@ -121,6 +121,7 @@ AT_LEAST_ONE: '+';
 OPTIONAL: '?';
 HYPHEN: '-';
 RULE_START: ':';
+INEXACT: '~';
 NEGATION: '!';
 SYLLABLE_BOUNDARY: '.';
 WORD_BOUNDARY: '$';
@@ -155,5 +156,5 @@ STR: ANY+;
 
 fragment CHAR: [A-Za-z0-9];
 fragment DIGIT: [0-9];
-fragment ANY: ('\\' .) | ~[ \\,.=>()*[\]{}+?/\-_:!$@#&\n\r];
+fragment ANY: ('\\' .) | ~[ \\,.=>()*[\]{}+?/\-_:!~$@#&\n\r];
 fragment COMMENT_START: '#';

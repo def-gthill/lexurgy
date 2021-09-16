@@ -432,6 +432,7 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     }
 
     class CaptureRefContext : ParserRuleContext {
+        fun INEXACT(): TerminalNode?
         fun WORD_BOUNDARY(): TerminalNode
         fun NUMBER(): TerminalNode
     }

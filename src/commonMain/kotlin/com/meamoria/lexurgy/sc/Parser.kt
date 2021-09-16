@@ -496,6 +496,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         walkCaptureReference(
             ctx.getText(),
             ctx.NUMBER().getText().toInt(),
+            ctx.INEXACT() == null,
         )
 
     override fun visitFancyMatrix(ctx: FancyMatrixContext): ParseNode =
@@ -974,8 +975,9 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     private fun walkCaptureReference(
         text: String,
         number: Int,
+        exact: Boolean,
     ): ParseNode =
-        CaptureReferenceElement(text, number)
+        CaptureReferenceElement(text, number, exact)
 
     private fun walkRepeaterType(
         text: String,
@@ -1784,14 +1786,17 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     private class CaptureReferenceElement(
         text: String,
         val number: Int,
+        val exact: Boolean,
     ) : BaseParseNode(text), ResultElement {
         override val publicName: String = "a capture reference"
 
         override fun matcher(context: RuleContext, declarations: Declarations): Matcher =
-            CaptureReferenceMatcher(number)
+            CaptureReferenceMatcher(number, exact)
 
         override fun emitter(declarations: Declarations): Emitter =
-            CaptureReferenceEmitter(number)
+            if (!exact) throw LscIllegalStructureInOutput(
+                "an inexact capture reference", "~"
+            ) else CaptureReferenceEmitter(number)
     }
 
     private class RepeaterTypeNode(

@@ -208,4 +208,19 @@ class TestVariables : StringSpec({
             ch("ppa")
         }
     }
+
+    "Inexact capture references should ignore floating diacritics" {
+        val ch = lsc(
+            """
+                Feature +long
+                Diacritic ː (floating) [+long]
+                Class vowel {a, e, i, o, u}
+                vowel-combining propagate:
+                    @vowel$1 ~$1 => [+long] *
+            """.trimIndent()
+        )
+
+        ch("tooːooːo") shouldBe "toː"
+        ch("toaoaaeːei") shouldBe "toaoaːeːi"
+    }
 })
