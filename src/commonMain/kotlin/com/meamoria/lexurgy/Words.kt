@@ -941,11 +941,15 @@ class Phrase(val words: List<Word>) : Iterable<Word> {
 
     operator fun get(index: Int): Word = words[index]
 
-    val size: Int
-        get() = words.size
+    val size: Int = words.size
+
+    val firstIndex: PhraseIndex = PhraseIndex(0, 0)
+
+    val lastIndex: PhraseIndex =
+        PhraseIndex(size - 1, words.lastOrNull()?.length ?: 0)
 
     fun hasIndex(index: PhraseIndex): Boolean =
-        index.wordIndex in 0..size &&
+        index.wordIndex in 0 until size &&
                 index.segmentIndex in 0..words[index.wordIndex].length
 
     fun relativeIndex(index: PhraseIndex, start: PhraseIndex): PhraseIndex =
@@ -965,15 +969,28 @@ class Phrase(val words: List<Word>) : Iterable<Word> {
                 !(cursor.wordIndex == words.size - 1 &&
                         cursor.segmentIndex == words.last().length + 1)
 
-            override fun next(): PhraseIndex = cursor.also { cursor = advance(it) }
+            override fun next(): PhraseIndex = cursor.also { cursor = stepForward(it) }
         }
 
-    fun advance(index: PhraseIndex): PhraseIndex {
+    fun stepForward(index: PhraseIndex): PhraseIndex {
         val (wordIndex, segmentIndex) = index
         return if (segmentIndex > words[wordIndex].length) {
             PhraseIndex(wordIndex + 1, 0)
         } else {
             PhraseIndex(wordIndex, segmentIndex + 1)
+        }
+    }
+
+    fun stepBack(index: PhraseIndex): PhraseIndex {
+        val (wordIndex, segmentIndex) = index
+        return if (segmentIndex == 0) {
+            if (wordIndex == 0) {
+                PhraseIndex(-1, 0)
+            } else {
+                PhraseIndex(wordIndex - 1, words[wordIndex - 1].length)
+            }
+        } else {
+            PhraseIndex(wordIndex, segmentIndex - 1)
         }
     }
 

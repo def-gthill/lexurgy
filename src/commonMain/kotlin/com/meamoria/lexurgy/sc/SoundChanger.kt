@@ -248,22 +248,67 @@ object EmptyRule : ChangeRule {
 
 /**
  * A rule at the bottom level, consisting of a sequence
- * of expressions and an optional filter
+ * of expressions and an optional filter.
  */
 class SimpleChangeRule(
     val declarations: Declarations,
     val expressions: List<RuleExpression>,
-    val filter: ((Segment) -> Boolean)? = null
+    val filter: ((Segment) -> Boolean)? = null,
+    val matchMode: MatchMode = MatchMode.SIMULTANEOUS,
 ) : ChangeRule {
-    override operator fun invoke(phrase: Phrase): Phrase? {
+    override operator fun invoke(phrase: Phrase): Phrase? =
+        when (matchMode) {
+            MatchMode.SIMULTANEOUS -> matchAndTransformOnce(phrase) { filteredPhrase ->
+                val allTransformations = expressions.mapIndexed { i, expr ->
+                    expr.claimAll(i, filteredPhrase)
+                }.flatten()
+                filterOverlappingClaims(allTransformations)
+            }
+            MatchMode.LEFT_TO_RIGHT -> {
+                var curPhrase = phrase
+                var index = curPhrase.firstIndex
+                while (index <= curPhrase.lastIndex) {
+                    curPhrase = matchAndTransformOnceAt(curPhrase, index)
+                    index = curPhrase.stepForward(index)
+                }
+                curPhrase
+            }
+            MatchMode.RIGHT_TO_LEFT -> {
+                var curPhrase = phrase
+                var index = curPhrase.lastIndex
+                while (index >= curPhrase.firstIndex) {
+                    curPhrase = matchAndTransformOnceAt(curPhrase, index)
+                    index = curPhrase.stepBack(index)
+                }
+                curPhrase
+            }
+        }
+
+    private fun matchAndTransformOnceAt(
+        phrase: Phrase,
+        index: PhraseIndex,
+    ) = matchAndTransformOnce(phrase) { filteredPhrase ->
+        listOfNotNull(
+            expressions.asSequence().mapIndexed { i, expr ->
+                expr.claimAt(i, filteredPhrase, index)
+            }.firstNotNullOfOrNull { it }
+        )
+    } ?: phrase
+
+    private fun matchAndTransformOnce(
+        phrase: Phrase,
+        transformationMaker: (Phrase) -> List<Transformation>
+    ): Phrase? {
         val (filteredWords, filterMaps) =
             if (filter == null) phrase to null else phrase.map(::filterWord).unzip()
         val filteredPhrase = Phrase(filteredWords.toList())
-        val allTransformations = expressions.mapIndexed { i, expr -> expr.claim(i, filteredPhrase) }.flatten()
-        val validTransformations = filterOverlappingClaims(allTransformations)
-        val realTransformations = unfilterTransformations(phrase, filterMaps, validTransformations)
+        val transformations = transformationMaker(filteredPhrase)
+        val realTransformations = unfilterTransformations(phrase, filterMaps, transformations)
         if (realTransformations.isEmpty()) return null
+        return applyTransformations(phrase, realTransformations)
+    }
 
+    private fun applyTransformations(phrase: Phrase, transformations: List<Transformation>): Phrase {
         var result = Phrase()
         var removeNextSyllableBreak = false
         var cursor = PhraseIndex(0, 0)
@@ -277,7 +322,7 @@ class SimpleChangeRule(
             ) { left, _ -> left }
         }
 
-        for (transformation in realTransformations.sortedBy { it.start }) {
+        for (transformation in transformations.sortedBy { it.start }) {
             if (cursor > transformation.start) continue
             addExistingSlice(cursor, transformation.start)
             if (transformation.removesSyllableBreakBefore) {
@@ -337,12 +382,21 @@ class SimpleChangeRule(
             tr.elementalSubs.map { sub ->
                 val (wordIndex, segmentIndex) = sub.start
                 val filterIndex = PhraseIndex(wordIndex, filterMap[wordIndex][segmentIndex])
-                Transformation(sub.order, filterIndex, phrase.advance(filterIndex), sub.result)
+                Transformation(sub.order, filterIndex, phrase.stepForward(filterIndex), sub.result)
             }
         }
     }
 
     override fun toString(): String = expressions.joinToString().ifBlank { "<no changes>" }
+}
+
+/**
+ * Specifies which matches a rule should look for
+ */
+enum class MatchMode {
+    SIMULTANEOUS,
+    LEFT_TO_RIGHT,
+    RIGHT_TO_LEFT,
 }
 
 /**
@@ -430,14 +484,18 @@ class RuleExpression(
     val declarations: Declarations,
     val transformer: Transformer,
 ) {
-    fun claim(expressionNumber: Int, phrase: Phrase): List<Transformation> {
+    /**
+     * Finds all indices where this expression matches the specified phrase,
+     * and returns a Transformation for each match.
+     */
+    fun claimAll(expressionNumber: Int, phrase: Phrase): List<Transformation> {
         var index = PhraseIndex(0, 0)
         val result = mutableListOf<Transformation>()
 
         while (true) {
             val transformation = claimNext(expressionNumber, phrase, index) ?: break
             result += transformation
-            index = phrase.advance(transformation.start)
+            index = phrase.stepForward(transformation.start)
         }
 
         return result
@@ -445,13 +503,21 @@ class RuleExpression(
 
     private fun claimNext(expressionNumber: Int, phrase: Phrase, start: PhraseIndex): Transformation? {
         for (matchStart in phrase.iterateFrom(start)) {
-            val bindings = Bindings()
-            val transformation = transformer.transform(
-                expressionNumber, declarations, phrase, matchStart, bindings
-            ).firstOrNull() ?: continue
-            return transformation.bindVariables()
+            return claimAt(expressionNumber, phrase, matchStart) ?: continue
         }
         return null
+    }
+
+    /**
+     * Tries to match this expression at the specified index in the specified phrase.
+     * Returns a Transformation if the expression matched, null otherwise.
+     */
+    fun claimAt(expressionNumber: Int, phrase: Phrase, index: PhraseIndex): Transformation? {
+        val bindings = Bindings()
+        val transformation = transformer.transform(
+            expressionNumber, declarations, phrase, index, bindings
+        ).firstOrNull() ?: return null
+        return transformation.bindVariables()
     }
 
     override fun toString(): String = "$transformer"

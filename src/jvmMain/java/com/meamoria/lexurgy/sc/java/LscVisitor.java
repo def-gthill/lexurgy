@@ -119,12 +119,6 @@ public interface LscVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitChangeRule(LscParser.ChangeRuleContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link LscParser#changeRuleModifier}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitChangeRuleModifier(LscParser.ChangeRuleModifierContext ctx);
-	/**
 	 * Visit a parse tree produced by {@link LscParser#filter}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -148,6 +142,18 @@ public interface LscVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitBlockType(LscParser.BlockTypeContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link LscParser#changeRuleModifier}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitChangeRuleModifier(LscParser.ChangeRuleModifierContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link LscParser#matchMode}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitMatchMode(LscParser.MatchModeContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link LscParser#expressionList}.
 	 * @param ctx the parse tree

@@ -143,13 +143,6 @@ public class LscBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements Ls
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitChangeRuleModifier(LscParser.ChangeRuleModifierContext ctx) { return visitChildren(ctx); }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
 	@Override public T visitFilter(LscParser.FilterContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
@@ -172,6 +165,20 @@ public class LscBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements Ls
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
 	@Override public T visitBlockType(LscParser.BlockTypeContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public T visitChangeRuleModifier(LscParser.ChangeRuleModifierContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public T visitMatchMode(LscParser.MatchModeContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *

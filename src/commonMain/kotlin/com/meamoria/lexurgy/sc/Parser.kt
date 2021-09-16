@@ -269,19 +269,38 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         if (ctx.RULE_START() == null) {
             noColon(ruleName, modifiers, ctx.firstNewline())
         }
-        val filter = modifiers.mapNotNull { it.filter() }.let { filters ->
-            if (filters.isEmpty()) null
-            else filters.singleOrNull() ?: multipleFilters(ruleName, filters)
-        }
+        val filter = modifiers.getFilter(ruleName)
+        val matchMode = modifiers.getMatchMode(ruleName)
         val propagate = modifiers.any { it.PROPAGATE() != null }
         return walkChangeRule(
             ctx.getText(),
             ruleName,
             visit(ctx.block()),
-            optionalVisit(filter),
+            filter,
+            matchMode,
             propagate,
         )
     }
+
+    private fun List<ChangeRuleModifierContext>.getFilter(ruleName: String): ParseNode? =
+        optionalVisit(
+            mapNotNull { it.filter() }.let { filters ->
+                if (filters.isEmpty()) null
+                else filters.singleOrNull() ?: multipleModifiers(
+                    ruleName, "filter", filters,
+                )
+            }
+        )
+
+    private fun List<ChangeRuleModifierContext>.getMatchMode(ruleName: String): MatchMode =
+        mapNotNull { it.matchMode() }.let { matchModes ->
+            if (matchModes.isEmpty()) MatchMode.SIMULTANEOUS
+            else matchModes.singleOrNull()?.let {
+                (visit(it) as MatchModeNode).matchMode
+            } ?: multipleModifiers(
+                ruleName, "match mode", matchModes,
+            )
+        }
 
     private fun noColon(
         ruleName: String, modifiers: List<ChangeRuleModifierContext>, newline: TerminalNode
@@ -294,12 +313,17 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                     if (modifiers.isEmpty()) "the rule name" else "\"${modifiers.last().getText()}\""
         )
 
-    private fun multipleFilters(ruleName: String, filters: List<FilterContext>): Nothing =
+    private fun multipleModifiers(
+        ruleName: String,
+        modifierTypeName: String,
+        contexts: List<ParserRuleContext>
+    ): Nothing =
         throw LscNotParsable(
-            filters[1].getStartLine(),
-            filters[1].getStartColumn(),
-            filters[1].getText(),
-            "The rule \"$ruleName\" has more than one filter: ${filters[0].getText()} and ${filters[1].getText()}"
+            contexts[1].getStartLine(),
+            contexts[1].getStartColumn(),
+            contexts[1].getText(),
+            "The rule \"$ruleName\" has more than one $modifierTypeName: " +
+                    "${contexts[0].getText()} and ${contexts[1].getText()}"
         )
 
     override fun visitFilter(ctx: FilterContext): ParseNode =
@@ -309,8 +333,11 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         val blockTypes = ctx.allBlockTypes()
         if (blockTypes.isEmpty()) return visit(ctx.allBlockElements().single())
         val blockType = checkUniformBlockType(blockTypes)
-        val propagateFlags = listOf(false) + blockTypes.map { it.PROPAGATE() != null }
-        val blockElements = listVisit(ctx.allBlockElements()).zip(propagateFlags) { element, propagate ->
+        val allModifiers = listOf(emptyList<ChangeRuleModifierContext>()) +
+                blockTypes.map { it.allChangeRuleModifiers() }
+        val blockElements = listVisit(ctx.allBlockElements()).zip(allModifiers) { element, modifiers ->
+            val matchMode = modifiers.getMatchMode("<$blockType>")
+            val propagate = modifiers.any { it.PROPAGATE() != null }
             if (propagate) UnlinkedPropagateBlock(element as UnlinkedRule) else element
         }
         return walkBlock(ctx.getText(), blockType, blockElements)
@@ -336,6 +363,9 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     override fun visitBlockElement(ctx: BlockElementContext): ParseNode =
         if (ctx.block() != null) visit(ctx.block()!!) else visit(ctx.expressionList()!!)
+
+    override fun visitMatchMode(ctx: MatchModeContext): ParseNode =
+        if (ctx.LTR() != null) MatchModeNode.LTR else MatchModeNode.RTL
 
     override fun visitExpressionList(ctx: ExpressionListContext): ParseNode =
         walkExpressionList(ctx.getText(), listVisit(ctx.allExpressions()))
@@ -724,6 +754,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         ruleName: String,
         mainBlock: ParseNode,
         ruleFilter: ParseNode?,
+        matchMode: MatchMode,
         propagate: Boolean
     ): ParseNode = UnlinkedStandardRule(
         text,
@@ -733,6 +764,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             is MatrixNode -> MatrixElement(ruleFilter.text, ruleFilter.matrix)
             else -> ruleFilter as RuleElement?
         },
+        matchMode,
         propagate
     )
 
@@ -1126,10 +1158,12 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     data class InheritedRuleProperties(
         val name: String?,
-        val filter: ((Segment) -> Boolean)?
+        val filter: ((Segment) -> Boolean)?,
+        val matchMode: MatchMode
     ) {
         companion object {
-            val none: InheritedRuleProperties = InheritedRuleProperties(null, null)
+            val none: InheritedRuleProperties =
+                InheritedRuleProperties(null, null, MatchMode.SIMULTANEOUS)
         }
     }
 
@@ -1179,6 +1213,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                     )
                 },
                 inherited.filter,
+                inherited.matchMode,
             )
     }
 
@@ -1257,6 +1292,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         val name: String,
         val mainBlock: UnlinkedRule,
         val ruleFilter: RuleElement?,
+        val matchMode: MatchMode,
         val propagate: Boolean,
     ) : BaseUnlinkedRule(text, listOf(mainBlock)) {
 
@@ -1278,7 +1314,11 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                 subrule.link(
                     subFirstExpressionNumber,
                     declarations,
-                    inherited.copy(name = name, filter = filter)
+                    inherited.copy(
+                        name = name,
+                        filter = filter,
+                        matchMode = matchMode
+                    )
                 )
             }.single()
             return StandardNamedRule(
@@ -1373,6 +1413,14 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         } catch (e: UserError) {
             throw LscInvalidRuleExpression(e, ruleName, text, expressionNumber)
         }
+    }
+
+    private enum class MatchModeNode(
+        override val text: String,
+        val matchMode: MatchMode
+    ) : ParseNode {
+        LTR("ltr", MatchMode.LEFT_TO_RIGHT),
+        RTL("rtl", MatchMode.RIGHT_TO_LEFT),
     }
 
     private class UnlinkedCompoundEnvironment(

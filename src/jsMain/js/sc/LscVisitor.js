@@ -120,12 +120,6 @@ LscVisitor.prototype.visitChangeRule = function(ctx) {
 };
 
 
-// Visit a parse tree produced by LscParser#changeRuleModifier.
-LscVisitor.prototype.visitChangeRuleModifier = function(ctx) {
-  return this.visitChildren(ctx);
-};
-
-
 // Visit a parse tree produced by LscParser#filter.
 LscVisitor.prototype.visitFilter = function(ctx) {
   return this.visitChildren(ctx);
@@ -146,6 +140,18 @@ LscVisitor.prototype.visitBlockElement = function(ctx) {
 
 // Visit a parse tree produced by LscParser#blockType.
 LscVisitor.prototype.visitBlockType = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
+// Visit a parse tree produced by LscParser#changeRuleModifier.
+LscVisitor.prototype.visitChangeRuleModifier = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
+// Visit a parse tree produced by LscParser#matchMode.
+LscVisitor.prototype.visitMatchMode = function(ctx) {
   return this.visitChildren(ctx);
 };
 

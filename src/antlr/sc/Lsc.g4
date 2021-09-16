@@ -31,11 +31,12 @@ romanizer: ROMANIZER (WHITESPACE LITERAL)? RULE_START NEWLINE+ block;
 interRomanizer: ROMANIZER HYPHEN ruleName (WHITESPACE LITERAL)? RULE_START NEWLINE+ block;
 
 changeRule: ruleName (WHITESPACE changeRuleModifier)* RULE_START? NEWLINE+ block;
-changeRuleModifier: filter | PROPAGATE;
 filter: classRef | fancyMatrix;
 block: blockElement (NEWLINE+ blockType RULE_START (WHITESPACE | NEWLINE+) blockElement)*;
 blockElement: expressionList | O_PAREN NEWLINE* block NEWLINE* C_PAREN;
-blockType: (ALL_MATCHING | FIRST_MATCHING) (WHITESPACE PROPAGATE)?;
+blockType: (ALL_MATCHING | FIRST_MATCHING) (WHITESPACE changeRuleModifier)*;
+changeRuleModifier: filter | matchMode | PROPAGATE;
+matchMode: LTR | RTL;
 expressionList: expression (NEWLINE+ expression)*;
 ruleName: NAME (HYPHEN (NAME | NUMBER))*;
 
@@ -143,6 +144,8 @@ ROMANIZER: 'Romanizer' | 'romanizer';
 ALL_MATCHING: 'Then' | 'then';
 FIRST_MATCHING: 'Else' | 'else';
 PROPAGATE: 'Propagate' | 'propagate';
+LTR: 'LTR' | 'Ltr' | 'ltr';
+RTL: 'RTL' | 'Rtl' | 'rtl';
 LITERAL: 'Literal' | 'literal';
 UNCHANGED: 'Unchanged' | 'unchanged';
 NUMBER: DIGIT+;

@@ -66,8 +66,6 @@ actual typealias ChangeRuleContext = LscParser.ChangeRuleContext
 
 actual fun ChangeRuleContext.allChangeRuleModifiers(): List<ChangeRuleModifierContext> = changeRuleModifier()
 
-actual typealias ChangeRuleModifierContext = LscParser.ChangeRuleModifierContext
-
 actual typealias FilterContext = LscParser.FilterContext
 
 actual typealias BlockContext = LscParser.BlockContext
@@ -79,6 +77,12 @@ actual fun BlockContext.allBlockTypes(): List<BlockTypeContext> = blockType()
 actual typealias BlockElementContext = LscParser.BlockElementContext
 
 actual typealias BlockTypeContext = LscParser.BlockTypeContext
+
+actual fun BlockTypeContext.allChangeRuleModifiers(): List<ChangeRuleModifierContext> = changeRuleModifier()
+
+actual typealias ChangeRuleModifierContext = LscParser.ChangeRuleModifierContext
+
+actual typealias MatchModeContext = LscParser.MatchModeContext
 
 actual typealias ExpressionListContext = LscParser.ExpressionListContext
 
