@@ -82,4 +82,20 @@ class TestPropagation : StringSpec({
 
         ch("abbbbbbabababbbb") shouldBe "ababbabbdadbabb"
     }
+
+    "We should be able to use ltr and rtl on innermost blocks" {
+        val ch = lsc(
+            """
+                sweep:
+                    x => b
+                    Then ltr:
+                        * => a / bb _ b
+                        bab => d
+                    Then:
+                        d => x
+            """.trimIndent()
+        )
+
+        ch("axxxxxxaxaxaxxxx") shouldBe "abbabbabxaxbbab"
+    }
 })

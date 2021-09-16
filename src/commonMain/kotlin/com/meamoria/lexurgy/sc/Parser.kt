@@ -336,9 +336,11 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         val allModifiers = listOf(emptyList<ChangeRuleModifierContext>()) +
                 blockTypes.map { it.allChangeRuleModifiers() }
         val blockElements = listVisit(ctx.allBlockElements()).zip(allModifiers) { element, modifiers ->
+            element as UnlinkedRule
             val matchMode = modifiers.getMatchMode("<$blockType>")
             val propagate = modifiers.any { it.PROPAGATE() != null }
-            if (propagate) UnlinkedPropagateBlock(element as UnlinkedRule) else element
+            val block = if (propagate) UnlinkedPropagateBlock(element) else element
+            block.tryWithMatchMode(matchMode)
         }
         return walkBlock(ctx.getText(), blockType, blockElements)
     }
@@ -1159,11 +1161,10 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     data class InheritedRuleProperties(
         val name: String?,
         val filter: ((Segment) -> Boolean)?,
-        val matchMode: MatchMode
     ) {
         companion object {
             val none: InheritedRuleProperties =
-                InheritedRuleProperties(null, null, MatchMode.SIMULTANEOUS)
+                InheritedRuleProperties(null, null)
         }
     }
 
@@ -1194,6 +1195,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     private class UnlinkedSimpleChangeRule(
         override val text: String,
         val expressions: List<UnlinkedRuleExpression>,
+        val matchMode: MatchMode = MatchMode.SIMULTANEOUS,
     ) : UnlinkedRule {
         override val numExpressions: Int = expressions.size
 
@@ -1213,9 +1215,19 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                     )
                 },
                 inherited.filter,
-                inherited.matchMode,
+                matchMode,
             )
+
+        fun withMatchMode(matchMode: MatchMode): UnlinkedSimpleChangeRule =
+            UnlinkedSimpleChangeRule(text, expressions, matchMode)
     }
+
+    private fun UnlinkedRule.tryWithMatchMode(matchMode: MatchMode): UnlinkedRule =
+        if (matchMode == MatchMode.SIMULTANEOUS) this else
+        when (this) {
+            is UnlinkedSimpleChangeRule -> withMatchMode(matchMode)
+            else -> throw IllegalNestedModifier(matchMode.toString())
+        }
 
     private class UnlinkedDeromanizer(
         text: String,
@@ -1311,13 +1323,12 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             val subrule = linkedSubrules(
                 firstExpressionNumber,
             ) { _, subrule, subFirstExpressionNumber ->
-                subrule.link(
+                subrule.tryWithMatchMode(matchMode).link(
                     subFirstExpressionNumber,
                     declarations,
                     inherited.copy(
                         name = name,
                         filter = filter,
-                        matchMode = matchMode
                     )
                 )
             }.single()
@@ -1871,6 +1882,12 @@ class LscMixedBlock(
     val conflictingBlockType: BlockType,
 ) : LscUserError(
     "Can't mix ${firstBlockType.text} and ${conflictingBlockType.text} at the same level"
+)
+
+class IllegalNestedModifier(
+    val modifierName: String,
+) : LscUserError(
+    "Blocks with the \"$modifierName\" modifier can't have other blocks inside them"
 )
 
 class LscNotParsable(val line: Int, val column: Int, val offendingSymbol: String, val customMessage: String) :
