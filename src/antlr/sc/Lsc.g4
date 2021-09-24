@@ -31,11 +31,12 @@ romanizer: ROMANIZER (WHITESPACE LITERAL)? RULE_START NEWLINE+ block;
 interRomanizer: ROMANIZER HYPHEN ruleName (WHITESPACE LITERAL)? RULE_START NEWLINE+ block;
 
 changeRule: ruleName (WHITESPACE changeRuleModifier)* RULE_START? NEWLINE+ block;
-changeRuleModifier: filter | PROPAGATE;
 filter: classRef | fancyMatrix;
 block: blockElement (NEWLINE+ blockType RULE_START (WHITESPACE | NEWLINE+) blockElement)*;
 blockElement: expressionList | O_PAREN NEWLINE* block NEWLINE* C_PAREN;
-blockType: (ALL_MATCHING | FIRST_MATCHING) (WHITESPACE PROPAGATE)?;
+blockType: (ALL_MATCHING | FIRST_MATCHING) (WHITESPACE changeRuleModifier)*;
+changeRuleModifier: filter | matchMode | PROPAGATE;
+matchMode: LTR | RTL;
 expressionList: expression (NEWLINE+ expression)*;
 ruleName: NAME (HYPHEN (NAME | NUMBER))*;
 
@@ -81,7 +82,7 @@ repeater: (bounded | simple) repeaterType;
 simple: anySyllable | classRef | captureRef | fancyMatrix | empty | sylBoundary | boundary | betweenWords | text;
 anySyllable: ANY_SYLLABLE;
 classRef: CLASSREF name;
-captureRef: WORD_BOUNDARY NUMBER;
+captureRef: INEXACT? WORD_BOUNDARY NUMBER;
 
 fancyMatrix: MATRIX_START fancyValue? (WHITESPACE fancyValue)* MATRIX_END;
 fancyValue: plusFeatureValue | featureValue | negatedValue | absentFeature | featureVariable;
@@ -120,6 +121,7 @@ AT_LEAST_ONE: '+';
 OPTIONAL: '?';
 HYPHEN: '-';
 RULE_START: ':';
+INEXACT: '~';
 NEGATION: '!';
 SYLLABLE_BOUNDARY: '.';
 WORD_BOUNDARY: '$';
@@ -143,6 +145,8 @@ ROMANIZER: 'Romanizer' | 'romanizer';
 ALL_MATCHING: 'Then' | 'then';
 FIRST_MATCHING: 'Else' | 'else';
 PROPAGATE: 'Propagate' | 'propagate';
+LTR: 'LTR' | 'Ltr' | 'ltr';
+RTL: 'RTL' | 'Rtl' | 'rtl';
 LITERAL: 'Literal' | 'literal';
 UNCHANGED: 'Unchanged' | 'unchanged';
 NUMBER: DIGIT+;
@@ -152,5 +156,5 @@ STR: ANY+;
 
 fragment CHAR: [A-Za-z0-9];
 fragment DIGIT: [0-9];
-fragment ANY: ('\\' .) | ~[ \\,.=>()*[\]{}+?/\-_:!$@#&\n\r];
+fragment ANY: ('\\' .) | ~[ \\,.=>()*[\]{}+?/\-_:!~$@#&\n\r];
 fragment COMMENT_START: '#';

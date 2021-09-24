@@ -27,11 +27,12 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     actual fun romanizer(): RomanizerContext
     actual fun interRomanizer(): InterRomanizerContext
     actual fun changeRule(): ChangeRuleContext
-    actual fun changeRuleModifier(): ChangeRuleModifierContext
     actual fun filter(): FilterContext
     actual fun block(): BlockContext
     actual fun blockElement(): BlockElementContext
     actual fun blockType(): BlockTypeContext
+    actual fun changeRuleModifier(): ChangeRuleModifierContext
+    actual fun matchMode(): MatchModeContext
     actual fun expressionList(): ExpressionListContext
     actual fun ruleName(): RuleNameContext
     actual fun expression(): ExpressionContext
@@ -221,11 +222,6 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
         fun block(): BlockContext
     }
 
-    class ChangeRuleModifierContext : ParserRuleContext {
-        fun filter(): FilterContext?
-        fun PROPAGATE(): TerminalNode?
-    }
-
     class FilterContext : ParserRuleContext {
         fun classRef(): ClassRefContext?
         fun fancyMatrix(): FancyMatrixContext?
@@ -250,8 +246,19 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     class BlockTypeContext : ParserRuleContext {
         fun ALL_MATCHING(): TerminalNode?
         fun FIRST_MATCHING(): TerminalNode?
-        fun WHITESPACE(): TerminalNode?
+        fun WHITESPACE(): Array<TerminalNode>
+        fun changeRuleModifier(): Array<ChangeRuleModifierContext>
+    }
+
+    class ChangeRuleModifierContext : ParserRuleContext {
+        fun filter(): FilterContext?
+        fun matchMode(): MatchModeContext?
         fun PROPAGATE(): TerminalNode?
+    }
+
+    class MatchModeContext : ParserRuleContext {
+        fun LTR(): TerminalNode?
+        fun RTL(): TerminalNode?
     }
 
     class ExpressionListContext : ParserRuleContext {
@@ -425,6 +432,7 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     }
 
     class CaptureRefContext : ParserRuleContext {
+        fun INEXACT(): TerminalNode?
         fun WORD_BOUNDARY(): TerminalNode
         fun NUMBER(): TerminalNode
     }
@@ -536,11 +544,12 @@ open external class LscVisitor<T>{
     open fun visitRomanizer(ctx: RomanizerContext): T
     open fun visitInterRomanizer(ctx: InterRomanizerContext): T
     open fun visitChangeRule(ctx: ChangeRuleContext): T
-    open fun visitChangeRuleModifier(ctx: ChangeRuleModifierContext): T
     open fun visitFilter(ctx: FilterContext): T
     open fun visitBlock(ctx: BlockContext): T
     open fun visitBlockElement(ctx: BlockElementContext): T
     open fun visitBlockType(ctx: BlockTypeContext): T
+    open fun visitChangeRuleModifier(ctx: ChangeRuleModifierContext): T
+    open fun visitMatchMode(ctx: MatchModeContext): T
     open fun visitExpressionList(ctx: ExpressionListContext): T
     open fun visitRuleName(ctx: RuleNameContext): T
     open fun visitExpression(ctx: ExpressionContext): T
@@ -642,8 +651,6 @@ actual typealias ChangeRuleContext = LscParser.ChangeRuleContext
 
 actual fun ChangeRuleContext.allChangeRuleModifiers(): List<ChangeRuleModifierContext> = changeRuleModifier().toList()
 
-actual typealias ChangeRuleModifierContext = LscParser.ChangeRuleModifierContext
-
 actual typealias FilterContext = LscParser.FilterContext
 
 actual typealias BlockContext = LscParser.BlockContext
@@ -655,6 +662,12 @@ actual fun BlockContext.allBlockTypes(): List<BlockTypeContext> = blockType().to
 actual typealias BlockElementContext = LscParser.BlockElementContext
 
 actual typealias BlockTypeContext = LscParser.BlockTypeContext
+
+actual fun BlockTypeContext.allChangeRuleModifiers(): List<ChangeRuleModifierContext> = changeRuleModifier().toList()
+
+actual typealias ChangeRuleModifierContext = LscParser.ChangeRuleModifierContext
+
+actual typealias MatchModeContext = LscParser.MatchModeContext
 
 actual typealias ExpressionListContext = LscParser.ExpressionListContext
 

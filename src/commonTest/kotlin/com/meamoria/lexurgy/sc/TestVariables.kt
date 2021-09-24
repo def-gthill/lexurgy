@@ -40,11 +40,13 @@ class TestVariables : StringSpec({
                 h [stop]$1 => $1 $1
                 fricative-degemination:
                 [fricative]$1 => * / _ $1
+                geminate-affrication:
+                [stop]$1 => [fricative] / $1 _
             """.trimIndent()
         )
 
-        ch("ahpessi") shouldBe "appesi"
-        ch("ifsehkasxo") shouldBe "ifsekkasxo"
+        ch("ahpessi") shouldBe "apfesi"
+        ch("tifsehkasxo") shouldBe "tifsekxasxo"
         // Tests that we don't get crashes if the rule is looking for a geminate off the end of the word.
         ch("affes") shouldBe "afes"
     }
@@ -205,5 +207,20 @@ class TestVariables : StringSpec({
             val ch = lsc("$badTemplate\n(@stop$1)+ => * / _ a")
             ch("ppa")
         }
+    }
+
+    "Inexact capture references should ignore floating diacritics" {
+        val ch = lsc(
+            """
+                Feature +long
+                Diacritic ː (floating) [+long]
+                Class vowel {a, e, i, o, u}
+                vowel-combining propagate:
+                    @vowel$1 ~$1 => [+long] *
+            """.trimIndent()
+        )
+
+        ch("tooːooːo") shouldBe "toː"
+        ch("toaoaaeːei") shouldBe "toaoaːeːi"
     }
 })

@@ -269,19 +269,38 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         if (ctx.RULE_START() == null) {
             noColon(ruleName, modifiers, ctx.firstNewline())
         }
-        val filter = modifiers.mapNotNull { it.filter() }.let { filters ->
-            if (filters.isEmpty()) null
-            else filters.singleOrNull() ?: multipleFilters(ruleName, filters)
-        }
+        val filter = modifiers.getFilter(ruleName)
+        val matchMode = modifiers.getMatchMode(ruleName)
         val propagate = modifiers.any { it.PROPAGATE() != null }
         return walkChangeRule(
             ctx.getText(),
             ruleName,
             visit(ctx.block()),
-            optionalVisit(filter),
+            filter,
+            matchMode,
             propagate,
         )
     }
+
+    private fun List<ChangeRuleModifierContext>.getFilter(ruleName: String): ParseNode? =
+        optionalVisit(
+            mapNotNull { it.filter() }.let { filters ->
+                if (filters.isEmpty()) null
+                else filters.singleOrNull() ?: multipleModifiers(
+                    ruleName, "filter", filters,
+                )
+            }
+        )
+
+    private fun List<ChangeRuleModifierContext>.getMatchMode(ruleName: String): MatchMode =
+        mapNotNull { it.matchMode() }.let { matchModes ->
+            if (matchModes.isEmpty()) MatchMode.SIMULTANEOUS
+            else matchModes.singleOrNull()?.let {
+                (visit(it) as MatchModeNode).matchMode
+            } ?: multipleModifiers(
+                ruleName, "match mode", matchModes,
+            )
+        }
 
     private fun noColon(
         ruleName: String, modifiers: List<ChangeRuleModifierContext>, newline: TerminalNode
@@ -294,12 +313,17 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                     if (modifiers.isEmpty()) "the rule name" else "\"${modifiers.last().getText()}\""
         )
 
-    private fun multipleFilters(ruleName: String, filters: List<FilterContext>): Nothing =
+    private fun multipleModifiers(
+        ruleName: String,
+        modifierTypeName: String,
+        contexts: List<ParserRuleContext>
+    ): Nothing =
         throw LscNotParsable(
-            filters[1].getStartLine(),
-            filters[1].getStartColumn(),
-            filters[1].getText(),
-            "The rule \"$ruleName\" has more than one filter: ${filters[0].getText()} and ${filters[1].getText()}"
+            contexts[1].getStartLine(),
+            contexts[1].getStartColumn(),
+            contexts[1].getText(),
+            "The rule \"$ruleName\" has more than one $modifierTypeName: " +
+                    "${contexts[0].getText()} and ${contexts[1].getText()}"
         )
 
     override fun visitFilter(ctx: FilterContext): ParseNode =
@@ -309,9 +333,14 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         val blockTypes = ctx.allBlockTypes()
         if (blockTypes.isEmpty()) return visit(ctx.allBlockElements().single())
         val blockType = checkUniformBlockType(blockTypes)
-        val propagateFlags = listOf(false) + blockTypes.map { it.PROPAGATE() != null }
-        val blockElements = listVisit(ctx.allBlockElements()).zip(propagateFlags) { element, propagate ->
-            if (propagate) UnlinkedPropagateBlock(element as UnlinkedRule) else element
+        val allModifiers = listOf(emptyList<ChangeRuleModifierContext>()) +
+                blockTypes.map { it.allChangeRuleModifiers() }
+        val blockElements = listVisit(ctx.allBlockElements()).zip(allModifiers) { element, modifiers ->
+            element as UnlinkedRule
+            val matchMode = modifiers.getMatchMode("<$blockType>")
+            val propagate = modifiers.any { it.PROPAGATE() != null }
+            val block = if (propagate) UnlinkedPropagateBlock(element) else element
+            block.tryWithMatchMode(matchMode)
         }
         return walkBlock(ctx.getText(), blockType, blockElements)
     }
@@ -336,6 +365,9 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     override fun visitBlockElement(ctx: BlockElementContext): ParseNode =
         if (ctx.block() != null) visit(ctx.block()!!) else visit(ctx.expressionList()!!)
+
+    override fun visitMatchMode(ctx: MatchModeContext): ParseNode =
+        if (ctx.LTR() != null) MatchModeNode.LTR else MatchModeNode.RTL
 
     override fun visitExpressionList(ctx: ExpressionListContext): ParseNode =
         walkExpressionList(ctx.getText(), listVisit(ctx.allExpressions()))
@@ -464,6 +496,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         walkCaptureReference(
             ctx.getText(),
             ctx.NUMBER().getText().toInt(),
+            ctx.INEXACT() == null,
         )
 
     override fun visitFancyMatrix(ctx: FancyMatrixContext): ParseNode =
@@ -724,6 +757,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         ruleName: String,
         mainBlock: ParseNode,
         ruleFilter: ParseNode?,
+        matchMode: MatchMode,
         propagate: Boolean
     ): ParseNode = UnlinkedStandardRule(
         text,
@@ -733,6 +767,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             is MatrixNode -> MatrixElement(ruleFilter.text, ruleFilter.matrix)
             else -> ruleFilter as RuleElement?
         },
+        matchMode,
         propagate
     )
 
@@ -940,8 +975,9 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     private fun walkCaptureReference(
         text: String,
         number: Int,
+        exact: Boolean,
     ): ParseNode =
-        CaptureReferenceElement(text, number)
+        CaptureReferenceElement(text, number, exact)
 
     private fun walkRepeaterType(
         text: String,
@@ -1126,10 +1162,11 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     data class InheritedRuleProperties(
         val name: String?,
-        val filter: ((Segment) -> Boolean)?
+        val filter: ((Segment) -> Boolean)?,
     ) {
         companion object {
-            val none: InheritedRuleProperties = InheritedRuleProperties(null, null)
+            val none: InheritedRuleProperties =
+                InheritedRuleProperties(null, null)
         }
     }
 
@@ -1160,6 +1197,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     private class UnlinkedSimpleChangeRule(
         override val text: String,
         val expressions: List<UnlinkedRuleExpression>,
+        val matchMode: MatchMode = MatchMode.SIMULTANEOUS,
     ) : UnlinkedRule {
         override val numExpressions: Int = expressions.size
 
@@ -1179,8 +1217,19 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                     )
                 },
                 inherited.filter,
+                matchMode,
             )
+
+        fun withMatchMode(matchMode: MatchMode): UnlinkedSimpleChangeRule =
+            UnlinkedSimpleChangeRule(text, expressions, matchMode)
     }
+
+    private fun UnlinkedRule.tryWithMatchMode(matchMode: MatchMode): UnlinkedRule =
+        if (matchMode == MatchMode.SIMULTANEOUS) this else
+        when (this) {
+            is UnlinkedSimpleChangeRule -> withMatchMode(matchMode)
+            else -> throw LscIllegalNestedModifier(matchMode.toString())
+        }
 
     private class UnlinkedDeromanizer(
         text: String,
@@ -1257,6 +1306,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         val name: String,
         val mainBlock: UnlinkedRule,
         val ruleFilter: RuleElement?,
+        val matchMode: MatchMode,
         val propagate: Boolean,
     ) : BaseUnlinkedRule(text, listOf(mainBlock)) {
 
@@ -1275,10 +1325,13 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             val subrule = linkedSubrules(
                 firstExpressionNumber,
             ) { _, subrule, subFirstExpressionNumber ->
-                subrule.link(
+                subrule.tryWithMatchMode(matchMode).link(
                     subFirstExpressionNumber,
                     declarations,
-                    inherited.copy(name = name, filter = filter)
+                    inherited.copy(
+                        name = name,
+                        filter = filter,
+                    )
                 )
             }.single()
             return StandardNamedRule(
@@ -1373,6 +1426,14 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         } catch (e: UserError) {
             throw LscInvalidRuleExpression(e, ruleName, text, expressionNumber)
         }
+    }
+
+    private enum class MatchModeNode(
+        override val text: String,
+        val matchMode: MatchMode
+    ) : ParseNode {
+        LTR("ltr", MatchMode.LEFT_TO_RIGHT),
+        RTL("rtl", MatchMode.RIGHT_TO_LEFT),
     }
 
     private class UnlinkedCompoundEnvironment(
@@ -1644,17 +1705,33 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         override fun matcher(context: RuleContext, declarations: Declarations): Matcher =
             with(declarations) {
                 val split = matrix.splitByLevel()
-                split[WordLevel.SYLLABLE]?.let {
-                    SyllableMatrixMatcher(it)
-                } ?: MatrixMatcher(split[WordLevel.SEGMENT] ?: Matrix.EMPTY)
+                val segmentMatcher = split[WordLevel.SEGMENT]?.let { MatrixMatcher(it) }
+                val syllableMatcher = split[WordLevel.SYLLABLE]?.let { SyllableMatrixMatcher(it) }
+                if (syllableMatcher == null) {
+                    segmentMatcher ?: MatrixMatcher(Matrix.EMPTY)
+                } else {
+                    if (segmentMatcher == null) {
+                        syllableMatcher
+                    } else {
+                        IntersectionMatcher(listOf(segmentMatcher, syllableMatcher))
+                    }
+                }
             }
 
         override fun emitter(declarations: Declarations): Emitter =
             with(declarations) {
                 val split = matrix.splitByLevel()
-                split[WordLevel.SYLLABLE]?.let {
-                    SyllableMatrixEmitter(it)
-                } ?: MatrixEmitter(split[WordLevel.SEGMENT] ?: Matrix.EMPTY)
+                val segmentEmitter = split[WordLevel.SEGMENT]?.let { MatrixEmitter(it) }
+                val syllableEmitter = split[WordLevel.SYLLABLE]?.let { SyllableMatrixEmitter(it) }
+                if (syllableEmitter == null) {
+                    segmentEmitter ?: MatrixEmitter(Matrix.EMPTY)
+                } else {
+                    if (segmentEmitter == null) {
+                        syllableEmitter
+                    } else {
+                        MultiConditionalEmitter(listOf(segmentEmitter, syllableEmitter))
+                    }
+                }
             }
     }
 
@@ -1709,14 +1786,17 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     private class CaptureReferenceElement(
         text: String,
         val number: Int,
+        val exact: Boolean,
     ) : BaseParseNode(text), ResultElement {
         override val publicName: String = "a capture reference"
 
         override fun matcher(context: RuleContext, declarations: Declarations): Matcher =
-            CaptureReferenceMatcher(number)
+            CaptureReferenceMatcher(number, exact)
 
         override fun emitter(declarations: Declarations): Emitter =
-            CaptureReferenceEmitter(number)
+            if (!exact) throw LscIllegalStructureInOutput(
+                "an inexact capture reference", "~"
+            ) else CaptureReferenceEmitter(number)
     }
 
     private class RepeaterTypeNode(
@@ -1807,6 +1887,12 @@ class LscMixedBlock(
     val conflictingBlockType: BlockType,
 ) : LscUserError(
     "Can't mix ${firstBlockType.text} and ${conflictingBlockType.text} at the same level"
+)
+
+class LscIllegalNestedModifier(
+    val modifierName: String,
+) : LscUserError(
+    "Blocks with the \"$modifierName\" modifier can't have other blocks inside them"
 )
 
 class LscNotParsable(val line: Int, val column: Int, val offendingSymbol: String, val customMessage: String) :

@@ -441,23 +441,74 @@ class TestSyllables : StringSpec({
         ch("ˈtest^") shouldBe "test^"
     }
 
+    "Default syllable level features shouldn't match off the end of a word" {
+        val ch = lsc(
+            """
+                Feature (syllable) +foo
+                Diacritic ^ [+foo]
+                Syllables:
+                    explicit
+                foo-everything:
+                    [-foo] => [+foo]
+            """.trimIndent()
+        )
+
+        ch("ba.na.na") shouldBe "ba^.na^.na^"
+    }
+
+    "We should be able to mix segment-level and syllable-level features in matrices" {
+        val ch = lsc(
+            """
+                Feature type(*cons, vowel)
+                Feature height(low, mid, high)
+                Feature frontness(front, central, back)
+                Feature (syllable) +stress
+                Diacritic ˈ (before) [+stress]
+                Symbol a [low central vowel]
+                Symbol e [mid front vowel]
+                Symbol i [high front vowel]
+                Symbol o [mid back vowel]
+                Symbol u [high back vowel]
+                
+                Syllables:
+                    explicit
+                
+                stress-raising:
+                    [mid +stress] => [high]
+                
+                high-stressing-lowering:
+                    [high] => [mid +stress] / _ $
+                    Then:
+                    [vowel +stress] => [-stress] / _ []* [vowel +stress]
+            """.trimIndent()
+        )
+
+        ch("pa.ˈte.na") shouldBe "pa.ˈti.na"
+        ch("pa.ˈta.ni") shouldBe "pa.ta.ˈne"
+    }
+
     "Syllable-level features should persist through other kind of rules" {
         val ch = lsc(
             """
                 Feature +long, (syllable) +stress
                 Diacritic ˈ (before) [+stress]
                 Diacritic ː [+long]
+                Class bar {b, d}
+                Class baz {s, z}
                 Syllables:
                     explicit
                 shorten:
                     [+long] => [-long]
                 vowel-shift:
                     u! => y
+                metathesis:
+                    @baz$1 @bar$2 => $2 $1
             """.trimIndent()
         )
 
         ch("ˈfoː.baːr") shouldBe "ˈfo.bar"
         ch("ˈfu.bar") shouldBe "ˈfy.bar"
+        ch("ˈbaz.bar") shouldBe "ˈbab.zar"
     }
 
     "Syllable-level features should persist through glomination" {

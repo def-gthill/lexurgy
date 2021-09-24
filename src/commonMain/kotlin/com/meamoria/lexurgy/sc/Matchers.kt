@@ -534,7 +534,7 @@ class CaptureMatcher(
             throw LscReboundCapture(number)
         } else {
             element.claim(declarations, word, start, bindings).map { end ->
-                val capture = word.slice(start until end.index).removeBoundingBreaks()
+                val capture = word.slice(start until end.index).toSimple()
                 end.replaceBindings(
                     end.returnBindings.bindCapture(
                         number,
@@ -663,7 +663,11 @@ object SyllableBoundaryMatcher : SimpleMatcher() {
     override fun toString(): String = "."
 }
 
-class CaptureReferenceMatcher(val number: Int, val isReversed: Boolean = false) : SimpleMatcher() {
+class CaptureReferenceMatcher(
+    val number: Int,
+    val exact: Boolean,
+    val isReversed: Boolean = false,
+) : SimpleMatcher() {
     override fun claim(
         declarations: Declarations,
         word: Word,
@@ -672,12 +676,21 @@ class CaptureReferenceMatcher(val number: Int, val isReversed: Boolean = false) 
     ): List<WordMatchEnd> =
         bindings.captures[number]?.let { capturedText ->
             val orientedCapturedText = if (isReversed) capturedText.reversed() else capturedText
-            return if (word.drop(start).take(capturedText.length).segments == orientedCapturedText.segments) {
+            val textToMatch = word.drop(start).take(capturedText.length)
+            val matches = if (exact) {
+                textToMatch.segments == orientedCapturedText.segments
+            } else {
+                with (declarations) {
+                    textToMatch.segments.map { it.withoutFloatingDiacritics() } ==
+                            orientedCapturedText.segments.map { it.withoutFloatingDiacritics() }
+                }
+            }
+            return if (matches) {
                 listOf(WordMatchEnd(start + capturedText.length, bindings))
             } else emptyList()
         } ?: throw LscUnboundCapture(number)
 
-    override fun reversed(): Matcher = CaptureReferenceMatcher(number, !isReversed)
+    override fun reversed(): Matcher = CaptureReferenceMatcher(number, exact, !isReversed)
 
     override fun toString(): String = "$$number"
 }
@@ -710,11 +723,13 @@ class SyllableMatrixMatcher(val matrix: Matrix) : SimpleMatcher(), LengthHintedM
         start: Int,
         bindings: Bindings
     ): List<WordMatchEnd> =
-        with(declarations) {
-            val boundMatrix = matrix.bindVariables(bindings)
-            word.modifiersAt(start).toMatrix().matches(boundMatrix, bindings)?.let {
-                listOf(WordMatchEnd(start + 1, it))
-            } ?: emptyList()
+        if (start == word.length) emptyList() else {
+            with(declarations) {
+                val boundMatrix = matrix.bindVariables(bindings)
+                word.modifiersAt(start).toMatrix().matches(boundMatrix, bindings)?.let {
+                    listOf(WordMatchEnd(start + 1, it))
+                } ?: emptyList()
+            }
         }
 
     override fun claim(

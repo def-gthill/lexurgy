@@ -27,11 +27,12 @@ expect class LscParser(input: TokenStream) : Parser {
     fun romanizer(): RomanizerContext
     fun interRomanizer(): InterRomanizerContext
     fun changeRule(): ChangeRuleContext
-    fun changeRuleModifier(): ChangeRuleModifierContext
     fun filter(): FilterContext
     fun block(): BlockContext
     fun blockElement(): BlockElementContext
     fun blockType(): BlockTypeContext
+    fun changeRuleModifier(): ChangeRuleModifierContext
+    fun matchMode(): MatchModeContext
     fun expressionList(): ExpressionListContext
     fun ruleName(): RuleNameContext
     fun expression(): ExpressionContext
@@ -100,11 +101,12 @@ expect open class LscBaseVisitor<T>(){
     open fun visitRomanizer(ctx: RomanizerContext): T
     open fun visitInterRomanizer(ctx: InterRomanizerContext): T
     open fun visitChangeRule(ctx: ChangeRuleContext): T
-    open fun visitChangeRuleModifier(ctx: ChangeRuleModifierContext): T
     open fun visitFilter(ctx: FilterContext): T
     open fun visitBlock(ctx: BlockContext): T
     open fun visitBlockElement(ctx: BlockElementContext): T
     open fun visitBlockType(ctx: BlockTypeContext): T
+    open fun visitChangeRuleModifier(ctx: ChangeRuleModifierContext): T
+    open fun visitMatchMode(ctx: MatchModeContext): T
     open fun visitExpressionList(ctx: ExpressionListContext): T
     open fun visitRuleName(ctx: RuleNameContext): T
     open fun visitExpression(ctx: ExpressionContext): T
@@ -300,12 +302,6 @@ expect class ChangeRuleContext : ParserRuleContext {
 
 expect fun ChangeRuleContext.allChangeRuleModifiers(): List<ChangeRuleModifierContext>
 
-expect class ChangeRuleModifierContext : ParserRuleContext {
-    fun filter(): FilterContext?
-    fun PROPAGATE(): TerminalNode?
-}
-
-
 expect class FilterContext : ParserRuleContext {
     fun classRef(): ClassRefContext?
     fun fancyMatrix(): FancyMatrixContext?
@@ -331,8 +327,20 @@ expect class BlockElementContext : ParserRuleContext {
 expect class BlockTypeContext : ParserRuleContext {
     fun ALL_MATCHING(): TerminalNode?
     fun FIRST_MATCHING(): TerminalNode?
-    fun WHITESPACE(): TerminalNode?
+}
+
+expect fun BlockTypeContext.allChangeRuleModifiers(): List<ChangeRuleModifierContext>
+
+expect class ChangeRuleModifierContext : ParserRuleContext {
+    fun filter(): FilterContext?
+    fun matchMode(): MatchModeContext?
     fun PROPAGATE(): TerminalNode?
+}
+
+
+expect class MatchModeContext : ParserRuleContext {
+    fun LTR(): TerminalNode?
+    fun RTL(): TerminalNode?
 }
 
 
@@ -530,6 +538,7 @@ expect class ClassRefContext : ParserRuleContext {
 
 
 expect class CaptureRefContext : ParserRuleContext {
+    fun INEXACT(): TerminalNode?
     fun WORD_BOUNDARY(): TerminalNode
     fun NUMBER(): TerminalNode
 }

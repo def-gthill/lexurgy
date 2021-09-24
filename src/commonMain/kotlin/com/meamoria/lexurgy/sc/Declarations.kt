@@ -198,7 +198,7 @@ class Declarations(
         other: Segment, excluding: Segment? = null
     ): Segment {
         if (floatingDiacritics.isEmpty()) return this
-        val excludingDiacritics = excluding?.toComplexSymbol()?.diacritics ?: listOf()
+        val excludingDiacritics = excluding?.toComplexSymbol()?.diacritics ?: emptyList()
         val otherSymbol = other.toComplexSymbol()
         val otherFloating = otherSymbol.diacritics.filter {
             it.floating && it !in excludingDiacritics
@@ -209,6 +209,12 @@ class Declarations(
         for (diacritic in otherFloating) {
             if (diacritic !in result.diacritics) result = result.withDiacritic(diacritic)
         }
+        return result.toSegment()
+    }
+
+    fun Segment.withoutFloatingDiacritics(): Segment {
+        val symbol = toComplexSymbol()
+        val result = complexSymbol(symbol.symbol, symbol.diacritics.filter { !it.floating })
         return result.toSegment()
     }
 
