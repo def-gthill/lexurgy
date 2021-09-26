@@ -29,6 +29,10 @@ kotlin {
     }
     js {
         browser {
+            dceTask {
+                keep("lexurgy.com.meamoria.lexurgy.SoundChanger")
+                keep("lexurgy.com.meamoria.lexurgy.scMakeStageComparisons")
+            }
             binaries.executable()
         }
     }
