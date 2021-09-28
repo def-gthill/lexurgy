@@ -180,6 +180,23 @@ class TestSoundChanger : StringSpec({
         ch("muddud") shouldBe "mudududa"
     }
 
+    "Asterisks shouldn't be allowed in the environment" {
+        shouldThrow<LscInvalidRuleExpression> {
+            lsc(
+                """
+                    foo:
+                     a => b / _ *
+                """.trimIndent()
+            )
+        }.also {
+            it.cause.shouldBeInstanceOf<LscIllegalStructureInEnvironment>()
+            it.message shouldBe """
+                Error in expression 1 ("a => b / _ *") of rule "foo"
+                An empty element like "*" can't be used in an environment
+            """.trimIndent()
+        }
+    }
+
     "Multiple-character symbols should be recognized as single symbols" {
         val ch = lsc(
             """

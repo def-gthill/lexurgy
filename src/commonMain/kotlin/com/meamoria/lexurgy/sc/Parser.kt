@@ -1756,7 +1756,9 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         override val publicName: String = "an empty element"
 
         override fun matcher(context: RuleContext, declarations: Declarations): Matcher =
-            EmptyMatcher
+            if (context.section == RuleSection.ENVIRON) {
+                throw LscIllegalStructureInEnvironment(publicName, text)
+            } else EmptyMatcher
 
         override fun emitter(declarations: Declarations): Emitter = EmptyEmitter
     }
@@ -1885,15 +1887,28 @@ class LscIllegalStructureInInput(
     val invalidNodeType: String,
     val invalidNode: String,
 ) : LscUserError(
-    "${invalidNodeType.replaceFirstChar { it.uppercase() }} like \"$invalidNode\" can't be used in the input of a rule"
+    illegalStructureMessage(invalidNodeType, invalidNode, "the input of a rule")
 )
 
 class LscIllegalStructureInOutput(
     val invalidNodeType: String,
     val invalidNode: String,
 ) : LscUserError(
-    "${invalidNodeType.replaceFirstChar { it.uppercase() }} like \"$invalidNode\" can't be used in the output of a rule"
+    illegalStructureMessage(invalidNodeType, invalidNode, "the output of a rule")
 )
+
+class LscIllegalStructureInEnvironment(
+    val invalidNodeType: String,
+    val invalidNode: String,
+) : LscUserError(
+    illegalStructureMessage(invalidNodeType, invalidNode, "an environment")
+)
+
+private fun illegalStructureMessage(
+    invalidNodeType: String,
+    invalidNode: String,
+    invalidLocation: String,
+) : String = "${invalidNodeType.replaceFirstChar { it.uppercase() }} like \"$invalidNode\" can't be used in $invalidLocation"
 
 class LscMixedBlock(
     val firstBlockType: BlockType,
