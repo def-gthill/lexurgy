@@ -123,6 +123,8 @@ class TestPropagation : StringSpec({
                         b => c
                 """.trimIndent()
             )
+        }.also {
+            it.message shouldBe "Blocks with the \"ltr\" modifier can't have other blocks inside them"
         }
     }
 })

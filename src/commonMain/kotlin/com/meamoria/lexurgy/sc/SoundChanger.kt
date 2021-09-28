@@ -393,10 +393,10 @@ class SimpleChangeRule(
 /**
  * Specifies which matches a rule should look for
  */
-enum class MatchMode {
-    SIMULTANEOUS,
-    LEFT_TO_RIGHT,
-    RIGHT_TO_LEFT,
+enum class MatchMode(val string: String) {
+    SIMULTANEOUS("simul"),
+    LEFT_TO_RIGHT("ltr"),
+    RIGHT_TO_LEFT("rtl"),
 }
 
 /**

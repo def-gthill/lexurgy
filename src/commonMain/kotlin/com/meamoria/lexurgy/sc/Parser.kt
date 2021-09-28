@@ -1228,7 +1228,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         if (matchMode == MatchMode.SIMULTANEOUS) this else
         when (this) {
             is UnlinkedSimpleChangeRule -> withMatchMode(matchMode)
-            else -> throw LscIllegalNestedModifier(matchMode.toString())
+            else -> throw LscIllegalNestedModifier(matchMode.string)
         }
 
     private class UnlinkedDeromanizer(
