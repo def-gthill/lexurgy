@@ -68,6 +68,22 @@ class TestAlternatives : StringSpec({
         ch("bananal") shouldBe "bananal"
     }
 
+    "One-element alternative lists should act like the element itself" {
+        val ch = lsc(
+            """
+                Symbol aː, eː, iː, oː, uː
+
+                Class shortvowel {a, e, i, o, u}
+                Class longvowel {aː, eː, iː, oː, uː}
+                
+                imbalanced:
+                 {@shortvowel, @longvowel} => {@shortvowel}
+            """.trimIndent()
+        )
+
+        ch("foː") shouldBe "fo"
+    }
+
     "Alternative lists should backtrack if the rest of the rule can't match" {
         val ch = lsc(
             """

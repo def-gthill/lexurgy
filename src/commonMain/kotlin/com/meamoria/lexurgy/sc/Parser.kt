@@ -1659,10 +1659,10 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         override val publicName: String = "an alternative list"
 
         override fun combineMatchers(elements: List<Matcher>): Matcher =
-            AlternativeMatcher(elements)
+            alternativeMatcher(elements)
 
         override fun combineEmitters(elements: List<Emitter>): Emitter =
-            AlternativeEmitter(elements)
+            alternativeEmitter(elements)
     }
 
     private class IntersectionElement(
@@ -1770,18 +1770,24 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
         override fun matcher(context: RuleContext, declarations: Declarations): Matcher =
             with(declarations) {
-                AlternativeMatcher(name.toClass().sounds.map {
+                alternativeMatcher(name.toClass().sounds.map {
                     TextElement(it, it).matcher(context, this)
                 })
             }
 
         override fun emitter(declarations: Declarations): Emitter =
             with(declarations) {
-                AlternativeEmitter(name.toClass().sounds.map {
+                alternativeEmitter(name.toClass().sounds.map {
                     TextElement(it, it).emitter(this)
                 })
             }
     }
+
+    private fun alternativeMatcher(elements: List<Matcher>): Matcher =
+        elements.singleOrNull() ?: AlternativeMatcher(elements)
+
+    private fun alternativeEmitter(elements: List<Emitter>): Emitter =
+        elements.singleOrNull() ?: AlternativeEmitter(elements)
 
     private class CaptureReferenceElement(
         text: String,
