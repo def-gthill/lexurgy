@@ -52,7 +52,9 @@ expect class LscParser(input: TokenStream) : Parser {
     fun environment(): EnvironmentContext
     fun environmentBefore(): EnvironmentBeforeContext
     fun environmentAfter(): EnvironmentAfterContext
+    fun interfix(): InterfixContext
     fun intersection(): IntersectionContext
+    fun transforming(): TransformingContext
     fun interfixElement(): InterfixElementContext
     fun negated(): NegatedContext
     fun postfix(): PostfixContext
@@ -126,7 +128,9 @@ expect open class LscBaseVisitor<T>(){
     open fun visitEnvironment(ctx: EnvironmentContext): T
     open fun visitEnvironmentBefore(ctx: EnvironmentBeforeContext): T
     open fun visitEnvironmentAfter(ctx: EnvironmentAfterContext): T
+    open fun visitInterfix(ctx: InterfixContext): T
     open fun visitIntersection(ctx: IntersectionContext): T
+    open fun visitTransforming(ctx: TransformingContext): T
     open fun visitInterfixElement(ctx: InterfixElementContext): T
     open fun visitNegated(ctx: NegatedContext): T
     open fun visitPostfix(ctx: PostfixContext): T
@@ -376,7 +380,7 @@ expect class ToContext : ParserRuleContext {
 
 expect class RuleElementContext : ParserRuleContext {
     fun bounded(): BoundedContext?
-    fun intersection(): IntersectionContext?
+    fun interfix(): InterfixContext?
     fun negated(): NegatedContext?
     fun postfix(): PostfixContext?
     fun simple(): SimpleContext?
@@ -421,7 +425,7 @@ expect fun SequenceContext.allFreeElements(): List<FreeElementContext>
 
 expect class FreeElementContext : ParserRuleContext {
     fun bounded(): BoundedContext?
-    fun intersection(): IntersectionContext?
+    fun interfix(): InterfixContext?
     fun negated(): NegatedContext?
     fun postfix(): PostfixContext?
     fun simple(): SimpleContext?
@@ -472,11 +476,23 @@ expect class EnvironmentAfterContext : ParserRuleContext {
 }
 
 
+expect class InterfixContext : ParserRuleContext {
+    fun intersection(): IntersectionContext?
+    fun transforming(): TransformingContext?
+}
+
+
 expect class IntersectionContext : ParserRuleContext {
 
 }
 
 expect fun IntersectionContext.allInterfixElements(): List<InterfixElementContext>
+
+expect class TransformingContext : ParserRuleContext {
+
+}
+
+expect fun TransformingContext.allInterfixElements(): List<InterfixElementContext>
 
 expect class InterfixElementContext : ParserRuleContext {
     fun bounded(): BoundedContext?

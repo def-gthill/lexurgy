@@ -47,6 +47,32 @@ class TestDiacritics : StringSpec({
         ch("sasktponesktwisuskt") shouldBe "sfn+-*aponesktwisfn+-*u"
     }
 
+    "Diacritic search should ignore expicit absent values" {
+        val ch = lsc(
+            """
+                Feature Type(*cons, vowel)
+                Feature Height(*low, high)
+                Feature Depth(*front, back)
+                Feature Stress(*unstr, str)
+        
+                Diacritic ́  [str]
+        
+                Symbol a [vowel low back]
+                Symbol e [vowel low front]
+                Symbol i [vowel high front]
+                Symbol u [vowel high back]
+        
+                stress [vowel]:
+                [] => [str] / $ _
+            """.trimIndent()
+        )
+
+        ch("kaki") shouldBe "káki"
+        ch("putatu") shouldBe "pútatu"
+        ch("ichigaku") shouldBe "íchigaku"
+        ch("epistrefu") shouldBe "épistrefu"
+    }
+
     "Diacritics declared with (before) should go before their symbol" {
         val ch = lsc(
             """

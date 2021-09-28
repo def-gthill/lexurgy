@@ -269,11 +269,23 @@ public interface LscVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitEnvironmentAfter(LscParser.EnvironmentAfterContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link LscParser#interfix}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitInterfix(LscParser.InterfixContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link LscParser#intersection}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitIntersection(LscParser.IntersectionContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link LscParser#transforming}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitTransforming(LscParser.TransformingContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link LscParser#interfixElement}.
 	 * @param ctx the parse tree

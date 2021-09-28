@@ -270,8 +270,20 @@ LscVisitor.prototype.visitEnvironmentAfter = function(ctx) {
 };
 
 
+// Visit a parse tree produced by LscParser#interfix.
+LscVisitor.prototype.visitInterfix = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
 // Visit a parse tree produced by LscParser#intersection.
 LscVisitor.prototype.visitIntersection = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
+// Visit a parse tree produced by LscParser#transforming.
+LscVisitor.prototype.visitTransforming = function(ctx) {
   return this.visitChildren(ctx);
 };
 

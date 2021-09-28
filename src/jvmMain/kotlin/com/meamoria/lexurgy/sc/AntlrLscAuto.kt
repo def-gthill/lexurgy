@@ -130,9 +130,15 @@ actual typealias EnvironmentBeforeContext = LscParser.EnvironmentBeforeContext
 
 actual typealias EnvironmentAfterContext = LscParser.EnvironmentAfterContext
 
+actual typealias InterfixContext = LscParser.InterfixContext
+
 actual typealias IntersectionContext = LscParser.IntersectionContext
 
 actual fun IntersectionContext.allInterfixElements(): List<InterfixElementContext> = interfixElement()
+
+actual typealias TransformingContext = LscParser.TransformingContext
+
+actual fun TransformingContext.allInterfixElements(): List<InterfixElementContext> = interfixElement()
 
 actual typealias InterfixElementContext = LscParser.InterfixElementContext
 

@@ -457,6 +457,8 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     override fun visitEnvironmentAfter(ctx: EnvironmentAfterContext): ParseNode = visit(ctx.ruleElement())
 
+    override fun visitInterfix(ctx: InterfixContext): ParseNode = visit(ctx.getChild(0))
+
     override fun visitIntersection(ctx: IntersectionContext): ParseNode =
         walkIntersection(
             ctx.getText(),

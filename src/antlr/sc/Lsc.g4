@@ -44,7 +44,7 @@ expression: UNCHANGED | (from CHANGE to compoundEnvironment);
 from: ruleElement;
 to: ruleElement;
 
-ruleElement: bounded | intersection | negated | postfix | simple | sequence;
+ruleElement: bounded | interfix | negated | postfix | simple | sequence;
 
 // "Bounded" elements have a clear start and end symbol
 bounded: group | list | lookaround;
@@ -54,7 +54,7 @@ lookaround: O_PAREN ruleElement compoundEnvironment C_PAREN;
 
 // "Free" elements have sub-elements floating free amid whitespace
 sequence: freeElement (WHITESPACE freeElement)+;
-freeElement: bounded | intersection | negated | postfix | simple;
+freeElement: bounded | interfix | negated | postfix | simple;
 
 compoundEnvironment: (CONDITION condition)? (EXCLUSION exclusion)?;
 condition: environment | environmentList;
@@ -67,7 +67,9 @@ environmentBefore: ruleElement;
 environmentAfter: ruleElement;
 
 // "Interfix" elements use a delimiter but no whitespace or boundary marker
+interfix: intersection | transforming;
 intersection: interfixElement (INTERSECTION interfixElement)+;
+transforming: interfixElement (INEXACT interfixElement)+;
 interfixElement: bounded | negated | postfix | simple;
 
 // "Prefix" elements use a prefix operator

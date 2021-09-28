@@ -52,7 +52,9 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     actual fun environment(): EnvironmentContext
     actual fun environmentBefore(): EnvironmentBeforeContext
     actual fun environmentAfter(): EnvironmentAfterContext
+    actual fun interfix(): InterfixContext
     actual fun intersection(): IntersectionContext
+    actual fun transforming(): TransformingContext
     actual fun interfixElement(): InterfixElementContext
     actual fun negated(): NegatedContext
     actual fun postfix(): PostfixContext
@@ -290,7 +292,7 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
 
     class RuleElementContext : ParserRuleContext {
         fun bounded(): BoundedContext?
-        fun intersection(): IntersectionContext?
+        fun interfix(): InterfixContext?
         fun negated(): NegatedContext?
         fun postfix(): PostfixContext?
         fun simple(): SimpleContext?
@@ -330,7 +332,7 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
 
     class FreeElementContext : ParserRuleContext {
         fun bounded(): BoundedContext?
-        fun intersection(): IntersectionContext?
+        fun interfix(): InterfixContext?
         fun negated(): NegatedContext?
         fun postfix(): PostfixContext?
         fun simple(): SimpleContext?
@@ -375,9 +377,19 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
         fun ruleElement(): RuleElementContext
     }
 
+    class InterfixContext : ParserRuleContext {
+        fun intersection(): IntersectionContext?
+        fun transforming(): TransformingContext?
+    }
+
     class IntersectionContext : ParserRuleContext {
         fun interfixElement(): Array<InterfixElementContext>
         fun INTERSECTION(): Array<TerminalNode>
+    }
+
+    class TransformingContext : ParserRuleContext {
+        fun interfixElement(): Array<InterfixElementContext>
+        fun INEXACT(): Array<TerminalNode>
     }
 
     class InterfixElementContext : ParserRuleContext {
@@ -568,7 +580,9 @@ open external class LscVisitor<T>{
     open fun visitEnvironment(ctx: EnvironmentContext): T
     open fun visitEnvironmentBefore(ctx: EnvironmentBeforeContext): T
     open fun visitEnvironmentAfter(ctx: EnvironmentAfterContext): T
+    open fun visitInterfix(ctx: InterfixContext): T
     open fun visitIntersection(ctx: IntersectionContext): T
+    open fun visitTransforming(ctx: TransformingContext): T
     open fun visitInterfixElement(ctx: InterfixElementContext): T
     open fun visitNegated(ctx: NegatedContext): T
     open fun visitPostfix(ctx: PostfixContext): T
@@ -714,9 +728,15 @@ actual typealias EnvironmentBeforeContext = LscParser.EnvironmentBeforeContext
 
 actual typealias EnvironmentAfterContext = LscParser.EnvironmentAfterContext
 
+actual typealias InterfixContext = LscParser.InterfixContext
+
 actual typealias IntersectionContext = LscParser.IntersectionContext
 
 actual fun IntersectionContext.allInterfixElements(): List<InterfixElementContext> = interfixElement().toList()
+
+actual typealias TransformingContext = LscParser.TransformingContext
+
+actual fun TransformingContext.allInterfixElements(): List<InterfixElementContext> = interfixElement().toList()
 
 actual typealias InterfixElementContext = LscParser.InterfixElementContext
 
