@@ -71,7 +71,6 @@ class LscInterpreter {
 object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     override fun visitLscFile(ctx: LscFileContext): ParseNode {
         val statementContexts = ctx.allStatements().map { it.getChild(0) as ParserRuleContext }
-        checkDisembodiedBlocks(statementContexts)
         validateOrder(statementContexts)
         val (changeRules, ruleAnchoredStatements) = visitRulesAndRuleAnchoredStatements(statementContexts)
         return walkFile(
@@ -112,15 +111,6 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             curAnchoredStatements.map { RuleAnchoredStatement(it, null) }
         )
         return changeRules to anchoredStatements
-    }
-
-    private fun checkDisembodiedBlocks(statements: List<ParserRuleContext>) {
-        statements.firstOrNull { it is BlockContext }?.let {
-            throw LscNotParsable(
-                it.getStartLine(), it.getStartColumn(), it.getText(),
-                "Expression \"${it.getText()}\" needs to be in a named rule"
-            )
-        }
     }
 
     private fun validateOrder(statements: List<ParserRuleContext>) {
