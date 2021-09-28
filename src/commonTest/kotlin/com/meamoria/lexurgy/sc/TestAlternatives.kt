@@ -68,6 +68,19 @@ class TestAlternatives : StringSpec({
         ch("bananal") shouldBe "bananal"
     }
 
+    "We should get a clear error message if we use a class before it's defined" {
+        shouldThrow<LscUndefinedName> {
+            lsc(
+                """
+                    Class foo {a, b, @bar}
+                    Class bar {c, d}
+                """.trimIndent()
+            )
+        }.also {
+            it.message shouldBe "The class \"bar\" is used before it's defined"
+        }
+    }
+
     "One-element alternative lists should act like the element itself" {
         val ch = lsc(
             """

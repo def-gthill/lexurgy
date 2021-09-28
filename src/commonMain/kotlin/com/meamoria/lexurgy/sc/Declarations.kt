@@ -461,8 +461,11 @@ data class Diacritic(
         Modifier(name, position)
 }
 
-class LscUndefinedName(val nameType: String, val undefinedName: String) :
-    LscUserError("The $nameType \"$undefinedName\" is not defined")
+class LscUndefinedName(val nameType: String, val undefinedName: String, val usedBeforeDefined: Boolean = false) :
+    LscUserError(
+        "The $nameType \"$undefinedName\" is " +
+                if (usedBeforeDefined) "used before it's defined" else "not defined"
+    )
 
 class LscDuplicateName(val nameType: String, val duplicateName: String) :
     LscUserError("The $nameType \"$duplicateName\" is defined more than once")

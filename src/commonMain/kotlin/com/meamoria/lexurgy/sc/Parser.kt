@@ -624,21 +624,23 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         intermediateRomanizers
     )
 
-    private fun resolveClasses(classDeclarations: List<ParseNode>): List<SegmentClass> {
-        val classes = mutableMapOf<String, SegmentClass>()
-        for (classDeclaration in classDeclarations) {
-            val classNode = classDeclaration as ClassDeclarationNode
+    private fun resolveClasses(classDeclarations: List<ClassDeclarationNode>): List<SegmentClass> {
+        val definedClasses = mutableMapOf<String, SegmentClass>()
+        val allClassNames = classDeclarations.map { it.name }.toSet()
+        for (classNode in classDeclarations) {
             val newClassSounds = classNode.elements.flatMap {
                 if (it is TextNode) listOf(it.literalText)
                 else {
                     val nestedName = (it as ClassReferenceElement).name
-                    classes[nestedName]?.sounds ?: throw LscUndefinedName("class", nestedName)
+                    definedClasses[nestedName]?.sounds ?: throw LscUndefinedName(
+                        "class", nestedName, nestedName in allClassNames
+                    )
                 }
             }
-            if (classNode.name in classes) throw LscDuplicateName("class", classNode.name)
-            classes[classNode.name] = SegmentClass(classNode.name, newClassSounds)
+            if (classNode.name in definedClasses) throw LscDuplicateName("class", classNode.name)
+            definedClasses[classNode.name] = SegmentClass(classNode.name, newClassSounds)
         }
-        return classes.values.toList()
+        return definedClasses.values.toList()
     }
 
     private fun walkClassDeclaration(
@@ -1066,7 +1068,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             symbolDeclarations.flatMap { sublist ->
                 (sublist as ParseNodeList).elements.map { (it as SymbolDeclarationNode).symbol }
             },
-            resolveClasses(classDeclarations),
+            resolveClasses(classDeclarations.map { it as ClassDeclarationNode }),
         )
         private val ruleToDeclarations = syllableStructure.associate {
             (it.rule as UnlinkedRule?) to initialDeclarations.withSyllabifier(

@@ -54,10 +54,10 @@ class TestSoundChanger : StringSpec({
         shouldThrow<LscNotParsable> {
             lsc(
                 """
-                a-rule:
-                x=>h
-                ]]]]]
-            """.trimIndent()
+                    a-rule:
+                    x=>h
+                    ]]]]]
+                """.trimIndent()
             )
         }
     }
