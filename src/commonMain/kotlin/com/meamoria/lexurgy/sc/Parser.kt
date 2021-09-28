@@ -60,7 +60,12 @@ class LscInterpreter {
         @Suppress("UNUSED_PARAMETER") oldMessage: String,
         offendingSymbol: String,
         offendingLine: String
-    ): String = "\"$offendingSymbol\" doesn't make sense in the line \"$offendingLine\""
+    ): String =
+        if (offendingSymbol == "<EOF>") {
+            "The rules are incomplete; more is expected after \"$offendingLine\""
+        } else {
+            "\"$offendingSymbol\" doesn't make sense in the line \"$offendingLine\""
+        }
 }
 
 object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {

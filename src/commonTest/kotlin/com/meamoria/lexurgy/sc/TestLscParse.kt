@@ -235,9 +235,17 @@ class TestLscParse : StringSpec({
 
     "Completely unintelligible files should still yield decent error messages" {
         shouldThrow<LscNotParsable> {
-            parser.parseFile("[foo]")
+            parser.parseFile("foo!%~$")
         }.also {
-            it.message should startWith("\"[\" doesn't make sense in the line \"[foo]\"")
+            it.message should startWith("\"%\" doesn't make sense in the line \"foo!%~$\"")
+        }
+    }
+
+    "If the parser is expecting more tokens but hits EOF, indicate this clearly" {
+        shouldThrow<LscNotParsable> {
+            parser.parseFile("foo")
+        }.also {
+            it.message should startWith("The rules are incomplete; more is expected after \"foo\"")
         }
     }
 
