@@ -445,8 +445,7 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     }
 
     class FancyValueContext : ParserRuleContext {
-        fun plusFeatureValue(): PlusFeatureValueContext?
-        fun featureValue(): FeatureValueContext?
+        fun matrixValue(): MatrixValueContext?
         fun negatedValue(): NegatedValueContext?
         fun absentFeature(): AbsentFeatureContext?
         fun featureVariable(): FeatureVariableContext?
@@ -454,7 +453,7 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
 
     class NegatedValueContext : ParserRuleContext {
         fun NEGATION(): TerminalNode
-        fun name(): NameContext
+        fun matrixValue(): MatrixValueContext
     }
 
     class AbsentFeatureContext : ParserRuleContext {

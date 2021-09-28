@@ -398,6 +398,21 @@ class TestFeatures : StringSpec({
         ch("minemuto") shouldBe "minimuˈtu"
     }
 
+    "We should be able to negate a plus-minus feature" {
+        val ch = lsc(
+            """
+                feature foo
+                Symbol a [+foo]
+                Symbol b [-foo]
+                
+                no-foos-allowed:
+                 [!+foo] => n
+            """.trimIndent()
+        )
+
+        ch("abcabcabc") shouldBe "annannann"
+    }
+
     "We should be able to use the absent values of binary features" {
         // And we should be able to negate a plus-only feature with * and - interchangeably.
         val ch = lsc(

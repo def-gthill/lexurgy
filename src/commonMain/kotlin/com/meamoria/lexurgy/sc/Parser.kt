@@ -511,7 +511,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     override fun visitNegatedValue(ctx: NegatedValueContext): ParseNode =
         walkNegatedValue(
             ctx.getText(),
-            visit(ctx.name()),
+            visit(ctx.matrixValue()),
         )
 
     override fun visitAbsentFeature(ctx: AbsentFeatureContext): ParseNode =
@@ -932,7 +932,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     ): ParseNode =
         MatrixValueNode(
             text,
-            NegatedValue((value as NameNode).name)
+            NegatedValue((value as SimpleValueNode).simpleValue.name)
         )
 
     private fun walkAbsentFeature(

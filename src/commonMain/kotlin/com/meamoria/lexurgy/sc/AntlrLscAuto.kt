@@ -552,8 +552,7 @@ expect class FancyMatrixContext : ParserRuleContext {
 expect fun FancyMatrixContext.allFancyValues(): List<FancyValueContext>
 
 expect class FancyValueContext : ParserRuleContext {
-    fun plusFeatureValue(): PlusFeatureValueContext?
-    fun featureValue(): FeatureValueContext?
+    fun matrixValue(): MatrixValueContext?
     fun negatedValue(): NegatedValueContext?
     fun absentFeature(): AbsentFeatureContext?
     fun featureVariable(): FeatureVariableContext?
@@ -562,7 +561,7 @@ expect class FancyValueContext : ParserRuleContext {
 
 expect class NegatedValueContext : ParserRuleContext {
     fun NEGATION(): TerminalNode
-    fun name(): NameContext
+    fun matrixValue(): MatrixValueContext
 }
 
 
