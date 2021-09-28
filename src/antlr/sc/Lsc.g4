@@ -3,7 +3,7 @@ grammar Lsc;
 lscFile: WHITESPACE | NEWLINE* statement? (NEWLINE+ statement)* NEWLINE* EOF;
 statement:
     featureDecl | diacriticDecl | symbolDecl | classDecl | syllableDecl |
-    deromanizer | changeRule | interRomanizer | romanizer;
+    deromanizer | changeRule | interRomanizer | romanizer | block;
 
 classDecl: CLASS_DECL WHITESPACE name WHITESPACE LIST_START classElement (SEP classElement)* LIST_END;
 classElement: classRef | text;

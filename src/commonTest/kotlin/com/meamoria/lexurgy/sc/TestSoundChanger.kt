@@ -27,6 +27,18 @@ class TestSoundChanger : StringSpec({
         ch("expexax") shouldBe "ehpehah"
     }
 
+    "A disembodied expression without a name should produce a friendly error message" {
+        shouldThrow<LscNotParsable> {
+            lsc(
+                """
+                    a => b
+                """.trimIndent()
+            )
+        }.also {
+            it.message shouldBe "Expression \"a => b\" needs to be in a named rule (line 1)"
+        }
+    }
+
     "We should be able to have numbers in names, as long as the whole name isn't numbers" {
         lsc(
             """
