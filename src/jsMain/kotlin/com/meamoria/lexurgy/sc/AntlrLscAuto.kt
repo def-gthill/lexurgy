@@ -53,8 +53,7 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     actual fun environmentBefore(): EnvironmentBeforeContext
     actual fun environmentAfter(): EnvironmentAfterContext
     actual fun interfix(): InterfixContext
-    actual fun intersection(): IntersectionContext
-    actual fun transforming(): TransformingContext
+    actual fun interfixType(): InterfixTypeContext
     actual fun interfixElement(): InterfixElementContext
     actual fun negated(): NegatedContext
     actual fun postfix(): PostfixContext
@@ -378,18 +377,13 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     }
 
     class InterfixContext : ParserRuleContext {
-        fun intersection(): IntersectionContext?
-        fun transforming(): TransformingContext?
+        fun interfixElement(): Array<InterfixElementContext>
+        fun interfixType(): Array<InterfixTypeContext>
     }
 
-    class IntersectionContext : ParserRuleContext {
-        fun interfixElement(): Array<InterfixElementContext>
-        fun INTERSECTION(): Array<TerminalNode>
-    }
-
-    class TransformingContext : ParserRuleContext {
-        fun interfixElement(): Array<InterfixElementContext>
-        fun INEXACT(): Array<TerminalNode>
+    class InterfixTypeContext : ParserRuleContext {
+        fun INTERSECTION(): TerminalNode?
+        fun TRANSFORMING(): TerminalNode?
     }
 
     class InterfixElementContext : ParserRuleContext {
@@ -581,8 +575,7 @@ open external class LscVisitor<T>{
     open fun visitEnvironmentBefore(ctx: EnvironmentBeforeContext): T
     open fun visitEnvironmentAfter(ctx: EnvironmentAfterContext): T
     open fun visitInterfix(ctx: InterfixContext): T
-    open fun visitIntersection(ctx: IntersectionContext): T
-    open fun visitTransforming(ctx: TransformingContext): T
+    open fun visitInterfixType(ctx: InterfixTypeContext): T
     open fun visitInterfixElement(ctx: InterfixElementContext): T
     open fun visitNegated(ctx: NegatedContext): T
     open fun visitPostfix(ctx: PostfixContext): T
@@ -730,13 +723,11 @@ actual typealias EnvironmentAfterContext = LscParser.EnvironmentAfterContext
 
 actual typealias InterfixContext = LscParser.InterfixContext
 
-actual typealias IntersectionContext = LscParser.IntersectionContext
+actual fun InterfixContext.allInterfixElements(): List<InterfixElementContext> = interfixElement().toList()
 
-actual fun IntersectionContext.allInterfixElements(): List<InterfixElementContext> = interfixElement().toList()
+actual fun InterfixContext.allInterfixTypes(): List<InterfixTypeContext> = interfixType().toList()
 
-actual typealias TransformingContext = LscParser.TransformingContext
-
-actual fun TransformingContext.allInterfixElements(): List<InterfixElementContext> = interfixElement().toList()
+actual typealias InterfixTypeContext = LscParser.InterfixTypeContext
 
 actual typealias InterfixElementContext = LscParser.InterfixElementContext
 

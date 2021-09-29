@@ -350,16 +350,10 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         return walkBlock(ctx.getText(), blockType, blockElements)
     }
 
-    private fun checkUniformBlockType(blockCtxs: List<BlockTypeContext>): BlockType {
-        val blockType = getBlockType(blockCtxs.first())
-        for (laterBlockCtx in blockCtxs.drop(1)) {
-            val laterBlockType = getBlockType(laterBlockCtx)
-            if (laterBlockType != blockType) {
-                throw LscMixedBlock(blockType, laterBlockType)
-            }
+    private fun checkUniformBlockType(blockCtxs: List<BlockTypeContext>): BlockType =
+        checkUniformType(blockCtxs.map { getBlockType(it) }) { firstType, laterType, _ ->
+            throw LscMixedBlock(firstType, laterType)
         }
-        return blockType
-    }
 
     private fun getBlockType(ctx: BlockTypeContext) =
         when {
@@ -457,13 +451,43 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     override fun visitEnvironmentAfter(ctx: EnvironmentAfterContext): ParseNode = visit(ctx.ruleElement())
 
-    override fun visitInterfix(ctx: InterfixContext): ParseNode = visit(ctx.getChild(0))
-
-    override fun visitIntersection(ctx: IntersectionContext): ParseNode =
-        walkIntersection(
+    override fun visitInterfix(ctx: InterfixContext): ParseNode =
+        walkInterfix(
             ctx.getText(),
+            checkUniformInterfixType(ctx.allInterfixTypes()),
             listVisit(ctx.allInterfixElements()),
         )
+
+    private fun checkUniformInterfixType(interfixCtxs: List<InterfixTypeContext>): InterfixType =
+        checkUniformType(interfixCtxs.map { getInterfixType(it) }) { firstType, laterType, laterIndex ->
+            val offendingOperator = interfixCtxs[laterIndex]
+            throw LscNotParsable(
+                offendingOperator.getStartLine(),
+                offendingOperator.getStartColumn(),
+                laterType.text,
+                "Can't mix ${firstType.text} and ${laterType.text}; use parentheses"
+            )
+        }
+
+    private fun getInterfixType(ctx: InterfixTypeContext) =
+        when {
+            ctx.INTERSECTION() != null -> InterfixType.INTERSECTION
+            ctx.TRANSFORMING() != null -> InterfixType.TRANSFORMING
+            else -> throw AssertionError("Interfix expression has no type")
+        }
+
+    private fun <Type> checkUniformType(
+        types: List<Type>,
+        throwFunction: (Type, Type, Int) -> Nothing
+    ): Type {
+        val firstType = types.first()
+        for ((index, laterType) in types.withIndex().drop(1)) {
+            if (laterType != firstType) {
+                throwFunction(firstType, laterType, index)
+            }
+        }
+        return firstType
+    }
 
     override fun visitInterfixElement(ctx: InterfixElementContext): ParseNode =
         visit(ctx.getChild(0))
@@ -907,14 +931,23 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             items.map { it as RuleElement },
         )
 
-    private fun walkIntersection(
+    private fun walkInterfix(
         text: String,
+        interfixType: InterfixType,
         items: List<ParseNode>,
     ): ParseNode =
-        IntersectionElement(
-            text,
-            items.map { it as RuleElement },
-        )
+        when (interfixType) {
+            InterfixType.INTERSECTION ->
+                IntersectionElement(
+                    text,
+                    items.map { it as RuleElement },
+                )
+            InterfixType.TRANSFORMING ->
+                TransformingElement(
+                    text,
+                    items.map { it as ResultElement },
+                )
+        }
 
     private fun walkSimpleElement(
         element: ParseNode,
@@ -1687,6 +1720,30 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             throw LscIntersectionInOutput(elements)
     }
 
+    private class TransformingElement(
+        text: String,
+        val elements: List<ResultElement>,
+    ) : BaseParseNode(text), RuleElement {
+        override val publicName: String = "a transforming element"
+
+        override fun matcher(context: RuleContext, declarations: Declarations): Matcher {
+            val emitters = elements.map { it.emitter(declarations) }
+            val transformations = emitters.drop(1).map { castToConditional(it) }
+            return EmitterMatcher(
+                TransformingEmitter(
+                    castToIndependent(emitters.first()),
+                    transformations.singleOrNull() ?: MultiConditionalEmitter(transformations),
+                )
+            )
+        }
+
+        private fun castToIndependent(emitter: Emitter): IndependentEmitter =
+            emitter as? IndependentEmitter ?: TODO()
+
+        private fun castToConditional(emitter: Emitter): ConditionalEmitter =
+            emitter as? ConditionalEmitter ?: TODO()
+    }
+
     private class TextElement(
         text: String,
         val literalText: String,
@@ -1853,6 +1910,11 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 enum class BlockType(val text: String) {
     SEQUENTIAL("Then"),
     FIRST_MATCHING("Else"),
+}
+
+enum class InterfixType(val text: String) {
+    INTERSECTION("&"),
+    TRANSFORMING(">"),
 }
 
 private class LscErrorListener : CommonAntlrErrorListener() {

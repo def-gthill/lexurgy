@@ -93,7 +93,7 @@ class TestOperators : StringSpec({
         ch("avpika") shouldBe "afpika"
     }
 
-    "We should be able to create transforming matchers using ~" {
+    "We should be able to create transforming matchers using >" {
         val ch = lsc(
             """
                 Feature +long
@@ -101,7 +101,7 @@ class TestOperators : StringSpec({
                 Class vowel {a, e, i, o, u, aː, eː, iː, oː, uː}
                 
                 raise-before-long-copy @vowel:
-                    {e, o}$1 => {i, u} / _ $1~[+long]
+                    {e, o}$1 => {i, u} / _ $1>[+long]
             """.trimIndent()
         )
 

@@ -265,7 +265,7 @@ class IndependentTransformer(
         val claimEnds = matcher.claim(declarations, phrase, start, bindings)
         fun result(claimEnd: PhraseMatchEnd, finalBindings: Bindings): Phrase =
             phrase.slice(start, claimEnd.index).recoverStructure(
-                emitter.result()(finalBindings),
+                emitter.result(declarations)(finalBindings),
                 exceptSyllableBreaks = claimEnd.matchedSyllableBreaks.map {
                     phrase.relativeIndex(it, start)
                 }
@@ -297,7 +297,7 @@ class IndependentSequenceTransformer(
         bindings: Bindings
     ): List<UnboundTransformation> =
         matcher.claim(declarations, phrase, start, bindings).map { claimEnd ->
-            val resultBits = emitter.resultBits(order, start, claimEnd)
+            val resultBits = emitter.resultBits(declarations, order, start, claimEnd)
 
             fun result(finalBindings: Bindings): Phrase =
                 phrase.slice(start, claimEnd.index).recoverStructure(
@@ -319,19 +319,20 @@ class IndependentSequenceTransformer(
         }
 
     private fun SequenceEmitter.resultBits(
+        declarations: Declarations,
         order: Int,
         start: PhraseIndex,
         claimEnd: PhraseMatchEnd,
     ): List<UnboundTransformation> =
         elements.flatMap {
             when (it) {
-                is SequenceEmitter -> it.resultBits(order, start, claimEnd)
+                is SequenceEmitter -> it.resultBits(declarations, order, start, claimEnd)
                 else -> listOf(
                     UnboundTransformation(
                         order,
                         start,
                         claimEnd.index,
-                        (it as IndependentEmitter).result(),
+                        (it as IndependentEmitter).result(declarations),
                         claimEnd.returnBindings,
                     )
                 )

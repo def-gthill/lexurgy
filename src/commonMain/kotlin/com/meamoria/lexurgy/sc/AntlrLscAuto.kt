@@ -53,8 +53,7 @@ expect class LscParser(input: TokenStream) : Parser {
     fun environmentBefore(): EnvironmentBeforeContext
     fun environmentAfter(): EnvironmentAfterContext
     fun interfix(): InterfixContext
-    fun intersection(): IntersectionContext
-    fun transforming(): TransformingContext
+    fun interfixType(): InterfixTypeContext
     fun interfixElement(): InterfixElementContext
     fun negated(): NegatedContext
     fun postfix(): PostfixContext
@@ -129,8 +128,7 @@ expect open class LscBaseVisitor<T>(){
     open fun visitEnvironmentBefore(ctx: EnvironmentBeforeContext): T
     open fun visitEnvironmentAfter(ctx: EnvironmentAfterContext): T
     open fun visitInterfix(ctx: InterfixContext): T
-    open fun visitIntersection(ctx: IntersectionContext): T
-    open fun visitTransforming(ctx: TransformingContext): T
+    open fun visitInterfixType(ctx: InterfixTypeContext): T
     open fun visitInterfixElement(ctx: InterfixElementContext): T
     open fun visitNegated(ctx: NegatedContext): T
     open fun visitPostfix(ctx: PostfixContext): T
@@ -477,22 +475,18 @@ expect class EnvironmentAfterContext : ParserRuleContext {
 
 
 expect class InterfixContext : ParserRuleContext {
-    fun intersection(): IntersectionContext?
-    fun transforming(): TransformingContext?
-}
-
-
-expect class IntersectionContext : ParserRuleContext {
 
 }
 
-expect fun IntersectionContext.allInterfixElements(): List<InterfixElementContext>
+expect fun InterfixContext.allInterfixElements(): List<InterfixElementContext>
 
-expect class TransformingContext : ParserRuleContext {
+expect fun InterfixContext.allInterfixTypes(): List<InterfixTypeContext>
 
+expect class InterfixTypeContext : ParserRuleContext {
+    fun INTERSECTION(): TerminalNode?
+    fun TRANSFORMING(): TerminalNode?
 }
 
-expect fun TransformingContext.allInterfixElements(): List<InterfixElementContext>
 
 expect class InterfixElementContext : ParserRuleContext {
     fun bounded(): BoundedContext?

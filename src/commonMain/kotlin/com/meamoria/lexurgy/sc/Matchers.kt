@@ -586,6 +586,27 @@ abstract class SimpleMatcher : BaseMatcher() {
     ): Transformer = IndependentSequenceTransformer(this, result)
 }
 
+/**
+ * A matcher that looks for text equal to the output of the specified
+ * emitter
+ */
+class EmitterMatcher(val emitter: IndependentEmitter) : SimpleMatcher() {
+    override fun claim(
+        declarations: Declarations,
+        word: Word,
+        start: Int,
+        bindings: Bindings
+    ): List<WordMatchEnd> {
+        val emitterResult = emitter.result(declarations)(bindings).first()
+        val wordStart = word.drop(start).take(emitterResult.length)
+        return if (wordStart.segments == emitterResult.segments) {
+            listOf(WordMatchEnd(start + emitterResult.length, bindings))
+        } else emptyList()
+    }
+
+    override fun reversed(): Matcher = TODO()
+}
+
 object BetweenWordsMatcher : SimpleMatcher() {
     override fun claim(
         declarations: Declarations,

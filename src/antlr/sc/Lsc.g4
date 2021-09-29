@@ -67,9 +67,8 @@ environmentBefore: ruleElement;
 environmentAfter: ruleElement;
 
 // "Interfix" elements use a delimiter but no whitespace or boundary marker
-interfix: intersection | transforming;
-intersection: interfixElement (INTERSECTION interfixElement)+;
-transforming: interfixElement (INEXACT interfixElement)+;
+interfix: interfixElement (interfixType interfixElement)+;
+interfixType: INTERSECTION | TRANSFORMING;
 interfixElement: bounded | negated | postfix | simple;
 
 // "Prefix" elements use a prefix operator
@@ -130,6 +129,7 @@ WORD_BOUNDARY: '$';
 BETWEEN_WORDS: '$$';
 CLASSREF: '@';
 INTERSECTION: '&';
+TRANSFORMING: '>';
 CLASS_DECL: 'Class' | 'class';
 FEATURE_DECL: 'Feature' | 'feature';
 SYLLABLE_FEATURE: '(Syllable)' | '(syllable)';
