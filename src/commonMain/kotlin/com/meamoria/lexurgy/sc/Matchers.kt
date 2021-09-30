@@ -590,7 +590,10 @@ abstract class SimpleMatcher : BaseMatcher() {
  * A matcher that looks for text equal to the output of the specified
  * emitter
  */
-class EmitterMatcher(val emitter: IndependentEmitter) : SimpleMatcher() {
+class EmitterMatcher(
+    val emitter: IndependentEmitter,
+    val isReversed: Boolean = false,
+) : SimpleMatcher() {
     override fun claim(
         declarations: Declarations,
         word: Word,
@@ -598,13 +601,14 @@ class EmitterMatcher(val emitter: IndependentEmitter) : SimpleMatcher() {
         bindings: Bindings
     ): List<WordMatchEnd> {
         val emitterResult = emitter.result(declarations)(bindings).first()
+        val orientedEmitterResult = if (isReversed) emitterResult.reversed() else emitterResult
         val wordStart = word.drop(start).take(emitterResult.length)
-        return if (wordStart.segments == emitterResult.segments) {
+        return if (wordStart.segments == orientedEmitterResult.segments) {
             listOf(WordMatchEnd(start + emitterResult.length, bindings))
         } else emptyList()
     }
 
-    override fun reversed(): Matcher = TODO()
+    override fun reversed(): Matcher = EmitterMatcher(emitter, !isReversed)
 }
 
 object BetweenWordsMatcher : SimpleMatcher() {

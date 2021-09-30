@@ -106,7 +106,23 @@ class TestOperators : StringSpec({
         )
 
         ch("tokyoː") shouldBe "tukyoː"
+        ch("tokyo") shouldBe "tokyo"
         ch("meleː") shouldBe "mileː"
+    }
+
+    "We should be able to use transforming matchers in a reversed context" {
+        val ch = lsc(
+            """
+                Feature +long
+                Diacritic ː [+long]
+                Class vowel {a, e, i, o, u, aː, eː, iː, oː, uː}
+                
+                raise-diphthong-after-long-copy:
+                    {ai, au}$1 => {ei, ou} / $1>[+long] (!@vowel)+ _
+            """.trimIndent()
+        )
+
+        ch("haːiːtai") shouldBe "haːiːtei"
     }
 
     "We should be able to match segments that don't belong to a particular class" {
