@@ -599,14 +599,13 @@ class EmitterMatcher(
         word: Word,
         start: Int,
         bindings: Bindings
-    ): List<WordMatchEnd> {
-        val emitterResult = emitter.result(declarations)(bindings).first()
-        val orientedEmitterResult = if (isReversed) emitterResult.reversed() else emitterResult
-        val wordStart = word.drop(start).take(emitterResult.length)
-        return if (wordStart.segments == orientedEmitterResult.segments) {
-            listOf(WordMatchEnd(start + emitterResult.length, bindings))
-        } else emptyList()
-    }
+    ): List<WordMatchEnd> = matchText(
+        word,
+        start,
+        emitter.result(declarations)(bindings).first(),
+        bindings,
+        isReversed,
+    )
 
     override fun reversed(): Matcher = EmitterMatcher(emitter, !isReversed)
 }
@@ -700,19 +699,22 @@ class CaptureReferenceMatcher(
         bindings: Bindings
     ): List<WordMatchEnd> =
         bindings.captures[number]?.let { capturedText ->
-            val orientedCapturedText = if (isReversed) capturedText.reversed() else capturedText
-            val textToMatch = word.drop(start).take(capturedText.length)
-            val matches = if (exact) {
-                textToMatch.segments == orientedCapturedText.segments
-            } else {
-                with (declarations) {
-                    textToMatch.segments.map { it.withoutFloatingDiacritics() } ==
-                            orientedCapturedText.segments.map { it.withoutFloatingDiacritics() }
+            matchText(
+                word,
+                start,
+                capturedText,
+                bindings,
+                isReversed,
+                if (exact) {
+                    { it.segments }
+                } else {
+                    { word ->
+                        with (declarations) {
+                            word.segments.map { it.withoutFloatingDiacritics() }
+                        }
+                    }
                 }
-            }
-            return if (matches) {
-                listOf(WordMatchEnd(start + capturedText.length, bindings))
-            } else emptyList()
+            )
         } ?: throw LscUnboundCapture(number)
 
     override fun reversed(): Matcher = CaptureReferenceMatcher(number, exact, !isReversed)
@@ -815,16 +817,34 @@ class TextMatcher(text: Word) : AbstractTextMatcher(text) {
         word: Word,
         start: Int,
         bindings: Bindings
-    ): List<WordMatchEnd> {
-        val wordStart = word.drop(start).take(text.length)
-        return if (wordStart.segments == text.segments) {
-            listOf(WordMatchEnd(start + text.length, bindings))
-        } else emptyList()
-    }
+    ): List<WordMatchEnd> = matchText(word, start, text, bindings)
 
     override fun reversed(): Matcher = TextMatcher(text.reversed())
 
     override fun toString(): String = text.string
+}
+
+/**
+ * Tries to find the specified word (``expectedText``) starting
+ * at position ``start`` in the specified ``word``. If
+ * ``reversed`` is ``true``, ``expectedText`` is reversed first.
+ * If ``segmentExtractor`` is specified, it will be used
+ * to get segments from both ``word`` and ``expectedText``
+ * (instead of just accessing the ``segments`` property)
+ */
+private fun matchText(
+    word: Word,
+    start: Int,
+    expectedText: Word,
+    bindings: Bindings,
+    reverse: Boolean = false,
+    segmentExtractor: (Word) -> List<Segment> = { it.segments },
+): List<WordMatchEnd> {
+    val wordStart = word.drop(start).take(expectedText.length)
+    val orientedText = if (reverse) expectedText.reversed() else expectedText
+    return if (segmentExtractor(wordStart) == segmentExtractor(orientedText)) {
+        listOf(WordMatchEnd(start + expectedText.length, bindings))
+    } else emptyList()
 }
 
 class NegatedMatcher(val matcher: Matcher) : SimpleMatcher() {
