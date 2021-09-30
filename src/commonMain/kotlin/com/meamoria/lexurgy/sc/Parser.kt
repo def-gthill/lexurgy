@@ -1723,15 +1723,43 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     private class TransformingElement(
         text: String,
         val elements: List<ResultElement>,
-    ) : BaseParseNode(text), RuleElement {
+    ) : BaseParseNode(text), ResultElement {
         override val publicName: String = "a transforming element"
 
-        override fun matcher(context: RuleContext, declarations: Declarations): Matcher {
-            val firstEmitter = firstElementAsIndependent(declarations)
+        override fun matcher(context: RuleContext, declarations: Declarations): Matcher =
+            matcher(declarations, elements.first(), elements.first().emitter(declarations))
+
+        private fun matcher(
+            declarations: Declarations,
+            element: ResultElement?,
+            emitter: Emitter,
+        ): Matcher =
+            when (emitter) {
+                is AlternativeEmitter ->
+                    AlternativeMatcher(
+                        (element as? AlternativeElement)?.elements.zipOrThisNull(
+                            emitter.elements
+                        ) { subElement, subEmitter ->
+                            matcher(declarations, subElement as ResultElement?, subEmitter)
+                        }
+                    )
+                is SequenceEmitter -> TODO()
+                else -> singleMatcher(
+                    declarations,
+                    element,
+                    emitter,
+                )
+            }
+
+        private fun singleMatcher(
+            declarations: Declarations,
+            element: ResultElement?,
+            emitter: Emitter,
+        ): Matcher {
             val alternatives = remainingElementsAsConditional(declarations).map { transformations ->
                 EmitterMatcher(
                     TransformingEmitter(
-                        firstEmitter,
+                        castToIndependent(element, emitter),
                         transformations.singleOrNull() ?: MultiConditionalEmitter(transformations),
                     )
                 )
@@ -1739,13 +1767,47 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             return alternatives.singleOrNull() ?: AlternativeMatcher(alternatives)
         }
 
-        private fun firstElementAsIndependent(declarations: Declarations): IndependentEmitter {
-            val first = elements.first()
-            val firstEmitter = first.emitter(declarations)
-            return firstEmitter as? IndependentEmitter ?: throw LscIllegalStructure(
-                first.publicName, first.text, "at the start of a transforming matcher"
-            )
+        override fun emitter(declarations: Declarations): Emitter =
+            emitter(declarations, elements.first().emitter(declarations))
+
+        private fun emitter(
+            declarations: Declarations,
+            emitter: Emitter,
+        ): Emitter =
+            when (emitter) {
+                is AlternativeEmitter ->
+                    AlternativeEmitter(
+                        emitter.elements.map {
+                            emitter(declarations, it)
+                        }
+                    )
+                is SequenceEmitter -> TODO()
+                else -> singleEmitter(declarations, emitter)
+            }
+
+        private fun singleEmitter(
+            declarations: Declarations,
+            emitter: Emitter,
+        ): Emitter {
+            val alternatives = remainingElementsAsConditional(declarations).map { transformations ->
+                if (emitter.isIndependent()) {
+                    TransformingEmitter(
+                        emitter as IndependentEmitter,
+                        transformations.singleOrNull() ?: MultiConditionalEmitter(transformations)
+                    )
+                } else {
+                    MultiConditionalEmitter(
+                        listOf(emitter as ConditionalEmitter) + transformations
+                    )
+                }
+            }
+            return alternatives.singleOrNull() ?: AlternativeEmitter(alternatives)
         }
+
+        private fun castToIndependent(element: ResultElement?, emitter: Emitter): IndependentEmitter =
+            emitter as? IndependentEmitter ?: throw LscIllegalStructure(
+                element!!.publicName, element.text, "at the start of a transforming matcher"
+            )
 
         // The outer list represents "lifted" alternative lists.
         private fun remainingElementsAsConditional(

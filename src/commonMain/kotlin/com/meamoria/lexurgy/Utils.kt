@@ -1,5 +1,8 @@
 package com.meamoria.lexurgy
 
+/**
+ * Zips three iterables together
+ */
 fun <T, R, S, V> Iterable<T>.zip3(
     other1: Iterable<R>, other2: Iterable<S>, transform: (T, R, S) -> V
 ): List<V> = zip(other1).zip(other2) { tr, s ->
@@ -7,6 +10,9 @@ fun <T, R, S, V> Iterable<T>.zip3(
     transform(t, r, s)
 }
 
+/**
+ * Zips a homogeneous list of iterables together
+ */
 fun <T, R> List<Iterable<T>>.zipAll(transform: (List<T>) -> R): List<R> {
     val result = mutableListOf<R>()
     val iters = map { it.iterator() }
@@ -16,9 +22,25 @@ fun <T, R> List<Iterable<T>>.zipAll(transform: (List<T>) -> R): List<R> {
     return result
 }
 
+/**
+ * Zip this iterable with another; if this is null, pass null
+ * as the transform's first argument instead
+ */
+fun <T, R, V> Iterable<T>?.zipOrThisNull(
+    other: Iterable<R>, transform: (T?, R) -> V
+): List<V> =
+    this?.zip(other, transform) ?: other.map { transform(null, it) }
+
+/**
+ * Applies the specified function to this list if it isn't empty,
+ * returns null otherwis
+ */
 fun <T, R> List<T>.ifNotEmpty(transform: (List<T>) -> R): R? =
     if (isEmpty()) null else transform(this)
 
+/**
+ * Returns all possible subsets of this iterable
+ */
 fun <T> Iterable<T>.subsets(): Sequence<List<T>> {
     val list = toList()
     return generateSequence(emptyList()) { prev ->
@@ -28,6 +50,9 @@ fun <T> Iterable<T>.subsets(): Sequence<List<T>> {
     }
 }
 
+/**
+ * Returns all possible pairs of elements from this iterable
+ */
 fun <T> Iterable<T>.pairs(): Sequence<Pair<T, T>> = subsets().filter { it.size == 2 }.map { it[0] to it[1] }
 
 /**

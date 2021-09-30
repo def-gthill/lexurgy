@@ -176,6 +176,39 @@ class TestOperators : StringSpec({
         ch("toaoaaeːei") shouldBe "toaoaːeːi"
     }
 
+    "We should be able to create transforming emitters using >" {
+        val ch = lsc(
+            """
+                Feature +long
+                Diacritic ː [+long]
+                Class vowel {a, e, i, o, u, aː, eː, iː, oː, uː}
+                
+                swap-and-lengthen:
+                    @vowel$1 {r, l}$2 => $2 $1>[+long]
+            """.trimIndent()
+        )
+
+        ch("tarn") shouldBe "traːn"
+        ch("poːl") shouldBe "ploː"
+    }
+
+    "Initial alternatives should be lifted out of transforming elements and joined to corresponding alternatives" {
+        val ch = lsc(
+            """
+                Feature +long
+                Diacritic ː [+long]
+                Class midvowel {e, o}
+                Class highvowel {i, u}
+                
+                raise-and-shorten:
+                    @midvowel>[+long] => @highvowel>[-long]
+            """.trimIndent()
+        )
+
+        ch("kobeː") shouldBe "kobi"
+        ch("soːdo") shouldBe "sudo"
+    }
+
     "We should be able to match segments that don't belong to a particular class" {
         val ch = lsc(
             """
