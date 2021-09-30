@@ -1727,21 +1727,55 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         override val publicName: String = "a transforming element"
 
         override fun matcher(context: RuleContext, declarations: Declarations): Matcher {
-            val emitters = elements.map { it.emitter(declarations) }
-            val transformations = emitters.drop(1).map { castToConditional(it) }
-            return EmitterMatcher(
-                TransformingEmitter(
-                    castToIndependent(emitters.first()),
-                    transformations.singleOrNull() ?: MultiConditionalEmitter(transformations),
+            val firstEmitter = firstElementAsIndependent(declarations)
+            val alternatives = remainingElementsAsConditional(declarations).map { transformations ->
+                EmitterMatcher(
+                    TransformingEmitter(
+                        firstEmitter,
+                        transformations.singleOrNull() ?: MultiConditionalEmitter(transformations),
+                    )
                 )
+            }
+            return alternatives.singleOrNull() ?: AlternativeMatcher(alternatives)
+        }
+
+        private fun firstElementAsIndependent(declarations: Declarations): IndependentEmitter {
+            val first = elements.first()
+            val firstEmitter = first.emitter(declarations)
+            return firstEmitter as? IndependentEmitter ?: throw LscIllegalStructure(
+                first.publicName, first.text, "at the start of a transforming matcher"
             )
         }
 
-        private fun castToIndependent(emitter: Emitter): IndependentEmitter =
-            emitter as? IndependentEmitter ?: TODO()
-
-        private fun castToConditional(emitter: Emitter): ConditionalEmitter =
-            emitter as? ConditionalEmitter ?: TODO()
+        // The outer list represents "lifted" alternative lists.
+        private fun remainingElementsAsConditional(
+            declarations: Declarations
+        ): List<List<ConditionalEmitter>> {
+            var alternatives = emptyList<List<ConditionalEmitter>>()
+            val remainingElements = elements.drop(1)
+            for (remainingElement in remainingElements) {
+                val elements =
+                    if (remainingElement is AlternativeElement) {
+                        remainingElement.elements
+                    } else {
+                        listOf(remainingElement)
+                    }
+                val emitters = elements.map { element ->
+                    val emitter = castToResultElement(element).emitter(declarations)
+                    emitter as? ConditionalEmitter ?: throw LscIllegalStructure(
+                        element.publicName, element.text, "to continue a transforming matcher"
+                    )
+                }
+                alternatives = if (alternatives.isEmpty()) {
+                    emitters.map { listOf(it) }
+                } else {
+                    alternatives.flatMap { alternative ->
+                        emitters.map { alternative + it }
+                    }
+                }
+            }
+            return alternatives
+        }
     }
 
     private class TextElement(
@@ -1945,18 +1979,32 @@ class LscInvalidRuleExpression(
     reason
 )
 
-class LscIllegalStructureInInput(
+open class LscIllegalStructure(
     val invalidNodeType: String,
     val invalidNode: String,
+    val location: String,
 ) : LscUserError(
-    "${invalidNodeType.replaceFirstChar { it.uppercase() }} like \"$invalidNode\" can't be used in the input of a rule"
+    "${invalidNodeType.capitalize()} like \"$invalidNode\" can't be used $location"
+)
+
+private fun String.capitalize(): String = replaceFirstChar { it.uppercase() }
+
+class LscIllegalStructureInInput(
+    invalidNodeType: String,
+    invalidNode: String,
+) : LscIllegalStructure(
+    invalidNodeType,
+    invalidNode,
+    "in the input of a rule",
 )
 
 class LscIllegalStructureInOutput(
-    val invalidNodeType: String,
-    val invalidNode: String,
-) : LscUserError(
-    "${invalidNodeType.replaceFirstChar { it.uppercase() }} like \"$invalidNode\" can't be used in the output of a rule"
+    invalidNodeType: String,
+    invalidNode: String,
+) : LscIllegalStructure(
+    invalidNodeType,
+    invalidNode,
+    "in the output of a rule"
 )
 
 class LscMixedBlock(

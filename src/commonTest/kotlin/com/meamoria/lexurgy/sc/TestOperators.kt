@@ -2,6 +2,8 @@ package com.meamoria.lexurgy.sc
 
 import com.meamoria.mpp.kotest.StringSpec
 import com.meamoria.mpp.kotest.shouldBe
+import com.meamoria.mpp.kotest.shouldBeInstanceOf
+import com.meamoria.mpp.kotest.shouldThrow
 
 @Suppress("unused")
 class TestOperators : StringSpec({
@@ -123,6 +125,55 @@ class TestOperators : StringSpec({
         )
 
         ch("haːiːtai") shouldBe "haːiːtei"
+    }
+
+    "We should get nice error messages if we try to start a transforming matcher with a" +
+            "conditional emitter or continue it with an independent emitter" {
+                shouldThrow<LscInvalidRuleExpression> {
+                    lsc(
+                        """
+                            Feature +foo
+                            start-with-conditional:
+                                [+foo]>[-foo] => a
+                        """.trimIndent()
+                    )
+                }.also {
+                    it.cause.shouldBeInstanceOf<LscIllegalStructure>()
+                    it.message shouldBe """
+                        Error in expression 1 ("[+foo]>[-foo] => a") of rule "start-with-conditional"
+                        A matrix like "[+foo]" can't be used at the start of a transforming matcher
+                    """.trimIndent()
+                }
+
+                shouldThrow<LscInvalidRuleExpression> {
+                    lsc(
+                        """
+                            continue-with-independent:
+                                a>* => a
+                        """.trimIndent()
+                    )
+                }.also {
+                    it.cause.shouldBeInstanceOf<LscIllegalStructure>()
+                    it.message shouldBe """
+                        Error in expression 1 ("a>* => a") of rule "continue-with-independent"
+                        An empty element like "*" can't be used to continue a transforming matcher
+                    """.trimIndent()
+                }
+            }
+
+    "Alternatives should be lifted out of transforming matchers" {
+        val ch = lsc(
+            """
+                Feature +long
+                Diacritic ː [+long]
+                Class vowel {a, e, i, o, u, aː, eː, iː, oː, uː}
+                vowel-combining propagate:
+                    @vowel$1 $1>{[+long], [-long]} => [+long] *
+            """.trimIndent()
+        )
+
+        ch("tooːooːo") shouldBe "toː"
+        ch("toaoaaeːei") shouldBe "toaoaːeːi"
     }
 
     "We should be able to match segments that don't belong to a particular class" {
