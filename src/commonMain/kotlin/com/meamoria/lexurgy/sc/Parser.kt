@@ -943,10 +943,11 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                     items.map { it as RuleElement },
                 )
             InterfixType.TRANSFORMING ->
-                TransformingElement(
-                    text,
-                    items.map { it as ResultElement },
-                )
+                throw LscFutureStructure("Transforming elements")
+//                TransformingElement(
+//                    text,
+//                    items.map { it as ResultElement },
+//                )
         }
 
     private fun walkSimpleElement(
@@ -1720,6 +1721,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             throw LscIntersectionInOutput(elements)
     }
 
+    @Suppress("unused")
     private class TransformingElement(
         text: String,
         val elements: List<ResultElement>,

@@ -640,3 +640,5 @@ class LscTooManyOptions(val matcher: Any) :
     LscUserError(
         "Too many possibilities when matching $matcher"
     )
+
+class LscFutureStructure(val structureName: String) : LscUserError(structureName)

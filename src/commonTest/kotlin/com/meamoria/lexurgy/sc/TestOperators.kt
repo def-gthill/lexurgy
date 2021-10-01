@@ -95,13 +95,33 @@ class TestOperators : StringSpec({
         ch("avpika") shouldBe "afpika"
     }
 
-    "We should be able to create transforming matchers using >" {
+    "Transforming elements shouldn't be supported yet " {
+        shouldThrow<LscFutureStructure> {
+            lsc(
+                """
+                    not-supported:
+                        a>b => c
+                """.trimIndent()
+            )
+        }
+
+        shouldThrow<LscFutureStructure> {
+            lsc(
+                """
+                    not-supported:
+                        a => b>c
+                """.trimIndent()
+            )
+        }
+    }
+
+    "!We should be able to create transforming matchers using >" {
         val ch = lsc(
             """
                 Feature +long
                 Diacritic ː [+long]
                 Class vowel {a, e, i, o, u, aː, eː, iː, oː, uː}
-                
+
                 raise-before-long-copy @vowel:
                     {e, o}$1 => {i, u} / _ $1>[+long]
             """.trimIndent()
@@ -112,13 +132,13 @@ class TestOperators : StringSpec({
         ch("meleː") shouldBe "mileː"
     }
 
-    "We should be able to use transforming matchers in a reversed context" {
+    "!We should be able to use transforming matchers in a reversed context" {
         val ch = lsc(
             """
                 Feature +long
                 Diacritic ː [+long]
                 Class vowel {a, e, i, o, u, aː, eː, iː, oː, uː}
-                
+
                 raise-diphthong-after-long-copy:
                     {ai, au}$1 => {ei, ou} / $1>[+long] (!@vowel)+ _
             """.trimIndent()
@@ -127,8 +147,8 @@ class TestOperators : StringSpec({
         ch("haːiːtai") shouldBe "haːiːtei"
     }
 
-    "We should get nice error messages if we try to start a transforming matcher with a" +
-            "conditional emitter or continue it with an independent emitter" {
+    ("!We should get nice error messages if we try to start a transforming matcher with a" +
+            "conditional emitter or continue it with an independent emitter") {
                 shouldThrow<LscInvalidRuleExpression> {
                     lsc(
                         """
@@ -161,7 +181,7 @@ class TestOperators : StringSpec({
                 }
             }
 
-    "Alternatives should be lifted out of transforming matchers" {
+    "!Alternatives should be lifted out of transforming matchers" {
         val ch = lsc(
             """
                 Feature +long
@@ -176,13 +196,13 @@ class TestOperators : StringSpec({
         ch("toaoaaeːei") shouldBe "toaoaːeːi"
     }
 
-    "We should be able to create transforming emitters using >" {
+    "!We should be able to create transforming emitters using >" {
         val ch = lsc(
             """
                 Feature +long
                 Diacritic ː [+long]
                 Class vowel {a, e, i, o, u, aː, eː, iː, oː, uː}
-                
+
                 swap-and-lengthen:
                     @vowel$1 {r, l}$2 => $2 $1>[+long]
             """.trimIndent()
@@ -192,14 +212,14 @@ class TestOperators : StringSpec({
         ch("poːl") shouldBe "ploː"
     }
 
-    "Initial alternatives should be lifted out of transforming elements and joined to corresponding alternatives" {
+    "!Initial alternatives should be lifted out of transforming elements and joined to corresponding alternatives" {
         val ch = lsc(
             """
                 Feature +long
                 Diacritic ː [+long]
                 Class midvowel {e, o}
                 Class highvowel {i, u}
-                
+
                 raise-and-shorten:
                     @midvowel>[+long] => @highvowel>[-long]
             """.trimIndent()
@@ -209,7 +229,7 @@ class TestOperators : StringSpec({
         ch("soːdo") shouldBe "sudo"
     }
 
-    "Initial sequences should be lifted out of transforming elements and joined to corresponding sequences" {
+    "!Initial sequences should be lifted out of transforming elements and joined to corresponding sequences" {
         val ch = lsc(
             """
                 Feature place(labial, alveolar, velar)
@@ -225,7 +245,7 @@ class TestOperators : StringSpec({
                 Symbol v [+voiced labial fricative]
                 Symbol s [-voiced alveolar fricative]
                 Symbol z [+voiced alveolar fricative]
-                
+
                 swap-and-voice:
                     [-voiced]$1 [-voiced]$2 => ($2 $1)>[+voiced]
             """.trimIndent()
