@@ -209,6 +209,32 @@ class TestOperators : StringSpec({
         ch("soːdo") shouldBe "sudo"
     }
 
+    "Initial sequences should be lifted out of transforming elements and joined to corresponding sequences" {
+        val ch = lsc(
+            """
+                Feature place(labial, alveolar, velar)
+                Feature manner(stop, fricative)
+                Feature voiced
+                Symbol p [-voiced labial stop]
+                Symbol b [+voiced labial stop]
+                Symbol t [-voiced alveolar stop]
+                Symbol d [+voiced alveolar stop]
+                Symbol k [-voiced velar stop]
+                Symbol g [+voiced velar stop]
+                Symbol f [-voiced labial fricative]
+                Symbol v [+voiced labial fricative]
+                Symbol s [-voiced alveolar fricative]
+                Symbol z [+voiced alveolar fricative]
+                
+                swap-and-voice:
+                    [-voiced]$1 [-voiced]$2 => ($2 $1)>[+voiced]
+            """.trimIndent()
+        )
+
+        ch("apsa") shouldBe  "azba"
+        ch("ektofka") shouldBe "edgogva"
+    }
+
     "We should be able to match segments that don't belong to a particular class" {
         val ch = lsc(
             """

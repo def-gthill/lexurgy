@@ -1743,7 +1743,14 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                             matcher(declarations, subElement as ResultElement?, subEmitter)
                         }
                     )
-                is SequenceEmitter -> TODO()
+                is SequenceEmitter ->
+                    SequenceMatcher(
+                        (element as SequenceElement).elements.zip(
+                            emitter.elements
+                        ) { subElement, subEmitter ->
+                            matcher(declarations, subElement as ResultElement, subEmitter)
+                        }
+                    )
                 else -> singleMatcher(
                     declarations,
                     element,
@@ -1756,7 +1763,9 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             element: ResultElement?,
             emitter: Emitter,
         ): Matcher {
-            val alternatives = remainingElementsAsConditional(declarations).map { transformations ->
+            val alternatives = remainingElementsAsConditional(
+                declarations, "matcher"
+            ).map { transformations ->
                 EmitterMatcher(
                     TransformingEmitter(
                         castToIndependent(element, emitter),
@@ -1781,7 +1790,12 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                             emitter(declarations, it)
                         }
                     )
-                is SequenceEmitter -> TODO()
+                is SequenceEmitter ->
+                    SequenceEmitter(
+                        emitter.elements.map {
+                            emitter(declarations, it)
+                        }
+                    )
                 else -> singleEmitter(declarations, emitter)
             }
 
@@ -1789,7 +1803,9 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             declarations: Declarations,
             emitter: Emitter,
         ): Emitter {
-            val alternatives = remainingElementsAsConditional(declarations).map { transformations ->
+            val alternatives = remainingElementsAsConditional(
+                declarations, "emitter"
+            ).map { transformations ->
                 if (emitter.isIndependent()) {
                     TransformingEmitter(
                         emitter as IndependentEmitter,
@@ -1811,7 +1827,8 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
         // The outer list represents "lifted" alternative lists.
         private fun remainingElementsAsConditional(
-            declarations: Declarations
+            declarations: Declarations,
+            elementType: String,
         ): List<List<ConditionalEmitter>> {
             var alternatives = emptyList<List<ConditionalEmitter>>()
             val remainingElements = elements.drop(1)
@@ -1825,7 +1842,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                 val emitters = elements.map { element ->
                     val emitter = castToResultElement(element).emitter(declarations)
                     emitter as? ConditionalEmitter ?: throw LscIllegalStructure(
-                        element.publicName, element.text, "to continue a transforming matcher"
+                        element.publicName, element.text, "to continue a transforming $elementType"
                     )
                 }
                 alternatives = if (alternatives.isEmpty()) {
