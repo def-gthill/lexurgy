@@ -73,6 +73,9 @@ expect class LscParser(input: TokenStream) : Parser {
     fun boundary(): BoundaryContext
     fun betweenWords(): BetweenWordsContext
     fun repeaterType(): RepeaterTypeContext
+    fun repeatRange(): RepeatRangeContext
+    fun lowerBound(): LowerBoundContext
+    fun upperBound(): UpperBoundContext
     fun matrix(): MatrixContext
     fun matrixValue(): MatrixValueContext
     fun plusFeatureValue(): PlusFeatureValueContext
@@ -148,6 +151,9 @@ expect open class LscBaseVisitor<T>(){
     open fun visitBoundary(ctx: BoundaryContext): T
     open fun visitBetweenWords(ctx: BetweenWordsContext): T
     open fun visitRepeaterType(ctx: RepeaterTypeContext): T
+    open fun visitRepeatRange(ctx: RepeatRangeContext): T
+    open fun visitLowerBound(ctx: LowerBoundContext): T
+    open fun visitUpperBound(ctx: UpperBoundContext): T
     open fun visitMatrix(ctx: MatrixContext): T
     open fun visitMatrixValue(ctx: MatrixValueContext): T
     open fun visitPlusFeatureValue(ctx: PlusFeatureValueContext): T
@@ -609,9 +615,31 @@ expect class BetweenWordsContext : ParserRuleContext {
 
 
 expect class RepeaterTypeContext : ParserRuleContext {
+    fun repeatRange(): RepeatRangeContext?
     fun AT_LEAST_ONE(): TerminalNode?
     fun NULL(): TerminalNode?
     fun OPTIONAL(): TerminalNode?
+}
+
+
+expect class RepeatRangeContext : ParserRuleContext {
+    fun NULL(): TerminalNode
+    fun NUMBER(): TerminalNode?
+    fun O_PAREN(): TerminalNode?
+    fun lowerBound(): LowerBoundContext?
+    fun HYPHEN(): TerminalNode?
+    fun upperBound(): UpperBoundContext?
+    fun C_PAREN(): TerminalNode?
+}
+
+
+expect class LowerBoundContext : ParserRuleContext {
+    fun NUMBER(): TerminalNode
+}
+
+
+expect class UpperBoundContext : ParserRuleContext {
+    fun NUMBER(): TerminalNode
 }
 
 

@@ -542,7 +542,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     override fun visitCaptureRef(ctx: CaptureRefContext): ParseNode =
         walkCaptureReference(
             ctx.getText(),
-            ctx.NUMBER().getText().toInt(),
+            ctx.NUMBER().toInt(),
             ctx.INEXACT() == null,
         )
 
@@ -582,14 +582,26 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     override fun visitBetweenWords(ctx: BetweenWordsContext): ParseNode = walkBetweenWords()
 
     override fun visitRepeaterType(ctx: RepeaterTypeContext): ParseNode =
-        walkRepeaterType(
+        optionalVisit(ctx.repeatRange()) ?: walkRepeaterType(
             ctx.getText(),
             when {
-                ctx.AT_LEAST_ONE() != null -> RepeaterType.ONE_OR_MORE
-                ctx.NULL() != null -> RepeaterType.ZERO_OR_MORE
-                ctx.OPTIONAL() != null -> RepeaterType.ZERO_OR_ONE
+                ctx.AT_LEAST_ONE() != null -> StandardRepeaterType.ONE_OR_MORE
+                ctx.NULL() != null -> StandardRepeaterType.ZERO_OR_MORE
+                ctx.OPTIONAL() != null -> StandardRepeaterType.ZERO_OR_ONE
                 else -> throw AssertionError()
             }
+        )
+
+    override fun visitRepeatRange(ctx: RepeatRangeContext): ParseNode =
+        walkRepeaterType(
+            ctx.getText(),
+            ctx.NUMBER()?.let {
+                val number = it.toInt()
+                FlexibleRepeaterType(number, number)
+            } ?: FlexibleRepeaterType(
+                ctx.lowerBound()?.toInt() ?: 0,
+                ctx.upperBound()?.toInt()
+            )
         )
 
     override fun visitMatrix(ctx: MatrixContext): ParseNode =
@@ -1539,6 +1551,11 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         val precedingElement: ContextElement,
         val followingElement: ContextElement,
     ) {
+        fun isAtEdgeOfEnvironment(): Boolean =
+            section == RuleSection.ENVIRON &&
+                    (precedingElement is ContextElement.None ||
+                            followingElement is ContextElement.None)
+
         companion object {
             fun aloneInMain(): RuleContext =
                 RuleContext(RuleSection.MAIN, ContextElement.None, ContextElement.None)
@@ -1694,7 +1711,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         val repeaterType: RepeaterTypeNode,
     ) : BaseParseNode(text), RuleElement {
         override val publicName: String = when (repeaterType.type) {
-            RepeaterType.ZERO_OR_ONE -> "an optional"
+            StandardRepeaterType.ZERO_OR_ONE -> "an optional"
             else -> "a repeater"
         }
 
@@ -1707,13 +1724,15 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         }
 
         private fun checkContext(context: RuleContext) {
-            if (context.section == RuleSection.ENVIRON &&
-                (context.precedingElement is ContextElement.None ||
-                        context.followingElement is ContextElement.None)
+            if (!repeaterType.type.isSpecificMultiple() &&
+                context.isAtEdgeOfEnvironment()
             ) {
-                throw LscPeripheralRepeater(text)
+                throw LscPeripheralRepeater(text, repeaterType.type)
             }
         }
+
+        private fun RepeaterType.isSpecificMultiple(): Boolean =
+            minReps > 1 && minReps == maxReps
     }
 
     private class AlternativeElement(
@@ -2050,6 +2069,8 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     private fun listVisit(node: List<ParseTree>): List<ParseNode> = node.map { visit(it) }
 
     private fun optionalVisit(node: ParseTree?): ParseNode? = node?.let { visit(it) }
+
+    private fun ParseTree.toInt(): Int = getText().toIntOrNull() ?: throw LscNumberOverflow(getText())
 }
 
 enum class BlockType(val text: String) {
@@ -2131,6 +2152,8 @@ class LscIllegalNestedModifier(
 ) : LscUserError(
     "Blocks with the \"$modifierName\" modifier can't have other blocks inside them"
 )
+
+class LscNumberOverflow(val number: String) : LscUserError("$number is too big")
 
 class LscNotParsable(val line: Int, val column: Int, val offendingSymbol: String, val customMessage: String) :
     LscUserError("$customMessage (line $line)")

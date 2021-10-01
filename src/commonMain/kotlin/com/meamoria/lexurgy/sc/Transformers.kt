@@ -159,7 +159,7 @@ class RepeaterTransformer(
             }.checkTooManyOptions()
             if (newResultBits.isEmpty()) break
             resultBits += newResultBits
-            if (type.maxReps != null && resultBits.size > type.maxReps) break
+            if (type.maxReps != null && resultBits.size > type.maxReps!!) break
         }
 
         return resultBits.drop(type.minReps).reversed().flatten().map {

@@ -559,37 +559,47 @@ class LscInteriorWordBoundary(
     constructor() : this(null, null, null)
 
     override fun initEnvironment(newEnvironment: String): LscInteriorWordBoundary =
-        LscInteriorWordBoundary(cause, sequence, environment ?: newEnvironment)
+        LscInteriorWordBoundary(this, sequence, environment ?: newEnvironment)
 
     override fun initSequence(newSequence: String): LscBadSequence =
-        LscInteriorWordBoundary(cause, sequence ?: newSequence, environment)
+        LscInteriorWordBoundary(this, sequence ?: newSequence, environment)
 }
 
 class LscPeripheralRepeater(
     override val cause: LscPeripheralRepeater?,
-    val repeater: String,
+    val text: String,
+    val repeaterType: RepeaterType,
     sequence: String?,
     environment: String?
 ) : LscBadSequence(
     cause,
-    "The repeater \"$repeater\"",
+    "The repeater \"$text\"",
     sequence,
     environment,
     "is meaningless because it's at the edge of the environment; " +
-            peripheralRepeaterInstruction(repeater),
+            peripheralRepeaterInstruction(text, repeaterType),
 ) {
 
-    constructor(repeater: String) : this(null, repeater, null, null)
+    constructor(text: String, repeaterType: RepeaterType) : this(
+        null, text, repeaterType, null, null
+    )
 
     override fun initEnvironment(newEnvironment: String): LscPeripheralRepeater =
-        LscPeripheralRepeater(cause, repeater, sequence, environment ?: newEnvironment)
+        LscPeripheralRepeater(this, text, repeaterType, sequence, environment ?: newEnvironment)
 
     override fun initSequence(newSequence: String): LscPeripheralRepeater =
-        LscPeripheralRepeater(cause, repeater, sequence ?: newSequence, environment)
+        LscPeripheralRepeater(this, text, repeaterType, sequence ?: newSequence, environment)
 }
 
-private fun peripheralRepeaterInstruction(repeater: String) =
-    if (repeater.endsWith("+")) "just use \"${repeater.dropLast(1)}\"" else "remove it"
+private fun peripheralRepeaterInstruction(text: String, repeaterType: RepeaterType): String {
+    val repeaterSymbolIndex = text.lastIndexOfAny(charArrayOf('*', '+', '?'))
+    val elementText = text.take(repeaterSymbolIndex)
+    return when (repeaterType.minReps) {
+        0 -> "remove it"
+        1 -> "just use \"$elementText\""
+        else -> "just use \"$elementText*${repeaterType.minReps}\""
+    }
+}
 
 abstract class LscBadSequence(
     cause: LscBadSequence?,

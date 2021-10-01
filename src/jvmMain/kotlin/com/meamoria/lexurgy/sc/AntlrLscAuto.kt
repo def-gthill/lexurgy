@@ -178,6 +178,12 @@ actual typealias BetweenWordsContext = LscParser.BetweenWordsContext
 
 actual typealias RepeaterTypeContext = LscParser.RepeaterTypeContext
 
+actual typealias RepeatRangeContext = LscParser.RepeatRangeContext
+
+actual typealias LowerBoundContext = LscParser.LowerBoundContext
+
+actual typealias UpperBoundContext = LscParser.UpperBoundContext
+
 actual typealias MatrixContext = LscParser.MatrixContext
 
 actual fun MatrixContext.allMatrixValues(): List<MatrixValueContext> = matrixValue()

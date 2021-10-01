@@ -73,6 +73,9 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     actual fun boundary(): BoundaryContext
     actual fun betweenWords(): BetweenWordsContext
     actual fun repeaterType(): RepeaterTypeContext
+    actual fun repeatRange(): RepeatRangeContext
+    actual fun lowerBound(): LowerBoundContext
+    actual fun upperBound(): UpperBoundContext
     actual fun matrix(): MatrixContext
     actual fun matrixValue(): MatrixValueContext
     actual fun plusFeatureValue(): PlusFeatureValueContext
@@ -490,9 +493,28 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     }
 
     class RepeaterTypeContext : ParserRuleContext {
+        fun repeatRange(): RepeatRangeContext?
         fun AT_LEAST_ONE(): TerminalNode?
         fun NULL(): TerminalNode?
         fun OPTIONAL(): TerminalNode?
+    }
+
+    class RepeatRangeContext : ParserRuleContext {
+        fun NULL(): TerminalNode
+        fun NUMBER(): TerminalNode?
+        fun O_PAREN(): TerminalNode?
+        fun lowerBound(): LowerBoundContext?
+        fun HYPHEN(): TerminalNode?
+        fun upperBound(): UpperBoundContext?
+        fun C_PAREN(): TerminalNode?
+    }
+
+    class LowerBoundContext : ParserRuleContext {
+        fun NUMBER(): TerminalNode
+    }
+
+    class UpperBoundContext : ParserRuleContext {
+        fun NUMBER(): TerminalNode
     }
 
     class MatrixContext : ParserRuleContext {
@@ -596,6 +618,9 @@ open external class LscVisitor<T>{
     open fun visitBoundary(ctx: BoundaryContext): T
     open fun visitBetweenWords(ctx: BetweenWordsContext): T
     open fun visitRepeaterType(ctx: RepeaterTypeContext): T
+    open fun visitRepeatRange(ctx: RepeatRangeContext): T
+    open fun visitLowerBound(ctx: LowerBoundContext): T
+    open fun visitUpperBound(ctx: UpperBoundContext): T
     open fun visitMatrix(ctx: MatrixContext): T
     open fun visitMatrixValue(ctx: MatrixValueContext): T
     open fun visitPlusFeatureValue(ctx: PlusFeatureValueContext): T
@@ -769,6 +794,12 @@ actual typealias BoundaryContext = LscParser.BoundaryContext
 actual typealias BetweenWordsContext = LscParser.BetweenWordsContext
 
 actual typealias RepeaterTypeContext = LscParser.RepeaterTypeContext
+
+actual typealias RepeatRangeContext = LscParser.RepeatRangeContext
+
+actual typealias LowerBoundContext = LscParser.LowerBoundContext
+
+actual typealias UpperBoundContext = LscParser.UpperBoundContext
 
 actual typealias MatrixContext = LscParser.MatrixContext
 

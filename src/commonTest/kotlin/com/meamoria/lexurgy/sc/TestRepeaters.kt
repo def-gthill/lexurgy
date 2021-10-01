@@ -20,6 +20,27 @@ class TestRepeaters : StringSpec({
         ch("enmnenmni") shouldBe "enmninmni"
     }
 
+    "We should be able to indicate numerical ranges on repeaters" {
+        val ch = lsc(
+            """
+                counting:
+                    b => c / _ a*(1-3) d
+                    b => q / _ a*5
+                    d => f / b a*(-1) _
+                    d => h / b a*5 _
+                    d => g / b a*(3-) _
+            """.trimIndent()
+        )
+
+        ch("bd") shouldBe "bf"
+        ch("bad") shouldBe "caf"
+        ch("baad") shouldBe "caad"
+        ch("baaad") shouldBe "caaag"
+        ch("baaaad") shouldBe "baaaag"
+        ch("baaaaad") shouldBe "qaaaaah"
+        ch("baaaaaad") shouldBe "qaaaaaag"
+    }
+
     "Repeaters should refuse to consume things that match the next element in sequence" {
         val ch = lsc(
             """
@@ -155,6 +176,25 @@ class TestRepeaters : StringSpec({
             it.message shouldBe """
                 Error in expression 1 ("o => a / f+ _") of rule "foo"
                 The repeater "f+" in the environment "f+ _" is meaningless because it's at the edge of the environment; just use "f"
+            """.trimIndent()
+        }
+        // Non-degenerate range repeaters should trigger this and direct us to the degenerate repeater
+        shouldThrow<LscInvalidRuleExpression> {
+            lsc("foo:\no => a / f*(2-3) _")
+        }.also {
+            it.cause.shouldBeInstanceOf<LscPeripheralRepeater>()
+            it.message shouldBe """
+                Error in expression 1 ("o => a / f*(2-3) _") of rule "foo"
+                The repeater "f*(2-3)" in the environment "f*(2-3) _" is meaningless because it's at the edge of the environment; just use "f*2"
+            """.trimIndent()
+        }
+        // Don't fixate on the first instance of the symbol!
+        shouldThrow<LscInvalidRuleExpression> {
+            lsc("foo:\no => a / (f+)+ _")
+        }.also {
+            it.message shouldBe """
+                Error in expression 1 ("o => a / (f+)+ _") of rule "foo"
+                The repeater "(f+)+" in the environment "(f+)+ _" is meaningless because it's at the edge of the environment; just use "(f+)"
             """.trimIndent()
         }
     }

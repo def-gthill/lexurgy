@@ -396,6 +396,24 @@ LscVisitor.prototype.visitRepeaterType = function(ctx) {
 };
 
 
+// Visit a parse tree produced by LscParser#repeatRange.
+LscVisitor.prototype.visitRepeatRange = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
+// Visit a parse tree produced by LscParser#lowerBound.
+LscVisitor.prototype.visitLowerBound = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
+// Visit a parse tree produced by LscParser#upperBound.
+LscVisitor.prototype.visitUpperBound = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
 // Visit a parse tree produced by LscParser#matrix.
 LscVisitor.prototype.visitMatrix = function(ctx) {
   return this.visitChildren(ctx);

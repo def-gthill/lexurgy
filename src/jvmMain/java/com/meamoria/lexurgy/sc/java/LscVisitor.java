@@ -395,6 +395,24 @@ public interface LscVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitRepeaterType(LscParser.RepeaterTypeContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link LscParser#repeatRange}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitRepeatRange(LscParser.RepeatRangeContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link LscParser#lowerBound}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitLowerBound(LscParser.LowerBoundContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link LscParser#upperBound}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitUpperBound(LscParser.UpperBoundContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link LscParser#matrix}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

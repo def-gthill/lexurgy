@@ -395,7 +395,7 @@ class RepeaterMatcher(
             }.checkTooManyOptions()
             if (newResult.isEmpty()) break
             result += newResult
-            if (type.maxReps != null && result.size > type.maxReps) break
+            if (type.maxReps != null && result.size > type.maxReps!!) break
         }
         return result.drop(type.minReps).reversed().flatten()
     }
