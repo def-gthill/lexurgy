@@ -457,38 +457,51 @@ class AlternativeMatcher(val elements: List<Matcher>) : BaseMatcher() {
     ): Transformer = AlternativeTransformer(elements, result, filtered)
 }
 
-class IntersectionMatcher(val elements: List<Matcher>) : LiftingMatcher() {
+class IntersectionMatcher(
+    val initialMatcher: Matcher,
+    val checkMatchers: List<CheckMatcher>,
+) : LiftingMatcher() {
     override fun claim(
         declarations: Declarations,
         word: Word,
         start: Int,
         bindings: Bindings
     ): List<WordMatchEnd> {
-        val matchEnds = elements.first().claim(
+        val matchEnds = initialMatcher.claim(
             declarations, word, start, bindings
         )
         return filterIntersection(
-            declarations, elements.drop(1), word, start, bindings, matchEnds
+            declarations, checkMatchers, word, start, bindings, matchEnds
         ) { it }
     }
 
-    override fun reversed(): Matcher = IntersectionMatcher(elements.map { it.reversed() })
+    override fun reversed(): Matcher = IntersectionMatcher(
+        initialMatcher.reversed(),
+        checkMatchers.map { it.reversed() }
+    )
 
-    override fun toString(): String = elements.joinToString("&")
+    override fun toString(): String =
+        "$initialMatcher&${checkMatchers.joinToString("&")}"
 
     override fun liftingTransformerTo(
         result: Emitter,
         filtered: Boolean
     ): Transformer =
         IntersectionTransformer(
-            elements.first().transformerTo(result, filtered),
-            elements.drop(1),
+            initialMatcher.transformerTo(result, filtered),
+            checkMatchers,
         )
+}
+
+data class CheckMatcher(val matcher: Matcher, val negated: Boolean) {
+    fun reversed(): CheckMatcher = CheckMatcher(matcher.reversed(), negated)
+
+    override fun toString(): String = "${if (negated) "!" else ""}$matcher"
 }
 
 fun <T : WithBindings<T>> filterIntersection(
     declarations: Declarations,
-    elements: List<Matcher>,
+    elements: List<CheckMatcher>,
     word: Word,
     start: Int,
     initialBindings: Bindings,
@@ -496,21 +509,30 @@ fun <T : WithBindings<T>> filterIntersection(
     matchEndTransformer: (T) -> WordMatchEnd,
 ): List<T> {
     var matchEnds = possibleMatches
-    for (element in elements) {
+    for ((element, negated) in elements) {
         if (element is LengthHintedMatcher) {
             matchEnds = matchEnds.mapNotNull { matchEnd ->
-                val transformer = matchEndTransformer(matchEnd)
-                element.claim(
-                    declarations, word, start, transformer.index, initialBindings
-                )?.let { matchEnd.updateBindings(it) }
+                val transformed = matchEndTransformer(matchEnd)
+                val elementMatchEnd = element.claim(
+                    declarations, word, start, transformed.index, initialBindings
+                )
+                if (negated) {
+                    if (elementMatchEnd == null) matchEnd else null
+                } else {
+                    elementMatchEnd?.let { matchEnd.updateBindings(it) }
+                }
             }
         } else {
             val elementMatchEnds = element.claim(declarations, word, start, initialBindings)
             val elementMatchEndsMap = elementMatchEnds.associate { it.index to it.returnBindings }
             matchEnds = matchEnds.mapNotNull { matchEnd ->
                 val transformed = matchEndTransformer(matchEnd)
-                elementMatchEndsMap[transformed.index]?.let {
-                    matchEnd.updateBindings(it)
+                if (negated) {
+                    if (transformed.index in elementMatchEndsMap) null else matchEnd
+                } else {
+                    elementMatchEndsMap[transformed.index]?.let {
+                        matchEnd.updateBindings(it)
+                    }
                 }
             }
             if (matchEnds.isEmpty()) return emptyList()

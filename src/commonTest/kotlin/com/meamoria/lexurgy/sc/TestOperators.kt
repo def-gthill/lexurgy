@@ -286,4 +286,20 @@ class TestOperators : StringSpec({
         ch("cietua") shouldBe "cjetwa"
         ch("vietuu") shouldBe "vetuu"
     }
+
+    "We should be able to negate arbitrary elements inside an intersection" {
+        val ch = lsc(
+            """
+                Class stop {p, t, k}
+                Class cons {@stop, s, m, n, l, r}
+                
+                cluster-reduction:
+                    (@cons @cons$1)&!(@stop {l, r}) => * $1
+            """.trimIndent()
+        )
+
+        ch("ptar") shouldBe "tar"
+        ch("smakla") shouldBe "makla"
+        ch("prakti") shouldBe "prati"
+    }
 })

@@ -113,7 +113,7 @@ class TestSoundChangerCombinations : StringSpec({
             """
                 Class vowel {a, e, i, o, u}
                 copy-after-i-and-reduce:
-                    i+ => i $1 / @vowel&!i$1 _
+                    i+ => i $1 / (@vowel&!i)$1 _
             """.trimIndent()
         )
 

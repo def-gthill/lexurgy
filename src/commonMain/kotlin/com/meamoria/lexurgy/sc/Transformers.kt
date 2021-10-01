@@ -172,7 +172,7 @@ class RepeaterTransformer(
 
 class IntersectionTransformer(
     val transformer: Transformer,
-    val otherMatchers: List<Matcher>,
+    val checkMatchers: List<CheckMatcher>,
 ) : Transformer {
     override fun transform(
         order: Int,
@@ -186,7 +186,7 @@ class IntersectionTransformer(
         ).filter { it.start.wordIndex == it.end.wordIndex }
         return filterIntersection(
             declarations,
-            otherMatchers,
+            checkMatchers,
             phrase[start.wordIndex],
             start.segmentIndex,
             bindings,
@@ -194,7 +194,8 @@ class IntersectionTransformer(
         ) { it.toMatchEnd() }
     }
 
-    override fun toString(): String = "($transformer)&${otherMatchers.joinToString("&")}"
+    override fun toString(): String =
+        "($transformer)&${checkMatchers.joinToString("&")}"
 }
 
 class CaptureTransformer(

@@ -451,15 +451,25 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     override fun visitEnvironmentAfter(ctx: EnvironmentAfterContext): ParseNode = visit(ctx.ruleElement())
 
-    override fun visitInterfix(ctx: InterfixContext): ParseNode =
-        walkInterfix(
+    override fun visitInterfix(ctx: InterfixContext): ParseNode {
+        val (interfixType, negations) = checkUniformInterfixType(ctx.allInterfixTypes())
+        return walkInterfix(
             ctx.getText(),
-            checkUniformInterfixType(ctx.allInterfixTypes()),
+            interfixType,
             listVisit(ctx.allInterfixElements()),
+            negations,
         )
+    }
 
-    private fun checkUniformInterfixType(interfixCtxs: List<InterfixTypeContext>): InterfixType =
-        checkUniformType(interfixCtxs.map { getInterfixType(it) }) { firstType, laterType, laterIndex ->
+    private fun checkUniformInterfixType(
+        interfixCtxs: List<InterfixTypeContext>
+    ): Pair<InterfixType, List<Boolean>> {
+        val interfixTypes = interfixCtxs.map { getInterfixType(it) }
+        val looseInterfixTypes = interfixTypes.map {
+            if (it == InterfixType.INTERSECTION_NOT) InterfixType.INTERSECTION
+            else it
+        }
+        val uniformType = checkUniformType(looseInterfixTypes) { firstType, laterType, laterIndex ->
             val offendingOperator = interfixCtxs[laterIndex]
             throw LscNotParsable(
                 offendingOperator.getStartLine(),
@@ -468,10 +478,16 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                 "Can't mix ${firstType.text} and ${laterType.text}; use parentheses"
             )
         }
+        val negations = interfixTypes.map {
+            it == InterfixType.INTERSECTION_NOT
+        }
+        return uniformType to negations
+    }
 
     private fun getInterfixType(ctx: InterfixTypeContext) =
         when {
             ctx.INTERSECTION() != null -> InterfixType.INTERSECTION
+            ctx.INTERSECTION_NOT() != null -> InterfixType.INTERSECTION_NOT
             ctx.TRANSFORMING() != null -> InterfixType.TRANSFORMING
             else -> throw AssertionError("Interfix expression has no type")
         }
@@ -935,12 +951,16 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         text: String,
         interfixType: InterfixType,
         items: List<ParseNode>,
+        negations: List<Boolean>,
     ): ParseNode =
         when (interfixType) {
             InterfixType.INTERSECTION ->
                 IntersectionElement(
                     text,
-                    items.map { it as RuleElement },
+                    items.first() as RuleElement,
+                    items.drop(1).zip(negations) { item, negated ->
+                        CheckElement(item as RuleElement, negated)
+                    },
                 )
             InterfixType.TRANSFORMING ->
                 throw LscFutureStructure("Transforming elements")
@@ -948,6 +968,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 //                    text,
 //                    items.map { it as ResultElement },
 //                )
+            else -> throw AssertionError("Invalid interfix type $interfixType")
         }
 
     private fun walkSimpleElement(
@@ -1550,7 +1571,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     private fun castToResultElement(element: RuleElement): ResultElement =
         element as? ResultElement ?: throw LscIllegalStructureInOutput(element.publicName, element.text)
 
-    // Base class for elements whose only word type dependency is forwarding to sub-elements
+    // Base class for elements that simply forward matcher/emitter calls to sub-elements
     private abstract class ContainerResultElement(text: String) : BaseParseNode(text), ResultElement {
         override fun matcher(context: RuleContext, declarations: Declarations): Matcher =
             combineMatchers(elements.map { it.matcher(context, declarations) })
@@ -1710,15 +1731,21 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     private class IntersectionElement(
         text: String,
-        override val elements: List<RuleElement>,
-    ) : ContainerResultElement(text) {
+        val initialElement: RuleElement,
+        val checkElements: List<CheckElement>,
+    ) : BaseParseNode(text), RuleElement {
         override val publicName: String = "an intersection"
 
-        override fun combineMatchers(elements: List<Matcher>): Matcher =
-            IntersectionMatcher(elements)
+        override fun matcher(context: RuleContext, declarations: Declarations): Matcher =
+            IntersectionMatcher(
+                initialElement.matcher(context, declarations),
+                checkElements.map { it.matcher(context, declarations) }
+            )
+    }
 
-        override fun combineEmitters(elements: List<Emitter>): Emitter =
-            throw LscIntersectionInOutput(elements)
+    private data class CheckElement(val element: RuleElement, val negated: Boolean) {
+        fun matcher(context: RuleContext, declarations: Declarations): CheckMatcher =
+            CheckMatcher(element.matcher(context, declarations), negated)
     }
 
     @Suppress("unused")
@@ -1894,7 +1921,10 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                     if (segmentMatcher == null) {
                         syllableMatcher
                     } else {
-                        IntersectionMatcher(listOf(segmentMatcher, syllableMatcher))
+                        IntersectionMatcher(
+                            segmentMatcher,
+                            listOf(CheckMatcher(syllableMatcher, false))
+                        )
                     }
                 }
             }
@@ -2029,6 +2059,7 @@ enum class BlockType(val text: String) {
 
 enum class InterfixType(val text: String) {
     INTERSECTION("&"),
+    INTERSECTION_NOT("&!"),
     TRANSFORMING(">"),
 }
 

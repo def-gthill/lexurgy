@@ -484,6 +484,7 @@ expect fun InterfixContext.allInterfixTypes(): List<InterfixTypeContext>
 
 expect class InterfixTypeContext : ParserRuleContext {
     fun INTERSECTION(): TerminalNode?
+    fun INTERSECTION_NOT(): TerminalNode?
     fun TRANSFORMING(): TerminalNode?
 }
 
