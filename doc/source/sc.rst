@@ -14,21 +14,27 @@ User Guide
     :maxdepth: 2
     :caption: Contents:
 
-    sc-tutorial
-    sc-cli
+    Tutorial <sc-tutorial>
+    Cheat Sheet <sc-cheat-sheet>
+    Language Specification <sc-dsl>
+    Command-Line Tool <sc-cli>
 
 Why Lexurgy SC?
 ----------------
 
-Sound changes are hard to get right on the first try, and
-Lexurgy embraces this truth. It's designed around two main goals:
+Lexurgy's design philosophy sets it apart from other sound change
+appliers:
 
-    - Rules are short, easy to read, and can have descriptive names.
-      When you want to revise the sound changes, you shouldn't be lost
-      in your own change file.
-    - You might need complex feature and class definitions at the
-      beginning of the file, but these should need to change much
-      less often than the rules themselves.
+- **Embrace revision**. Sound changes are hard to get right the first try,
+  and it can take a lot of tinkering and experimentation to produce the results
+  you want. It should be easy to make on-the-fly revisions to a project,
+  even one you haven't touched in months. That means encouraging descriptive names,
+  a logical and organized file structure, and syntax that
+  allows for small adjustments to existing rules.
+- **Make common things easy**. You shouldn't have to be a programming genius
+  to write common kinds of sound change rules. Lots of languages have stress
+  assignment, assimilation, and vowel harmony, so the available syntax
+  should naturally lend itself to writing such rules.
 
 Why not just use Rosenfelder's SCA?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
