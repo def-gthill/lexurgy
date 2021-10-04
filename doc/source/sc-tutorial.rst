@@ -226,8 +226,8 @@ of lines::
 Basican
 ~~~~~~~~
 
-What you've seen so far is enough to understand the *Basican* example
-in the web app. Load this example and watch it in action!
+What you've seen so far is enough to understand the
+`Basican example <https://www.lexurgy.com/examples/sc?changes=1&input=1>`_.
 
 You can do a lot with just the basic structures, but they barely
 scratch the surface of what Lexurgy offers.
@@ -770,8 +770,7 @@ Intermediatese
 ~~~~~~~~~~~~~~~
 
 Now you should understand enough to be able to follow along with the
-*Intermediatese* example in the web app. Load this example and give
-it a try!
+`Intermediatese example <https://www.lexurgy.com/examples/sc?changes=2&input=1>`_.
 
 With that, it's time to get to the power features that really make Lexurgy
 stand out.
@@ -1000,7 +999,8 @@ only the statements in the block.
     terminate. So Lexurgy is conservative and stops with an error message if a
     rule runs a hundred times without settling on a result.
 
-Now you should be able to follow the *Advancedish* example in the web app.
+Now you should be able to follow the
+`Advancedish example <https://www.lexurgy.com/examples/sc?changes=3&input=1>`_.
 
 Interactions Between Words
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1059,7 +1059,8 @@ Syllables
 Lexurgy can understand words that are broken up into syllables, using
 periods (``.``) to separate syllables. You can also specify syllabification
 rules and have Lexurgy automatically break up words into syllables.
-This capability is demonstrated by the *Syllabian* example in the web app.
+This capability is demonstrated by the
+`Syllabian example <https://www.lexurgy.com/examples/sc?changes=4&input=2>`_.
 
 Enabling Syllables
 *******************
