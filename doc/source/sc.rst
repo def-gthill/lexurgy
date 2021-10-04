@@ -5,7 +5,7 @@ Lexurgy SC simulates historical sound changes. It applies regular rules
 to a list of input words from an older form of the language to produce
 the same words in a newer form of the language.
 
-Check out the `web app <https://www.meamoria.com/lexurgy/app/sc>`_!
+Check out the `web app <https://www.lexurgy.com/sc>`_!
 
 User Guide
 -----------
@@ -16,8 +16,9 @@ User Guide
 
     Tutorial <sc-tutorial>
     Cheat Sheet <sc-cheat-sheet>
-    Language Specification <sc-dsl>
     Command-Line Tool <sc-cli>
+
+.. TODO Add "Language Specification <sc-dsl>"
 
 Why Lexurgy SC?
 ----------------

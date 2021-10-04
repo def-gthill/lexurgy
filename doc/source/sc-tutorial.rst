@@ -2,13 +2,17 @@ Writing Sound Changes With Lexurgy SC
 =====================================
 
 This page is a tour through the features of Lexurgy SC.
+Start here if you're new to Lexurgy.
 
-.. only:: not public
+Once you're comfortable with the basics, the
+:doc:`Cheat Sheet <sc-cheat-sheet>` is a handy reference.
 
-    For all the gory details, see :doc:`sc-dsl`.
+.. For all the gory details, see the :doc:`Language Specification <sc-dsl>`.
 
 As you read, be sure to try out each example in the
-`Lexurgy SC web app <https://www.meamoria.com/lexurgy/app/sc>`_.
+`Lexurgy SC web app <https://www.lexurgy.com/sc>`_.
+Full example files can be found at
+`Examples page <https://www.lexurgy.com/examples/sc>`_.
 
 Basic Structures
 -----------------
