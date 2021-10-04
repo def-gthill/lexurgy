@@ -47,7 +47,7 @@ class SoundChanger(
         debug: (String) -> Unit = ::println,
     ): Map<String?, List<String>> {
         val debugIndices = words.withIndex().filter { it.value in debugWords }.map { it.index }
-        var declarations = initialDeclarations
+        var declarations = rules.firstOrNull()?.declarations ?: initialDeclarations
         val startPhrases = words.map {
             Phrase(
                 it.split(" ").map(declarations::parsePhonetic).map(declarations::syllabify)

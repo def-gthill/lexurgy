@@ -421,6 +421,7 @@ class TestSoundChanger : StringSpec({
             """.trimIndent()
         )
 
+        ch("'ama") shouldBe "'ama"
         ch("ma'a") shouldBe "ma'a"
     }
 

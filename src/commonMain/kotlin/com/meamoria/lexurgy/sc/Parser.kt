@@ -1332,7 +1332,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                 val subrulesWithRedeclaration =
                     listOf(subrules.first()) + Redeclaration(declarations) + subrules.drop(1)
                 return StandardNamedRule(
-                    name, declarations, SequentialBlock(subrulesWithRedeclaration), ruleType = RuleType.DEROMANIZER
+                    name, Declarations.empty, SequentialBlock(subrulesWithRedeclaration), ruleType = RuleType.DEROMANIZER
                 )
             } else {
                 StandardNamedRule(
