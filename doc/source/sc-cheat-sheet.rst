@@ -344,7 +344,7 @@ Blocks
 |                       | until the word stops      |                                       |                           |
 |                       | changing.                 |   rule propagate:                     |   aitaaita => etaeta      |
 |                       |                           |     ai => e                           |   aiaaia   => aa          |
-|                       |                           |     ea => a                           |   eaiteai  => ete         |
+|                       |                           |     ea => a                           |   eaiteai  => eetee       |
 +-----------------------+---------------------------+---------------------------------------+---------------------------+
 | Left-to-right rule    | Apply the rule once       | ::                                    | ::                        |
 |                       | starting at each          |                                       |                           |
