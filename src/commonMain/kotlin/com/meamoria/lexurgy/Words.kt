@@ -547,13 +547,7 @@ private class Syllabification(
     syllableModifiers: Map<Int, List<Modifier>> = emptyMap(),
 ) {
     val length: Int = segments.size
-    val syllableModifiers = if (length == 0) {
-        // A word with no segments can't carry syllable modifiers
-        emptyMap()
-    } else {
-        // A syllable with no modifiers shouldn't have an entry in the map
-        syllableModifiers.filterValues { it.isNotEmpty() }
-    }
+    val syllableModifiers = syllableModifiers.filterValues { it.isNotEmpty() }
 
     val string: String
         get() = if (length == 0) {

@@ -528,6 +528,24 @@ class TestSyllables : StringSpec({
         ch("ˈbar ˈman") shouldBe "ˈba.ˈman"
     }
 
+    "Syllable-level features should persist through epenthesis" {
+        val ch = lsc(
+            """
+                Feature (syllable) +stress
+                Diacritic ˈ (before) [+stress]
+                
+                Syllables:
+                 explicit
+                
+                gliding:
+                 * => j / $ _ {i,e}
+            """.trimIndent()
+        )
+
+        ch("ˈe.ka") shouldBe "ˈje.ka"
+        ch("e.ˈka") shouldBe "je.ˈka"
+    }
+
     "Syllable-level features should stay as close to their original sounds as possible when resyllabifying" {
         val ch = lsc(
             """
