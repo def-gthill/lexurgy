@@ -546,6 +546,26 @@ class TestSyllables : StringSpec({
         ch("e.ˈka") shouldBe "je.ˈka"
     }
 
+    "Syllable-level features should persist through filter rules" {
+        val ch = lsc(
+            """
+                Feature (syllable) +stress
+                
+                Diacritic ˈ (before) [+stress]
+                
+                Class vowel {a, e, i, o, u}
+                
+                Syllables:
+                 explicit
+                
+                umlaut @vowel:
+                 {a, e} => {e, i} / _ i
+            """.trimIndent()
+        )
+
+        ch("ˈke.li") shouldBe "ˈki.li"
+    }
+
     "Syllable-level features should stay as close to their original sounds as possible when resyllabifying" {
         val ch = lsc(
             """
