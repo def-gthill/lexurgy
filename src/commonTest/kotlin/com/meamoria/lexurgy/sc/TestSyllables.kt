@@ -559,7 +559,7 @@ class TestSyllables : StringSpec({
                  explicit
                 
                 umlaut @vowel:
-                 {a, e} => {e, i} / _ i
+                 {a, e}&[+stress] => {e, i} / _ i&[-stress]
             """.trimIndent()
         )
 
