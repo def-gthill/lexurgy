@@ -339,17 +339,17 @@ class SimpleChangeRule(
     }
 
     private fun filterWord(word: Word): Pair<Word, IntArray> {
-        val resultBits = mutableListOf<Segment>()
+        val resultBits = mutableListOf<Word>()
         val filterMap = mutableListOf<Int>()
         var filterIndex = 0
         for ((i, seg) in word.segments.withIndex()) {
             if (filter!!(seg)) {
-                resultBits += seg
+                resultBits += word.slice(i..i)
                 filterMap += i
                 filterIndex++
             }
         }
-        return StandardWord(resultBits) to filterMap.toIntArray()
+        return Word.join(resultBits) to filterMap.toIntArray()
     }
 
     // Strips out transformations that would try to change something that's already being changed.
