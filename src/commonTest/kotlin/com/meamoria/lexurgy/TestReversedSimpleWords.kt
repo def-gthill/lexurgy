@@ -74,4 +74,9 @@ class TestReversedSimpleWords : StringSpec({
         shine.drop(1).string shouldBe "eisch"
         potato.drop(3).string shouldBe "ⁿtóupʰ"
     }
+
+    "We should be able to filter segments in reversed words" {
+        banana.filterSegments { it.string == "n" }.toString() shouldBe "n/n (reversed) [1, 3]"
+        potato.filterSegments { "o" in it.core }.toString() shouldBe "o/ou|́ (reversed) [0, 4]"
+    }
 })

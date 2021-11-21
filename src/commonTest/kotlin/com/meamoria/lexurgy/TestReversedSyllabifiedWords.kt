@@ -100,10 +100,17 @@ class TestReversedSyllabifiedWords : StringSpec({
         shine.slice(0 .. 1).toString() shouldBe "n/ei||ʰ))` (reversed)"
     }
 
-    "We should be able to drop segments from syllabified words" {
+    "We should be able to drop segments from reversed syllabified words" {
         banana.drop(2).string shouldBe ".an.ab"
         banana.drop(5).string shouldBe "b"
         excellent.drop(4).string shouldBe "ˈl.es.ke"
         shine.drop(1).string shouldBe "eʰisc`"
+    }
+
+    "We should be able to filter segments in reversed syllabified words" {
+        banana.filterSegments { it.string == "n" }.toString() shouldBe "n//n (reversed) [1, 3]"
+        excellent.filterSegments { it.string == "e" }.toString() shouldBe "e//ˈ((e//e//e (reversed) [0, 3, 5, 8]"
+        excellent.filterSegments { it.string in "kl" }.toString() shouldBe "ˈ((l//k (reversed) [4, 7]"
+        excellent.filterSegments { it.string in "kt" }.toString() shouldBe "t//k (reversed) [1, 7]"
     }
 })

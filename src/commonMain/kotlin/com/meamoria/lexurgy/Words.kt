@@ -199,7 +199,11 @@ private class ReversedWord(val inner: Word) : Word {
         )
 
     override fun filterSegments(filter: (Segment) -> Boolean): FilteredWord {
-        TODO("Not yet implemented")
+        val filterResult = inner.filterSegments(filter)
+        return FilteredWord(
+            ReversedWord(filterResult.word),
+            filterResult.filterMap.map { inner.length - it - 1 }.reversed().toIntArray(),
+        )
     }
 
     override fun removeLeadingBreak(): Word =
