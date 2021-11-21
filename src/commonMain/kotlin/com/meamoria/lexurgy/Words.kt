@@ -58,6 +58,11 @@ interface Word {
 
     fun drop(n: Int): Word
 
+    /**
+     * Retain only segments that match the specified filter
+     */
+    fun filterSegments(filter: (Segment) -> Boolean): FilteredWord
+
     fun removeLeadingBreak(): Word
 
     fun removeTrailingBreak(): Word
@@ -119,6 +124,27 @@ interface Word {
     }
 }
 
+/**
+ * A word derived from applying a filter to another word.
+ * The `filterMap` records the index of each retained segment
+ * in the original word, e.g. [1, 3, 4] indicates that the
+ * second, fourth, and fifth segments of the original word
+ * have been retained.
+ */
+class FilteredWord(val word: Word, val filterMap: IntArray) {
+    override fun toString(): String =
+        "$word [${filterMap.joinToString()}]"
+}
+
+private fun List<Segment>.filterReturningIndices(
+    filter: (Segment) -> Boolean
+): Pair<List<Segment>, IntArray> {
+    val (segments, filterMap) = withIndex().filter {
+        filter(it.value)
+    }.map { it.value to it.index }.unzip()
+    return segments to filterMap.toIntArray()
+}
+
 // A reversed view of a word
 private class ReversedWord(val inner: Word) : Word {
     override val string: String
@@ -171,6 +197,10 @@ private class ReversedWord(val inner: Word) : Word {
         ReversedWord(
             inner.take(max(inner.length - n, 0))
         )
+
+    override fun filterSegments(filter: (Segment) -> Boolean): FilteredWord {
+        TODO("Not yet implemented")
+    }
 
     override fun removeLeadingBreak(): Word =
         ReversedWord(inner.removeTrailingBreak())
@@ -287,6 +317,17 @@ class StandardWord private constructor(
             segments.drop(n),
             syllabification?.drop(n),
         )
+
+    override fun filterSegments(filter: (Segment) -> Boolean): FilteredWord {
+        val (filteredSegments, filterMap) = segments.filterReturningIndices(filter)
+        return FilteredWord(
+            StandardWord(
+                filteredSegments,
+                syllabification?.retainOnlyIndices(filterMap),
+            ),
+            filterMap
+        )
+    }
 
     override fun removeLeadingBreak(): Word =
         StandardWord(
@@ -651,6 +692,33 @@ private class Syllabification(
                 }.filterKeys { it >= 0 },
             )
         }
+
+    fun retainOnlyIndices(indices: IntArray): Syllabification {
+        val newSegments = mutableListOf<Segment>()
+        val newSyllableBreaks = mutableListOf<Int>()
+        val newSyllableModifiers = mutableMapOf<Int, List<Modifier>>()
+        var newIndex = 0
+        for ((sylIndex, sylBreak) in syllableBreaksAndBoundaries.withIndex()) {
+            val origNewIndex = newIndex
+            while (newIndex < indices.size && indices[newIndex] < sylBreak) {
+                newSegments += segments[indices[newIndex]]
+                newIndex++
+            }
+            if (newIndex > origNewIndex) {
+                syllableModifiers[sylIndex - 1]?.let {
+                    newSyllableModifiers += newSyllableBreaks.size to it
+                }
+                if (newIndex < indices.size) {
+                    newSyllableBreaks += newIndex
+                }
+            }
+        }
+        return Syllabification(
+            newSegments,
+            newSyllableBreaks,
+            newSyllableModifiers,
+        )
+    }
 
     fun removeLeadingBreak(): Syllabification =
         if (syllableBreakAtStart()) {

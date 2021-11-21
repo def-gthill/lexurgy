@@ -564,6 +564,7 @@ class TestSyllables : StringSpec({
         )
 
         ch("ˈke.li") shouldBe "ˈki.li"
+        ch("ˈken.li") shouldBe "ˈkin.li"
     }
 
     "Syllable-level features should stay as close to their original sounds as possible when resyllabifying" {

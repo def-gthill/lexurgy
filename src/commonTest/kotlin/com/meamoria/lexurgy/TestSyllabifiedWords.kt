@@ -121,6 +121,13 @@ class TestSyllabifiedWords : StringSpec({
         shine.drop(1).string shouldBe "eʰin`"
     }
 
+    "We should be able to filter segments in syllabified words" {
+        banana.filterSegments { it.string == "n" }.toString() shouldBe "n//n [2, 4]"
+        excellent.filterSegments { it.string == "e" }.toString() shouldBe "e//e//ˈ((e//e [0, 3, 5, 8]"
+        excellent.filterSegments { it.string in "kl" }.toString() shouldBe "k//ˈ((l [1, 4]"
+        excellent.filterSegments { it.string in "kt" }.toString() shouldBe "k//t [1, 7]"
+    }
+
     "We should be able to recover structures in phrases" {
         val plainWord = Phrase(StandardWord.fromSchematic("b/a/n/a/n/a"))
         val plainPhrase = Phrase(

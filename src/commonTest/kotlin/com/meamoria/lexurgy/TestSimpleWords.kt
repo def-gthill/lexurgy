@@ -75,4 +75,9 @@ class TestSimpleWords : StringSpec({
         shine.drop(1).string shouldBe "ein"
         potato.drop(3).string shouldBe "èito"
     }
+
+    "We should be able to filter segments in simple words" {
+        banana.filterSegments { it.string == "n" }.toString() shouldBe "n/n [2, 4]"
+        potato.filterSegments { "o" in it.core }.toString() shouldBe "ou|́/o [1, 5]"
+    }
 })
