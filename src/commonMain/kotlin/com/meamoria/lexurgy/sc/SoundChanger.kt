@@ -373,7 +373,15 @@ class SimpleChangeRule(
             tr.elementalSubs.map { sub ->
                 val (wordIndex, segmentIndex) = sub.start
                 val filterIndex = PhraseIndex(wordIndex, filterMap[wordIndex][segmentIndex])
-                Transformation(sub.order, filterIndex, phrase.stepForward(filterIndex), sub.result)
+                var result = sub.result
+                if (filterIndex.segmentIndex !in phrase[wordIndex].syllableBreaks) {
+                    result = result.removeLeadingBreak()
+                }
+                val endIndex = phrase.stepForward(filterIndex)
+                if (endIndex.segmentIndex !in phrase[endIndex.wordIndex].syllableBreaks) {
+                    result = result.removeTrailingBreak()
+                }
+                Transformation(sub.order, filterIndex, endIndex, result)
             }
         }
     }
