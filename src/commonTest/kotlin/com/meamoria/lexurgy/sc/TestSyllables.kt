@@ -571,6 +571,38 @@ class TestSyllables : StringSpec({
         ch("akatak") shouldBe "a.ˈxa.xak"
     }
 
+    "Syllable-level features should persist when adjusting other features in sequences" {
+        val ch = lsc(
+            """
+                Feature (syllable) Tone(*neutral, low, high)
+                Feature (syllable) +stress
+                
+                Diacritic L [low]
+                Diacritic H [high]
+                Diacritic ' (before) [+stress]
+                
+                Syllables:
+                 b a
+                
+                tone-assignment:
+                 <syl> => [high] / $ _
+                 [] => [low]
+                
+                stress-assignment:
+                 <syl> => [+stress] / _ $
+                
+                romanizer-initial:
+                 unchanged
+                
+                stress-retraction:
+                 <syl>&[high] <syl>&[low] => [+stress] [-stress] / _ $
+            """.trimIndent()
+        )
+
+        ch("baba") shouldBe "'baH.baL"
+        ch("bababa") shouldBe "baH.baL.'baL"
+    }
+
     "Syllable-level features should persist through filter rules" {
         val ch = lsc(
             """

@@ -179,7 +179,7 @@ class SyllableMatrixEmitter(val matrix: Matrix) : ConditionalEmitter {
                 }
                 Phrase(
                     original.toStandard().withSyllabification(
-                        emptyList(), newModifiers
+                        original.syllableBreaks, newModifiers
                     )
                 )
             }
