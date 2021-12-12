@@ -649,9 +649,12 @@ private class Syllabification(
         syllableModifiers[syllableNumberAt(index)] ?: emptyList()
 
     fun syllableNumberAt(index: Int): Int =
-        if (syllableBreaks.isEmpty()) 0
-        else (syllableBreaks + length).indexOfFirst { it > index } -
-                (if (syllableBreakAtStart()) 1 else 0)
+        when {
+            syllableBreaks.isEmpty() -> 0
+            index >= syllableBreaks.last() -> numSyllables - 1
+            else -> (syllableBreaks + length).indexOfFirst { it > index } -
+                    (if (syllableBreakAtStart()) 1 else 0)
+        }
 
     fun reversed(): Syllabification =
         Syllabification(
@@ -669,7 +672,7 @@ private class Syllabification(
             }.map { it - indices.first },
             syllableModifiers.filterKeys {
                 it >= syllableNumberAt(indices.first) &&
-                        it <= syllableNumberAt(indices.last)
+                        it <= syllableNumberAt(indices.last + 1)
             }.mapKeys { it.key - syllableNumberAt(indices.first) },
         )
 
@@ -745,17 +748,18 @@ private class Syllabification(
         if (syllableBreakAtEnd() && other.syllableBreakAtStart()) {
             otherSyllableBreaks = otherSyllableBreaks.drop(1)
         }
+        val thisSyllableModifiers = syllableModifiersNoHanging()
         val combinedSyllableModifiers =
             if (syllableBreakAtEnd() || other.syllableBreakAtStart()) {
-                syllableModifiers + other.syllableModifiers.mapKeys {
+                thisSyllableModifiers + other.syllableModifiers.mapKeys {
                     it.key + numSyllables
                 }
             } else {
                 // We have to stitch together the last syllable of this and the first syllable of other
                 val syllableOffset = numSyllables - 1
-                (syllableModifiers - syllableOffset) +
+                (thisSyllableModifiers - syllableOffset) +
                         (syllableOffset to syllableModifierCombiner(
-                            syllableModifiers[syllableOffset] ?: emptyList(),
+                            thisSyllableModifiers[syllableOffset] ?: emptyList(),
                             other.syllableModifiers[0] ?: emptyList(),
                         )) +
                         (other.syllableModifiers - 0).mapKeys {
@@ -768,6 +772,13 @@ private class Syllabification(
             combinedSyllableModifiers,
         )
     }
+
+    /**
+     * Syllable modifiers excluding "hanging" modifiers, i.e.
+     * modifiers for the syllable after the last.
+     */
+    private fun syllableModifiersNoHanging(): Map<Int, List<Modifier>> =
+        syllableModifiers.filterKeys { it < numSyllables }
 
     fun recoverStructure(other: Word, exceptSyllableBreaks: List<Int>): Word =
         if (other.isSyllabified() || other.isEmpty()) other

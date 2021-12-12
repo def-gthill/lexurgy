@@ -546,6 +546,31 @@ class TestSyllables : StringSpec({
         ch("e.ˈka") shouldBe "je.ˈka"
     }
 
+    "Syllable-level features should persist through \"empty swaps\"" {
+        val ch = lsc(
+            """
+                Feature (syllable) +stress
+                
+                Diacritic ˈ (before) [+stress]
+                
+                Class vowel {a, i, u}
+                Class cons {p, t, k, x}
+                
+                Syllables:
+                 @cons? @vowel @cons?
+                
+                stress-assignement:
+                 <syl> => [+stress] / _ <syl> $
+                
+                neutralisation:
+                 * @cons => x * / _ a
+            """.trimIndent()
+        )
+
+        ch("katak") shouldBe "ˈxa.xak"
+        ch("akatak") shouldBe "a.ˈxa.xak"
+    }
+
     "Syllable-level features should persist through filter rules" {
         val ch = lsc(
             """
