@@ -73,6 +73,37 @@ class TestDiacritics : StringSpec({
         ch("epistrefu") shouldBe "épistrefu"
     }
 
+    "We should be able to give diacritics matrices with all default values" {
+        val ch = lsc(
+            """
+                Feature place(labial, alveolar)
+                Feature manner(nasal)
+                Feature +voice
+                Feature +vowel
+                Feature height(low, high)
+                Feature depth(front, central, back)
+                Feature +syllabic
+                
+                Diacritic ̥  [-voice]
+                Diacritic ̯  [-syllabic]
+                
+                Symbol m [labial nasal +voice]
+                Symbol n [alveolar nasal +voice]
+                Symbol a [low central +syllabic +vowel]
+                Symbol i [high front +syllabic +vowel]
+                Symbol u [high back +syllabic +vowel]
+                
+                devoice:
+                    h [nasal] => * [-voice]
+                
+                desyllabify:
+                    [high +vowel] => [-syllabic] / [+vowel] _
+            """.trimIndent()
+        )
+
+        ch("hnaitan") shouldBe "n̥ai̯tan"
+    }
+
     "Diacritics declared with (before) should go before their symbol" {
         val ch = lsc(
             """

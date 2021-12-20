@@ -34,7 +34,7 @@ class Declarations(
     private val floatingDiacritics = normalizedDiacritics.filter { it.floating }
     init {
         normalizedDiacritics.associateByCheckingDuplicates(
-            { listOf(it.matrix.removeExplicitDefaults()) },
+            { listOf(it.matrix) },
             { matrix, new, existing -> throw LscDuplicateMatrices(matrix, "diacritics", new.name, existing.name) },
         )
     }
