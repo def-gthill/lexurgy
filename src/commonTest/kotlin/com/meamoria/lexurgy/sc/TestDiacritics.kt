@@ -98,10 +98,14 @@ class TestDiacritics : StringSpec({
                 
                 desyllabify:
                     [high +vowel] => [-syllabic] / [+vowel] _
+                
+                voice:
+                    [nasal -voice] => [+voice] / [+vowel] _ [+vowel]
             """.trimIndent()
         )
 
         ch("hnaitan") shouldBe "n̥ai̯tan"
+        ch("am̥auhn") shouldBe "amau̯n̥"
     }
 
     "Diacritics declared with (before) should go before their symbol" {
