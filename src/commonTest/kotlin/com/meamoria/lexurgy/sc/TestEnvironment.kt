@@ -124,4 +124,21 @@ class TestEnvironment : StringSpec({
         ch2("pʰotatʰo") shouldBe "potato"
         ch2("aragog") shouldBe "aragok"
     }
+
+    "This complex syllabification shouldn't hang the parser" {
+        val ch = lsc(
+            """
+                Class vowel {a, e, i, o, u}
+                Class glide {j, w}
+                Class nasal {n, m}
+                Class cons {p, t, k, @nasal, @glide}
+                
+                Syllables:
+                 {(@cons // {@vowel, @nasal} _)? @cons, @cons? @glide}? @vowel @cons? @cons?
+            """.trimIndent()
+        )
+
+        ch("akja") shouldBe "a.kja"
+        ch("ktentka") shouldBe "ktent.ka"
+    }
 })
