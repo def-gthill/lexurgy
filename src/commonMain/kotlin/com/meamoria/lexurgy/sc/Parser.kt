@@ -235,8 +235,8 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     override fun visitSyllablePattern(ctx: SyllablePatternContext): ParseNode =
         walkSyllablePattern(
             ctx.getText(),
-            visit(ctx.ruleElement()),
-            visit(ctx.compoundEnvironment()),
+            visit(ctx.unconditionalRuleElement()),
+            optionalVisit(ctx.compoundEnvironment()),
             optionalVisit(ctx.matrix()),
         )
 
@@ -377,7 +377,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                 ctx.getText(),
                 visit(ctx.from()!!),
                 visit(ctx.to()!!),
-                visit(ctx.compoundEnvironment()!!),
+                optionalVisit(ctx.compoundEnvironment()),
             )
         } else {
             walkDoNothingExpression()
@@ -387,9 +387,19 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         visit(ctx.ruleElement())
 
     override fun visitTo(ctx: ToContext): ParseNode =
-        visit(ctx.ruleElement())
+        visit(ctx.unconditionalRuleElement())
 
-    override fun visitRuleElement(ctx: RuleElementContext): ParseNode = visit(ctx.getChild(0))
+    override fun visitRuleElement(ctx: RuleElementContext): ParseNode =
+        ctx.compoundEnvironment()?.let { env ->
+            walkLookaround(
+                ctx.getText(),
+                visit(ctx.unconditionalRuleElement()),
+                visit(env)
+            )
+        } ?: visit(ctx.unconditionalRuleElement())
+
+    override fun visitUnconditionalRuleElement(ctx: UnconditionalRuleElementContext): ParseNode =
+        visit(ctx.getChild(0))
 
     override fun visitBounded(ctx: BoundedContext): ParseNode =
         visit(ctx.getChild(0))
@@ -406,13 +416,6 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     override fun visitSequence(ctx: SequenceContext): ParseNode =
         walkRuleSequence(ctx.getText(), listVisit(ctx.allFreeElements()))
 
-    override fun visitLookaround(ctx: LookaroundContext): ParseNode =
-        walkLookaround(
-            ctx.getText(),
-            visit(ctx.ruleElement()),
-            visit(ctx.compoundEnvironment())
-        )
-
     override fun visitFreeElement(ctx: FreeElementContext): ParseNode =
         visit(ctx.getChild(0))
 
@@ -424,10 +427,10 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         )
 
     override fun visitCondition(ctx: ConditionContext): ParseNode =
-        visit(ctx.getChild(0))
+        visit(ctx.getChild(1))
 
     override fun visitExclusion(ctx: ExclusionContext): ParseNode =
-        visit(ctx.getChild(0))
+        visit(ctx.getChild(1))
 
     override fun visitEnvironmentList(ctx: EnvironmentListContext): ParseNode =
         ParseNodeList(listVisit(ctx.allEnvironments()))
@@ -447,9 +450,11 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         )
     }
 
-    override fun visitEnvironmentBefore(ctx: EnvironmentBeforeContext): ParseNode = visit(ctx.ruleElement())
+    override fun visitEnvironmentBefore(ctx: EnvironmentBeforeContext): ParseNode =
+        visit(ctx.unconditionalRuleElement())
 
-    override fun visitEnvironmentAfter(ctx: EnvironmentAfterContext): ParseNode = visit(ctx.ruleElement())
+    override fun visitEnvironmentAfter(ctx: EnvironmentAfterContext): ParseNode =
+        visit(ctx.unconditionalRuleElement())
 
     override fun visitInterfix(ctx: InterfixContext): ParseNode {
         val (interfixType, negations) = checkUniformInterfixType(ctx.allInterfixTypes())
@@ -769,12 +774,14 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     private fun walkSyllablePattern(
         text: String,
         ruleElement: ParseNode,
-        environment: ParseNode,
+        environment: ParseNode?,
         matrix: ParseNode?,
     ): ParseNode =
         SyllablePatternNode(
             text,
-            walkLookaround(text, ruleElement, environment) as RuleElement,
+            (environment?.let {
+                walkLookaround(text, ruleElement, it)
+            } ?: ruleElement) as RuleElement,
             matrix as MatrixNode?,
         )
 
@@ -855,12 +862,12 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         text: String,
         ruleFrom: ParseNode,
         ruleTo: ParseNode,
-        compoundEnvironment: ParseNode,
+        compoundEnvironment: ParseNode?,
     ): ParseNode = UnlinkedRuleExpression(
         text,
         ruleFrom as RuleElement,
         ruleTo as RuleElement,
-        compoundEnvironment as UnlinkedCompoundEnvironment,
+        compoundEnvironment as UnlinkedCompoundEnvironment?,
     )
 
     private fun walkDoNothingExpression(): ParseNode =
@@ -1481,7 +1488,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         text: String,
         val match: RuleElement,
         val result: RuleElement,
-        val compoundEnvironment: UnlinkedCompoundEnvironment,
+        val compoundEnvironment: UnlinkedCompoundEnvironment?,
     ) : BaseParseNode(text) {
         fun link(
             ruleName: String,
@@ -1489,12 +1496,16 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             declarations: Declarations,
             filtered: Boolean,
         ): RuleExpression = try {
+            val coreMatcher = match.matcher(RuleContext.aloneInMain(), declarations)
+            val matcher = compoundEnvironment?.let { env ->
+                EnvironmentMatcher(
+                    coreMatcher,
+                    env.link(declarations),
+                )
+            } ?: coreMatcher
             RuleExpression(
                 declarations,
-                EnvironmentMatcher(
-                    match.matcher(RuleContext.aloneInMain(), declarations),
-                    compoundEnvironment.link(declarations),
-                ).transformerTo(
+                matcher.transformerTo(
                     castToResultElement(result).emitter(declarations),
                     filtered,
                 )

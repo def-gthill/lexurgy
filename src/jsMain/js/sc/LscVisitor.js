@@ -192,6 +192,12 @@ LscVisitor.prototype.visitRuleElement = function(ctx) {
 };
 
 
+// Visit a parse tree produced by LscParser#unconditionalRuleElement.
+LscVisitor.prototype.visitUnconditionalRuleElement = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
 // Visit a parse tree produced by LscParser#bounded.
 LscVisitor.prototype.visitBounded = function(ctx) {
   return this.visitChildren(ctx);
@@ -206,12 +212,6 @@ LscVisitor.prototype.visitGroup = function(ctx) {
 
 // Visit a parse tree produced by LscParser#list.
 LscVisitor.prototype.visitList = function(ctx) {
-  return this.visitChildren(ctx);
-};
-
-
-// Visit a parse tree produced by LscParser#lookaround.
-LscVisitor.prototype.visitLookaround = function(ctx) {
   return this.visitChildren(ctx);
 };
 

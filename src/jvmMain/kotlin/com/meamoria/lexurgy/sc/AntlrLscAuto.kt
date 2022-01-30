@@ -98,6 +98,8 @@ actual typealias ToContext = LscParser.ToContext
 
 actual typealias RuleElementContext = LscParser.RuleElementContext
 
+actual typealias UnconditionalRuleElementContext = LscParser.UnconditionalRuleElementContext
+
 actual typealias BoundedContext = LscParser.BoundedContext
 
 actual typealias GroupContext = LscParser.GroupContext
@@ -105,8 +107,6 @@ actual typealias GroupContext = LscParser.GroupContext
 actual typealias ListContext = LscParser.ListContext
 
 actual fun ListContext.allRuleElements(): List<RuleElementContext> = ruleElement()
-
-actual typealias LookaroundContext = LscParser.LookaroundContext
 
 actual typealias SequenceContext = LscParser.SequenceContext
 

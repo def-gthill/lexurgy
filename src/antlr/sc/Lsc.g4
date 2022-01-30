@@ -24,7 +24,7 @@ symbolName: text;
 
 syllableDecl:
     SYLLABLE_DECL RULE_START (NEWLINE+ (EXPLICIT_SYLLABLES | CLEAR_SYLLABLES) | (NEWLINE+ syllablePattern)+);
-syllablePattern: ruleElement (CHANGE matrix)? compoundEnvironment;
+syllablePattern: unconditionalRuleElement (CHANGE matrix)? compoundEnvironment?;
 
 deromanizer: DEROMANIZER (WHITESPACE LITERAL)? RULE_START NEWLINE+ block;
 romanizer: ROMANIZER (WHITESPACE LITERAL)? RULE_START NEWLINE+ block;
@@ -40,31 +40,31 @@ matchMode: LTR | RTL;
 expressionList: expression (NEWLINE+ expression)*;
 ruleName: NAME (HYPHEN (NAME | NUMBER))*;
 
-expression: UNCHANGED | (from CHANGE to compoundEnvironment);
+expression: UNCHANGED | (from CHANGE to compoundEnvironment?);
 from: ruleElement;
-to: ruleElement;
+to: unconditionalRuleElement;
 
-ruleElement: bounded | interfix | negated | postfix | simple | sequence;
+ruleElement: unconditionalRuleElement compoundEnvironment?;
+unconditionalRuleElement: bounded | interfix | negated | postfix | simple | sequence;
 
 // "Bounded" elements have a clear start and end symbol
-bounded: group | list | lookaround;
+bounded: group | list;
 group: O_PAREN ruleElement C_PAREN;
 list: LIST_START ruleElement (SEP ruleElement)* LIST_END;
-lookaround: O_PAREN ruleElement compoundEnvironment C_PAREN;
 
 // "Free" elements have sub-elements floating free amid whitespace
 sequence: freeElement (WHITESPACE freeElement)+;
 freeElement: bounded | interfix | negated | postfix | simple;
 
-compoundEnvironment: (CONDITION condition)? (EXCLUSION exclusion)?;
-condition: environment | environmentList;
-exclusion: environment | environmentList;
+compoundEnvironment: condition | exclusion | (condition exclusion);
+condition: CONDITION (environment | environmentList);
+exclusion: EXCLUSION (environment | environmentList);
 environmentList: LIST_START environment (SEP environment)* LIST_END;
 environment:
     (environmentBefore WHITESPACE)? ANCHOR (WHITESPACE environmentAfter)?
     | environmentBefore?;
-environmentBefore: ruleElement;
-environmentAfter: ruleElement;
+environmentBefore: unconditionalRuleElement;
+environmentAfter: unconditionalRuleElement;
 
 // "Interfix" elements use a delimiter but no whitespace or boundary marker
 interfix: interfixElement (interfixType interfixElement)+;

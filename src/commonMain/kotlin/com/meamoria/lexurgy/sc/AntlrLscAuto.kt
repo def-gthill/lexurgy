@@ -39,10 +39,10 @@ expect class LscParser(input: TokenStream) : Parser {
     fun from(): FromContext
     fun to(): ToContext
     fun ruleElement(): RuleElementContext
+    fun unconditionalRuleElement(): UnconditionalRuleElementContext
     fun bounded(): BoundedContext
     fun group(): GroupContext
     fun list(): ListContext
-    fun lookaround(): LookaroundContext
     fun sequence(): SequenceContext
     fun freeElement(): FreeElementContext
     fun compoundEnvironment(): CompoundEnvironmentContext
@@ -117,10 +117,10 @@ expect open class LscBaseVisitor<T>(){
     open fun visitFrom(ctx: FromContext): T
     open fun visitTo(ctx: ToContext): T
     open fun visitRuleElement(ctx: RuleElementContext): T
+    open fun visitUnconditionalRuleElement(ctx: UnconditionalRuleElementContext): T
     open fun visitBounded(ctx: BoundedContext): T
     open fun visitGroup(ctx: GroupContext): T
     open fun visitList(ctx: ListContext): T
-    open fun visitLookaround(ctx: LookaroundContext): T
     open fun visitSequence(ctx: SequenceContext): T
     open fun visitFreeElement(ctx: FreeElementContext): T
     open fun visitCompoundEnvironment(ctx: CompoundEnvironmentContext): T
@@ -266,10 +266,10 @@ expect class SyllableDeclContext : ParserRuleContext {
 expect fun SyllableDeclContext.allSyllablePatterns(): List<SyllablePatternContext>
 
 expect class SyllablePatternContext : ParserRuleContext {
-    fun ruleElement(): RuleElementContext
+    fun unconditionalRuleElement(): UnconditionalRuleElementContext
     fun CHANGE(): TerminalNode?
     fun matrix(): MatrixContext?
-    fun compoundEnvironment(): CompoundEnvironmentContext
+    fun compoundEnvironment(): CompoundEnvironmentContext?
 }
 
 
@@ -378,11 +378,17 @@ expect class FromContext : ParserRuleContext {
 
 
 expect class ToContext : ParserRuleContext {
-    fun ruleElement(): RuleElementContext
+    fun unconditionalRuleElement(): UnconditionalRuleElementContext
 }
 
 
 expect class RuleElementContext : ParserRuleContext {
+    fun unconditionalRuleElement(): UnconditionalRuleElementContext
+    fun compoundEnvironment(): CompoundEnvironmentContext?
+}
+
+
+expect class UnconditionalRuleElementContext : ParserRuleContext {
     fun bounded(): BoundedContext?
     fun interfix(): InterfixContext?
     fun negated(): NegatedContext?
@@ -395,7 +401,6 @@ expect class RuleElementContext : ParserRuleContext {
 expect class BoundedContext : ParserRuleContext {
     fun group(): GroupContext?
     fun list(): ListContext?
-    fun lookaround(): LookaroundContext?
 }
 
 
@@ -413,14 +418,6 @@ expect class ListContext : ParserRuleContext {
 
 expect fun ListContext.allRuleElements(): List<RuleElementContext>
 
-expect class LookaroundContext : ParserRuleContext {
-    fun O_PAREN(): TerminalNode
-    fun ruleElement(): RuleElementContext
-    fun compoundEnvironment(): CompoundEnvironmentContext
-    fun C_PAREN(): TerminalNode
-}
-
-
 expect class SequenceContext : ParserRuleContext {
 
 }
@@ -437,20 +434,20 @@ expect class FreeElementContext : ParserRuleContext {
 
 
 expect class CompoundEnvironmentContext : ParserRuleContext {
-    fun CONDITION(): TerminalNode?
     fun condition(): ConditionContext?
-    fun EXCLUSION(): TerminalNode?
     fun exclusion(): ExclusionContext?
 }
 
 
 expect class ConditionContext : ParserRuleContext {
+    fun CONDITION(): TerminalNode
     fun environment(): EnvironmentContext?
     fun environmentList(): EnvironmentListContext?
 }
 
 
 expect class ExclusionContext : ParserRuleContext {
+    fun EXCLUSION(): TerminalNode
     fun environment(): EnvironmentContext?
     fun environmentList(): EnvironmentListContext?
 }
@@ -471,12 +468,12 @@ expect class EnvironmentContext : ParserRuleContext {
 
 
 expect class EnvironmentBeforeContext : ParserRuleContext {
-    fun ruleElement(): RuleElementContext
+    fun unconditionalRuleElement(): UnconditionalRuleElementContext
 }
 
 
 expect class EnvironmentAfterContext : ParserRuleContext {
-    fun ruleElement(): RuleElementContext
+    fun unconditionalRuleElement(): UnconditionalRuleElementContext
 }
 
 

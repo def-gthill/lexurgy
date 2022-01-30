@@ -191,6 +191,12 @@ public interface LscVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitRuleElement(LscParser.RuleElementContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link LscParser#unconditionalRuleElement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitUnconditionalRuleElement(LscParser.UnconditionalRuleElementContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link LscParser#bounded}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -208,12 +214,6 @@ public interface LscVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitList(LscParser.ListContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link LscParser#lookaround}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitLookaround(LscParser.LookaroundContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link LscParser#sequence}.
 	 * @param ctx the parse tree

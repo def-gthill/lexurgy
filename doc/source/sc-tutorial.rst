@@ -914,13 +914,7 @@ the following is a compact way of writing the rule "voiced stops word finally,
 and aspirated stops unconditionally, both become voiceless stops"::
 
     nested-environment:
-        {({b, d, g} / _ $), {pʰ, tʰ, kʰ}} => {p, t, k}
-
-.. note::
-
-    Due to current limitations in the parser, you have
-    to put nested environments in parentheses;
-    ``{{b, d, g} / _ $, {pʰ, tʰ, kʰ}}`` is a syntax error.
+        {{b, d, g} / _ $, {pʰ, tʰ, kʰ}} => {p, t, k}
 
 .. _sc-filters:
 

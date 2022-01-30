@@ -39,10 +39,10 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     actual fun from(): FromContext
     actual fun to(): ToContext
     actual fun ruleElement(): RuleElementContext
+    actual fun unconditionalRuleElement(): UnconditionalRuleElementContext
     actual fun bounded(): BoundedContext
     actual fun group(): GroupContext
     actual fun list(): ListContext
-    actual fun lookaround(): LookaroundContext
     actual fun sequence(): SequenceContext
     actual fun freeElement(): FreeElementContext
     actual fun compoundEnvironment(): CompoundEnvironmentContext
@@ -182,10 +182,10 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     }
 
     class SyllablePatternContext : ParserRuleContext {
-        fun ruleElement(): RuleElementContext
+        fun unconditionalRuleElement(): UnconditionalRuleElementContext
         fun CHANGE(): TerminalNode?
         fun matrix(): MatrixContext?
-        fun compoundEnvironment(): CompoundEnvironmentContext
+        fun compoundEnvironment(): CompoundEnvironmentContext?
     }
 
     class DeromanizerContext : ParserRuleContext {
@@ -289,10 +289,15 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     }
 
     class ToContext : ParserRuleContext {
-        fun ruleElement(): RuleElementContext
+        fun unconditionalRuleElement(): UnconditionalRuleElementContext
     }
 
     class RuleElementContext : ParserRuleContext {
+        fun unconditionalRuleElement(): UnconditionalRuleElementContext
+        fun compoundEnvironment(): CompoundEnvironmentContext?
+    }
+
+    class UnconditionalRuleElementContext : ParserRuleContext {
         fun bounded(): BoundedContext?
         fun interfix(): InterfixContext?
         fun negated(): NegatedContext?
@@ -304,7 +309,6 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     class BoundedContext : ParserRuleContext {
         fun group(): GroupContext?
         fun list(): ListContext?
-        fun lookaround(): LookaroundContext?
     }
 
     class GroupContext : ParserRuleContext {
@@ -318,13 +322,6 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
         fun ruleElement(): Array<RuleElementContext>
         fun SEP(): Array<TerminalNode>
         fun LIST_END(): TerminalNode
-    }
-
-    class LookaroundContext : ParserRuleContext {
-        fun O_PAREN(): TerminalNode
-        fun ruleElement(): RuleElementContext
-        fun compoundEnvironment(): CompoundEnvironmentContext
-        fun C_PAREN(): TerminalNode
     }
 
     class SequenceContext : ParserRuleContext {
@@ -341,18 +338,18 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     }
 
     class CompoundEnvironmentContext : ParserRuleContext {
-        fun CONDITION(): TerminalNode?
         fun condition(): ConditionContext?
-        fun EXCLUSION(): TerminalNode?
         fun exclusion(): ExclusionContext?
     }
 
     class ConditionContext : ParserRuleContext {
+        fun CONDITION(): TerminalNode
         fun environment(): EnvironmentContext?
         fun environmentList(): EnvironmentListContext?
     }
 
     class ExclusionContext : ParserRuleContext {
+        fun EXCLUSION(): TerminalNode
         fun environment(): EnvironmentContext?
         fun environmentList(): EnvironmentListContext?
     }
@@ -372,11 +369,11 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     }
 
     class EnvironmentBeforeContext : ParserRuleContext {
-        fun ruleElement(): RuleElementContext
+        fun unconditionalRuleElement(): UnconditionalRuleElementContext
     }
 
     class EnvironmentAfterContext : ParserRuleContext {
-        fun ruleElement(): RuleElementContext
+        fun unconditionalRuleElement(): UnconditionalRuleElementContext
     }
 
     class InterfixContext : ParserRuleContext {
@@ -584,10 +581,10 @@ open external class LscVisitor<T>{
     open fun visitFrom(ctx: FromContext): T
     open fun visitTo(ctx: ToContext): T
     open fun visitRuleElement(ctx: RuleElementContext): T
+    open fun visitUnconditionalRuleElement(ctx: UnconditionalRuleElementContext): T
     open fun visitBounded(ctx: BoundedContext): T
     open fun visitGroup(ctx: GroupContext): T
     open fun visitList(ctx: ListContext): T
-    open fun visitLookaround(ctx: LookaroundContext): T
     open fun visitSequence(ctx: SequenceContext): T
     open fun visitFreeElement(ctx: FreeElementContext): T
     open fun visitCompoundEnvironment(ctx: CompoundEnvironmentContext): T
@@ -715,6 +712,8 @@ actual typealias ToContext = LscParser.ToContext
 
 actual typealias RuleElementContext = LscParser.RuleElementContext
 
+actual typealias UnconditionalRuleElementContext = LscParser.UnconditionalRuleElementContext
+
 actual typealias BoundedContext = LscParser.BoundedContext
 
 actual typealias GroupContext = LscParser.GroupContext
@@ -722,8 +721,6 @@ actual typealias GroupContext = LscParser.GroupContext
 actual typealias ListContext = LscParser.ListContext
 
 actual fun ListContext.allRuleElements(): List<RuleElementContext> = ruleElement().toList()
-
-actual typealias LookaroundContext = LscParser.LookaroundContext
 
 actual typealias SequenceContext = LscParser.SequenceContext
 
