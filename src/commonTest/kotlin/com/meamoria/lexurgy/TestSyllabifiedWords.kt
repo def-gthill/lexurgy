@@ -141,7 +141,7 @@ class TestSyllabifiedWords : StringSpec({
         Phrase(banana).recoverStructure(plainWord).string shouldBe "ba.na.na"
         Phrase(excellent).recoverStructure(plainWord).string shouldBe "ba.na.ˈna."
         Phrase(shine).recoverStructure(plainWord).string shouldBe "bʰanana`"
-        Phrase(endBreak).recoverStructure(plainWord).string shouldBe "ba.nana"
+        Phrase(endBreak).recoverStructure(plainWord).string shouldBe "banana."
         Phrase(listOf(startBreak, banana)).recoverStructure(plainWord).string shouldBe ".ba.na.na."
         Phrase(endBreak).recoverStructure(
             plainWord.slice(PhraseIndex(0, 0), PhraseIndex(0, 2))

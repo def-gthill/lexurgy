@@ -668,6 +668,33 @@ class TestSyllables : StringSpec({
         ch("kam.ˈpis") shouldBe "ka.ˈpi"
     }
 
+    "Vowel breaking should work without syllable features bleeding onto the previous syllable" {
+        val ch = lsc(
+            """
+                Feature (syllable) +stress
+                Diacritic ˈ (before) [+stress]
+                
+                Class consonant {p, t, k, s, m, n, l}
+                Class vowel {a, ə, i, u}
+                Class glide {j, w}
+                
+                Syllables:
+                 @consonant @vowel
+                
+                apply-stress:
+                 <syl> => [+stress] / _ <syl> $
+                
+                breaking:
+                 {i, u}&[-stress] => {jə, wə}
+                
+                Syllables:
+                 @consonant @glide? @vowel
+            """.trimIndent()
+        )
+
+        ch("patimina") shouldBe "pa.tjə.ˈmi.na"
+    }
+
     "We should be able to change syllable structure partway through the rules" {
         val ch = lsc(
             """

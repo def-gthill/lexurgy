@@ -784,11 +784,15 @@ private class Syllabification(
         if (other.isSyllabified() || other.isEmpty()) other
         else {
             val syllableBreaksToTransfer = syllableBreaks.filter { it !in exceptSyllableBreaks }
-            val newSyllableBreaks = syllableBreaksToTransfer.filter { it < other.length } +
-                    if (length >= other.length && syllableBreaksToTransfer.any { it >= other.length} ) {
-                        // Maintain syllable breaks if they've been pushed off the end
-                        listOf(other.length)
-                    } else emptyList()
+            val iHaveSyllableBreaksAfterOtherEnd =
+                length >= other.length && syllableBreaksToTransfer.any { it >= other.length}
+            val iHaveFinalSyllableBreakBeforeOtherEnd =
+                length < other.length && length in syllableBreaksToTransfer
+            val newSyllableBreaks = syllableBreaksToTransfer.filter {
+                it < length && it < other.length
+            } + if (iHaveSyllableBreaksAfterOtherEnd || iHaveFinalSyllableBreakBeforeOtherEnd) {
+                listOf(other.length)
+            } else emptyList()
             val newSyllableCount =
                 newSyllableBreaks.size + 1 -
                         (if (newSyllableBreaks.firstOrNull() == 0) 1 else 0)
