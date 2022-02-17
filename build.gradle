@@ -39,6 +39,7 @@ kotlin {
 
     jvmTest {
         useJUnitPlatform()
+        outputs.upToDateWhen { false }
     }
 
     task copyJS(type: Copy) {

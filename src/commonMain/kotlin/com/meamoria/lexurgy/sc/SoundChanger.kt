@@ -5,11 +5,12 @@ import com.meamoria.lexurgy.*
 class SoundChanger(
     val initialDeclarations: Declarations,
     val finalDeclarations: Declarations,
-    val rules: List<NamedRule>,
-    val intermediateRomanizers: Map<String?, List<NamedRule>> = emptyMap()
+    val rules: List<RuleWithAnchoredSteps>,
 ) {
     init {
-        val duplicated = rules.groupBy { it.name }.filterValues { it.size > 1 }.keys.firstOrNull()
+        val duplicated = rules.groupBy {
+            it.rule?.name
+        }.filterValues { it.size > 1 }.keys.firstOrNull()
         if (duplicated != null) {
             throw LscDuplicateName("rule", duplicated)
         }
@@ -47,7 +48,7 @@ class SoundChanger(
         debug: (String) -> Unit = ::println,
     ): Map<String?, List<String>> {
         val debugIndices = words.withIndex().filter { it.value in debugWords }.map { it.index }
-        var declarations = rules.firstOrNull()?.declarations ?: initialDeclarations
+        var declarations = rules.firstOrNull()?.rule?.declarations ?: initialDeclarations
         val startPhrases = words.map {
             Phrase(
                 it.split(" ").map(declarations::parsePhonetic).map(declarations::syllabify)
@@ -65,50 +66,50 @@ class SoundChanger(
                 "fake-romanizer", initialDeclarations, EmptyRule
             )
 
-        fun runIntermediateRomanizers(ruleName: String?) {
-            intermediateRomanizers[ruleName]?.forEach { rom ->
-                result[rom.name] = applyRule(
-                    maybeReplace(rom), words, curPhrases, debugIndices, debug
-                ).map { it.string }
+        fun runAnchoredStep(anchoredStep: AnchoredStep) {
+            when (anchoredStep) {
+                is IntermediateRomanizerStep -> {
+                    val rom = anchoredStep.romanizer
+                    result[rom.name] = applyRule(
+                        maybeReplace(rom), words, curPhrases, debugIndices, debug
+                    ).map { it.string }
+                }
+                is SyllabificationStep -> {
+                    declarations = anchoredStep.declarations
+                    curPhrases = curPhrases.map {
+                        declarations.syllabify(it)
+                    }
+                }
             }
         }
 
-        fun resyllabify(rule: NamedRule?) {
-            if (rule == null) {
-                declarations = finalDeclarations
-            } else if (rule.declarations != declarations) {
-                declarations = rule.declarations
-            }
-            curPhrases = curPhrases.map { declarations.syllabify(it) }
-        }
-
-        for (rule in rules) {
-            if (rule.name == stopBefore) {
+        for (ruleWithAnchoredSteps in rules) {
+            val rule = ruleWithAnchoredSteps.rule
+            if (stopBefore != null && rule?.name == stopBefore) {
                 stopped = true
                 break
             }
-            if (rule.ruleType == RuleType.ROMANIZER) {
-                resyllabify(null)
-                runIntermediateRomanizers(null)
-            } else {
-                resyllabify(rule)
-                runIntermediateRomanizers(rule.name)
+
+            // If there isn't an explicit syllabification step next,
+            // implicitly resyllabify with the most recent syllabification rules
+            if (ruleWithAnchoredSteps.anchoredSteps.firstOrNull() !is SyllabificationStep) {
+                curPhrases = curPhrases.map { declarations.syllabify(it) }
             }
-            if (!started && (startAt == null || rule.name == startAt)) {
+
+            for (anchoredStep in ruleWithAnchoredSteps.anchoredSteps) {
+                runAnchoredStep(anchoredStep)
+            }
+
+            if (!started && (startAt == null || rule?.name == startAt)) {
                 started = true
             }
             if (started) {
-                if (romanize || rule.ruleType != RuleType.ROMANIZER) {
+                if (rule != null && (romanize || rule.ruleType != RuleType.ROMANIZER)) {
                     curPhrases = applyRule(
                         rule, words, curPhrases, debugIndices, debug
                     )
                 }
             }
-        }
-
-        if (rules.lastOrNull()?.ruleType != RuleType.ROMANIZER) {
-            resyllabify(null)
-            runIntermediateRomanizers(null)
         }
 
         if (stopBefore != null && !stopped) {
@@ -145,6 +146,17 @@ class SoundChanger(
             }
         }
 
+    data class RuleWithAnchoredSteps(
+        val rule: NamedRule?,
+        val anchoredSteps: List<AnchoredStep>,
+    )
+
+    sealed interface AnchoredStep
+
+    data class IntermediateRomanizerStep(val romanizer: NamedRule) : AnchoredStep
+
+    data class SyllabificationStep(val declarations: Declarations) : AnchoredStep
+
     companion object {
         fun change(
             changes: String,
@@ -166,6 +178,12 @@ class SoundChanger(
             val parser = LscInterpreter()
             return (parser.parseFile(code) as LscWalker.SoundChangerNode).soundChanger
         }
+
+        /**
+         * A rule with no anchored steps
+         */
+        fun plainRule(rule: NamedRule): RuleWithAnchoredSteps =
+            RuleWithAnchoredSteps(rule, emptyList())
     }
 
     override fun toString(): String = rules.joinToString(

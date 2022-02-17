@@ -739,4 +739,40 @@ class TestSyllables : StringSpec({
         ch("kalami") shouldBe "kalámi"
         ch("solkan") shouldBe "sólkan"
     }
+
+    "Clearing syllables after an intermediate romanizer shouldn't affect the romanizer" {
+        val ch = lsc(
+            """
+                Syllables:
+                    explicit
+                Romanizer-inter:
+                    unchanged
+                Syllables:
+                    clear
+            """.trimIndent()
+        )
+
+        ch.changeWithIntermediates(listOf("pi.ka")) shouldBe mapOf(
+            "inter" to listOf("pi.ka"),
+            null to listOf("pika"),
+        )
+
+        val ch2 = lsc(
+            """
+                Syllables:
+                    explicit
+                voice:
+                    {p, k} => {b, g}
+                Romanizer-inter:
+                    unchanged
+                Syllables:
+                    clear
+            """.trimIndent()
+        )
+
+        ch2.changeWithIntermediates(listOf("pi.ka")) shouldBe mapOf(
+            "inter" to listOf("bi.ga"),
+            null to listOf("biga"),
+        )
+    }
 })

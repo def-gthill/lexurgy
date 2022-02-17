@@ -72,45 +72,42 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     override fun visitLscFile(ctx: LscFileContext): ParseNode {
         val statementContexts = ctx.allStatements().map { it.getChild(0) as ParserRuleContext }
         validateOrder(statementContexts)
-        val (changeRules, ruleAnchoredStatements) = visitRulesAndRuleAnchoredStatements(statementContexts)
+        val rulesWithAnchoredStatements = visitRulesWithAnchoredStatements(statementContexts)
         return walkFile(
             ctx.getText(),
             featureDeclarations = listVisit(statementContexts.filterIsInstance<FeatureDeclContext>()),
             diacriticDeclarations = listVisit(statementContexts.filterIsInstance<DiacriticDeclContext>()),
             symbolDeclarations = listVisit(statementContexts.filterIsInstance<SymbolDeclContext>()),
             classDeclarations = listVisit(statementContexts.filterIsInstance<ClassDeclContext>()),
-            syllableStructure = ruleAnchoredStatements.filter { it.statement is SyllableStructureNode },
             deromanizer = optionalVisit(statementContexts.filterIsInstance<DeromanizerContext>().singleOrNull()),
-            changeRules = changeRules,
+            changeRules = rulesWithAnchoredStatements,
             romanizer = optionalVisit(statementContexts.filterIsInstance<RomanizerContext>().singleOrNull()),
-            intermediateRomanizers = ruleAnchoredStatements.filter { it.statement is UnlinkedRomanizer },
         )
     }
 
-    private fun visitRulesAndRuleAnchoredStatements(
+    private fun visitRulesWithAnchoredStatements(
         contexts: List<ParserRuleContext>
-    ): Pair<List<ParseNode>, List<RuleAnchoredStatement>> {
-        val changeRules = mutableListOf<ParseNode>()
-        val anchoredStatements = mutableListOf<RuleAnchoredStatement>()
-        val curAnchoredStatements = mutableListOf<ParseNode>()
+    ): List<RuleWithAnchoredStatements> {
+        val rulesWithAnchoredStatements = mutableListOf<RuleWithAnchoredStatements>()
+        var curAnchoredStatements = mutableListOf<ParseNode>()
         for (context in contexts) {
             when (context) {
                 is ChangeRuleContext -> {
                     val rule = visit(context)
-                    changeRules += rule
-                    anchoredStatements.addAll(
-                        curAnchoredStatements.map { RuleAnchoredStatement(it, rule) }
+                    rulesWithAnchoredStatements += RuleWithAnchoredStatements(
+                        rule, curAnchoredStatements
                     )
-                    curAnchoredStatements.clear()
+                    curAnchoredStatements = mutableListOf()
                 }
-                is RomanizerContext -> Unit
-                else -> curAnchoredStatements += visit(context)
+                is InterRomanizerContext -> curAnchoredStatements += visit(context)
+                is SyllableDeclContext -> curAnchoredStatements += visit(context)
+                else -> {}
             }
         }
-        anchoredStatements.addAll(
-            curAnchoredStatements.map { RuleAnchoredStatement(it, null) }
+        rulesWithAnchoredStatements += RuleWithAnchoredStatements(
+            null, curAnchoredStatements
         )
-        return changeRules to anchoredStatements
+        return rulesWithAnchoredStatements
     }
 
     private fun validateOrder(statements: List<ParserRuleContext>) {
@@ -150,12 +147,14 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     )
 
     /**
-     * A statement anchored before a particular rule.
-     * If ``rule`` is null, this statement is after all the rules.
+     * A change rule, plus all the non-rule statements
+     * (e.g. intermediate romanizers) between it and the previous
+     * rule, in declaration order. If ``rule`` is null, the non-rule statements
+     * are after all the rules.
      */
-    private data class RuleAnchoredStatement(
-        val statement: ParseNode,
+    private data class RuleWithAnchoredStatements(
         val rule: ParseNode?,
+        val statements: List<ParseNode>,
     )
 
     override fun visitClassDecl(ctx: ClassDeclContext): ParseNode = walkClassDeclaration(
@@ -660,22 +659,18 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         diacriticDeclarations: List<ParseNode>,
         symbolDeclarations: List<ParseNode>,
         classDeclarations: List<ParseNode>,
-        syllableStructure: List<RuleAnchoredStatement>,
         deromanizer: ParseNode?,
-        changeRules: List<ParseNode>,
+        changeRules: List<RuleWithAnchoredStatements>,
         romanizer: ParseNode?,
-        intermediateRomanizers: List<RuleAnchoredStatement>
     ): ParseNode = SoundChangerNodeImpl(
         text,
         featureDeclarations,
         diacriticDeclarations,
         symbolDeclarations,
         classDeclarations,
-        syllableStructure,
         deromanizer,
         changeRules,
         romanizer,
-        intermediateRomanizers
     )
 
     private fun resolveClasses(classDeclarations: List<ClassDeclarationNode>): List<SegmentClass> {
@@ -1125,11 +1120,9 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         private val diacriticDeclarations: List<ParseNode>,
         private val symbolDeclarations: List<ParseNode>,
         private val classDeclarations: List<ParseNode>,
-        private val syllableStructure: List<RuleAnchoredStatement>,
         private val deromanizer: ParseNode?,
-        private val changeRules: List<ParseNode>,
+        private val changeRules: List<RuleWithAnchoredStatements>,
         private val romanizer: ParseNode?,
-        private val intermediateRomanizers: List<RuleAnchoredStatement>,
     ) : BaseParseNode(text), SoundChangerNode {
         private val initialDeclarations = Declarations(
             featureDeclarations.flatMap { sublist ->
@@ -1141,44 +1134,87 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             },
             resolveClasses(classDeclarations.map { it as ClassDeclarationNode }),
         )
-        private val ruleToDeclarations = syllableStructure.associate {
-            (it.rule as UnlinkedRule?) to initialDeclarations.withSyllabifier(
-                (it.statement as SyllableStructureNode).syllabifier(initialDeclarations)
-            )
-        }
-        private val allRules = listOfNotNull(deromanizer as UnlinkedRule?) +
-                changeRules.map { it as UnlinkedRule } +
-                listOfNotNull(romanizer as UnlinkedRule?)
+
         private val realInitialDeclarations =
-            if (syllableStructure.isEmpty()) {
-                initialDeclarations
-            } else {
+            if (changeRules.any { rule -> rule.statements.any { it is SyllableStructureNode } }) {
                 initialDeclarations.withSyllabifier(
                     Syllabifier(initialDeclarations, emptyList())
                 )
+            } else {
+                initialDeclarations
             }
         private var declarations = realInitialDeclarations
-        private val linkedRules = allRules.map { rule ->
-            declarations = ruleToDeclarations[rule] ?: declarations
-            rule.link(
-                1, declarations, InheritedRuleProperties.none
-            ) as NamedRule
-        }
-        private val linkedIntermediateRomanizers = intermediateRomanizers.groupBy {
-            (it.rule as UnlinkedStandardRule?)?.name
-        }.mapValues { (_, value) ->
-            value.map {
-                (it.statement as UnlinkedRomanizer).link(
+
+        private val linkedDeromanizer = (deromanizer as UnlinkedDeromanizer?)?.let {
+            SoundChanger.plainRule(
+                it.link(
                     1, declarations, InheritedRuleProperties.none
                 ) as NamedRule
-            }
+            )
         }
+
+        private val linkedRules = changeRules.map { rule ->
+            val anchoredSteps = rule.statements.map { anchoredStatement ->
+                when (anchoredStatement) {
+                    is UnlinkedRomanizer -> SoundChanger.IntermediateRomanizerStep(
+                        anchoredStatement.link(
+                            1, declarations, InheritedRuleProperties.none
+                        ) as NamedRule
+                    )
+                    is SyllableStructureNode -> {
+                        declarations = initialDeclarations.withSyllabifier(
+                            anchoredStatement.syllabifier(initialDeclarations)
+                        )
+                        SoundChanger.SyllabificationStep(declarations)
+                    }
+                    else -> throw AssertionError("Unrecognized anchored statement $anchoredStatement")
+                }
+            }
+            val linkedRule = (rule.rule as UnlinkedRule?)?.link(
+                1, declarations, InheritedRuleProperties.none
+            ) as NamedRule?
+            SoundChanger.RuleWithAnchoredSteps(linkedRule, anchoredSteps)
+        }
+
+        private val linkedRomanizer = (romanizer as UnlinkedRomanizer?)?.let {
+            SoundChanger.plainRule(
+                it.link(
+                    1, declarations, InheritedRuleProperties.none
+                ) as NamedRule
+            )
+        }
+
+        private val allLinkedRules =
+            listOfNotNull(linkedDeromanizer) + linkedRules + listOfNotNull(linkedRomanizer)
+
+//        private val ruleToDeclarations = syllableStructure.associate {
+//            (it.rule as UnlinkedRule?) to initialDeclarations.withSyllabifier(
+//                (it.statement as SyllableStructureNode).syllabifier(initialDeclarations)
+//            )
+//        }
+//        private val allRules = listOfNotNull(deromanizer as UnlinkedRule?) +
+//                changeRules.map { it as UnlinkedRule } +
+//                listOfNotNull(romanizer as UnlinkedRule?)
+//        private val linkedRules = allRules.map { rule ->
+//            declarations = ruleToDeclarations[rule] ?: declarations
+//            rule.link(
+//                1, declarations, InheritedRuleProperties.none
+//            ) as NamedRule
+//        }
+//        private val linkedIntermediateRomanizers = intermediateRomanizers.groupBy {
+//            (it.rule as UnlinkedStandardRule?)?.name
+//        }.mapValues { (_, value) ->
+//            value.map {
+//                (it.statement as UnlinkedRomanizer).link(
+//                    1, declarations, InheritedRuleProperties.none
+//                ) as NamedRule
+//            }
+//        }
 
         override val soundChanger = SoundChanger(
             realInitialDeclarations,
-            ruleToDeclarations[null] ?: declarations,
-            linkedRules,
-            linkedIntermediateRomanizers,
+            declarations,
+            allLinkedRules,
         )
     }
 
