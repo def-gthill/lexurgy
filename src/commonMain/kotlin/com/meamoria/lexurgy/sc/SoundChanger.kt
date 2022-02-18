@@ -4,7 +4,6 @@ import com.meamoria.lexurgy.*
 
 class SoundChanger(
     val initialDeclarations: Declarations,
-    val finalDeclarations: Declarations,
     val rules: List<RuleWithAnchoredSteps>,
 ) {
     init {
@@ -48,7 +47,7 @@ class SoundChanger(
         debug: (String) -> Unit = ::println,
     ): Map<String?, List<String>> {
         val debugIndices = words.withIndex().filter { it.value in debugWords }.map { it.index }
-        var declarations = rules.firstOrNull()?.rule?.declarations ?: initialDeclarations
+        var declarations = initialDeclarations
         val startPhrases = words.map {
             Phrase(
                 it.split(" ").map(declarations::parsePhonetic).map(declarations::syllabify)
@@ -85,10 +84,6 @@ class SoundChanger(
 
         for (ruleWithAnchoredSteps in rules) {
             val rule = ruleWithAnchoredSteps.rule
-            if (stopBefore != null && rule?.name == stopBefore) {
-                stopped = true
-                break
-            }
 
             // If there isn't an explicit syllabification step next,
             // implicitly resyllabify with the most recent syllabification rules
@@ -98,6 +93,11 @@ class SoundChanger(
 
             for (anchoredStep in ruleWithAnchoredSteps.anchoredSteps) {
                 runAnchoredStep(anchoredStep)
+            }
+
+            if (stopBefore != null && rule?.name == stopBefore) {
+                stopped = true
+                break
             }
 
             if (!started && (startAt == null || rule?.name == startAt)) {

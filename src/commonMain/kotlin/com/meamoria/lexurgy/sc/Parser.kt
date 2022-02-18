@@ -1135,15 +1135,16 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             resolveClasses(classDeclarations.map { it as ClassDeclarationNode }),
         )
 
-        private val realInitialDeclarations =
-            if (changeRules.any { rule -> rule.statements.any { it is SyllableStructureNode } }) {
+        private val firstAnchoredStatement = changeRules.firstOrNull()?.statements?.firstOrNull()
+        private val initialSyllabifiedDeclarations =
+            if (firstAnchoredStatement is SyllableStructureNode) {
                 initialDeclarations.withSyllabifier(
-                    Syllabifier(initialDeclarations, emptyList())
+                    firstAnchoredStatement.syllabifier(initialDeclarations)
                 )
             } else {
                 initialDeclarations
             }
-        private var declarations = realInitialDeclarations
+        private var declarations = initialSyllabifiedDeclarations
 
         private val linkedDeromanizer = (deromanizer as UnlinkedDeromanizer?)?.let {
             SoundChanger.plainRule(
@@ -1187,33 +1188,8 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         private val allLinkedRules =
             listOfNotNull(linkedDeromanizer) + linkedRules + listOfNotNull(linkedRomanizer)
 
-//        private val ruleToDeclarations = syllableStructure.associate {
-//            (it.rule as UnlinkedRule?) to initialDeclarations.withSyllabifier(
-//                (it.statement as SyllableStructureNode).syllabifier(initialDeclarations)
-//            )
-//        }
-//        private val allRules = listOfNotNull(deromanizer as UnlinkedRule?) +
-//                changeRules.map { it as UnlinkedRule } +
-//                listOfNotNull(romanizer as UnlinkedRule?)
-//        private val linkedRules = allRules.map { rule ->
-//            declarations = ruleToDeclarations[rule] ?: declarations
-//            rule.link(
-//                1, declarations, InheritedRuleProperties.none
-//            ) as NamedRule
-//        }
-//        private val linkedIntermediateRomanizers = intermediateRomanizers.groupBy {
-//            (it.rule as UnlinkedStandardRule?)?.name
-//        }.mapValues { (_, value) ->
-//            value.map {
-//                (it.statement as UnlinkedRomanizer).link(
-//                    1, declarations, InheritedRuleProperties.none
-//                ) as NamedRule
-//            }
-//        }
-
         override val soundChanger = SoundChanger(
-            realInitialDeclarations,
-            declarations,
+            initialSyllabifiedDeclarations,
             allLinkedRules,
         )
     }

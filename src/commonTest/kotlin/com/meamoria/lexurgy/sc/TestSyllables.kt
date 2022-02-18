@@ -775,4 +775,54 @@ class TestSyllables : StringSpec({
             null to listOf("biga"),
         )
     }
+
+    "Statements between rules should run in order" {
+        val ch = lsc(
+            """
+                Syllables:
+                    explicit
+                Romanizer-a:
+                    unchanged
+                Syllables:
+                    []
+                Syllables:
+                    b a
+                Romanizer-b:
+                    unchanged
+                Syllables:
+                    []
+                Romanizer-c:
+                    unchanged
+            """.trimIndent()
+        )
+
+        ch.changeWithIntermediates(listOf("baba.ba")) shouldBe mapOf(
+            "a" to listOf("baba.ba"),
+            "b" to listOf("ba.ba.ba"),
+            "c" to listOf("b.a.b.a.b.a"),
+            null to listOf("b.a.b.a.b.a"),
+        )
+    }
+
+    "Stop-before should stop immediately before the rule, after the in-between statements" {
+        val ch = lsc(
+            """
+                Syllables:
+                    explicit
+                Romanizer-inter:
+                    unchanged
+                Syllables:
+                    b a
+                my-rule:
+                    b => n
+                Syllables:
+                    n a
+            """.trimIndent()
+        )
+
+        ch.changeWithIntermediates(listOf("bab.a"), stopBefore = "my-rule") shouldBe mapOf(
+            "inter" to listOf("bab.a"),
+            null to listOf("ba.ba"),
+        )
+    }
 })
