@@ -1138,8 +1138,12 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         private val firstAnchoredStatement = changeRules.firstOrNull()?.statements?.firstOrNull()
         private val initialSyllabifiedDeclarations =
             if (firstAnchoredStatement is SyllableStructureNode) {
+                // Put an implicit "Syllables: explicit" right at the
+                // beginning to preserve syllable breaks in the input.
+                // We can't use the actual first syllabification rules
+                // yet, since the deromanizer hasn't run.
                 initialDeclarations.withSyllabifier(
-                    firstAnchoredStatement.syllabifier(initialDeclarations)
+                    Syllabifier(initialDeclarations, emptyList())
                 )
             } else {
                 initialDeclarations
@@ -1153,6 +1157,10 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                 ) as NamedRule
             )
         }
+
+        // The deromanizer might change the initial declarations!
+        private val realInitialDeclarations = linkedDeromanizer?.rule?.declarations
+            ?: initialSyllabifiedDeclarations
 
         private val linkedRules = changeRules.map { rule ->
             val anchoredSteps = rule.statements.map { anchoredStatement ->
@@ -1189,7 +1197,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             listOfNotNull(linkedDeromanizer) + linkedRules + listOfNotNull(linkedRomanizer)
 
         override val soundChanger = SoundChanger(
-            initialSyllabifiedDeclarations,
+            realInitialDeclarations,
             allLinkedRules,
         )
     }
