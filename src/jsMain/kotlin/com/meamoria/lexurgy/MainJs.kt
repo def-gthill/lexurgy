@@ -28,7 +28,7 @@ class JsSoundChanger(val sc: SoundChanger) {
         }.toTypedArray()
 
     val ruleNames: Array<String>
-        get() = sc.rules.map { it.name }.toTypedArray()
+        get() = sc.rules.mapNotNull { it.rule?.name }.toTypedArray()
 
     companion object {
         @JsName("fromLsc")
