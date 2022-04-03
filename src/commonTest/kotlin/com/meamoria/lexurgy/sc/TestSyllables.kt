@@ -203,14 +203,16 @@ class TestSyllables : StringSpec({
             ch("bahu")
         }.also {
             it.message shouldBe
-                    "The segment \"h\" in \"ba(h)u\" doesn't fit the syllable structure"
+                    "The segment \"h\" in \"ba(h)u\" doesn't fit the syllable structure; " +
+                    "no syllable pattern can start with \"h\""
         }
 
         shouldThrow<SyllableStructureViolated> {
             ch("katmandu")
         }.also {
             it.message shouldBe
-                    "The segment \"m\" in \"kat(m)andu\" doesn't fit the syllable structure"
+                    "The segment \"m\" in \"kat(m)andu\" doesn't fit the syllable structure; " +
+                    "no syllable pattern that starts with \"t\" can continue with \"m\""
         }
     }
 

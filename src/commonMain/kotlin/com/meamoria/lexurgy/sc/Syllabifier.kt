@@ -25,16 +25,23 @@ class Syllabifier(
         }
 
     private fun findBestSyllableSequence(word: Word): PatternMatchSequence {
-        val syllableSequences = mutableMapOf(0 to PatternMatchSequence(emptyList()))
-        var latestSyllableEnd = 0
+        val syllableSequences = Array<PatternMatchSequence?>(word.length + 1) { null }
+        syllableSequences[0] = PatternMatchSequence(emptyList())
         for (i in 0 until word.length) {
-            val prev = syllableSequences[i] ?: continue
+            val prev = syllableSequences[i]?.takeIf { !it.isPartial } ?: continue
             val newSequences = patterns.flatMapIndexed { patternNumber, pattern ->
-                pattern.matcher.claim(declarations, Phrase(word), PhraseIndex(0, i), Bindings()).map {
+                pattern.matcher.claim(
+                    declarations,
+                    Phrase(word),
+                    PhraseIndex(0, i),
+                    Bindings(),
+                    partial = true,
+                ).map {
                     prev + PatternMatch(
                         patternNumber,
                         it.index.segmentIndex,
                         pattern.assignedMatrix,
+                        isPartial = it.partial,
                     )
                 }
             }
@@ -42,11 +49,15 @@ class Syllabifier(
                 val existing = syllableSequences[sequence.end]
                 if (existing == null || sequence < existing) {
                     syllableSequences[sequence.end] = sequence
-                    latestSyllableEnd = sequence.end
                 }
             }
         }
-        return syllableSequences[word.length] ?: throw SyllableStructureViolated(word, latestSyllableEnd)
+        return syllableSequences[word.length]?.takeIf { !it.isPartial }
+            ?: throw SyllableStructureViolated(
+                word,
+                syllableSequences.indexOfLast { it?.isPartial == false },
+                syllableSequences.indexOfLast { it != null },
+            )
     }
 
     private fun combineSyllableModifiers(
@@ -94,6 +105,7 @@ class Syllabifier(
         val patternNumber: Int,
         val end: Int,
         val assignedMatrix: Matrix?,
+        val isPartial: Boolean = false,
     )
 
     private data class PatternMatchSequence(
@@ -102,7 +114,12 @@ class Syllabifier(
 
         val end: Int = patternMatches.lastOrNull()?.end ?: 0
 
+        val isPartial: Boolean = patternMatches.lastOrNull()?.isPartial == true
+
         override fun compareTo(other: PatternMatchSequence): Int {
+            if (this.isPartial != other.isPartial) {
+                return this.isPartial.compareTo(other.isPartial)
+            }
             for ((thisPattern, otherPattern) in patternMatches.zip(other.patternMatches)) {
                 if (thisPattern.end != otherPattern.end) {
                     return thisPattern.end.compareTo(otherPattern.end)

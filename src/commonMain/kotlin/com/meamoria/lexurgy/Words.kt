@@ -993,10 +993,22 @@ class PhoneticParser(
 class DanglingDiacritic(word: String, position: Int, diacritic: String) :
     UserError("The diacritic $diacritic at position $position in $word isn't attached to a symbol")
 
-class SyllableStructureViolated(word: Word, position: Int) :
+class SyllableStructureViolated(
+    word: Word,
+    lastSyllableBreak: Int,
+    invalidSymbolPosition: Int
+) :
     UserError(
-        "The segment \"${word[position].core}\" in \"${word.highlightSegment(position)}\" " +
-                "doesn't fit the syllable structure"
+        "The segment \"${word[invalidSymbolPosition].core}\" in " +
+                "\"${word.highlightSegment(invalidSymbolPosition)}\" " +
+                "doesn't fit the syllable structure; " +
+                if (lastSyllableBreak == invalidSymbolPosition) {
+                    "no syllable pattern can start with \"${word[invalidSymbolPosition].core}\""
+                } else {
+                    "no syllable pattern that starts with " +
+                            "\"${word.slice(lastSyllableBreak until invalidSymbolPosition)}\" " +
+                            "can continue with \"${word[invalidSymbolPosition].core}\""
+                }
     )
 
 data class PhraseIndex(val wordIndex: Int, val segmentIndex: Int) : Comparable<PhraseIndex> {
