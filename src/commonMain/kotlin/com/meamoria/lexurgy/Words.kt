@@ -108,8 +108,14 @@ interface Word {
      * a plain string (as per ``string``) but with the
      * specified segment made prominent
      */
-    fun highlightSegment(index: Int): String =
-        take(index).string + "(" + this[index].string + ")" + drop(index + 1).string
+    fun highlightSegment(index: Int): String {
+        val parenModifiers = listOf(Modifier("(", ModifierPosition.BEFORE)) +
+                this[index].modifiers +
+                Modifier(")", ModifierPosition.AFTER)
+        val highlightedSegment = this[index].copy(modifiers = parenModifiers)
+        val highlightedWord = take(index) + StandardWord.single(highlightedSegment) + drop(index + 1)
+        return highlightedWord.string
+    }
 
     companion object {
         fun join(words: List<Word>): Word =
@@ -1007,7 +1013,7 @@ class SyllableStructureViolated(
                         "no syllable pattern can start with \"${word[invalidSymbolPosition].string}\""
                     } else {
                         "no syllable pattern that starts with " +
-                                "\"${word.slice(lastSyllableBreak until invalidSymbolPosition).string}\" " +
+                                "\"${word.slice(lastSyllableBreak until invalidSymbolPosition).toSimple().string}\" " +
                                 "can continue with \"${word[invalidSymbolPosition].string}\""
                     }
         } else {

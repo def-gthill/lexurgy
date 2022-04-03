@@ -203,8 +203,11 @@ class TestSyllables : StringSpec({
     "We should get helpful error messages when a word violates the syllabification rules" {
         val ch = lsc(
             """
-                Feature +long
+                Feature +long, (syllable) +foo, (syllable) +bar, (syllable) +aargh
                 Diacritic ː [+long]
+                Diacritic ᶠ (first) [+foo]
+                Diacritic ᵇ (before) [+bar]
+                Diacritic ᵃ [+aargh]
                 Class vowel {a, e, i, o, u}
                 Class cons {p, t, k, b, d, g, s, m, n, l, r}
                 Syllables:
@@ -242,6 +245,14 @@ class TestSyllables : StringSpec({
             it.message shouldBe
                     "The segment \"aː\" in \"k(aː)maːduː\" doesn't fit the syllable structure; " +
                     "no syllable pattern that starts with \"k\" can continue with \"aː\""
+        }
+
+        shouldThrow<SyllableStructureViolated> {
+            ch("ᵇkᶠtamanduᵃ")
+        }.also {
+            it.message shouldBe
+                    "The segment \"t\" in \"ᵇkᶠ(t)amanduᵃ\" doesn't fit the syllable structure; " +
+                    "no syllable pattern that starts with \"k\" can continue with \"t\""
         }
     }
 
