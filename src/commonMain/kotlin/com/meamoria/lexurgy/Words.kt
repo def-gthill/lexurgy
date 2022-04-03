@@ -1047,15 +1047,14 @@ class Phrase(val words: List<Word>) : Iterable<Word> {
             private var cursor: PhraseIndex = start
 
             override fun hasNext(): Boolean =
-                !(cursor.wordIndex == words.size - 1 &&
-                        cursor.segmentIndex == words.last().length + 1)
+                cursor.wordIndex < words.size
 
             override fun next(): PhraseIndex = cursor.also { cursor = stepForward(it) }
         }
 
     fun stepForward(index: PhraseIndex): PhraseIndex {
         val (wordIndex, segmentIndex) = index
-        return if (segmentIndex > words[wordIndex].length) {
+        return if (segmentIndex >= words[wordIndex].length) {
             PhraseIndex(wordIndex + 1, 0)
         } else {
             PhraseIndex(wordIndex, segmentIndex + 1)
