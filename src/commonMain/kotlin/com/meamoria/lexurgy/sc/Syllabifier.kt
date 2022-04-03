@@ -41,7 +41,7 @@ class Syllabifier(
                         patternNumber,
                         it.index.segmentIndex,
                         pattern.assignedMatrix,
-                        isPartial = it.partial,
+                        isPartial = it.isPartial,
                     )
                 }
             }

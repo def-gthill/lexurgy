@@ -1021,7 +1021,7 @@ data class PhraseMatchEnd(
     val index: PhraseIndex,
     val returnBindings: Bindings,
     val matchedSyllableBreaks: List<PhraseIndex> = emptyList(),
-    val partial: Boolean = false,
+    val isPartial: Boolean = false,
 ) : WithBindings<PhraseMatchEnd> {
 
     override fun replaceBindings(bindings: Bindings) =
@@ -1036,7 +1036,7 @@ data class PhraseMatchEnd(
             (previous.matchedSyllableBreaks + matchedSyllableBreaks).distinct()
         )
 
-    fun partial(): PhraseMatchEnd = copy(partial = true)
+    fun partial(): PhraseMatchEnd = copy(isPartial = true)
 }
 
 fun <T> checkTooManyOptions(matcher: Any, options: List<T>): List<T> =
