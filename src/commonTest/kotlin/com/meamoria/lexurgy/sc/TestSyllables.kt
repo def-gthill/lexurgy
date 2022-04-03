@@ -189,6 +189,8 @@ class TestSyllables : StringSpec({
     "We should be able to define automatic syllabification rules" {
         val ch = lsc(
             """
+                Feature +long
+                Diacritic ː [+long]
                 Class vowel {a, e, i, o, u}
                 Class cons {p, t, k, b, d, g, s, m, n, l, r}
                 Syllables:
@@ -213,6 +215,22 @@ class TestSyllables : StringSpec({
             it.message shouldBe
                     "The segment \"m\" in \"kat(m)andu\" doesn't fit the syllable structure; " +
                     "no syllable pattern that starts with \"t\" can continue with \"m\""
+        }
+
+        shouldThrow<SyllableStructureViolated> {
+            ch("kamadut")
+        }.also {
+            it.message shouldBe
+                    "The word \"kamadut\" doesn't fit the syllable structure; " +
+                    "the last syllable \"t\" is incomplete"
+        }
+
+        shouldThrow<SyllableStructureViolated> {
+            ch("kaːmaːduː")
+        }.also {
+            it.message shouldBe
+                    "The segment \"aː\" in \"k(aː)maːduː\" doesn't fit the syllable structure; " +
+                    "no syllable pattern that starts with \"k\" can continue with \"aː\""
         }
     }
 

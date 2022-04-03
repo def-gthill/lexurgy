@@ -109,7 +109,7 @@ interface Word {
      * specified segment made prominent
      */
     fun highlightSegment(index: Int): String =
-        take(index).string + "(" + this[index].core + ")" + drop(index + 1).string
+        take(index).string + "(" + this[index].string + ")" + drop(index + 1).string
 
     companion object {
         fun join(words: List<Word>): Word =
@@ -999,16 +999,21 @@ class SyllableStructureViolated(
     invalidSymbolPosition: Int
 ) :
     UserError(
-        "The segment \"${word[invalidSymbolPosition].core}\" in " +
-                "\"${word.highlightSegment(invalidSymbolPosition)}\" " +
-                "doesn't fit the syllable structure; " +
-                if (lastSyllableBreak == invalidSymbolPosition) {
-                    "no syllable pattern can start with \"${word[invalidSymbolPosition].core}\""
-                } else {
-                    "no syllable pattern that starts with " +
-                            "\"${word.slice(lastSyllableBreak until invalidSymbolPosition)}\" " +
-                            "can continue with \"${word[invalidSymbolPosition].core}\""
-                }
+        if(invalidSymbolPosition < word.length) {
+            "The segment \"${word[invalidSymbolPosition].string}\" in " +
+                    "\"${word.highlightSegment(invalidSymbolPosition)}\" " +
+                    "doesn't fit the syllable structure; " +
+                    if (lastSyllableBreak == invalidSymbolPosition) {
+                        "no syllable pattern can start with \"${word[invalidSymbolPosition].string}\""
+                    } else {
+                        "no syllable pattern that starts with " +
+                                "\"${word.slice(lastSyllableBreak until invalidSymbolPosition)}\" " +
+                                "can continue with \"${word[invalidSymbolPosition].string}\""
+                    }
+        } else {
+            "The word \"${word.string}\" doesn't fit the syllable structure; " +
+                    "the last syllable \"${word.drop(lastSyllableBreak)}\" is incomplete"
+        }
     )
 
 data class PhraseIndex(val wordIndex: Int, val segmentIndex: Int) : Comparable<PhraseIndex> {
