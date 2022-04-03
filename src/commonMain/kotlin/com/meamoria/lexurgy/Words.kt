@@ -1161,6 +1161,9 @@ class Phrase(val words: List<Word>) : Iterable<Word> {
 
     fun fullyReversed(): Phrase = fullyReversed
 
+    fun fullyReversedIf(condition: Boolean): Phrase =
+        if (condition) fullyReversed else this
+
     // Manually telescoped function to appease the JS compiler
     fun recoverStructure(other: Phrase): Phrase = recoverStructure(other, emptyList())
 
@@ -1199,6 +1202,8 @@ class Phrase(val words: List<Word>) : Iterable<Word> {
         }
         return Phrase(resultWords)
     }
+
+    fun toSimple(): Phrase = Phrase(words.map { it.toSimple() })
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

@@ -1,9 +1,6 @@
 package com.meamoria.lexurgy.sc
 
-import com.meamoria.lexurgy.Modifier
-import com.meamoria.lexurgy.StandardWord
-import com.meamoria.lexurgy.SyllableStructureViolated
-import com.meamoria.lexurgy.Word
+import com.meamoria.lexurgy.*
 
 class Syllabifier(
     val declarations: Declarations,
@@ -33,10 +30,10 @@ class Syllabifier(
         for (i in 0 until word.length) {
             val prev = syllableSequences[i] ?: continue
             val newSequences = patterns.flatMapIndexed { patternNumber, pattern ->
-                pattern.matcher.claim(declarations, word, i, Bindings()).map {
+                pattern.matcher.claim(declarations, Phrase(word), PhraseIndex(0, i), Bindings()).map {
                     prev + PatternMatch(
                         patternNumber,
-                        it.index,
+                        it.index.segmentIndex,
                         pattern.assignedMatrix,
                     )
                 }

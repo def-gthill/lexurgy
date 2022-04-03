@@ -1,11 +1,11 @@
 package com.meamoria.lexurgy.sc
 
 import com.meamoria.lexurgy.LscUserError
-import com.meamoria.lexurgy.Word
+import com.meamoria.lexurgy.Phrase
 
 class Bindings(
     val features: Map<Feature, SimpleValue> = emptyMap(),
-    val captures: Map<Int, Word> = emptyMap(),
+    val captures: Map<Int, Phrase> = emptyMap(),
 ) {
     fun bindFeature(feature: Feature, value: SimpleValue): Bindings =
         Bindings(
@@ -13,7 +13,7 @@ class Bindings(
             captures,
         )
 
-    fun bindCapture(number: Int, value: Word): Bindings =
+    fun bindCapture(number: Int, value: Phrase): Bindings =
         Bindings(
             features,
             captures + (number to value),

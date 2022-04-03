@@ -117,7 +117,7 @@ object SyllableBoundaryEmitter : IndependentEmitter {
 class CaptureReferenceEmitter(val number: Int) : IndependentEmitter {
     override fun result(declarations: Declarations): UnboundResult =
         { bindings ->
-            Phrase(bindings.captures[number] ?: throw LscUnboundCapture(number))
+            bindings.captures[number] ?: throw LscUnboundCapture(number)
         }
 
     override fun toString(): String = "$$number"

@@ -8,26 +8,7 @@ interface Matcher {
         phrase: Phrase,
         start: PhraseIndex,
         bindings: Bindings
-    ): List<PhraseMatchEnd> {
-        if (!phrase.hasIndex(start)) return emptyList()
-        val (startWord, startIndex) = start
-        return claim(declarations, phrase[startWord], startIndex, bindings).map {
-            it.withWordIndex(startWord)
-        }
-    }
-
-    fun claim(
-        declarations: Declarations,
-        word: Word,
-        start: Int,
-        bindings: Bindings
-    ): List<WordMatchEnd> =
-        claim(
-            declarations,
-            Phrase(listOf(word)),
-            PhraseIndex(0, start),
-            bindings
-        ).map { it.segmentIndex }
+    ): List<PhraseMatchEnd>
 
     fun reversed(): Matcher
 
@@ -193,9 +174,9 @@ abstract class LiftingMatcher : BaseMatcher() {
 interface LengthHintedMatcher {
     fun claim(
         declarations: Declarations,
-        word: Word,
-        start: Int,
-        expectedEnd: Int,
+        phrase: Phrase,
+        start: PhraseIndex,
+        expectedEnd: PhraseIndex,
         bindings: Bindings
     ): Bindings?
 }
@@ -463,15 +444,15 @@ class IntersectionMatcher(
 ) : LiftingMatcher() {
     override fun claim(
         declarations: Declarations,
-        word: Word,
-        start: Int,
+        phrase: Phrase,
+        start: PhraseIndex,
         bindings: Bindings
-    ): List<WordMatchEnd> {
+    ): List<PhraseMatchEnd> {
         val matchEnds = initialMatcher.claim(
-            declarations, word, start, bindings
+            declarations, phrase, start, bindings
         )
         return filterIntersection(
-            declarations, checkMatchers, word, start, bindings, matchEnds
+            declarations, checkMatchers, phrase, start, bindings, matchEnds
         ) { it }
     }
 
@@ -502,11 +483,11 @@ data class CheckMatcher(val matcher: Matcher, val negated: Boolean) {
 fun <T : WithBindings<T>> filterIntersection(
     declarations: Declarations,
     elements: List<CheckMatcher>,
-    word: Word,
-    start: Int,
+    phrase: Phrase,
+    start: PhraseIndex,
     initialBindings: Bindings,
     possibleMatches: List<T>,
-    matchEndTransformer: (T) -> WordMatchEnd,
+    matchEndTransformer: (T) -> PhraseMatchEnd,
 ): List<T> {
     var matchEnds = possibleMatches
     for ((element, negated) in elements) {
@@ -514,7 +495,7 @@ fun <T : WithBindings<T>> filterIntersection(
             matchEnds = matchEnds.mapNotNull { matchEnd ->
                 val transformed = matchEndTransformer(matchEnd)
                 val elementMatchEnd = element.claim(
-                    declarations, word, start, transformed.index, initialBindings
+                    declarations, phrase, start, transformed.index, initialBindings
                 )
                 if (negated) {
                     if (elementMatchEnd == null) matchEnd else null
@@ -523,7 +504,7 @@ fun <T : WithBindings<T>> filterIntersection(
                 }
             }
         } else {
-            val elementMatchEnds = element.claim(declarations, word, start, initialBindings)
+            val elementMatchEnds = element.claim(declarations, phrase, start, initialBindings)
             val elementMatchEndsMap = elementMatchEnds.associate { it.index to it.returnBindings }
             matchEnds = matchEnds.mapNotNull { matchEnd ->
                 val transformed = matchEndTransformer(matchEnd)
@@ -548,19 +529,19 @@ class CaptureMatcher(
 ) : LiftingMatcher() {
     override fun claim(
         declarations: Declarations,
-        word: Word,
-        start: Int,
+        phrase: Phrase,
+        start: PhraseIndex,
         bindings: Bindings
-    ): List<WordMatchEnd> =
+    ): List<PhraseMatchEnd> =
         if (number in bindings.captures) {
             throw LscReboundCapture(number)
         } else {
-            element.claim(declarations, word, start, bindings).map { end ->
-                val capture = word.slice(start until end.index).toSimple()
+            element.claim(declarations, phrase, start, bindings).map { end ->
+                val capture = phrase.slice(start, end.index).toSimple()
                 end.replaceBindings(
                     end.returnBindings.bindCapture(
                         number,
-                        if (isReversed) capture.reversed() else capture
+                        capture.fullyReversedIf(isReversed)
                     )
                 )
             }
@@ -618,16 +599,15 @@ class EmitterMatcher(
 ) : SimpleMatcher() {
     override fun claim(
         declarations: Declarations,
-        word: Word,
-        start: Int,
+        phrase: Phrase,
+        start: PhraseIndex,
         bindings: Bindings
-    ): List<WordMatchEnd> = matchText(
-        word,
-        start,
-        emitter.result(declarations)(bindings).first(),
-        bindings,
-        isReversed,
-    )
+    ): List<PhraseMatchEnd> {
+        val emitterResult = emitter.result(declarations)
+        val resultPhrase = emitterResult(bindings).fullyReversedIf(isReversed)
+        val matchEnd = matchSubPhrase(phrase, start, resultPhrase) ?: return emptyList()
+        return listOf(PhraseMatchEnd(matchEnd, bindings))
+    }
 
     override fun reversed(): Matcher = EmitterMatcher(emitter, !isReversed)
 }
@@ -645,13 +625,6 @@ object BetweenWordsMatcher : SimpleMatcher() {
         } else emptyList()
     }
 
-    override fun claim(
-        declarations: Declarations,
-        word: Word,
-        start: Int,
-        bindings: Bindings
-    ): List<WordMatchEnd> = emptyList()
-
     override fun reversed(): Matcher = this
 
     override fun toString(): String = "$$"
@@ -660,11 +633,13 @@ object BetweenWordsMatcher : SimpleMatcher() {
 object WordStartMatcher : SimpleMatcher() {
     override fun claim(
         declarations: Declarations,
-        word: Word,
-        start: Int,
+        phrase: Phrase,
+        start: PhraseIndex,
         bindings: Bindings
-    ): List<WordMatchEnd> =
-        if (start == 0) listOf(WordMatchEnd(start, bindings)) else emptyList()
+    ): List<PhraseMatchEnd> =
+        if (start.segmentIndex == 0) {
+            listOf(PhraseMatchEnd(start, bindings))
+        } else emptyList()
 
     override fun reversed(): Matcher = WordEndMatcher
 
@@ -674,11 +649,13 @@ object WordStartMatcher : SimpleMatcher() {
 object WordEndMatcher : SimpleMatcher() {
     override fun claim(
         declarations: Declarations,
-        word: Word,
-        start: Int,
+        phrase: Phrase,
+        start: PhraseIndex,
         bindings: Bindings
-    ): List<WordMatchEnd> =
-        if (start == word.length) listOf(WordMatchEnd(start, bindings)) else emptyList()
+    ): List<PhraseMatchEnd> =
+        if (start.segmentIndex == phrase[start.wordIndex].length) {
+            listOf(PhraseMatchEnd(start, bindings))
+        } else emptyList()
 
     override fun reversed(): Matcher = WordStartMatcher
 
@@ -688,21 +665,20 @@ object WordEndMatcher : SimpleMatcher() {
 object SyllableBoundaryMatcher : SimpleMatcher() {
     override fun claim(
         declarations: Declarations,
-        word: Word,
-        start: Int,
+        phrase: Phrase,
+        start: PhraseIndex,
         bindings: Bindings
-    ): List<WordMatchEnd> =
-        if (word.isSyllabified()) {
-            if (start == 0 || start == word.length || start in word.syllableBreaks) {
+    ): List<PhraseMatchEnd> {
+        val word = phrase[start.wordIndex]
+        val index = start.segmentIndex
+        return if (word.isSyllabified()) {
+            if (index == 0 || index == word.length || index in word.syllableBreaks) {
                 listOf(
-                    WordMatchEnd(
-                        start,
-                        bindings,
-                        listOf(start),
-                    )
+                    PhraseMatchEnd(start, bindings, listOf(start))
                 )
             } else emptyList()
         } else emptyList()
+    }
 
     override fun reversed(): Matcher = this
 
@@ -716,28 +692,27 @@ class CaptureReferenceMatcher(
 ) : SimpleMatcher() {
     override fun claim(
         declarations: Declarations,
-        word: Word,
-        start: Int,
+        phrase: Phrase,
+        start: PhraseIndex,
         bindings: Bindings
-    ): List<WordMatchEnd> =
-        bindings.captures[number]?.let { capturedText ->
-            matchText(
-                word,
-                start,
-                capturedText,
-                bindings,
-                isReversed,
-                if (exact) {
-                    { it.segments }
-                } else {
-                    { word ->
-                        with (declarations) {
-                            word.segments.map { it.withoutFloatingDiacritics() }
-                        }
+    ): List<PhraseMatchEnd> {
+        val capturedPhrase = bindings.captures[number]?.fullyReversedIf(isReversed)
+            ?: throw LscUnboundCapture(number)
+
+        val matchEnd = matchSubPhrase(
+            phrase, start, capturedPhrase,
+            if (exact) {
+                { it.segments }
+            } else {
+                { word ->
+                    with (declarations) {
+                        word.segments.map { it.withoutFloatingDiacritics() }
                     }
                 }
-            )
-        } ?: throw LscUnboundCapture(number)
+            }
+        ) ?: return emptyList()
+        return listOf(PhraseMatchEnd(matchEnd, bindings))
+    }
 
     override fun reversed(): Matcher = CaptureReferenceMatcher(number, exact, !isReversed)
 
@@ -747,15 +722,20 @@ class CaptureReferenceMatcher(
 class MatrixMatcher(val matrix: Matrix) : SimpleMatcher() {
     override fun claim(
         declarations: Declarations,
-        word: Word,
-        start: Int,
+        phrase: Phrase,
+        start: PhraseIndex,
         bindings: Bindings
-    ): List<WordMatchEnd> =
+    ): List<PhraseMatchEnd> =
         with(declarations) {
+            val word = phrase[start.wordIndex]
+            val index = start.segmentIndex
             val boundMatrix = matrix.bindVariables(bindings)
-            if (start < word.length) {
-                word[start].matches(boundMatrix, bindings)?.let {
-                    listOf(WordMatchEnd(start + 1, it))
+            if (index < word.length) {
+                word[index].matches(boundMatrix, bindings)?.let {
+                    listOf(PhraseMatchEnd(
+                        start.copy(segmentIndex = index + 1),
+                        it
+                    ))
                 } ?: emptyList()
             } else emptyList()
         }
@@ -768,31 +748,42 @@ class MatrixMatcher(val matrix: Matrix) : SimpleMatcher() {
 class SyllableMatrixMatcher(val matrix: Matrix) : SimpleMatcher(), LengthHintedMatcher {
     override fun claim(
         declarations: Declarations,
-        word: Word,
-        start: Int,
+        phrase: Phrase,
+        start: PhraseIndex,
         bindings: Bindings
-    ): List<WordMatchEnd> =
-        if (start == word.length) emptyList() else {
-            with(declarations) {
-                val boundMatrix = matrix.bindVariables(bindings)
-                word.modifiersAt(start).toMatrix().matches(boundMatrix, bindings)?.let {
-                    listOf(WordMatchEnd(start + 1, it))
-                } ?: emptyList()
-            }
+    ): List<PhraseMatchEnd> {
+        val word = phrase[start.wordIndex]
+        val index = start.segmentIndex
+        if (index == word.length) return emptyList()
+        with(declarations) {
+            val boundMatrix = matrix.bindVariables(bindings)
+            return word.modifiersAt(index).toMatrix().matches(boundMatrix, bindings)?.let {
+                listOf(PhraseMatchEnd(
+                    start.copy(segmentIndex = index + 1),
+                    it
+                ))
+            } ?: emptyList()
         }
+    }
 
     override fun claim(
         declarations: Declarations,
-        word: Word,
-        start: Int,
-        expectedEnd: Int,
+        phrase: Phrase,
+        start: PhraseIndex,
+        expectedEnd: PhraseIndex,
         bindings: Bindings
-    ): Bindings? =
-        if (word.syllableBreaks.any { it in ((start + 1) until expectedEnd) }) null
-        else with(declarations) {
+    ): Bindings? {
+        if (expectedEnd.wordIndex != start.wordIndex) return null
+        val word = phrase[start.wordIndex]
+        val index = start.segmentIndex
+        val expectedEndIsPastCurrentSyllable =
+            word.syllableBreaks.any {it in ((index + 1) until expectedEnd.segmentIndex) }
+        if (expectedEndIsPastCurrentSyllable) return null
+        with(declarations) {
             val boundMatrix = matrix.bindVariables(bindings)
-            word.modifiersAt(start).toMatrix().matches(boundMatrix, bindings)
+            return word.modifiersAt(index).toMatrix().matches(boundMatrix, bindings)
         }
+    }
 
     override fun reversed(): Matcher = this
 
@@ -814,18 +805,23 @@ abstract class AbstractTextMatcher(val text: Word) : SimpleMatcher() {
 class SymbolMatcher(text: Word) : AbstractTextMatcher(text) {
     override fun claim(
         declarations: Declarations,
-        word: Word,
-        start: Int,
+        phrase: Phrase,
+        start: PhraseIndex,
         bindings: Bindings
-    ): List<WordMatchEnd> {
-        val end = start + text.length
+    ): List<PhraseMatchEnd> {
+        val word = phrase[start.wordIndex]
+        val index = start.segmentIndex
+        val end = index + text.length
         if (end > word.length) return emptyList()
+        val wordSegments = word.sliceSegments(index until end)
         val matches = with(declarations) {
-            word.sliceSegments(start until end).zip(text.segments) { wordSegment, textSegment ->
+            wordSegments.zip(text.segments) { wordSegment, textSegment ->
                 wordSegment.matches(textSegment)
             }.all { it }
         }
-        return if (matches) listOf(WordMatchEnd(end, bindings)) else emptyList()
+        return if (matches) listOf(
+            PhraseMatchEnd(start.copy(segmentIndex =  end), bindings)
+        ) else emptyList()
     }
 
     override fun reversed(): Matcher = SymbolMatcher(text.reversed())
@@ -836,10 +832,16 @@ class SymbolMatcher(text: Word) : AbstractTextMatcher(text) {
 class TextMatcher(text: Word) : AbstractTextMatcher(text) {
     override fun claim(
         declarations: Declarations,
-        word: Word,
-        start: Int,
+        phrase: Phrase,
+        start: PhraseIndex,
         bindings: Bindings
-    ): List<WordMatchEnd> = matchText(word, start, text, bindings)
+    ): List<PhraseMatchEnd> {
+        val matchResult = matchSubPhrase(phrase, start, Phrase(text)) ?: return emptyList()
+        return listOf(PhraseMatchEnd(
+            matchResult,
+            bindings,
+        ))
+    }
 
     override fun reversed(): Matcher = TextMatcher(text.reversed())
 
@@ -847,41 +849,58 @@ class TextMatcher(text: Word) : AbstractTextMatcher(text) {
 }
 
 /**
- * Tries to find the specified word (``expectedText``) starting
- * at position ``start`` in the specified ``word``. If
+ * Tries to find the specified phrase (``expectedText``) starting
+ * at position ``start`` in ``phrase``. If
  * ``reversed`` is ``true``, ``expectedText`` is reversed first.
  * If ``segmentExtractor`` is specified, it will be used
- * to get segments from both ``word`` and ``expectedText``
+ * to get segments from each word in both ``phrase`` and ``expectedText``
  * (instead of just accessing the ``segments`` property)
  */
-private fun matchText(
-    word: Word,
-    start: Int,
-    expectedText: Word,
-    bindings: Bindings,
-    reverse: Boolean = false,
+private fun matchSubPhrase(
+    phrase: Phrase,
+    start: PhraseIndex,
+    expectedSubPhrase: Phrase,
     segmentExtractor: (Word) -> List<Segment> = { it.segments },
-): List<WordMatchEnd> {
-    val wordStart = word.drop(start).take(expectedText.length)
-    val orientedText = if (reverse) expectedText.reversed() else expectedText
-    return if (segmentExtractor(wordStart) == segmentExtractor(orientedText)) {
-        listOf(WordMatchEnd(start + expectedText.length, bindings))
-    } else emptyList()
+): PhraseIndex? {
+    val lastExpectedLength = expectedSubPhrase.last().length
+    val subWords = phrase.words.drop(start.wordIndex).take(expectedSubPhrase.size).toMutableList()
+    if (subWords.size != expectedSubPhrase.size) {
+        return null
+    }
+    subWords[0] = subWords[0].drop(start.segmentIndex)
+    subWords[subWords.lastIndex] = subWords[subWords.lastIndex].take(
+        lastExpectedLength
+    )
+    for ((subWord, expectedSubWord) in subWords.zip(expectedSubPhrase)) {
+        if (segmentExtractor(subWord) != segmentExtractor(expectedSubWord)) {
+            return null
+        }
+    }
+    val wordIndex = start.wordIndex + expectedSubPhrase.size - 1
+    val segmentIndex = if (expectedSubPhrase.size == 1) {
+        start.segmentIndex + lastExpectedLength
+    } else {
+        lastExpectedLength
+    }
+    return PhraseIndex(wordIndex, segmentIndex)
 }
 
 class NegatedMatcher(val matcher: Matcher) : SimpleMatcher() {
     override fun claim(
         declarations: Declarations,
-        word: Word,
-        start: Int,
+        phrase: Phrase,
+        start: PhraseIndex,
         bindings: Bindings
-    ): List<WordMatchEnd> =
-        when {
-            start >= word.length -> emptyList()
-            matcher.claim(declarations, word, start, bindings).isEmpty() ->
-                listOf(WordMatchEnd(start + 1, bindings))
+    ): List<PhraseMatchEnd> {
+        val word = phrase[start.wordIndex]
+        val index = start.segmentIndex
+        return when {
+            index >= word.length -> emptyList()
+            matcher.claim(declarations, phrase, start, bindings).isEmpty() ->
+                listOf(PhraseMatchEnd(start.copy(segmentIndex = index + 1), bindings))
             else -> emptyList()
         }
+    }
 
     override fun reversed(): Matcher = NegatedMatcher(matcher.reversed())
 
@@ -891,11 +910,11 @@ class NegatedMatcher(val matcher: Matcher) : SimpleMatcher() {
 object EmptyMatcher : SimpleMatcher() {
     override fun claim(
         declarations: Declarations,
-        word: Word,
-        start: Int,
+        phrase: Phrase,
+        start: PhraseIndex,
         bindings: Bindings
-    ): List<WordMatchEnd> =
-        listOf(WordMatchEnd(start, bindings))
+    ): List<PhraseMatchEnd> =
+        listOf(PhraseMatchEnd(start, bindings))
 
     override fun reversed(): Matcher = this
 
@@ -912,21 +931,23 @@ object EmptyMatcher : SimpleMatcher() {
 object SyllableMatcher : SimpleMatcher() {
     override fun claim(
         declarations: Declarations,
-        word: Word,
-        start: Int,
-        bindings: Bindings,
-    ): List<WordMatchEnd> {
+        phrase: Phrase,
+        start: PhraseIndex,
+        bindings: Bindings
+    ): List<PhraseMatchEnd> {
+        val word = phrase[start.wordIndex]
+        val index = start.segmentIndex
         if (!word.isSyllabified()) return emptyList()
-        val syllableIndex = word.syllableBreaks.indexOf(start)
+        val syllableIndex = word.syllableBreaks.indexOf(index)
         return listOfNotNull(
                 when {
-                start == 0 && word.numSyllables <= 1 -> word.length
-                start == 0 -> word.syllableBreaks[0]
+                index == 0 && word.numSyllables <= 1 -> word.length
+                index == 0 -> word.syllableBreaks[0]
                 syllableIndex < 0 -> null
                 syllableIndex + 1 == word.syllableBreaks.size -> word.length
                 else -> word.syllableBreaks[syllableIndex + 1]
             }
-        ).map { WordMatchEnd(it, bindings) }
+        ).map { PhraseMatchEnd(start.copy(segmentIndex = it), bindings) }
     }
 
     override fun reversed(): Matcher = this
@@ -947,10 +968,10 @@ object SyllableMatcher : SimpleMatcher() {
 object NeverMatcher : SimpleMatcher() {
     override fun claim(
         declarations: Declarations,
-        word: Word,
-        start: Int,
-        bindings: Bindings,
-    ): List<WordMatchEnd> = emptyList()
+        phrase: Phrase,
+        start: PhraseIndex,
+        bindings: Bindings
+    ): List<PhraseMatchEnd> = emptyList()
 
     override fun reversed(): Matcher = this
 
@@ -963,43 +984,11 @@ interface WithBindings<T : WithBindings<T>> {
     fun updateBindings(bindings: Bindings): T
 }
 
-data class WordMatchEnd(
-    val index: Int,
-    val returnBindings: Bindings,
-    val matchedSyllableBreaks: List<Int> = emptyList(),
-) : WithBindings<WordMatchEnd> {
-    fun withWordIndex(wordIndex: Int) =
-        PhraseMatchEnd(
-            PhraseIndex(wordIndex, index),
-            returnBindings,
-            matchedSyllableBreaks.map { PhraseIndex(wordIndex, it) },
-        )
-
-    override fun replaceBindings(bindings: Bindings) =
-        WordMatchEnd(
-            index,
-            bindings,
-            matchedSyllableBreaks,
-        )
-
-    override fun updateBindings(bindings: Bindings) =
-        WordMatchEnd(
-            index,
-            returnBindings.combine(bindings),
-            matchedSyllableBreaks,
-        )
-}
-
 data class PhraseMatchEnd(
     val index: PhraseIndex,
     val returnBindings: Bindings,
     val matchedSyllableBreaks: List<PhraseIndex> = emptyList(),
 ) : WithBindings<PhraseMatchEnd> {
-    val segmentIndex = WordMatchEnd(
-        index.segmentIndex,
-        returnBindings,
-        matchedSyllableBreaks.map { it.segmentIndex },
-    )
 
     override fun replaceBindings(bindings: Bindings) =
         PhraseMatchEnd(

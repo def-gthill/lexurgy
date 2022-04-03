@@ -200,10 +200,17 @@ class TestSyllables : StringSpec({
         ch("tiramisu") shouldBe "ti.ra.mi.su"
 
         shouldThrow<SyllableStructureViolated> {
+            ch("bahu")
+        }.also {
+            it.message shouldBe
+                    "The segment \"h\" in \"ba(h)u\" doesn't fit the syllable structure"
+        }
+
+        shouldThrow<SyllableStructureViolated> {
             ch("katmandu")
         }.also {
             it.message shouldBe
-                    "The segment \"t\" in \"ka(t)mandu\" doesn't fit the syllable structure"
+                    "The segment \"m\" in \"kat(m)andu\" doesn't fit the syllable structure"
         }
     }
 

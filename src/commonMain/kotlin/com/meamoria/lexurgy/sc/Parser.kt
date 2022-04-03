@@ -1421,8 +1421,11 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             val filter = ruleFilter?.let { filter ->
                 { segment: Segment ->
                     filter.matcher(RuleContext.aloneInMain(), declarations).claim(
-                        declarations, StandardWord.single(segment), 0, Bindings()
-                    ).any { it.index == 1 }
+                        declarations,
+                        Phrase(StandardWord.single(segment)),
+                        PhraseIndex(0, 0),
+                        Bindings(),
+                    ).any { it.index.segmentIndex == 1 }
                 }
             }
             val subrule = linkedSubrules(

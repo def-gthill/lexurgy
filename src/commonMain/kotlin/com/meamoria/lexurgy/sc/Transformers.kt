@@ -187,8 +187,8 @@ class IntersectionTransformer(
         return filterIntersection(
             declarations,
             checkMatchers,
-            phrase[start.wordIndex],
-            start.segmentIndex,
+            phrase,
+            start,
             bindings,
             transformers,
         ) { it.toMatchEnd() }
@@ -215,8 +215,8 @@ class CaptureTransformer(
             element.transform(order, declarations, phrase, start, bindings).filter {
                 it.start.wordIndex == it.end.wordIndex
             }.map { transform ->
-                val capture = phrase[transform.start.wordIndex].slice(
-                    transform.start.segmentIndex until transform.end.segmentIndex
+                val capture = phrase.slice(
+                    transform.start, transform.end
                 )
                 transform.replaceBindings(
                     transform.returnBindings.bindCapture(number, capture)
@@ -394,8 +394,8 @@ data class UnboundTransformation(
     override fun updateBindings(bindings: Bindings): UnboundTransformation =
         copy(returnBindings = returnBindings.combine(bindings))
 
-    fun toMatchEnd(): WordMatchEnd =
-        WordMatchEnd(end.segmentIndex, returnBindings)
+    fun toMatchEnd(): PhraseMatchEnd =
+        PhraseMatchEnd(end, returnBindings)
 
     override fun toString(): String {
         val tryResult = try {
