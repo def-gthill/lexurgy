@@ -303,13 +303,15 @@ class SequenceMatcher(val elements: List<Matcher>) : BaseMatcher() {
     ): List<PhraseMatchEnd> {
         var ends = listOf(PhraseMatchEnd(start, bindings))
         for (element in elements) {
-            val newEnds = ends.flatMap { end ->
+            val newEnds = ends.filter { !it.isPartial }.flatMap { end ->
                 element.claim(
                     declarations, phrase, end.index, end.returnBindings, partial
                 ).map { it.precededBy(end) }
             }.checkTooManyOptions()
             if (newEnds.isEmpty()) {
-                return if (partial) ends.map { it.partial() } else emptyList()
+                return if (partial) ends.filter {
+                    it.index > start
+                }.map { it.partial() } else emptyList()
             }
             ends = newEnds
         }
@@ -376,7 +378,7 @@ class RepeaterMatcher(
     ): List<PhraseMatchEnd> {
         val result = mutableListOf(listOf(PhraseMatchEnd(start, bindings)))
         while (true) {
-            val newResult = result.last().flatMap { end ->
+            val newResult = result.last().filter { !it.isPartial }.flatMap { end ->
                 element.claim(
                     declarations, phrase, end.index, end.returnBindings, partial
                 ).map { it.precededBy(end) }
@@ -388,7 +390,9 @@ class RepeaterMatcher(
         val resultAboveMinReps = result.drop(type.minReps)
         return if (resultAboveMinReps.isEmpty()) {
             if (partial) {
-                result.reversed().flatten().map { it.partial() }
+                result.reversed().flatten().filter {
+                    it.index > start
+                }.map { it.partial() }
             } else {
                 emptyList()
             }

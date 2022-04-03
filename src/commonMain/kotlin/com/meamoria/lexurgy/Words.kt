@@ -1007,12 +1007,12 @@ class SyllableStructureViolated(
                         "no syllable pattern can start with \"${word[invalidSymbolPosition].string}\""
                     } else {
                         "no syllable pattern that starts with " +
-                                "\"${word.slice(lastSyllableBreak until invalidSymbolPosition)}\" " +
+                                "\"${word.slice(lastSyllableBreak until invalidSymbolPosition).string}\" " +
                                 "can continue with \"${word[invalidSymbolPosition].string}\""
                     }
         } else {
             "The word \"${word.string}\" doesn't fit the syllable structure; " +
-                    "the last syllable \"${word.drop(lastSyllableBreak)}\" is incomplete"
+                    "the last syllable \"${word.drop(lastSyllableBreak).string}\" is incomplete"
         }
     )
 

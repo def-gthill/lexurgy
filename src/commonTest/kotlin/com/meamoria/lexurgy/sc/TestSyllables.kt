@@ -189,8 +189,6 @@ class TestSyllables : StringSpec({
     "We should be able to define automatic syllabification rules" {
         val ch = lsc(
             """
-                Feature +long
-                Diacritic ː [+long]
                 Class vowel {a, e, i, o, u}
                 Class cons {p, t, k, b, d, g, s, m, n, l, r}
                 Syllables:
@@ -200,6 +198,19 @@ class TestSyllables : StringSpec({
 
         ch("kolimo") shouldBe "ko.li.mo"
         ch("tiramisu") shouldBe "ti.ra.mi.su"
+    }
+
+    "We should get helpful error messages when a word violates the syllabification rules" {
+        val ch = lsc(
+            """
+                Feature +long
+                Diacritic ː [+long]
+                Class vowel {a, e, i, o, u}
+                Class cons {p, t, k, b, d, g, s, m, n, l, r}
+                Syllables:
+                    @cons @vowel
+            """.trimIndent()
+        )
 
         shouldThrow<SyllableStructureViolated> {
             ch("bahu")
@@ -231,6 +242,48 @@ class TestSyllables : StringSpec({
             it.message shouldBe
                     "The segment \"aː\" in \"k(aː)maːduː\" doesn't fit the syllable structure; " +
                     "no syllable pattern that starts with \"k\" can continue with \"aː\""
+        }
+    }
+
+    "Nested sequences should be handled correctly" {
+        val ch = lsc(
+            """
+                Syllables:
+                    (a b) (c d)
+            """.trimIndent()
+        )
+
+        shouldThrow<SyllableStructureViolated> {
+            ch("acac")
+        }.also {
+            it.message shouldBe
+                    "The segment \"c\" in \"a(c)ac\" doesn't fit the syllable structure; " +
+                    "no syllable pattern that starts with \"a\" can continue with \"c\""
+        }
+
+        shouldThrow<SyllableStructureViolated> {
+            ch("abcabc")
+        }.also {
+            it.message shouldBe
+                    "The segment \"a\" in \"abc(a)bc\" doesn't fit the syllable structure; " +
+                    "no syllable pattern that starts with \"abc\" can continue with \"a\""
+        }
+    }
+
+    "Sequences in repeaters should be handled correctly" {
+        val ch = lsc(
+            """
+                Syllables:
+                    (b a) (n a)+
+            """.trimIndent()
+        )
+
+        shouldThrow<SyllableStructureViolated> {
+            ch("banabanani")
+        }.also {
+            it.message shouldBe
+                    "The segment \"i\" in \"banabanan(i)\" doesn't fit the syllable structure; " +
+                    "no syllable pattern that starts with \"banan\" can continue with \"i\""
         }
     }
 

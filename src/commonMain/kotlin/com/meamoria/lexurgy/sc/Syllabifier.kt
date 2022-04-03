@@ -52,12 +52,10 @@ class Syllabifier(
                 }
             }
         }
-        return syllableSequences[word.length]?.takeIf { !it.isPartial }
-            ?: throw SyllableStructureViolated(
-                word,
-                syllableSequences.indexOfLast { it?.isPartial == false },
-                syllableSequences.indexOfLast { it != null },
-            )
+        syllableSequences[word.length]?.takeIf { !it.isPartial }?.let {
+            return it
+        }
+        syllableStructureViolated(word, syllableSequences)
     }
 
     private fun combineSyllableModifiers(
@@ -97,6 +95,25 @@ class Syllabifier(
             }
         }
         return result
+    }
+
+    private fun syllableStructureViolated(
+        word: Word,
+        syllableSequences: Array<PatternMatchSequence?>
+    ): Nothing {
+        val longestSequenceIndex = syllableSequences.indexOfLast { it != null }
+        val longestSequence = syllableSequences[longestSequenceIndex]!!
+        val lastSyllableBreak = if (longestSequence.isPartial) {
+            val longestMatches = longestSequence.patternMatches
+            if (longestMatches.size <= 1) 0 else {
+                longestMatches[longestMatches.lastIndex - 1].end
+            }
+        } else longestSequenceIndex
+        throw SyllableStructureViolated(
+            word,
+            lastSyllableBreak,
+            longestSequenceIndex,
+        )
     }
 
     data class Pattern(val matcher: Matcher, val assignedMatrix: Matrix?)
