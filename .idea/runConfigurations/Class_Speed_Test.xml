@@ -1,8 +1,7 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="SpeedTestBig" type="JetRunConfigurationType">
-    <option name="MAIN_CLASS_NAME" value="com.meamoria.lexurgy.MainJvmKt" />
+  <configuration default="false" name="Class Speed Test" type="JetRunConfigurationType">
+    <option name="MAIN_CLASS_NAME" value="com.meamoria.lexurgy.sc.ClassSpeedTestKt" />
     <module name="lexurgy.jvmMain" />
-    <option name="PROGRAM_PARAMETERS" value="sc test/kharulian.lsc test/pk_full_conjugated_verbs.wli" />
     <shortenClasspath name="NONE" />
     <option name="VM_PARAMETERS" value="-XX:+FlightRecorder" />
     <method v="2">

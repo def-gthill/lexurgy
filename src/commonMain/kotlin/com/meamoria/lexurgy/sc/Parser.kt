@@ -1625,7 +1625,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     // Base class for elements that simply forward matcher/emitter calls to sub-elements
     private abstract class ContainerResultElement(text: String) : BaseParseNode(text), ResultElement {
         override fun matcher(context: RuleContext, declarations: Declarations): Matcher =
-            combineMatchers(elements.map { it.matcher(context, declarations) })
+            combineMatchers(declarations, elements.map { it.matcher(context, declarations) })
 
         override fun emitter(declarations: Declarations): Emitter =
             combineEmitters(resultElements.map { it.emitter(declarations) })
@@ -1634,7 +1634,10 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
         val resultElements: List<ResultElement> by lazy { elements.map(::castToResultElement) }
 
-        abstract fun combineMatchers(elements: List<Matcher>): Matcher
+        abstract fun combineMatchers(
+            declarations: Declarations,
+            elements: List<Matcher>,
+        ): Matcher
 
         abstract fun combineEmitters(elements: List<Emitter>): Emitter
     }
@@ -1708,6 +1711,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         override fun matcher(context: RuleContext, declarations: Declarations): Matcher =
             try {
                 combineMatchers(
+                    declarations,
                     (listOf<RuleElement?>(null) + elements + listOf(null)).windowed(3) { window ->
                         val (preceding, current, following) = window
                         current!!.matcher(
@@ -1717,13 +1721,16 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                             ),
                             declarations,
                         )
-                    }
+                    },
                 )
             } catch (e: LscBadSequence) {
                 throw e.initSequence(text)
             }
 
-        override fun combineMatchers(elements: List<Matcher>): Matcher = SequenceMatcher(elements)
+        override fun combineMatchers(
+            declarations: Declarations,
+            elements: List<Matcher>,
+        ): Matcher = SequenceMatcher(elements)
 
         override fun combineEmitters(elements: List<Emitter>): Emitter = SequenceEmitter(elements)
     }
@@ -1775,8 +1782,11 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     ) : ContainerResultElement(text) {
         override val publicName: String = "an alternative list"
 
-        override fun combineMatchers(elements: List<Matcher>): Matcher =
-            alternativeMatcher(elements)
+        override fun combineMatchers(
+            declarations: Declarations,
+            elements: List<Matcher>
+        ): Matcher =
+            alternativeMatcher(declarations, elements)
 
         override fun combineEmitters(elements: List<Emitter>): Emitter =
             alternativeEmitter(elements)
@@ -1819,11 +1829,12 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             when (emitter) {
                 is AlternativeEmitter ->
                     AlternativeMatcher(
+                        declarations,
                         (element as? AlternativeElement)?.elements.zipOrThisNull(
                             emitter.elements
                         ) { subElement, subEmitter ->
                             matcher(declarations, subElement as ResultElement?, subEmitter)
-                        }
+                        },
                     )
                 is SequenceEmitter ->
                     SequenceMatcher(
@@ -1855,7 +1866,10 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                     )
                 )
             }
-            return alternatives.singleOrNull() ?: AlternativeMatcher(alternatives)
+            return alternatives.singleOrNull() ?: AlternativeMatcher(
+                declarations,
+                alternatives
+            )
         }
 
         override fun emitter(declarations: Declarations): Emitter =
@@ -2034,9 +2048,12 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
         override fun matcher(context: RuleContext, declarations: Declarations): Matcher =
             with(declarations) {
-                alternativeMatcher(name.toClass().sounds.map {
-                    TextElement(it, it).matcher(context, this)
-                })
+                alternativeMatcher(
+                    declarations,
+                    name.toClass().sounds.map {
+                        TextElement(it, it).matcher(context, this)
+                    },
+                )
             }
 
         override fun emitter(declarations: Declarations): Emitter =
@@ -2047,8 +2064,11 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             }
     }
 
-    private fun alternativeMatcher(elements: List<Matcher>): Matcher =
-        elements.singleOrNull() ?: AlternativeMatcher(elements)
+    private fun alternativeMatcher(
+        declarations: Declarations,
+        elements: List<Matcher>,
+    ): Matcher =
+        elements.singleOrNull() ?: AlternativeMatcher(declarations, elements)
 
     private fun alternativeEmitter(elements: List<Emitter>): Emitter =
         elements.singleOrNull() ?: AlternativeEmitter(elements)

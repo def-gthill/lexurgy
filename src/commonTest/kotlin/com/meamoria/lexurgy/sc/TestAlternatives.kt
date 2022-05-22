@@ -107,6 +107,19 @@ class TestAlternatives : StringSpec({
 
         ch("cadabn") shouldBe "cafabn"
         ch("cadan") shouldBe "cafan"
+
+        // ClassMatchers have a different backtracking failure mode;
+        // without backtracking, they always pick the *longest* match,
+        // not the first.
+        val ch2 = lsc(
+            """
+                overlapping-alts:
+                 d => f / _ {a, ab} bn
+            """.trimIndent()
+        )
+
+        ch2("cadabn") shouldBe "cafabn"
+        ch2("cadabbn") shouldBe "cafabbn"
     }
 
     "Only captures in a successful match should be bound" {

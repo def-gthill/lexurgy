@@ -419,7 +419,26 @@ class RepeaterMatcher(
     override fun prefersIndependentSequenceEmitters(): Boolean = true
 }
 
-class AlternativeMatcher(val elements: List<Matcher>) : BaseMatcher() {
+class AlternativeMatcher(
+    val declarations: Declarations,
+    val elements: List<Matcher>
+) : BaseMatcher() {
+    private val groupedElements = mutableListOf<Matcher>()
+
+    init {
+        var currentGroup = mutableListOf<AbstractTextMatcher>()
+        for (element in elements) {
+            if (element is AbstractTextMatcher) {
+                currentGroup.add(element)
+            } else {
+                groupedElements.add(ClassMatcher(declarations, currentGroup))
+                currentGroup = mutableListOf()
+                groupedElements.add(element)
+            }
+        }
+        groupedElements.add(ClassMatcher(declarations, currentGroup))
+    }
+
     override fun claim(
         declarations: Declarations,
         phrase: Phrase,
@@ -427,11 +446,14 @@ class AlternativeMatcher(val elements: List<Matcher>) : BaseMatcher() {
         bindings: Bindings,
         partial: Boolean,
     ): List<PhraseMatchEnd> =
-        elements.flatMap { element ->
+        groupedElements.flatMap { element ->
             element.claim(declarations, phrase, start, bindings, partial)
         }.checkTooManyOptions()
 
-    override fun reversed(): Matcher = AlternativeMatcher(elements.map { it.reversed() })
+    override fun reversed(): Matcher = AlternativeMatcher(
+        declarations,
+        elements.map { it.reversed() }
+    )
 
     override fun toString(): String = elements.joinToString(prefix = "{", postfix = "}")
 
@@ -457,6 +479,40 @@ class AlternativeMatcher(val elements: List<Matcher>) : BaseMatcher() {
         result: ConditionalEmitter,
         filtered: Boolean
     ): Transformer = AlternativeTransformer(elements, result, filtered)
+}
+
+// Optimized AlternativeMatcher for when all the elements are
+// just looking for literal text.
+private class ClassMatcher(
+    val declarations: Declarations,
+    val elements: List<AbstractTextMatcher>,
+) : Matcher {
+    private val tree = TextMatcherTree(declarations, elements)
+
+    override fun claim(
+        declarations: Declarations,
+        phrase: Phrase,
+        start: PhraseIndex,
+        bindings: Bindings,
+        partial: Boolean
+    ): List<PhraseMatchEnd> =
+        tree.tryMatch(phrase[start.wordIndex], start.segmentIndex).flatMap {
+            elements[it].claim(declarations, phrase, start, bindings, partial)
+        }
+
+    override fun reversed(): Matcher = ClassMatcher(
+        declarations,
+        elements.map { it.reversed() as AbstractTextMatcher }
+    )
+
+    override fun transformerTo(result: Emitter, filtered: Boolean): Transformer =
+        throw AssertionError("Can't match a ClassMatcher to an emitter")
+
+    override fun prefersIndependentEmitters(): Boolean =
+        throw AssertionError("Can't match a ClassMatcher to an emitter")
+
+    override fun prefersIndependentSequenceEmitters(): Boolean =
+        throw AssertionError("Can't match a ClassMatcher to an emitter")
 }
 
 class IntersectionMatcher(
