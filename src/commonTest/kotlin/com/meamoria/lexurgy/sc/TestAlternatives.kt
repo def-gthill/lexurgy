@@ -122,6 +122,20 @@ class TestAlternatives : StringSpec({
         ch2("cadabbn") shouldBe "cafabbn"
     }
 
+    "Alternatives that differ only by floating diacritics should be distinguished" {
+        val ch = lsc(
+            """
+                Feature +stress
+                Diacritic ́  (floating) [+stress]
+                
+                mid-vowel-shift:
+                    {é, e, ó, o} => {e, ɛ, o, ɔ}
+            """.trimIndent()
+        )
+
+        ch("éko") shouldBe "ekɔ"
+    }
+
     "Only captures in a successful match should be bound" {
         val ch = lsc(
             """

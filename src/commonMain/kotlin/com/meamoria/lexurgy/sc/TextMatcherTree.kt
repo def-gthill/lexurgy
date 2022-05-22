@@ -16,7 +16,7 @@ class TextMatcherTree(val declarations: Declarations, elements: List<AbstractTex
                     )
                 }
             }
-            curtree.value = i
+            curtree.indices += i
         }
     }
 
@@ -34,7 +34,7 @@ class TextMatcherTree(val declarations: Declarations, elements: List<AbstractTex
             while (cur < word.length) {
                 val segment = word[cur].withoutFloatingDiacritics()
                 curtree.children[segment]?.let { child ->
-                    child.value?.let { result += it }
+                    result += child.indices
                     curtree = child
                     cur++
                 } ?: break
@@ -47,11 +47,11 @@ class TextMatcherTree(val declarations: Declarations, elements: List<AbstractTex
     override fun toString(): String = "SegmentTree" + root.subtreeString()
 
     private inner class Node {
-        var value: Int? = null
+        val indices: MutableList<Int> = mutableListOf()
         val children = mutableMapOf<Segment, Node>()
 
         fun subtreeString(): String {
-            val valueBit = value?.toString()?.let {listOf(it)} ?: emptyList()
+            val valueBit = listOf(indices)
             val childrenBits = children.map {(segment, sub) -> segment.string + "->" + sub.subtreeString()}
             return (valueBit + childrenBits).joinToString(separator = ", ", prefix = "(", postfix = ")")
         }
