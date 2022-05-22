@@ -125,6 +125,49 @@ class AlternativeTransformer(
     )
 }
 
+internal class ClassTransformer(
+    val declarations: Declarations,
+    val matchers: List<AbstractTextMatcher>,
+    val transformers: List<Transformer>,
+) : Transformer {
+    private val tree = TextMatcherTree(declarations, matchers)
+
+    constructor(
+        declarations: Declarations,
+        matchers: List<AbstractTextMatcher>,
+        emitters: List<Emitter>,
+        filtered: Boolean
+    ) : this(
+        declarations,
+        matchers,
+        matchers.zip(emitters) { matcher, emitter ->
+            matcher.transformerTo(emitter, filtered)
+        }
+    )
+
+    constructor(
+        declarations: Declarations,
+        matchers: List<AbstractTextMatcher>,
+        emitter: Emitter,
+        filtered: Boolean
+    ) : this(
+        declarations,
+        matchers,
+        matchers.map { it.transformerTo(emitter, filtered) }
+    )
+
+    override fun transform(
+        order: Int,
+        declarations: Declarations,
+        phrase: Phrase,
+        start: PhraseIndex,
+        bindings: Bindings
+    ): List<UnboundTransformation> =
+        tree.tryMatch(phrase[start.wordIndex], start.segmentIndex).flatMap {
+            transformers[it].transform(order, declarations, phrase, start, bindings)
+        }
+}
+
 class RepeaterTransformer(
     val transformer: Transformer,
     val type: RepeaterType,

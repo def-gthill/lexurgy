@@ -52,5 +52,5 @@ fun main() {
         measureTimedValue {
             ch3.change(Array(500000) { "(z:(z:(z:(z:()" }.asList()).last()
         }
-    ) // Baseline time: 7 seconds
+    ) // Baseline time: 9 seconds
 }

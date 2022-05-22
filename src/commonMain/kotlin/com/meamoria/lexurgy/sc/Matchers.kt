@@ -421,7 +421,7 @@ class RepeaterMatcher(
 
 class AlternativeMatcher(
     val declarations: Declarations,
-    val elements: List<Matcher>
+    val elements: List<Matcher>,
 ) : BaseMatcher() {
     private val groupedElements = mutableListOf<Matcher>()
 
@@ -459,12 +459,27 @@ class AlternativeMatcher(
 
     override fun transformerToAlternatives(
         result: AlternativeEmitter,
-        filtered: Boolean
+        filtered: Boolean,
     ): Transformer = if (elements.size == result.elements.size) {
-        AlternativeTransformer(elements, result.elements, filtered)
+        val groupedEmitters = mutableListOf<Emitter>()
+        var i = 0
+        for (element in groupedElements) {
+            if (element is ClassMatcher) {
+                val numElements = element.elements.size
+                val end = i + numElements
+                groupedEmitters += AlternativeEmitter(
+                    result.elements.slice(i until end)
+                )
+                i = end
+            } else {
+                groupedEmitters += result.elements[i]
+                i++
+            }
+        }
+        AlternativeTransformer(groupedElements, groupedEmitters, filtered)
     } else {
         try {
-            AlternativeTransformer(elements, result, filtered)
+            AlternativeTransformer(groupedElements, result, filtered)
         } catch (_: LscInvalidTransformation) {
             mismatchedLengths(this, result, elements, result.elements)
         }
@@ -472,21 +487,21 @@ class AlternativeMatcher(
 
     override fun transformerToSequence(
         result: SequenceEmitter,
-        filtered: Boolean
-    ): Transformer = AlternativeTransformer(elements, result, filtered)
+        filtered: Boolean,
+    ): Transformer = AlternativeTransformer(groupedElements, result, filtered)
 
     override fun transformerToConditional(
         result: ConditionalEmitter,
-        filtered: Boolean
-    ): Transformer = AlternativeTransformer(elements, result, filtered)
+        filtered: Boolean,
+    ): Transformer = AlternativeTransformer(groupedElements, result, filtered)
 }
 
 // Optimized AlternativeMatcher for when all the elements are
 // just looking for literal text.
-private class ClassMatcher(
+internal class ClassMatcher(
     val declarations: Declarations,
     val elements: List<AbstractTextMatcher>,
-) : Matcher {
+) : BaseMatcher() {
     private val tree = TextMatcherTree(declarations, elements)
 
     override fun claim(
@@ -505,14 +520,20 @@ private class ClassMatcher(
         elements.map { it.reversed() as AbstractTextMatcher }
     )
 
-    override fun transformerTo(result: Emitter, filtered: Boolean): Transformer =
-        throw AssertionError("Can't match a ClassMatcher to an emitter")
+    override fun transformerToAlternatives(
+        result: AlternativeEmitter,
+        filtered: Boolean,
+    ): Transformer = ClassTransformer(declarations, elements, result.elements, filtered)
 
-    override fun prefersIndependentEmitters(): Boolean =
-        throw AssertionError("Can't match a ClassMatcher to an emitter")
+    override fun transformerToSequence(
+        result: SequenceEmitter,
+        filtered: Boolean,
+    ): Transformer = ClassTransformer(declarations, elements, result, filtered)
 
-    override fun prefersIndependentSequenceEmitters(): Boolean =
-        throw AssertionError("Can't match a ClassMatcher to an emitter")
+    override fun transformerToConditional(
+        result: ConditionalEmitter,
+        filtered: Boolean,
+    ): Transformer = ClassTransformer(declarations, elements, result, filtered)
 }
 
 class IntersectionMatcher(
