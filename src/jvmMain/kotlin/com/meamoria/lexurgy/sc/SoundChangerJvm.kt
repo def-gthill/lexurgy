@@ -9,6 +9,43 @@ import kotlin.time.ExperimentalTime
 import kotlin.time.TimedValue
 import kotlin.time.measureTimedValue
 
+class JavaKotlinBridgeSoundChanger(rules: String) {
+
+    private val sc = SoundChanger.fromLsc(rules)
+
+    fun change(
+        words: List<String>,
+        startAt: String?,
+        stopBefore: String?,
+        debugWords: List<String>,
+        romanize: Boolean,
+        debug: (String) -> Unit,
+    ): List<String> = sc.change(
+        words,
+        startAt = startAt,
+        stopBefore = stopBefore,
+        debugWords = debugWords,
+        romanize = romanize,
+        debug = debug,
+    )
+
+    fun changeWithIntermediates(
+        words: List<String>,
+        startAt: String?,
+        stopBefore: String?,
+        debugWords: List<String>,
+        romanize: Boolean,
+        debug: (String) -> Unit,
+    ): Map<String?, List<String>> = sc.changeWithIntermediates(
+        words,
+        startAt = startAt,
+        stopBefore = stopBefore,
+        debugWords = debugWords,
+        romanize = romanize,
+        debug = debug,
+    )
+}
+
 @ExperimentalTime
 fun changeFiles(
     changesPath: Path,
