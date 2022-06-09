@@ -532,7 +532,7 @@ class RuleExpression(
     fun claimAt(expressionNumber: Int, phrase: Phrase, index: PhraseIndex): Transformation? {
         val bindings = Bindings()
         val transformation = transformer.transform(
-            expressionNumber, declarations, phrase, index, bindings
+            expressionNumber, phrase, index, bindings
         ).firstOrNull() ?: return null
         return transformation.bindVariables()
     }

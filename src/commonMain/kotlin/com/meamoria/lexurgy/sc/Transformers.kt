@@ -6,7 +6,6 @@ import com.meamoria.lexurgy.PhraseIndex
 interface Transformer {
     fun transform(
         order: Int,
-        declarations: Declarations,
         phrase: Phrase,
         start: PhraseIndex,
         bindings: Bindings,
@@ -22,16 +21,15 @@ class EnvironmentTransformer(
 ) : Transformer {
     override fun transform(
         order: Int,
-        declarations: Declarations,
         phrase: Phrase,
         start: PhraseIndex,
         bindings: Bindings
     ): List<UnboundTransformation> {
         val transformations = element.transform(
-            order, declarations, phrase, start, bindings)
+            order, phrase, start, bindings)
         return transformations.mapNotNull { transformation ->
             environment.check(
-                declarations, phrase, start,
+                phrase, start,
                 transformation.end, transformation.returnBindings
             )?.let {
                 transformation.updateBindings(it)
@@ -59,7 +57,6 @@ class SequenceTransformer(
 
     override fun transform(
         order: Int,
-        declarations: Declarations,
         phrase: Phrase,
         start: PhraseIndex,
         bindings: Bindings,
@@ -68,7 +65,7 @@ class SequenceTransformer(
         for (element in elements) {
             resultBits = resultBits.flatMap { prev ->
                 element.transform(
-                    order, declarations, phrase,
+                    order, phrase,
                     prev.lastOrNull()?.end ?: start,
                     prev.lastOrNull()?.returnBindings ?: bindings,
                 ).map {
@@ -110,13 +107,12 @@ class AlternativeTransformer(
 
     override fun transform(
         order: Int,
-        declarations: Declarations,
         phrase: Phrase,
         start: PhraseIndex,
         bindings: Bindings
     ): List<UnboundTransformation> =
         elements.flatMap { element ->
-            element.transform(order, declarations, phrase, start, bindings)
+            element.transform(order, phrase, start, bindings)
         }.checkTooManyOptions()
 
     override fun toString(): String = elements.joinToString(
@@ -158,13 +154,12 @@ internal class ClassTransformer(
 
     override fun transform(
         order: Int,
-        declarations: Declarations,
         phrase: Phrase,
         start: PhraseIndex,
         bindings: Bindings
     ): List<UnboundTransformation> =
         tree.tryMatch(phrase[start.wordIndex], start.segmentIndex).flatMap {
-            transformers[it].transform(order, declarations, phrase, start, bindings)
+            transformers[it].transform(order, phrase, start, bindings)
         }
 }
 
@@ -184,7 +179,6 @@ class RepeaterTransformer(
 
     override fun transform(
         order: Int,
-        declarations: Declarations,
         phrase: Phrase,
         start: PhraseIndex,
         bindings: Bindings
@@ -193,7 +187,7 @@ class RepeaterTransformer(
         while (true) {
             val newResultBits = resultBits.last().flatMap { prev ->
                 transformer.transform(
-                    order, declarations, phrase,
+                    order, phrase,
                     prev.lastOrNull()?.end ?: start,
                     prev.lastOrNull()?.returnBindings ?: bindings
                 ).map {
@@ -219,16 +213,14 @@ class IntersectionTransformer(
 ) : Transformer {
     override fun transform(
         order: Int,
-        declarations: Declarations,
         phrase: Phrase,
         start: PhraseIndex,
         bindings: Bindings
     ): List<UnboundTransformation> {
         val transformers = transformer.transform(
-            order, declarations, phrase, start, bindings
+            order, phrase, start, bindings
         ).filter { it.start.wordIndex == it.end.wordIndex }
         return filterIntersection(
-            declarations,
             checkMatchers,
             phrase,
             start,
@@ -247,7 +239,6 @@ class CaptureTransformer(
 ) : Transformer {
     override fun transform(
         order: Int,
-        declarations: Declarations,
         phrase: Phrase,
         start: PhraseIndex,
         bindings: Bindings
@@ -255,7 +246,7 @@ class CaptureTransformer(
         if (number in bindings.captures) {
             throw LscReboundCapture(number)
         } else {
-            element.transform(order, declarations, phrase, start, bindings).filter {
+            element.transform(order, phrase, start, bindings).filter {
                 it.start.wordIndex == it.end.wordIndex
             }.map { transform ->
                 val capture = phrase.slice(
@@ -274,14 +265,13 @@ class SimpleConditionalTransformer(
 ) : Transformer {
     override fun transform(
         order: Int,
-        declarations: Declarations,
         phrase: Phrase,
         start: PhraseIndex,
         bindings: Bindings,
     ): List<UnboundTransformation> =
-        matcher.claim(declarations, phrase, start, bindings).map { claimEnd ->
+        matcher.claim(phrase, start, bindings).map { claimEnd ->
             val claim = phrase.slice(start, claimEnd.index)
-            val result = emitter.result(declarations, matcher, claim)
+            val result = emitter.result(matcher, claim)
             UnboundTransformation(
                 order,
                 start,
@@ -301,15 +291,14 @@ class IndependentTransformer(
 ) : Transformer {
     override fun transform(
         order: Int,
-        declarations: Declarations,
         phrase: Phrase,
         start: PhraseIndex,
         bindings: Bindings
     ): List<UnboundTransformation> {
-        val claimEnds = matcher.claim(declarations, phrase, start, bindings)
+        val claimEnds = matcher.claim(phrase, start, bindings)
         fun result(claimEnd: PhraseMatchEnd, finalBindings: Bindings): Phrase =
             phrase.slice(start, claimEnd.index).recoverStructure(
-                emitter.result(declarations)(finalBindings),
+                emitter.result()(finalBindings),
                 exceptSyllableBreaks = claimEnd.matchedSyllableBreaks.map {
                     phrase.relativeIndex(it, start)
                 }
@@ -335,13 +324,12 @@ class IndependentSequenceTransformer(
 ) : Transformer {
     override fun transform(
         order: Int,
-        declarations: Declarations,
         phrase: Phrase,
         start: PhraseIndex,
         bindings: Bindings
     ): List<UnboundTransformation> =
-        matcher.claim(declarations, phrase, start, bindings).map { claimEnd ->
-            val resultBits = emitter.resultBits(declarations, order, start, claimEnd)
+        matcher.claim(phrase, start, bindings).map { claimEnd ->
+            val resultBits = emitter.resultBits(order, start, claimEnd)
 
             fun result(finalBindings: Bindings): Phrase =
                 phrase.slice(start, claimEnd.index).recoverStructure(
@@ -363,20 +351,19 @@ class IndependentSequenceTransformer(
         }
 
     private fun SequenceEmitter.resultBits(
-        declarations: Declarations,
         order: Int,
         start: PhraseIndex,
         claimEnd: PhraseMatchEnd,
     ): List<UnboundTransformation> =
         elements.flatMap {
             when (it) {
-                is SequenceEmitter -> it.resultBits(declarations, order, start, claimEnd)
+                is SequenceEmitter -> it.resultBits(order, start, claimEnd)
                 else -> listOf(
                     UnboundTransformation(
                         order,
                         start,
                         claimEnd.index,
-                        (it as IndependentEmitter).result(declarations),
+                        (it as IndependentEmitter).result(),
                         claimEnd.returnBindings,
                     )
                 )

@@ -50,7 +50,7 @@ class AlternativeEmitter(val elements: List<Emitter>) : Emitter {
  * ``Matcher`` about what it matched.
  */
 interface IndependentEmitter : Emitter {
-    fun result(declarations: Declarations): UnboundResult
+    fun result(): UnboundResult
 
     override fun isConditional(): Boolean = false
 
@@ -62,13 +62,11 @@ interface IndependentEmitter : Emitter {
  */
 interface ConditionalEmitter : Emitter {
     fun result(
-        declarations: Declarations,
         matcher: SimpleMatcher,
         original: Phrase
-    ): UnboundResult = result(declarations, matcher, original.first())
+    ): UnboundResult = result(matcher, original.first())
 
     fun result(
-        declarations: Declarations,
         matcher: SimpleMatcher,
         original: Word
     ): UnboundResult
@@ -82,40 +80,39 @@ class TransformingEmitter(
     val initialEmitter: IndependentEmitter,
     val transformation: ConditionalEmitter,
 ) : IndependentEmitter {
-    override fun result(declarations: Declarations): UnboundResult =
+    override fun result(): UnboundResult =
         { bindings ->
-            val initialResult = initialEmitter.result(declarations)(bindings)
-            transformation.result(declarations, NeverMatcher, initialResult)(bindings)
+            val initialResult = initialEmitter.result()(bindings)
+            transformation.result(NeverMatcher, initialResult)(bindings)
         }
 }
 
 class MultiConditionalEmitter(val elements: List<ConditionalEmitter>) : ConditionalEmitter {
     override fun result(
-        declarations: Declarations,
         matcher: SimpleMatcher,
         original: Word
     ): UnboundResult =
         { bindings ->
             var current = original
             for (element in elements) {
-                current = element.result(declarations, matcher, current)(bindings).first()
+                current = element.result(matcher, current)(bindings).first()
             }
             Phrase(current)
         }
 }
 
 object BetweenWordsEmitter : IndependentEmitter {
-    override fun result(declarations: Declarations): UnboundResult =
+    override fun result(): UnboundResult =
         { Phrase(StandardWord.EMPTY, StandardWord.EMPTY) }
 }
 
 object SyllableBoundaryEmitter : IndependentEmitter {
-    override fun result(declarations: Declarations): UnboundResult =
+    override fun result(): UnboundResult =
         { Phrase(StandardWord.SYLLABLE_BREAK_ONLY) }
 }
 
 class CaptureReferenceEmitter(val number: Int) : IndependentEmitter {
-    override fun result(declarations: Declarations): UnboundResult =
+    override fun result(): UnboundResult =
         { bindings ->
             bindings.captures[number] ?: throw LscUnboundCapture(number)
         }
@@ -123,7 +120,8 @@ class CaptureReferenceEmitter(val number: Int) : IndependentEmitter {
     override fun toString(): String = "$$number"
 }
 
-class MatrixEmitter(val matrix: Matrix) : ConditionalEmitter {
+class MatrixEmitter(val declarations: Declarations, val matrix: Matrix) :
+    ConditionalEmitter {
 
     init {
         if (matrix.valueList.any { it is NegatedValue }) {
@@ -132,7 +130,7 @@ class MatrixEmitter(val matrix: Matrix) : ConditionalEmitter {
     }
 
     override fun result(
-        declarations: Declarations, matcher: SimpleMatcher, original: Word
+        matcher: SimpleMatcher, original: Word
     ): UnboundResult =
         { bindings ->
             Phrase(
@@ -159,7 +157,8 @@ class MatrixEmitter(val matrix: Matrix) : ConditionalEmitter {
     override fun toString(): String = matrix.toString()
 }
 
-class SyllableMatrixEmitter(val matrix: Matrix) : ConditionalEmitter {
+class SyllableMatrixEmitter(val declarations: Declarations, val matrix: Matrix) :
+    ConditionalEmitter {
 
     init {
         if (matrix.valueList.any { it is NegatedValue }) {
@@ -168,7 +167,7 @@ class SyllableMatrixEmitter(val matrix: Matrix) : ConditionalEmitter {
     }
 
     override fun result(
-        declarations: Declarations, matcher: SimpleMatcher, original: Word
+        matcher: SimpleMatcher, original: Word
     ): UnboundResult =
         {
             with(declarations) {
@@ -188,26 +187,26 @@ class SyllableMatrixEmitter(val matrix: Matrix) : ConditionalEmitter {
     override fun toString(): String = matrix.toString()
 }
 
-class SymbolEmitter(val text: Word) :
+class SymbolEmitter(val declarations: Declarations, val text: Word) :
     ConditionalEmitter,
     IndependentEmitter {
 
-    override fun result(declarations: Declarations): UnboundResult = { Phrase(text) }
+    override fun result(): UnboundResult = { Phrase(text) }
 
     override fun result(
-        declarations: Declarations, matcher: SimpleMatcher, original: Word
+        matcher: SimpleMatcher, original: Word
     ): UnboundResult = {
         Phrase(
             original.recoverStructure(
                 if (matcher is SymbolMatcher) {
-                    resultFromSymbolMatcher(declarations, matcher, original)
+                    resultFromSymbolMatcher(matcher, original)
                 } else text
             )
         )
     }
 
     private fun resultFromSymbolMatcher(
-        declarations: Declarations, matcher: SymbolMatcher, original: Word
+        matcher: SymbolMatcher, original: Word
     ): Word {
         val result = with(declarations) {
             if (matcher.text.length == text.length && original.length == text.length) {
@@ -241,7 +240,7 @@ class SymbolEmitter(val text: Word) :
 }
 
 class TextEmitter(val text: Word) : IndependentEmitter {
-    override fun result(declarations: Declarations): UnboundResult {
+    override fun result(): UnboundResult {
         return { Phrase(text) }
     }
 
@@ -249,14 +248,14 @@ class TextEmitter(val text: Word) : IndependentEmitter {
 }
 
 object EmptyEmitter : IndependentEmitter {
-    override fun result(declarations: Declarations): UnboundResult =
+    override fun result(): UnboundResult =
         { Phrase(StandardWord.EMPTY) }
 
     override fun toString(): String = "*"
 }
 
 object NeverEmitter : IndependentEmitter {
-    override fun result(declarations: Declarations): UnboundResult = throw AssertionError("A never-emitter can't emit")
+    override fun result(): UnboundResult = throw AssertionError("A never-emitter can't emit")
 
     override fun toString(): String = "N/A"
 }

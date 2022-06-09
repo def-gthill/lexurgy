@@ -31,7 +31,6 @@ class Syllabifier(
             val prev = syllableSequences[i]?.takeIf { !it.isPartial } ?: continue
             val newSequences = patterns.flatMapIndexed { patternNumber, pattern ->
                 pattern.matcher.claim(
-                    declarations,
                     Phrase(word),
                     PhraseIndex(0, i),
                     Bindings(),

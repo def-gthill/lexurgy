@@ -1421,7 +1421,6 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             val filter = ruleFilter?.let { filter ->
                 { segment: Segment ->
                     filter.matcher(RuleContext.aloneInMain(), declarations).claim(
-                        declarations,
                         Phrase(StandardWord.single(segment)),
                         PhraseIndex(0, 0),
                         Bindings(),
@@ -1962,12 +1961,12 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
         override fun matcher(context: RuleContext, declarations: Declarations): Matcher =
             declarations.parsePhonetic(literalText, syllabify = false).let {
-                if (exact) TextMatcher(it) else SymbolMatcher(it)
+                if (exact) TextMatcher(it) else SymbolMatcher(declarations, it)
             }
 
         override fun emitter(declarations: Declarations): Emitter =
             declarations.parsePhonetic(literalText, syllabify = false).let {
-                if (exact) TextEmitter(it) else SymbolEmitter(it)
+                if (exact) TextEmitter(it) else SymbolEmitter(declarations, it)
             }
     }
 
@@ -1980,10 +1979,14 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         override fun matcher(context: RuleContext, declarations: Declarations): Matcher =
             with(declarations) {
                 val split = matrix.splitByLevel()
-                val segmentMatcher = split[WordLevel.SEGMENT]?.let { MatrixMatcher(it) }
-                val syllableMatcher = split[WordLevel.SYLLABLE]?.let { SyllableMatrixMatcher(it) }
+                val segmentMatcher = split[WordLevel.SEGMENT]?.let {
+                    MatrixMatcher(declarations, it)
+                }
+                val syllableMatcher = split[WordLevel.SYLLABLE]?.let {
+                    SyllableMatrixMatcher(declarations, it)
+                }
                 if (syllableMatcher == null) {
-                    segmentMatcher ?: MatrixMatcher(Matrix.EMPTY)
+                    segmentMatcher ?: MatrixMatcher(declarations, Matrix.EMPTY)
                 } else {
                     if (segmentMatcher == null) {
                         syllableMatcher
@@ -1999,10 +2002,14 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         override fun emitter(declarations: Declarations): Emitter =
             with(declarations) {
                 val split = matrix.splitByLevel()
-                val segmentEmitter = split[WordLevel.SEGMENT]?.let { MatrixEmitter(it) }
-                val syllableEmitter = split[WordLevel.SYLLABLE]?.let { SyllableMatrixEmitter(it) }
+                val segmentEmitter = split[WordLevel.SEGMENT]?.let {
+                    MatrixEmitter(declarations, it)
+                }
+                val syllableEmitter = split[WordLevel.SYLLABLE]?.let {
+                    SyllableMatrixEmitter(declarations, it)
+                }
                 if (syllableEmitter == null) {
-                    segmentEmitter ?: MatrixEmitter(Matrix.EMPTY)
+                    segmentEmitter ?: MatrixEmitter(declarations, Matrix.EMPTY)
                 } else {
                     if (segmentEmitter == null) {
                         syllableEmitter
@@ -2081,7 +2088,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         override val publicName: String = "a capture reference"
 
         override fun matcher(context: RuleContext, declarations: Declarations): Matcher =
-            CaptureReferenceMatcher(number, exact)
+            CaptureReferenceMatcher(declarations, number, exact)
 
         override fun emitter(declarations: Declarations): Emitter =
             if (!exact) throw LscIllegalStructureInOutput(
