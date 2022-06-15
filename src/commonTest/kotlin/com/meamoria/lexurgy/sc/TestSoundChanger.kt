@@ -630,4 +630,15 @@ class TestSoundChanger : StringSpec({
 
         ch("a+a+a") shouldBe "_\\_\\_"
     }
+
+    "We should be able to use keywords as literal text and parts of rule names" {
+        val ch = lsc(
+            """
+                ltr-to-ch:
+                    ltr => tʃ
+            """.trimIndent()
+        )
+
+        ch("eltrun") shouldBe "etʃun"
+    }
 })

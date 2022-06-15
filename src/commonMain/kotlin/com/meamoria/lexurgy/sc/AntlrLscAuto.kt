@@ -32,7 +32,7 @@ expect class LscParser(input: TokenStream) : Parser {
     fun blockElement(): BlockElementContext
     fun blockType(): BlockTypeContext
     fun changeRuleModifier(): ChangeRuleModifierContext
-    fun matchMode(): MatchModeContext
+    fun keywordModifier(): KeywordModifierContext
     fun expressionList(): ExpressionListContext
     fun ruleName(): RuleNameContext
     fun expression(): ExpressionContext
@@ -110,7 +110,7 @@ expect open class LscBaseVisitor<T>(){
     open fun visitBlockElement(ctx: BlockElementContext): T
     open fun visitBlockType(ctx: BlockTypeContext): T
     open fun visitChangeRuleModifier(ctx: ChangeRuleModifierContext): T
-    open fun visitMatchMode(ctx: MatchModeContext): T
+    open fun visitKeywordModifier(ctx: KeywordModifierContext): T
     open fun visitExpressionList(ctx: ExpressionListContext): T
     open fun visitRuleName(ctx: RuleNameContext): T
     open fun visitExpression(ctx: ExpressionContext): T
@@ -341,15 +341,12 @@ expect fun BlockTypeContext.allChangeRuleModifiers(): List<ChangeRuleModifierCon
 
 expect class ChangeRuleModifierContext : ParserRuleContext {
     fun filter(): FilterContext?
-    fun matchMode(): MatchModeContext?
-    fun PROPAGATE(): TerminalNode?
-    fun CLEANUP(): TerminalNode?
+    fun keywordModifier(): KeywordModifierContext?
 }
 
 
-expect class MatchModeContext : ParserRuleContext {
-    fun LTR(): TerminalNode?
-    fun RTL(): TerminalNode?
+expect class KeywordModifierContext : ParserRuleContext {
+    fun NAME(): TerminalNode
 }
 
 

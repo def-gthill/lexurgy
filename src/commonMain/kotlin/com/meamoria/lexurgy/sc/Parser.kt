@@ -1,6 +1,7 @@
 package com.meamoria.lexurgy.sc
 
 import com.meamoria.lexurgy.*
+import com.meamoria.lexurgy.sc.LscWalker.validateModifiers
 import com.meamoria.mpp.antlr.*
 import kotlin.reflect.KClass
 
@@ -273,22 +274,31 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     override fun visitChangeRule(ctx: ChangeRuleContext): ParseNode {
         val ruleName = ctx.ruleName().getText()
-        val modifiers = ctx.allChangeRuleModifiers()
+        val modifierContexts = ctx.allChangeRuleModifiers()
         if (ctx.RULE_START() == null) {
-            noColon(ruleName, modifiers, ctx.firstNewline())
+            noColon(ruleName, modifierContexts, ctx.firstNewline())
         }
-        val filter = modifiers.getFilter(ruleName)
-        val matchMode = modifiers.getMatchMode(ruleName)
-        val propagate = modifiers.any { it.PROPAGATE() != null }
-        val cleanup = modifiers.any { it.CLEANUP() != null }
+        val modifiers = modifierContexts.getModifiers(ruleName)
         return walkChangeRule(
             ctx.getText(),
             ruleName,
             visit(ctx.block()),
+            modifiers,
+        )
+    }
+
+    private fun List<ChangeRuleModifierContext>.getModifiers(ruleName: String): RuleModifiers {
+        val filter = getFilter(ruleName)
+        val keywordModifiers = mapNotNull { it.keywordModifier() }
+        keywordModifiers.validateModifiers(ruleName)
+        val matchMode = keywordModifiers.getMatchMode(ruleName)
+        val isPropagate = keywordModifiers.any { it.getText() == "propagate" }
+        val isCleanup = keywordModifiers.any { it.getText() == "cleanup" }
+        return RuleModifiers(
             ruleFilter = filter,
             matchMode = matchMode,
-            propagate = propagate,
-            cleanup = cleanup,
+            isPropagate = isPropagate,
+            isCleanup = isCleanup,
         )
     }
 
@@ -302,15 +312,33 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             }
         )
 
-    private fun List<ChangeRuleModifierContext>.getMatchMode(ruleName: String): MatchMode =
-        mapNotNull { it.matchMode() }.let { matchModes ->
-            if (matchModes.isEmpty()) MatchMode.SIMULTANEOUS
-            else matchModes.singleOrNull()?.let {
-                (visit(it) as MatchModeNode).matchMode
-            } ?: multipleModifiers(
-                ruleName, "match mode", matchModes,
-            )
+    private fun List<KeywordModifierContext>.validateModifiers(ruleName: String) {
+        val allowedModifiers = setOf("ltr", "rtl", "propagate", "cleanup")
+        val firstInvalidModifier = find { it.str !in allowedModifiers }
+        if (firstInvalidModifier != null) {
+            throw LscInvalidModifier(ruleName, firstInvalidModifier.getText())
         }
+    }
+
+    private fun List<KeywordModifierContext>.getMatchMode(ruleName: String): MatchMode {
+        val matchModes = filter { it.str == "ltr" || it.str == "rtl" }
+        return if (matchModes.isEmpty()) MatchMode.SIMULTANEOUS
+        else matchModes.singleOrNull()?.let {
+            if (it.str == "ltr") MatchMode.LEFT_TO_RIGHT else MatchMode.RIGHT_TO_LEFT
+        } ?: multipleModifiers(
+            ruleName, "match mode", matchModes,
+        )
+    }
+
+    private val KeywordModifierContext.str
+        get() = getText().lowercase()
+
+    private data class RuleModifiers(
+        val ruleFilter: ParseNode?,
+        val matchMode: MatchMode,
+        val isPropagate: Boolean,
+        val isCleanup: Boolean,
+    )
 
     private fun noColon(
         ruleName: String, modifiers: List<ChangeRuleModifierContext>, newline: TerminalNode
@@ -343,14 +371,17 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         val blockTypes = ctx.allBlockTypes()
         if (blockTypes.isEmpty()) return visit(ctx.allBlockElements().single())
         val blockType = checkUniformBlockType(blockTypes)
-        val allModifiers = listOf(emptyList<ChangeRuleModifierContext>()) +
+        val allModifierContexts = listOf(emptyList<ChangeRuleModifierContext>()) +
                 blockTypes.map { it.allChangeRuleModifiers() }
-        val blockElements = listVisit(ctx.allBlockElements()).zip(allModifiers) { element, modifiers ->
+        val blockElements = listVisit(ctx.allBlockElements()).zip(
+            allModifierContexts
+        ) { element, modifierContexts ->
             element as UnlinkedRule
-            val matchMode = modifiers.getMatchMode("<$blockType>")
-            val propagate = modifiers.any { it.PROPAGATE() != null }
-            val block = if (propagate) UnlinkedPropagateBlock(element) else element
-            block.tryWithMatchMode(matchMode)
+            val modifiers = modifierContexts.getModifiers("<$blockType>")
+            val block = if (modifiers.isPropagate) {
+                UnlinkedPropagateBlock(element)
+            } else element
+            block.tryWithMatchMode(modifiers.matchMode)
         }
         return walkBlock(ctx.getText(), blockType, blockElements)
     }
@@ -369,9 +400,6 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     override fun visitBlockElement(ctx: BlockElementContext): ParseNode =
         if (ctx.block() != null) visit(ctx.block()!!) else visit(ctx.expressionList()!!)
-
-    override fun visitMatchMode(ctx: MatchModeContext): ParseNode =
-        if (ctx.LTR() != null) MatchModeNode.LTR else MatchModeNode.RTL
 
     override fun visitExpressionList(ctx: ExpressionListContext): ParseNode =
         walkExpressionList(ctx.getText(), listVisit(ctx.allExpressions()))
@@ -825,21 +853,20 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         text: String,
         ruleName: String,
         mainBlock: ParseNode,
-        ruleFilter: ParseNode?,
-        matchMode: MatchMode,
-        propagate: Boolean,
-        cleanup: Boolean,
+        modifiers: RuleModifiers,
     ): ParseNode = UnlinkedStandardRule(
         text,
         ruleName,
         mainBlock as UnlinkedRule,
-        ruleFilter = when (ruleFilter) {
-            is MatrixNode -> MatrixElement(ruleFilter.text, ruleFilter.matrix)
-            else -> ruleFilter as RuleElement?
+        ruleFilter = when (modifiers.ruleFilter) {
+            is MatrixNode -> MatrixElement(
+                modifiers.ruleFilter.text, modifiers.ruleFilter.matrix
+            )
+            else -> modifiers.ruleFilter as RuleElement?
         },
-        matchMode = matchMode,
-        propagate = propagate,
-        cleanup = cleanup,
+        matchMode = modifiers.matchMode,
+        propagate = modifiers.isPropagate,
+        cleanup = modifiers.isCleanup,
     )
 
     private fun walkBlock(
@@ -1553,14 +1580,6 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         }
     }
 
-    private enum class MatchModeNode(
-        override val text: String,
-        val matchMode: MatchMode
-    ) : ParseNode {
-        LTR("ltr", MatchMode.LEFT_TO_RIGHT),
-        RTL("rtl", MatchMode.RIGHT_TO_LEFT),
-    }
-
     private class UnlinkedCompoundEnvironment(
         text: String,
         val positive: List<UnlinkedEnvironment>,
@@ -2222,6 +2241,13 @@ class LscMixedBlock(
     val conflictingBlockType: BlockType,
 ) : LscUserError(
     "Can't mix ${firstBlockType.text} and ${conflictingBlockType.text} at the same level"
+)
+
+class LscInvalidModifier(
+    val ruleName: String,
+    val modifierName: String,
+) : LscUserError(
+    "Invalid modifier \"${modifierName}\" applied to \"${ruleName}\""
 )
 
 class LscIllegalNestedModifier(

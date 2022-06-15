@@ -150,8 +150,8 @@ LscVisitor.prototype.visitChangeRuleModifier = function(ctx) {
 };
 
 
-// Visit a parse tree produced by LscParser#matchMode.
-LscVisitor.prototype.visitMatchMode = function(ctx) {
+// Visit a parse tree produced by LscParser#keywordModifier.
+LscVisitor.prototype.visitKeywordModifier = function(ctx) {
   return this.visitChildren(ctx);
 };
 

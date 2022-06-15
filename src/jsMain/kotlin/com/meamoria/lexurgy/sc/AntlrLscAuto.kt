@@ -32,7 +32,7 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     actual fun blockElement(): BlockElementContext
     actual fun blockType(): BlockTypeContext
     actual fun changeRuleModifier(): ChangeRuleModifierContext
-    actual fun matchMode(): MatchModeContext
+    actual fun keywordModifier(): KeywordModifierContext
     actual fun expressionList(): ExpressionListContext
     actual fun ruleName(): RuleNameContext
     actual fun expression(): ExpressionContext
@@ -256,14 +256,11 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
 
     class ChangeRuleModifierContext : ParserRuleContext {
         fun filter(): FilterContext?
-        fun matchMode(): MatchModeContext?
-        fun PROPAGATE(): TerminalNode?
-        fun CLEANUP(): TerminalNode?
+        fun keywordModifier(): KeywordModifierContext?
     }
 
-    class MatchModeContext : ParserRuleContext {
-        fun LTR(): TerminalNode?
-        fun RTL(): TerminalNode?
+    class KeywordModifierContext : ParserRuleContext {
+        fun NAME(): TerminalNode
     }
 
     class ExpressionListContext : ParserRuleContext {
@@ -575,7 +572,7 @@ open external class LscVisitor<T>{
     open fun visitBlockElement(ctx: BlockElementContext): T
     open fun visitBlockType(ctx: BlockTypeContext): T
     open fun visitChangeRuleModifier(ctx: ChangeRuleModifierContext): T
-    open fun visitMatchMode(ctx: MatchModeContext): T
+    open fun visitKeywordModifier(ctx: KeywordModifierContext): T
     open fun visitExpressionList(ctx: ExpressionListContext): T
     open fun visitRuleName(ctx: RuleNameContext): T
     open fun visitExpression(ctx: ExpressionContext): T
@@ -697,7 +694,7 @@ actual fun BlockTypeContext.allChangeRuleModifiers(): List<ChangeRuleModifierCon
 
 actual typealias ChangeRuleModifierContext = LscParser.ChangeRuleModifierContext
 
-actual typealias MatchModeContext = LscParser.MatchModeContext
+actual typealias KeywordModifierContext = LscParser.KeywordModifierContext
 
 actual typealias ExpressionListContext = LscParser.ExpressionListContext
 

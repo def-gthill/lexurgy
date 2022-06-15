@@ -82,7 +82,7 @@ actual fun BlockTypeContext.allChangeRuleModifiers(): List<ChangeRuleModifierCon
 
 actual typealias ChangeRuleModifierContext = LscParser.ChangeRuleModifierContext
 
-actual typealias MatchModeContext = LscParser.MatchModeContext
+actual typealias KeywordModifierContext = LscParser.KeywordModifierContext
 
 actual typealias ExpressionListContext = LscParser.ExpressionListContext
 

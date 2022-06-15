@@ -149,11 +149,11 @@ public interface LscVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitChangeRuleModifier(LscParser.ChangeRuleModifierContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link LscParser#matchMode}.
+	 * Visit a parse tree produced by {@link LscParser#keywordModifier}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitMatchMode(LscParser.MatchModeContext ctx);
+	T visitKeywordModifier(LscParser.KeywordModifierContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link LscParser#expressionList}.
 	 * @param ctx the parse tree

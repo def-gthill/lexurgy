@@ -127,4 +127,17 @@ class TestPropagation : StringSpec({
             it.message shouldBe "Blocks with the \"ltr\" modifier can't have other blocks inside them"
         }
     }
+
+    "We should get a nice error message when we misspell a modifier" {
+        shouldThrow<LscInvalidModifier> {
+            lsc(
+                """
+                    rule propogate:
+                        a => b
+                """.trimIndent()
+            )
+        }.also {
+            it.message shouldBe "Invalid modifier \"propogate\" applied to \"rule\""
+        }
+    }
 })
