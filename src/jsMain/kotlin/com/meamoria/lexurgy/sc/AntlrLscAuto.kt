@@ -258,6 +258,7 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
         fun filter(): FilterContext?
         fun matchMode(): MatchModeContext?
         fun PROPAGATE(): TerminalNode?
+        fun CLEANUP(): TerminalNode?
     }
 
     class MatchModeContext : ParserRuleContext {

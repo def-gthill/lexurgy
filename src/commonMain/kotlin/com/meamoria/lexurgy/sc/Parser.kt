@@ -93,11 +93,15 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         for (context in contexts) {
             when (context) {
                 is ChangeRuleContext -> {
-                    val rule = visit(context)
-                    rulesWithAnchoredStatements += RuleWithAnchoredStatements(
-                        rule, curAnchoredStatements
-                    )
-                    curAnchoredStatements = mutableListOf()
+                    val rule = visit(context) as UnlinkedStandardRule
+                    if (rule.cleanup) {
+                        curAnchoredStatements += rule
+                    } else {
+                        rulesWithAnchoredStatements += RuleWithAnchoredStatements(
+                            rule, curAnchoredStatements
+                        )
+                        curAnchoredStatements = mutableListOf()
+                    }
                 }
                 is InterRomanizerContext -> curAnchoredStatements += visit(context)
                 is SyllableDeclContext -> curAnchoredStatements += visit(context)
@@ -276,13 +280,15 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         val filter = modifiers.getFilter(ruleName)
         val matchMode = modifiers.getMatchMode(ruleName)
         val propagate = modifiers.any { it.PROPAGATE() != null }
+        val cleanup = modifiers.any { it.CLEANUP() != null }
         return walkChangeRule(
             ctx.getText(),
             ruleName,
             visit(ctx.block()),
-            filter,
-            matchMode,
-            propagate,
+            ruleFilter = filter,
+            matchMode = matchMode,
+            propagate = propagate,
+            cleanup = cleanup,
         )
     }
 
@@ -821,17 +827,19 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         mainBlock: ParseNode,
         ruleFilter: ParseNode?,
         matchMode: MatchMode,
-        propagate: Boolean
+        propagate: Boolean,
+        cleanup: Boolean,
     ): ParseNode = UnlinkedStandardRule(
         text,
         ruleName,
         mainBlock as UnlinkedRule,
-        when (ruleFilter) {
+        ruleFilter = when (ruleFilter) {
             is MatrixNode -> MatrixElement(ruleFilter.text, ruleFilter.matrix)
             else -> ruleFilter as RuleElement?
         },
-        matchMode,
-        propagate
+        matchMode = matchMode,
+        propagate = propagate,
+        cleanup = cleanup,
     )
 
     private fun walkBlock(
@@ -1170,6 +1178,13 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                             1, declarations, InheritedRuleProperties.none
                         ) as NamedRule
                     )
+                    is UnlinkedStandardRule -> {
+                        SoundChanger.CleanupStep(
+                            anchoredStatement.link(
+                                1, declarations, InheritedRuleProperties.none
+                            ) as NamedRule
+                        )
+                    }
                     is SyllableStructureNode -> {
                         declarations = initialDeclarations.withSyllabifier(
                             anchoredStatement.syllabifier(initialDeclarations)
@@ -1411,6 +1426,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         val ruleFilter: RuleElement?,
         val matchMode: MatchMode,
         val propagate: Boolean,
+        val cleanup: Boolean,
     ) : BaseUnlinkedRule(text, listOf(mainBlock)) {
 
         override fun link(

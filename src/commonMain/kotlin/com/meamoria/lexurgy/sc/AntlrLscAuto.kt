@@ -343,6 +343,7 @@ expect class ChangeRuleModifierContext : ParserRuleContext {
     fun filter(): FilterContext?
     fun matchMode(): MatchModeContext?
     fun PROPAGATE(): TerminalNode?
+    fun CLEANUP(): TerminalNode?
 }
 
 

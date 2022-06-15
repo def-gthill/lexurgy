@@ -48,6 +48,7 @@ class SoundChanger(
     ): Map<String?, List<String>> {
         val debugIndices = words.withIndex().filter { it.value in debugWords }.map { it.index }
         var declarations = initialDeclarations
+        var persistentEffects = PersistentEffects()
         val startPhrases = words.map {
             Phrase(
                 it.split(" ").map(declarations::parsePhonetic).map(declarations::syllabify)
@@ -73,6 +74,11 @@ class SoundChanger(
                         maybeReplace(rom), words, curPhrases, debugIndices, debug
                     ).map { it.string }
                 }
+                is CleanupStep -> {
+                    persistentEffects = persistentEffects.copy(
+                        cleanupRule = anchoredStep.cleanupRule
+                    )
+                }
                 is SyllabificationStep -> {
                     declarations = anchoredStep.declarations
                     curPhrases = curPhrases.map {
@@ -93,6 +99,14 @@ class SoundChanger(
 
             for (anchoredStep in ruleWithAnchoredSteps.anchoredSteps) {
                 runAnchoredStep(anchoredStep)
+            }
+
+            with (persistentEffects) {
+                if (cleanupRule != null) {
+                    curPhrases = applyRule(
+                        cleanupRule, words, curPhrases, debugIndices, debug
+                    )
+                }
             }
 
             if (stopBefore != null && rule?.name == stopBefore) {
@@ -124,6 +138,10 @@ class SoundChanger(
         return result
     }
 
+    private data class PersistentEffects(
+        val cleanupRule: NamedRule? = null,
+    )
+
     private fun applyRule(
         rule: NamedRule,
         origPhrases: List<String>,
@@ -154,6 +172,8 @@ class SoundChanger(
     sealed interface AnchoredStep
 
     data class IntermediateRomanizerStep(val romanizer: NamedRule) : AnchoredStep
+
+    data class CleanupStep(val cleanupRule: NamedRule) : AnchoredStep
 
     data class SyllabificationStep(val declarations: Declarations) : AnchoredStep
 
