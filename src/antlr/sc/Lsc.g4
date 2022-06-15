@@ -40,7 +40,8 @@ keywordModifier: NAME;
 expressionList: expression (NEWLINE+ expression)*;
 ruleName: NAME (HYPHEN (NAME | NUMBER))*;
 
-expression: UNCHANGED | (from CHANGE to compoundEnvironment?);
+expression: keywordExpression | (from CHANGE to compoundEnvironment?);
+keywordExpression: NAME;
 from: ruleElement;
 to: unconditionalRuleElement;
 
@@ -151,7 +152,6 @@ ROMANIZER: 'Romanizer' | 'romanizer';
 ALL_MATCHING: 'Then' | 'then';
 FIRST_MATCHING: 'Else' | 'else';
 LITERAL: 'Literal' | 'literal';
-UNCHANGED: 'Unchanged' | 'unchanged';
 NUMBER: DIGIT+;
 NAME: CHAR+;
 STR1: ANY;

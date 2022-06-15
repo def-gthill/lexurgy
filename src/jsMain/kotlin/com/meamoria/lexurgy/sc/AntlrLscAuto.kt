@@ -36,6 +36,7 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     actual fun expressionList(): ExpressionListContext
     actual fun ruleName(): RuleNameContext
     actual fun expression(): ExpressionContext
+    actual fun keywordExpression(): KeywordExpressionContext
     actual fun from(): FromContext
     actual fun to(): ToContext
     actual fun ruleElement(): RuleElementContext
@@ -275,11 +276,15 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     }
 
     class ExpressionContext : ParserRuleContext {
-        fun UNCHANGED(): TerminalNode?
+        fun keywordExpression(): KeywordExpressionContext?
         fun from(): FromContext?
         fun CHANGE(): TerminalNode?
         fun to(): ToContext?
         fun compoundEnvironment(): CompoundEnvironmentContext?
+    }
+
+    class KeywordExpressionContext : ParserRuleContext {
+        fun NAME(): TerminalNode
     }
 
     class FromContext : ParserRuleContext {
@@ -576,6 +581,7 @@ open external class LscVisitor<T>{
     open fun visitExpressionList(ctx: ExpressionListContext): T
     open fun visitRuleName(ctx: RuleNameContext): T
     open fun visitExpression(ctx: ExpressionContext): T
+    open fun visitKeywordExpression(ctx: KeywordExpressionContext): T
     open fun visitFrom(ctx: FromContext): T
     open fun visitTo(ctx: ToContext): T
     open fun visitRuleElement(ctx: RuleElementContext): T
@@ -703,6 +709,8 @@ actual fun ExpressionListContext.allExpressions(): List<ExpressionContext> = exp
 actual typealias RuleNameContext = LscParser.RuleNameContext
 
 actual typealias ExpressionContext = LscParser.ExpressionContext
+
+actual typealias KeywordExpressionContext = LscParser.KeywordExpressionContext
 
 actual typealias FromContext = LscParser.FromContext
 

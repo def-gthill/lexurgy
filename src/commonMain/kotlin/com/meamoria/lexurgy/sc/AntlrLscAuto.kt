@@ -36,6 +36,7 @@ expect class LscParser(input: TokenStream) : Parser {
     fun expressionList(): ExpressionListContext
     fun ruleName(): RuleNameContext
     fun expression(): ExpressionContext
+    fun keywordExpression(): KeywordExpressionContext
     fun from(): FromContext
     fun to(): ToContext
     fun ruleElement(): RuleElementContext
@@ -114,6 +115,7 @@ expect open class LscBaseVisitor<T>(){
     open fun visitExpressionList(ctx: ExpressionListContext): T
     open fun visitRuleName(ctx: RuleNameContext): T
     open fun visitExpression(ctx: ExpressionContext): T
+    open fun visitKeywordExpression(ctx: KeywordExpressionContext): T
     open fun visitFrom(ctx: FromContext): T
     open fun visitTo(ctx: ToContext): T
     open fun visitRuleElement(ctx: RuleElementContext): T
@@ -362,11 +364,16 @@ expect class RuleNameContext : ParserRuleContext {
 
 
 expect class ExpressionContext : ParserRuleContext {
-    fun UNCHANGED(): TerminalNode?
+    fun keywordExpression(): KeywordExpressionContext?
     fun from(): FromContext?
     fun CHANGE(): TerminalNode?
     fun to(): ToContext?
     fun compoundEnvironment(): CompoundEnvironmentContext?
+}
+
+
+expect class KeywordExpressionContext : ParserRuleContext {
+    fun NAME(): TerminalNode
 }
 
 

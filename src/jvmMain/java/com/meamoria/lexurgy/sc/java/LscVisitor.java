@@ -173,6 +173,12 @@ public interface LscVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitExpression(LscParser.ExpressionContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link LscParser#keywordExpression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitKeywordExpression(LscParser.KeywordExpressionContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link LscParser#from}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

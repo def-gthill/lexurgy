@@ -1,7 +1,6 @@
 package com.meamoria.lexurgy.sc
 
 import com.meamoria.lexurgy.*
-import com.meamoria.lexurgy.sc.LscWalker.validateModifiers
 import com.meamoria.mpp.antlr.*
 import kotlin.reflect.KClass
 
@@ -94,14 +93,21 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         for (context in contexts) {
             when (context) {
                 is ChangeRuleContext -> {
-                    val rule = visit(context) as UnlinkedStandardRule
-                    if (rule.cleanup) {
-                        curAnchoredStatements += rule
-                    } else {
-                        rulesWithAnchoredStatements += RuleWithAnchoredStatements(
-                            rule, curAnchoredStatements
+                    if (context.isCleanupOffRule()) {
+                        curAnchoredStatements += UnlinkedCleanupOffStep(
+                            context.getText(),
+                            context.ruleName().getText(),
                         )
-                        curAnchoredStatements = mutableListOf()
+                    } else {
+                        val rule = visit(context) as UnlinkedStandardRule
+                        if (rule.cleanup) {
+                            curAnchoredStatements += rule
+                        } else {
+                            rulesWithAnchoredStatements += RuleWithAnchoredStatements(
+                                rule, curAnchoredStatements
+                            )
+                            curAnchoredStatements = mutableListOf()
+                        }
                     }
                 }
                 is InterRomanizerContext -> curAnchoredStatements += visit(context)
@@ -114,6 +120,14 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         )
         return rulesWithAnchoredStatements
     }
+
+    private fun ChangeRuleContext.isCleanupOffRule(): Boolean =
+        block().getText().trim().lowercase() == "off"
+
+    private class UnlinkedCleanupOffStep(
+        text: String,
+        val ruleName: String,
+    ) : BaseParseNode(text)
 
     private fun validateOrder(statements: List<ParserRuleContext>) {
         for ((prev, next) in statements.zipWithNext()) {
@@ -405,7 +419,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         walkExpressionList(ctx.getText(), listVisit(ctx.allExpressions()))
 
     override fun visitExpression(ctx: ExpressionContext): ParseNode =
-        if (ctx.UNCHANGED() == null) {
+        if (ctx.keywordExpression() == null) {
             walkRuleExpression(
                 ctx.getText(),
                 visit(ctx.from()!!),
@@ -1211,6 +1225,9 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                                 1, declarations, InheritedRuleProperties.none
                             ) as NamedRule
                         )
+                    }
+                    is UnlinkedCleanupOffStep -> {
+                        SoundChanger.CleanupOffStep(anchoredStatement.ruleName)
                     }
                     is SyllableStructureNode -> {
                         declarations = initialDeclarations.withSyllabifier(

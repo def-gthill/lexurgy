@@ -92,6 +92,8 @@ actual typealias RuleNameContext = LscParser.RuleNameContext
 
 actual typealias ExpressionContext = LscParser.ExpressionContext
 
+actual typealias KeywordExpressionContext = LscParser.KeywordExpressionContext
+
 actual typealias FromContext = LscParser.FromContext
 
 actual typealias ToContext = LscParser.ToContext

@@ -174,6 +174,12 @@ LscVisitor.prototype.visitExpression = function(ctx) {
 };
 
 
+// Visit a parse tree produced by LscParser#keywordExpression.
+LscVisitor.prototype.visitKeywordExpression = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
 // Visit a parse tree produced by LscParser#from.
 LscVisitor.prototype.visitFrom = function(ctx) {
   return this.visitChildren(ctx);

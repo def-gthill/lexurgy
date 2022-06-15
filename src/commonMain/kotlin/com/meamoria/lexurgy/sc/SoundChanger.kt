@@ -79,6 +79,11 @@ class SoundChanger(
                         cleanupRule = anchoredStep.cleanupRule
                     )
                 }
+                is CleanupOffStep -> {
+                    persistentEffects = persistentEffects.copy(
+                        cleanupRuleOffPending = true
+                    )
+                }
                 is SyllabificationStep -> {
                     declarations = anchoredStep.declarations
                     curPhrases = curPhrases.map {
@@ -108,6 +113,8 @@ class SoundChanger(
                     )
                 }
             }
+
+            persistentEffects = persistentEffects.next()
 
             if (stopBefore != null && rule?.name == stopBefore) {
                 stopped = true
@@ -140,7 +147,13 @@ class SoundChanger(
 
     private data class PersistentEffects(
         val cleanupRule: NamedRule? = null,
-    )
+        val cleanupRuleOffPending: Boolean = false,
+    ) {
+        fun next(): PersistentEffects =
+            if (cleanupRuleOffPending) {
+                copy(cleanupRule = null, cleanupRuleOffPending = false)
+            } else this
+    }
 
     private fun applyRule(
         rule: NamedRule,
@@ -174,6 +187,8 @@ class SoundChanger(
     data class IntermediateRomanizerStep(val romanizer: NamedRule) : AnchoredStep
 
     data class CleanupStep(val cleanupRule: NamedRule) : AnchoredStep
+
+    data class CleanupOffStep(val ruleName: String) : AnchoredStep
 
     data class SyllabificationStep(val declarations: Declarations) : AnchoredStep
 
@@ -227,7 +242,7 @@ internal fun makeStageComparisons(wordListSequence: List<List<String>>): List<St
     return result
 }
 
-internal fun Iterable<String>.maxLength(): Int = map { it.lengthCombining() }.maxOrNull() ?: 0
+internal fun Iterable<String>.maxLength(): Int = maxOfOrNull { it.lengthCombining() } ?: 0
 
 expect fun <T, U, R> Iterable<T>.fastZipMap(other: Iterable<U>, function: (T, U) -> R): List<R>
 
