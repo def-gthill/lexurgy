@@ -85,6 +85,42 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         )
     }
 
+    private fun validateOrder(statements: List<ParserRuleContext>) {
+        for ((prev, next) in statements.zipWithNext()) {
+            if (allowedStatementPositions.getValue(prev::class) > allowedStatementPositions.getValue(next::class)) {
+                throw LscNotParsable(
+                    prev.getStartLine(), 0, prev.getText(),
+                    "The ${statementNames.getValue(prev::class)} must come after " +
+                            "the ${statementNames.getValue(next::class)}"
+                )
+            }
+        }
+    }
+
+    private val allowedStatementPositions: Map<KClass<*>, Int> = mapOf(
+        FeatureDeclContext::class to 0,
+        DiacriticDeclContext::class to 10,
+        SymbolDeclContext::class to 10,
+        ClassDeclContext::class to 30,
+        DeromanizerContext::class to 40,
+        SyllableDeclContext::class to 50,
+        ChangeRuleContext::class to 50,
+        InterRomanizerContext::class to 50,
+        RomanizerContext::class to 60,
+    )
+
+    private val statementNames: Map<KClass<*>, String> = mapOf(
+        FeatureDeclContext::class to "feature declarations",
+        DiacriticDeclContext::class to "diacritic declarations",
+        SymbolDeclContext::class to "symbol declarations",
+        ClassDeclContext::class to "class declarations",
+        SyllableDeclContext::class to "syllable declarations",
+        DeromanizerContext::class to "deromanizer",
+        ChangeRuleContext::class to "change rules",
+        InterRomanizerContext::class to "intermediate romanizers",
+        RomanizerContext::class to "final romanizer",
+    )
+
     private fun visitRulesWithAnchoredStatements(
         contexts: List<ParserRuleContext>
     ): List<RuleWithAnchoredStatements> {
@@ -129,41 +165,6 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         val ruleName: String,
     ) : BaseParseNode(text)
 
-    private fun validateOrder(statements: List<ParserRuleContext>) {
-        for ((prev, next) in statements.zipWithNext()) {
-            if (allowedStatementPositions.getValue(prev::class) > allowedStatementPositions.getValue(next::class)) {
-                throw LscNotParsable(
-                    prev.getStartLine(), 0, prev.getText(),
-                    "The ${statementNames.getValue(prev::class)} must come after " +
-                            "the ${statementNames.getValue(next::class)}"
-                )
-            }
-        }
-    }
-
-    private val allowedStatementPositions: Map<KClass<*>, Int> = mapOf(
-        FeatureDeclContext::class to 0,
-        DiacriticDeclContext::class to 10,
-        SymbolDeclContext::class to 10,
-        ClassDeclContext::class to 30,
-        DeromanizerContext::class to 40,
-        SyllableDeclContext::class to 50,
-        ChangeRuleContext::class to 50,
-        InterRomanizerContext::class to 50,
-        RomanizerContext::class to 60,
-    )
-
-    private val statementNames: Map<KClass<*>, String> = mapOf(
-        FeatureDeclContext::class to "feature declarations",
-        DiacriticDeclContext::class to "diacritic declarations",
-        SymbolDeclContext::class to "symbol declarations",
-        ClassDeclContext::class to "class declarations",
-        SyllableDeclContext::class to "syllable declarations",
-        DeromanizerContext::class to "deromanizer",
-        ChangeRuleContext::class to "change rules",
-        InterRomanizerContext::class to "intermediate romanizers",
-        RomanizerContext::class to "final romanizer",
-    )
 
     /**
      * A change rule, plus all the non-rule statements
