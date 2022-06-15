@@ -47,11 +47,14 @@ class SoundChanger(
         debug: (String) -> Unit = ::println,
     ): Map<String?, List<String>> {
         val debugIndices = words.withIndex().filter { it.value in debugWords }.map { it.index }
-        var declarations = initialDeclarations
-        var persistentEffects = PersistentEffects()
+        var persistentEffects = PersistentEffects(initialDeclarations)
         val startPhrases = words.map {
             Phrase(
-                it.split(" ").map(declarations::parsePhonetic).map(declarations::syllabify)
+                it.split(" ").map(
+                    persistentEffects.declarations::parsePhonetic
+                ).map(
+                    persistentEffects.declarations::syllabify
+                )
             )
         }
 
@@ -76,19 +79,18 @@ class SoundChanger(
                 }
                 is CleanupStep -> {
                     persistentEffects = persistentEffects.copy(
-                        cleanupRule = anchoredStep.cleanupRule
+                        cleanupRules = persistentEffects.cleanupRules + anchoredStep.cleanupRule
                     )
                 }
                 is CleanupOffStep -> {
                     persistentEffects = persistentEffects.copy(
-                        cleanupRuleOffPending = true
+                        cleanupRulesOffPending = persistentEffects.cleanupRulesOffPending + anchoredStep.ruleName
                     )
                 }
                 is SyllabificationStep -> {
-                    declarations = anchoredStep.declarations
-                    curPhrases = curPhrases.map {
-                        declarations.syllabify(it)
-                    }
+                    persistentEffects = persistentEffects.copy(
+                        declarations = anchoredStep.declarations
+                    )
                 }
             }
         }
@@ -96,22 +98,17 @@ class SoundChanger(
         for (ruleWithAnchoredSteps in rules) {
             val rule = ruleWithAnchoredSteps.rule
 
-            // If there isn't an explicit syllabification step next,
-            // implicitly resyllabify with the most recent syllabification rules
-            if (ruleWithAnchoredSteps.anchoredSteps.firstOrNull() !is SyllabificationStep) {
-                curPhrases = curPhrases.map { declarations.syllabify(it) }
-            }
-
             for (anchoredStep in ruleWithAnchoredSteps.anchoredSteps) {
                 runAnchoredStep(anchoredStep)
             }
 
             with (persistentEffects) {
-                if (cleanupRule != null) {
+                for (cleanupRule in cleanupRules) {
                     curPhrases = applyRule(
                         cleanupRule, words, curPhrases, debugIndices, debug
                     )
                 }
+                curPhrases = curPhrases.map { declarations.syllabify(it) }
             }
 
             persistentEffects = persistentEffects.next()
@@ -146,12 +143,16 @@ class SoundChanger(
     }
 
     private data class PersistentEffects(
-        val cleanupRule: NamedRule? = null,
-        val cleanupRuleOffPending: Boolean = false,
+        val declarations: Declarations,
+        val cleanupRules: List<NamedRule> = emptyList(),
+        val cleanupRulesOffPending: List<String> = emptyList(),
     ) {
         fun next(): PersistentEffects =
-            if (cleanupRuleOffPending) {
-                copy(cleanupRule = null, cleanupRuleOffPending = false)
+            if (cleanupRulesOffPending.isNotEmpty()) {
+                copy(
+                    cleanupRules = cleanupRules.filterNot { it.name in cleanupRulesOffPending },
+                    cleanupRulesOffPending = emptyList()
+                )
             } else this
     }
 
