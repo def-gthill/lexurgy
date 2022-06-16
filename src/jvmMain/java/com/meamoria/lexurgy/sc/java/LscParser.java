@@ -73,7 +73,7 @@ public class LscParser extends Parser {
 			null, null, null, null, null, null, "'_'", null, null, "'('", "')'", 
 			"'*'", "'['", "']'", "'{'", "'}'", "'+'", "'?'", "'-'", "':'", "'~'", 
 			"'!'", "'.'", "'$'", "'$$'", "'@'", "'&'", "'&!'", "'>'", null, null, 
-			null, null, null, null, null, null, "'Syllables'", "'explicit'", "'clear'"
+			null, null, null, null, null, null, null, "'explicit'", "'clear'"
 		};
 	}
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();

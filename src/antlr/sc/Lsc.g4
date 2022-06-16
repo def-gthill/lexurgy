@@ -143,7 +143,7 @@ DIA_BEFORE: '(Before)' | '(before)';
 DIA_FIRST: '(First)' | '(first)';
 DIA_FLOATING: '(Floating)' | '(floating)';
 SYMBOL: 'Symbol' | 'symbol';
-SYLLABLE_DECL: 'Syllables';
+SYLLABLE_DECL: 'Syllables' | 'syllables';
 EXPLICIT_SYLLABLES: 'explicit';
 CLEAR_SYLLABLES: 'clear';
 ANY_SYLLABLE: '<Syl>' | '<syl>';

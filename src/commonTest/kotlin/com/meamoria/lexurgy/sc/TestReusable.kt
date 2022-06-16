@@ -114,8 +114,56 @@ class TestReusable : StringSpec({
         ch("sahitahunuhi") shouldBe "se.to.nu"
     }
 
-    // Syllabification rules and cleanup rules should "break each others' connections" to
-    // the previous rule.
+    "Persisting syllabification rules should run BETWEEN a new cleanup rule and a following romanizer" {
+        val ch = lsc(
+            """
+                Syllables:
+                    {ba, na, ben, en, e}
+                
+                rule:
+                    * => i / a _
+                
+                combine-ai cleanup:
+                    ai => e
+                
+                romanizer-x:
+                    unchanged
+                
+                rule-2:
+                    e => i
+                
+                syllables:
+                    clear
+            """.trimIndent()
+        )
+
+        ch.changeWithIntermediates(listOf("banana")) shouldBe
+                mapOf("x" to listOf("ben.en.e"), null to listOf("binini"))
+    }
+
+    "Persisting syllabification rules should run BEFORE any intermediate romanizers" {
+        val ch = lsc(
+            """
+                Syllables:
+                    {ba, na, ben, en, e}
+                
+                rule:
+                    a => e
+                
+                romanizer-x:
+                    unchanged
+                
+                rule-2:
+                    e => i
+                
+                syllables:
+                    clear
+            """.trimIndent()
+        )
+
+        ch.changeWithIntermediates(listOf("banana")) shouldBe
+                mapOf("x" to listOf("ben.en.e"), null to listOf("binini"))
+    }
 
     // The "cleanup" modifier should be invalid in blocks
 })
