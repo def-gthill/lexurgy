@@ -2,6 +2,7 @@ package com.meamoria.lexurgy.sc
 
 import com.meamoria.mpp.kotest.StringSpec
 import com.meamoria.mpp.kotest.shouldBe
+import com.meamoria.mpp.kotest.shouldThrow
 
 @Suppress("unused")
 class TestReusable : StringSpec({
@@ -165,5 +166,18 @@ class TestReusable : StringSpec({
                 mapOf("x" to listOf("ben.en.e"), null to listOf("binini"))
     }
 
-    // The "cleanup" modifier should be invalid in blocks
+    "The \"cleanup\" modifier should be invalid in blocks" {
+        shouldThrow<LscInvalidModifier> {
+            lsc(
+                """
+                    rule:
+                        unchanged
+                        Then cleanup:
+                        unchanged
+                """.trimIndent()
+            )
+        }.also {
+            it.message shouldBe "Invalid modifier \"cleanup\" applied to \"<Then>\""
+        }
+    }
 })

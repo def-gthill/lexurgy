@@ -293,7 +293,10 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         if (ctx.RULE_START() == null) {
             noColon(ruleName, modifierContexts, ctx.firstNewline())
         }
-        val modifiers = modifierContexts.getModifiers(ruleName)
+        val modifiers = modifierContexts.getModifiers(
+            ruleName,
+            allowedModifiers = setOf("ltr", "rtl", "propagate", "cleanup")
+        )
         return walkChangeRule(
             ctx.getText(),
             ruleName,
@@ -302,10 +305,13 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         )
     }
 
-    private fun List<ChangeRuleModifierContext>.getModifiers(ruleName: String): RuleModifiers {
+    private fun List<ChangeRuleModifierContext>.getModifiers(
+        ruleName: String,
+        allowedModifiers: Set<String>,
+    ): RuleModifiers {
         val filter = getFilter(ruleName)
         val keywordModifiers = mapNotNull { it.keywordModifier() }
-        keywordModifiers.validateModifiers(ruleName)
+        keywordModifiers.validateModifiers(ruleName, allowedModifiers)
         val matchMode = keywordModifiers.getMatchMode(ruleName)
         val isPropagate = keywordModifiers.any { it.getText() == "propagate" }
         val isCleanup = keywordModifiers.any { it.getText() == "cleanup" }
@@ -327,8 +333,10 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             }
         )
 
-    private fun List<KeywordModifierContext>.validateModifiers(ruleName: String) {
-        val allowedModifiers = setOf("ltr", "rtl", "propagate", "cleanup")
+    private fun List<KeywordModifierContext>.validateModifiers(
+        ruleName: String,
+        allowedModifiers: Set<String>,
+    ) {
         val firstInvalidModifier = find { it.str !in allowedModifiers }
         if (firstInvalidModifier != null) {
             throw LscInvalidModifier(ruleName, firstInvalidModifier.getText())
@@ -392,7 +400,10 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             allModifierContexts
         ) { element, modifierContexts ->
             element as UnlinkedRule
-            val modifiers = modifierContexts.getModifiers("<$blockType>")
+            val modifiers = modifierContexts.getModifiers(
+                "<${blockType.text}>",
+                allowedModifiers = setOf("ltr", "rtl", "propagate")
+            )
             val block = if (modifiers.isPropagate) {
                 UnlinkedPropagateBlock(element)
             } else element
