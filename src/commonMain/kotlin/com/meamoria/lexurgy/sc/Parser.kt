@@ -427,8 +427,15 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                 visit(ctx.to()!!),
                 optionalVisit(ctx.compoundEnvironment()),
             )
-        } else {
+        } else if (ctx.getText().lowercase() == "unchanged") {
             walkDoNothingExpression()
+        } else {
+            throw LscNotParsable(
+                ctx.getStartLine(),
+                ctx.getStartColumn(),
+                ctx.getText(),
+                "The rule needs an arrow"
+            )
         }
 
     override fun visitFrom(ctx: FromContext): ParseNode =
