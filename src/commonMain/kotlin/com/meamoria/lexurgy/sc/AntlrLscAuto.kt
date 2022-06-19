@@ -81,8 +81,8 @@ expect class LscParser(input: TokenStream) : Parser {
     fun matrixValue(): MatrixValueContext
     fun plusFeatureValue(): PlusFeatureValueContext
     fun featureValue(): FeatureValueContext
-    fun name(): NameContext
     fun text(): TextContext
+    fun name(): NameContext
 }
 
 expect open class LscBaseVisitor<T>(){
@@ -160,8 +160,8 @@ expect open class LscBaseVisitor<T>(){
     open fun visitMatrixValue(ctx: MatrixValueContext): T
     open fun visitPlusFeatureValue(ctx: PlusFeatureValueContext): T
     open fun visitFeatureValue(ctx: FeatureValueContext): T
-    open fun visitName(ctx: NameContext): T
     open fun visitText(ctx: TextContext): T
+    open fun visitName(ctx: NameContext): T
 }
 
 expect class LscFileContext : ParserRuleContext {
@@ -178,9 +178,9 @@ expect class StatementContext : ParserRuleContext {
     fun classDecl(): ClassDeclContext?
     fun syllableDecl(): SyllableDeclContext?
     fun deromanizer(): DeromanizerContext?
-    fun changeRule(): ChangeRuleContext?
     fun interRomanizer(): InterRomanizerContext?
     fun romanizer(): RomanizerContext?
+    fun changeRule(): ChangeRuleContext?
 }
 
 
@@ -232,7 +232,7 @@ expect class NullAliasContext : ParserRuleContext {
 
 
 expect class DiacriticDeclContext : ParserRuleContext {
-    fun DIACRITIC(): TerminalNode
+    fun DIACRITIC_DECL(): TerminalNode
     fun text(): TextContext
     fun matrix(): MatrixContext
 }
@@ -247,7 +247,7 @@ expect class DiacriticModifierContext : ParserRuleContext {
 
 
 expect class SymbolDeclContext : ParserRuleContext {
-    fun SYMBOL(): TerminalNode
+    fun SYMBOL_DECL(): TerminalNode
     fun matrix(): MatrixContext?
 }
 
@@ -362,6 +362,7 @@ expect class RuleNameContext : ParserRuleContext {
 
 }
 
+expect fun RuleNameContext.allNames(): List<NameContext>
 
 expect class ExpressionContext : ParserRuleContext {
     fun keywordExpression(): KeywordExpressionContext?
@@ -670,16 +671,28 @@ expect class FeatureValueContext : ParserRuleContext {
 }
 
 
-expect class NameContext : ParserRuleContext {
-    fun NAME(): TerminalNode
-}
-
-
 expect class TextContext : ParserRuleContext {
-    fun NAME(): TerminalNode?
+    fun name(): NameContext?
     fun STR1(): TerminalNode?
     fun STR(): TerminalNode?
     fun NEGATION(): TerminalNode?
+}
+
+
+expect class NameContext : ParserRuleContext {
+    fun NAME(): TerminalNode?
+    fun CLASS_DECL(): TerminalNode?
+    fun FEATURE_DECL(): TerminalNode?
+    fun DIACRITIC_DECL(): TerminalNode?
+    fun SYMBOL_DECL(): TerminalNode?
+    fun SYLLABLE_DECL(): TerminalNode?
+    fun CLEAR_SYLLABLES(): TerminalNode?
+    fun EXPLICIT_SYLLABLES(): TerminalNode?
+    fun DEROMANIZER(): TerminalNode?
+    fun ROMANIZER(): TerminalNode?
+    fun LITERAL(): TerminalNode?
+    fun ALL_MATCHING(): TerminalNode?
+    fun FIRST_MATCHING(): TerminalNode?
 }
 
 

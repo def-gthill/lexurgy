@@ -709,7 +709,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     override fun visitName(ctx: NameContext): ParseNode =
         walkName(
             ctx.getText(),
-            ctx.NAME().getText(),
+            ctx.getText(),
         )
 
     override fun visitText(ctx: TextContext): ParseNode =

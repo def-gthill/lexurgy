@@ -3,7 +3,7 @@ grammar Lsc;
 lscFile: WHITESPACE | NEWLINE* statement? (NEWLINE+ statement)* NEWLINE* EOF;
 statement:
     featureDecl | diacriticDecl | symbolDecl | classDecl | syllableDecl |
-    deromanizer | changeRule | interRomanizer | romanizer;
+    deromanizer | interRomanizer | romanizer | changeRule;
 
 classDecl: CLASS_DECL WHITESPACE name WHITESPACE LIST_START classElement (SEP classElement)* LIST_END;
 classElement: classRef | text;
@@ -16,10 +16,10 @@ featureModifier: SYLLABLE_FEATURE;
 plusFeature: (featureModifier WHITESPACE)? AT_LEAST_ONE? name;
 nullAlias: NULL featureValue;
 diacriticDecl:
-    DIACRITIC WHITESPACE text WHITESPACE
+    DIACRITIC_DECL WHITESPACE text WHITESPACE
     (diacriticModifier WHITESPACE)* matrix (WHITESPACE diacriticModifier)*;
 diacriticModifier: DIA_BEFORE | DIA_FIRST | DIA_FLOATING;
-symbolDecl: SYMBOL WHITESPACE symbolName ((SEP symbolName)* | WHITESPACE matrix);
+symbolDecl: SYMBOL_DECL WHITESPACE symbolName ((SEP symbolName)* | WHITESPACE matrix);
 symbolName: text;
 
 syllableDecl:
@@ -38,7 +38,7 @@ blockType: (ALL_MATCHING | FIRST_MATCHING) (WHITESPACE changeRuleModifier)*;
 changeRuleModifier: filter | keywordModifier;
 keywordModifier: NAME;
 expressionList: expression (NEWLINE+ expression)*;
-ruleName: NAME (HYPHEN (NAME | NUMBER))*;
+ruleName: name (HYPHEN (name | NUMBER))*;
 
 expression: keywordExpression | (from CHANGE to compoundEnvironment?);
 keywordExpression: NAME;
@@ -104,8 +104,13 @@ matrix: MATRIX_START matrixValue? (WHITESPACE matrixValue)* MATRIX_END;
 matrixValue: plusFeatureValue | featureValue;
 plusFeatureValue: (AT_LEAST_ONE | HYPHEN) name;
 featureValue: name;
-name: NAME;
-text: (NAME | STR1 | STR) NEGATION?;
+text: (name | STR1 | STR) NEGATION?;
+name:
+    NAME |
+    CLASS_DECL | FEATURE_DECL | DIACRITIC_DECL | SYMBOL_DECL |
+    SYLLABLE_DECL | CLEAR_SYLLABLES | EXPLICIT_SYLLABLES |
+    DEROMANIZER | ROMANIZER | LITERAL |
+    ALL_MATCHING | FIRST_MATCHING;
 
 COMMENT: (WHITESPACE? COMMENT_START ~[\n\r]*) -> skip;
 SEP: ',' WHITESPACE?;
@@ -138,14 +143,14 @@ TRANSFORMING: '>';
 CLASS_DECL: 'Class' | 'class';
 FEATURE_DECL: 'Feature' | 'feature';
 SYLLABLE_FEATURE: '(Syllable)' | '(syllable)';
-DIACRITIC: 'Diacritic' | 'diacritic';
+DIACRITIC_DECL: 'Diacritic' | 'diacritic';
 DIA_BEFORE: '(Before)' | '(before)';
 DIA_FIRST: '(First)' | '(first)';
 DIA_FLOATING: '(Floating)' | '(floating)';
-SYMBOL: 'Symbol' | 'symbol';
-SYLLABLE_DECL: 'Syllables';
-EXPLICIT_SYLLABLES: 'explicit';
-CLEAR_SYLLABLES: 'clear';
+SYMBOL_DECL: 'Symbol' | 'symbol';
+SYLLABLE_DECL: 'Syllables' | 'syllables';
+EXPLICIT_SYLLABLES: 'Explicit' | 'explicit';
+CLEAR_SYLLABLES: 'Clear' | 'clear';
 ANY_SYLLABLE: '<Syl>' | '<syl>';
 DEROMANIZER: 'Deromanizer' | 'deromanizer';
 ROMANIZER: 'Romanizer' | 'romanizer';

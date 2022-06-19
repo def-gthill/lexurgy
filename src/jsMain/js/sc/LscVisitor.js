@@ -444,14 +444,14 @@ LscVisitor.prototype.visitFeatureValue = function(ctx) {
 };
 
 
-// Visit a parse tree produced by LscParser#name.
-LscVisitor.prototype.visitName = function(ctx) {
+// Visit a parse tree produced by LscParser#text.
+LscVisitor.prototype.visitText = function(ctx) {
   return this.visitChildren(ctx);
 };
 
 
-// Visit a parse tree produced by LscParser#text.
-LscVisitor.prototype.visitText = function(ctx) {
+// Visit a parse tree produced by LscParser#name.
+LscVisitor.prototype.visitName = function(ctx) {
   return this.visitChildren(ctx);
 };
 

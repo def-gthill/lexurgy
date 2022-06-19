@@ -81,8 +81,8 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     actual fun matrixValue(): MatrixValueContext
     actual fun plusFeatureValue(): PlusFeatureValueContext
     actual fun featureValue(): FeatureValueContext
-    actual fun name(): NameContext
     actual fun text(): TextContext
+    actual fun name(): NameContext
 
     class LscFileContext : ParserRuleContext {
         fun WHITESPACE(): TerminalNode?
@@ -98,9 +98,9 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
         fun classDecl(): ClassDeclContext?
         fun syllableDecl(): SyllableDeclContext?
         fun deromanizer(): DeromanizerContext?
-        fun changeRule(): ChangeRuleContext?
         fun interRomanizer(): InterRomanizerContext?
         fun romanizer(): RomanizerContext?
+        fun changeRule(): ChangeRuleContext?
     }
 
     class ClassDeclContext : ParserRuleContext {
@@ -148,7 +148,7 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     }
 
     class DiacriticDeclContext : ParserRuleContext {
-        fun DIACRITIC(): TerminalNode
+        fun DIACRITIC_DECL(): TerminalNode
         fun WHITESPACE(): Array<TerminalNode>
         fun text(): TextContext
         fun diacriticModifier(): Array<DiacriticModifierContext>
@@ -162,7 +162,7 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     }
 
     class SymbolDeclContext : ParserRuleContext {
-        fun SYMBOL(): TerminalNode
+        fun SYMBOL_DECL(): TerminalNode
         fun WHITESPACE(): Array<TerminalNode>
         fun symbolName(): Array<SymbolNameContext>
         fun SEP(): Array<TerminalNode>
@@ -270,7 +270,7 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     }
 
     class RuleNameContext : ParserRuleContext {
-        fun NAME(): Array<TerminalNode>
+        fun name(): Array<NameContext>
         fun HYPHEN(): Array<TerminalNode>
         fun NUMBER(): Array<TerminalNode>
     }
@@ -539,15 +539,27 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
         fun name(): NameContext
     }
 
-    class NameContext : ParserRuleContext {
-        fun NAME(): TerminalNode
-    }
-
     class TextContext : ParserRuleContext {
-        fun NAME(): TerminalNode?
+        fun name(): NameContext?
         fun STR1(): TerminalNode?
         fun STR(): TerminalNode?
         fun NEGATION(): TerminalNode?
+    }
+
+    class NameContext : ParserRuleContext {
+        fun NAME(): TerminalNode?
+        fun CLASS_DECL(): TerminalNode?
+        fun FEATURE_DECL(): TerminalNode?
+        fun DIACRITIC_DECL(): TerminalNode?
+        fun SYMBOL_DECL(): TerminalNode?
+        fun SYLLABLE_DECL(): TerminalNode?
+        fun CLEAR_SYLLABLES(): TerminalNode?
+        fun EXPLICIT_SYLLABLES(): TerminalNode?
+        fun DEROMANIZER(): TerminalNode?
+        fun ROMANIZER(): TerminalNode?
+        fun LITERAL(): TerminalNode?
+        fun ALL_MATCHING(): TerminalNode?
+        fun FIRST_MATCHING(): TerminalNode?
     }
 }
 
@@ -626,8 +638,8 @@ open external class LscVisitor<T>{
     open fun visitMatrixValue(ctx: MatrixValueContext): T
     open fun visitPlusFeatureValue(ctx: PlusFeatureValueContext): T
     open fun visitFeatureValue(ctx: FeatureValueContext): T
-    open fun visitName(ctx: NameContext): T
     open fun visitText(ctx: TextContext): T
+    open fun visitName(ctx: NameContext): T
 }
 
 actual typealias LscBaseVisitor<T> = LscVisitor<T>
@@ -707,6 +719,8 @@ actual typealias ExpressionListContext = LscParser.ExpressionListContext
 actual fun ExpressionListContext.allExpressions(): List<ExpressionContext> = expression().toList()
 
 actual typealias RuleNameContext = LscParser.RuleNameContext
+
+actual fun RuleNameContext.allNames(): List<NameContext> = name().toList()
 
 actual typealias ExpressionContext = LscParser.ExpressionContext
 
@@ -814,6 +828,6 @@ actual typealias PlusFeatureValueContext = LscParser.PlusFeatureValueContext
 
 actual typealias FeatureValueContext = LscParser.FeatureValueContext
 
-actual typealias NameContext = LscParser.NameContext
-
 actual typealias TextContext = LscParser.TextContext
+
+actual typealias NameContext = LscParser.NameContext

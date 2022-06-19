@@ -111,6 +111,8 @@ class TestLscParse : StringSpec({
             class bar {b, a, r}
             deromanizer:
                 {o, e} => {ɔ, ɛ}
+            syllables:
+                {b, r} {o, e} {b, r}
             foobar Propagate:
                 o=>a
             romanizer:

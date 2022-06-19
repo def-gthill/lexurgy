@@ -640,5 +640,50 @@ class TestSoundChanger : StringSpec({
         )
 
         ch("eltrun") shouldBe "etʃun"
+
+        val ch2 = lsc(
+            """
+                syllables-are-syllables:
+                    o => syllables
+            """.trimIndent()
+        )
+
+        ch2("foo") shouldBe "fsyllablessyllables"
+
+        val ch3 = lsc(
+            """
+                class-feature-diacritic-symbol:
+                    {class, feature} => {diacritic, symbol}
+            """.trimIndent()
+        )
+
+        ch3("featureymcclassington") shouldBe "symbolymcdiacriticington"
+
+        val ch4 = lsc(
+            """
+                clear-explicit:
+                    clear => explicit
+            """.trimIndent()
+        )
+
+        ch4("oooclearooo") shouldBe "oooexplicitooo"
+
+        val ch5 = lsc(
+            """
+                deromanizer-romanizer-literal:
+                    {deromanizer, romanizer} => literal
+            """.trimIndent()
+        )
+
+        ch5("ideromanizeriromanizeri") shouldBe "iliteraliliterali"
+
+        val ch6 = lsc(
+            """
+                then-else:
+                    then => else
+            """.trimIndent()
+        )
+
+        ch6("ifthendo") shouldBe "ifelsedo"
     }
 })

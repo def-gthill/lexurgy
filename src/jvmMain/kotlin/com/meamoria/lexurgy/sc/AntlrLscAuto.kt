@@ -90,6 +90,8 @@ actual fun ExpressionListContext.allExpressions(): List<ExpressionContext> = exp
 
 actual typealias RuleNameContext = LscParser.RuleNameContext
 
+actual fun RuleNameContext.allNames(): List<NameContext> = name()
+
 actual typealias ExpressionContext = LscParser.ExpressionContext
 
 actual typealias KeywordExpressionContext = LscParser.KeywordExpressionContext
@@ -196,6 +198,6 @@ actual typealias PlusFeatureValueContext = LscParser.PlusFeatureValueContext
 
 actual typealias FeatureValueContext = LscParser.FeatureValueContext
 
-actual typealias NameContext = LscParser.NameContext
-
 actual typealias TextContext = LscParser.TextContext
+
+actual typealias NameContext = LscParser.NameContext

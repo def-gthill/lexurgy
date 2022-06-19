@@ -443,15 +443,15 @@ public interface LscVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitFeatureValue(LscParser.FeatureValueContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link LscParser#name}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitName(LscParser.NameContext ctx);
-	/**
 	 * Visit a parse tree produced by {@link LscParser#text}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitText(LscParser.TextContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link LscParser#name}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitName(LscParser.NameContext ctx);
 }
