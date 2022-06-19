@@ -1,5 +1,6 @@
 package com.meamoria.lexurgy.sc
 
+import com.meamoria.lexurgy.normalizeCompose
 import com.meamoria.mpp.kotest.StringSpec
 import com.meamoria.mpp.kotest.shouldBe
 import com.meamoria.mpp.kotest.shouldThrow
@@ -262,6 +263,21 @@ class TestDiacritics : StringSpec({
         ch("tˈewtáj") shouldBe "tˈuwtʃéj"
         ch("tˈájtaj") shouldBe "tˈu̘jtʃej"
         ch("tˈuitui") shouldBe "tˈútú"
+    }
+
+    "Matrix to literal changes should preserve floating diacritics" {
+        val ch = lsc(
+            """
+                Feature +hightone, +long
+                Diacritic ́  (floating) [+hightone]
+                Diacritic ː (floating) [+long]
+                
+                tonogenesis:
+                    [+long] => í / {p, t, k} _
+            """.trimIndent()
+        )
+
+        ch("piːkuː") shouldBe "píːkíː".normalizeCompose()
     }
 
     "Symbol literals with ! after them should force an exact match" {

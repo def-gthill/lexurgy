@@ -198,9 +198,11 @@ class SymbolEmitter(val declarations: Declarations, val text: Word) :
     ): UnboundResult = {
         Phrase(
             original.recoverStructure(
-                if (matcher is SymbolMatcher) {
-                    resultFromSymbolMatcher(matcher, original)
-                } else text
+                when (matcher) {
+                    is SymbolMatcher -> resultFromSymbolMatcher(matcher, original)
+                    is MatrixMatcher -> resultFromMatrixMatcher(original)
+                    else -> text
+                }
             )
         )
     }
@@ -228,6 +230,16 @@ class SymbolEmitter(val declarations: Declarations, val text: Word) :
                     it.withFloatingDiacriticsFrom(originalSegment, excluding = matcherSegment)
                 }
             } else text.segments
+        }
+        return StandardWord(result)
+    }
+
+    private fun resultFromMatrixMatcher(original: Word): Word {
+        val result = with(declarations) {
+            val originalSegment = original.segments.first()
+            text.segments.map {
+                it.withFloatingDiacriticsFrom(originalSegment)
+            }
         }
         return StandardWord(result)
     }
