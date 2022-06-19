@@ -158,7 +158,14 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     }
 
     private fun ChangeRuleContext.isCleanupOffRule(): Boolean =
-        block().getText().trim().lowercase() == "off"
+        block()
+            .allBlockElements()
+            .singleOrNull()
+            ?.expressionList()
+            ?.allExpressions()
+            ?.singleOrNull()
+            ?.keywordExpression()
+            ?.OFF() != null
 
     private class UnlinkedCleanupOffStep(
         text: String,
@@ -431,7 +438,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                 visit(ctx.to()!!),
                 optionalVisit(ctx.compoundEnvironment()),
             )
-        } else if (ctx.getText().lowercase() == "unchanged") {
+        } else if (ctx.keywordExpression()?.UNCHANGED() != null) {
             walkDoNothingExpression()
         } else {
             throw LscNotParsable(

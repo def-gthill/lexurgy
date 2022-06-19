@@ -41,7 +41,7 @@ expressionList: expression (NEWLINE+ expression)*;
 ruleName: name (HYPHEN (name | NUMBER))*;
 
 expression: keywordExpression | (from CHANGE to compoundEnvironment?);
-keywordExpression: NAME;
+keywordExpression: UNCHANGED | OFF;
 from: ruleElement;
 to: unconditionalRuleElement;
 
@@ -162,6 +162,8 @@ LTR: 'LTR' | 'Ltr' | 'ltr';
 RTL: 'RTL' | 'Rtl' | 'rtl';
 PROPAGATE: 'Propagate' | 'propagate';
 CLEANUP: 'Cleanup' | 'cleanup';
+UNCHANGED: 'Unchanged' | 'unchanged';
+OFF: 'Off' | 'off';
 NUMBER: DIGIT+;
 NAME: CHAR+;
 STR1: ANY;

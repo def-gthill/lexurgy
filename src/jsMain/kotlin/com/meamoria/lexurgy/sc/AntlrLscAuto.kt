@@ -288,7 +288,8 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     }
 
     class KeywordExpressionContext : ParserRuleContext {
-        fun NAME(): TerminalNode
+        fun UNCHANGED(): TerminalNode?
+        fun OFF(): TerminalNode?
     }
 
     class FromContext : ParserRuleContext {

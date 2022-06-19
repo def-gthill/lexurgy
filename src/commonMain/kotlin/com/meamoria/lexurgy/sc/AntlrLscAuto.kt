@@ -378,7 +378,8 @@ expect class ExpressionContext : ParserRuleContext {
 
 
 expect class KeywordExpressionContext : ParserRuleContext {
-    fun NAME(): TerminalNode
+    fun UNCHANGED(): TerminalNode?
+    fun OFF(): TerminalNode?
 }
 
 
