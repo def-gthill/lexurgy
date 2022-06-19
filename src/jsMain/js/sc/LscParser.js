@@ -492,7 +492,8 @@ var literalNames = [ null, null, null, null, null, null, "'_'", null, null,
                      "'('", "')'", "'*'", "'['", "']'", "'{'", "'}'", "'+'", 
                      "'?'", "'-'", "':'", "'~'", "'!'", "'.'", "'$'", "'$$'", 
                      "'@'", "'&'", "'&!'", "'>'", null, null, null, null, 
-                     null, null, null, null, null, "'explicit'", "'clear'" ];
+                     null, null, null, null, "'Syllables'", "'explicit'", 
+                     "'clear'" ];
 
 var symbolicNames = [ null, "COMMENT", "SEP", "CHANGE", "CONDITION", "EXCLUSION", 
                       "ANCHOR", "NEWLINE", "WHITESPACE", "O_PAREN", "C_PAREN", 

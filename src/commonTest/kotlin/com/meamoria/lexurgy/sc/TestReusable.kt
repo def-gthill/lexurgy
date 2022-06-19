@@ -133,7 +133,7 @@ class TestReusable : StringSpec({
                 rule-2:
                     e => i
                 
-                syllables:
+                Syllables:
                     clear
             """.trimIndent()
         )
@@ -157,7 +157,7 @@ class TestReusable : StringSpec({
                 rule-2:
                     e => i
                 
-                syllables:
+                Syllables:
                     clear
             """.trimIndent()
         )
