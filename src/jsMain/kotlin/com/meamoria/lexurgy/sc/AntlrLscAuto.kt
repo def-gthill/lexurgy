@@ -261,7 +261,11 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     }
 
     class KeywordModifierContext : ParserRuleContext {
-        fun NAME(): TerminalNode
+        fun LTR(): TerminalNode?
+        fun RTL(): TerminalNode?
+        fun PROPAGATE(): TerminalNode?
+        fun CLEANUP(): TerminalNode?
+        fun NAME(): TerminalNode?
     }
 
     class ExpressionListContext : ParserRuleContext {
@@ -560,6 +564,10 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
         fun LITERAL(): TerminalNode?
         fun ALL_MATCHING(): TerminalNode?
         fun FIRST_MATCHING(): TerminalNode?
+        fun LTR(): TerminalNode?
+        fun RTL(): TerminalNode?
+        fun PROPAGATE(): TerminalNode?
+        fun CLEANUP(): TerminalNode?
     }
 }
 

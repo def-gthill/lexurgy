@@ -36,7 +36,7 @@ block: blockElement (NEWLINE+ blockType RULE_START (WHITESPACE | NEWLINE+) block
 blockElement: expressionList | O_PAREN NEWLINE* block NEWLINE* C_PAREN;
 blockType: (ALL_MATCHING | FIRST_MATCHING) (WHITESPACE changeRuleModifier)*;
 changeRuleModifier: filter | keywordModifier;
-keywordModifier: NAME;
+keywordModifier: LTR | RTL | PROPAGATE | CLEANUP | NAME;
 expressionList: expression (NEWLINE+ expression)*;
 ruleName: name (HYPHEN (name | NUMBER))*;
 
@@ -110,7 +110,8 @@ name:
     CLASS_DECL | FEATURE_DECL | DIACRITIC_DECL | SYMBOL_DECL |
     SYLLABLE_DECL | CLEAR_SYLLABLES | EXPLICIT_SYLLABLES |
     DEROMANIZER | ROMANIZER | LITERAL |
-    ALL_MATCHING | FIRST_MATCHING;
+    ALL_MATCHING | FIRST_MATCHING |
+    LTR | RTL | PROPAGATE | CLEANUP;
 
 COMMENT: (WHITESPACE? COMMENT_START ~[\n\r]*) -> skip;
 SEP: ',' WHITESPACE?;
@@ -157,6 +158,10 @@ ROMANIZER: 'Romanizer' | 'romanizer';
 ALL_MATCHING: 'Then' | 'then';
 FIRST_MATCHING: 'Else' | 'else';
 LITERAL: 'Literal' | 'literal';
+LTR: 'LTR' | 'Ltr' | 'ltr';
+RTL: 'RTL' | 'Rtl' | 'rtl';
+PROPAGATE: 'Propagate' | 'propagate';
+CLEANUP: 'Cleanup' | 'cleanup';
 NUMBER: DIGIT+;
 NAME: CHAR+;
 STR1: ANY;
