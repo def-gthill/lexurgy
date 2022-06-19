@@ -702,6 +702,8 @@ expect class NameContext : ParserRuleContext {
     fun RTL(): TerminalNode?
     fun PROPAGATE(): TerminalNode?
     fun CLEANUP(): TerminalNode?
+    fun OFF(): TerminalNode?
+    fun UNCHANGED(): TerminalNode?
 }
 
 

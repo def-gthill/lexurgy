@@ -569,6 +569,8 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
         fun RTL(): TerminalNode?
         fun PROPAGATE(): TerminalNode?
         fun CLEANUP(): TerminalNode?
+        fun OFF(): TerminalNode?
+        fun UNCHANGED(): TerminalNode?
     }
 }
 

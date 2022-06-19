@@ -200,6 +200,8 @@ public class LscParser extends Parser {
 			case RTL:
 			case PROPAGATE:
 			case CLEANUP:
+			case UNCHANGED:
+			case OFF:
 			case NAME:
 				enterOuterAlt(_localctx, 2);
 				{
@@ -222,7 +224,7 @@ public class LscParser extends Parser {
 				setState(156);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-				if ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << CLASS_DECL) | (1L << FEATURE_DECL) | (1L << DIACRITIC_DECL) | (1L << SYMBOL_DECL) | (1L << SYLLABLE_DECL) | (1L << EXPLICIT_SYLLABLES) | (1L << CLEAR_SYLLABLES) | (1L << DEROMANIZER) | (1L << ROMANIZER) | (1L << ALL_MATCHING) | (1L << FIRST_MATCHING) | (1L << LITERAL) | (1L << LTR) | (1L << RTL) | (1L << PROPAGATE) | (1L << CLEANUP) | (1L << NAME))) != 0)) {
+				if ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << CLASS_DECL) | (1L << FEATURE_DECL) | (1L << DIACRITIC_DECL) | (1L << SYMBOL_DECL) | (1L << SYLLABLE_DECL) | (1L << EXPLICIT_SYLLABLES) | (1L << CLEAR_SYLLABLES) | (1L << DEROMANIZER) | (1L << ROMANIZER) | (1L << ALL_MATCHING) | (1L << FIRST_MATCHING) | (1L << LITERAL) | (1L << LTR) | (1L << RTL) | (1L << PROPAGATE) | (1L << CLEANUP) | (1L << UNCHANGED) | (1L << OFF) | (1L << NAME))) != 0)) {
 					{
 					setState(155);
 					statement();
@@ -544,6 +546,8 @@ public class LscParser extends Parser {
 			case RTL:
 			case PROPAGATE:
 			case CLEANUP:
+			case UNCHANGED:
+			case OFF:
 			case NAME:
 			case STR1:
 			case STR:
@@ -2227,6 +2231,8 @@ public class LscParser extends Parser {
 				case RTL:
 				case PROPAGATE:
 				case CLEANUP:
+				case UNCHANGED:
+				case OFF:
 				case NAME:
 					{
 					setState(459);
@@ -2293,45 +2299,15 @@ public class LscParser extends Parser {
 		try {
 			setState(475);
 			_errHandler.sync(this);
-			switch (_input.LA(1)) {
-			case UNCHANGED:
-			case OFF:
+			switch ( getInterpreter().adaptivePredict(_input,51,_ctx) ) {
+			case 1:
 				enterOuterAlt(_localctx, 1);
 				{
 				setState(468);
 				keywordExpression();
 				}
 				break;
-			case O_PAREN:
-			case NULL:
-			case MATRIX_START:
-			case LIST_START:
-			case INEXACT:
-			case NEGATION:
-			case SYLLABLE_BOUNDARY:
-			case WORD_BOUNDARY:
-			case BETWEEN_WORDS:
-			case CLASSREF:
-			case CLASS_DECL:
-			case FEATURE_DECL:
-			case DIACRITIC_DECL:
-			case SYMBOL_DECL:
-			case SYLLABLE_DECL:
-			case EXPLICIT_SYLLABLES:
-			case CLEAR_SYLLABLES:
-			case ANY_SYLLABLE:
-			case DEROMANIZER:
-			case ROMANIZER:
-			case ALL_MATCHING:
-			case FIRST_MATCHING:
-			case LITERAL:
-			case LTR:
-			case RTL:
-			case PROPAGATE:
-			case CLEANUP:
-			case NAME:
-			case STR1:
-			case STR:
+			case 2:
 				enterOuterAlt(_localctx, 2);
 				{
 				{
@@ -2354,8 +2330,6 @@ public class LscParser extends Parser {
 				}
 				}
 				break;
-			default:
-				throw new NoViableAltException(this);
 			}
 		}
 		catch (RecognitionException re) {
@@ -3215,7 +3189,7 @@ public class LscParser extends Parser {
 				setState(559);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-				if ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << O_PAREN) | (1L << NULL) | (1L << MATRIX_START) | (1L << LIST_START) | (1L << INEXACT) | (1L << NEGATION) | (1L << SYLLABLE_BOUNDARY) | (1L << WORD_BOUNDARY) | (1L << BETWEEN_WORDS) | (1L << CLASSREF) | (1L << CLASS_DECL) | (1L << FEATURE_DECL) | (1L << DIACRITIC_DECL) | (1L << SYMBOL_DECL) | (1L << SYLLABLE_DECL) | (1L << EXPLICIT_SYLLABLES) | (1L << CLEAR_SYLLABLES) | (1L << ANY_SYLLABLE) | (1L << DEROMANIZER) | (1L << ROMANIZER) | (1L << ALL_MATCHING) | (1L << FIRST_MATCHING) | (1L << LITERAL) | (1L << LTR) | (1L << RTL) | (1L << PROPAGATE) | (1L << CLEANUP) | (1L << NAME) | (1L << STR1) | (1L << STR))) != 0)) {
+				if ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << O_PAREN) | (1L << NULL) | (1L << MATRIX_START) | (1L << LIST_START) | (1L << INEXACT) | (1L << NEGATION) | (1L << SYLLABLE_BOUNDARY) | (1L << WORD_BOUNDARY) | (1L << BETWEEN_WORDS) | (1L << CLASSREF) | (1L << CLASS_DECL) | (1L << FEATURE_DECL) | (1L << DIACRITIC_DECL) | (1L << SYMBOL_DECL) | (1L << SYLLABLE_DECL) | (1L << EXPLICIT_SYLLABLES) | (1L << CLEAR_SYLLABLES) | (1L << ANY_SYLLABLE) | (1L << DEROMANIZER) | (1L << ROMANIZER) | (1L << ALL_MATCHING) | (1L << FIRST_MATCHING) | (1L << LITERAL) | (1L << LTR) | (1L << RTL) | (1L << PROPAGATE) | (1L << CLEANUP) | (1L << UNCHANGED) | (1L << OFF) | (1L << NAME) | (1L << STR1) | (1L << STR))) != 0)) {
 					{
 					setState(556);
 					environmentBefore();
@@ -3246,7 +3220,7 @@ public class LscParser extends Parser {
 				setState(567);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-				if ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << O_PAREN) | (1L << NULL) | (1L << MATRIX_START) | (1L << LIST_START) | (1L << INEXACT) | (1L << NEGATION) | (1L << SYLLABLE_BOUNDARY) | (1L << WORD_BOUNDARY) | (1L << BETWEEN_WORDS) | (1L << CLASSREF) | (1L << CLASS_DECL) | (1L << FEATURE_DECL) | (1L << DIACRITIC_DECL) | (1L << SYMBOL_DECL) | (1L << SYLLABLE_DECL) | (1L << EXPLICIT_SYLLABLES) | (1L << CLEAR_SYLLABLES) | (1L << ANY_SYLLABLE) | (1L << DEROMANIZER) | (1L << ROMANIZER) | (1L << ALL_MATCHING) | (1L << FIRST_MATCHING) | (1L << LITERAL) | (1L << LTR) | (1L << RTL) | (1L << PROPAGATE) | (1L << CLEANUP) | (1L << NAME) | (1L << STR1) | (1L << STR))) != 0)) {
+				if ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << O_PAREN) | (1L << NULL) | (1L << MATRIX_START) | (1L << LIST_START) | (1L << INEXACT) | (1L << NEGATION) | (1L << SYLLABLE_BOUNDARY) | (1L << WORD_BOUNDARY) | (1L << BETWEEN_WORDS) | (1L << CLASSREF) | (1L << CLASS_DECL) | (1L << FEATURE_DECL) | (1L << DIACRITIC_DECL) | (1L << SYMBOL_DECL) | (1L << SYLLABLE_DECL) | (1L << EXPLICIT_SYLLABLES) | (1L << CLEAR_SYLLABLES) | (1L << ANY_SYLLABLE) | (1L << DEROMANIZER) | (1L << ROMANIZER) | (1L << ALL_MATCHING) | (1L << FIRST_MATCHING) | (1L << LITERAL) | (1L << LTR) | (1L << RTL) | (1L << PROPAGATE) | (1L << CLEANUP) | (1L << UNCHANGED) | (1L << OFF) | (1L << NAME) | (1L << STR1) | (1L << STR))) != 0)) {
 					{
 					setState(566);
 					environmentBefore();
@@ -3680,6 +3654,8 @@ public class LscParser extends Parser {
 			case RTL:
 			case PROPAGATE:
 			case CLEANUP:
+			case UNCHANGED:
+			case OFF:
 			case NAME:
 			case STR1:
 			case STR:
@@ -3767,6 +3743,8 @@ public class LscParser extends Parser {
 			case RTL:
 			case PROPAGATE:
 			case CLEANUP:
+			case UNCHANGED:
+			case OFF:
 			case NAME:
 			case STR1:
 			case STR:
@@ -4073,7 +4051,7 @@ public class LscParser extends Parser {
 			setState(635);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			if ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << NULL) | (1L << AT_LEAST_ONE) | (1L << HYPHEN) | (1L << NEGATION) | (1L << WORD_BOUNDARY) | (1L << CLASS_DECL) | (1L << FEATURE_DECL) | (1L << DIACRITIC_DECL) | (1L << SYMBOL_DECL) | (1L << SYLLABLE_DECL) | (1L << EXPLICIT_SYLLABLES) | (1L << CLEAR_SYLLABLES) | (1L << DEROMANIZER) | (1L << ROMANIZER) | (1L << ALL_MATCHING) | (1L << FIRST_MATCHING) | (1L << LITERAL) | (1L << LTR) | (1L << RTL) | (1L << PROPAGATE) | (1L << CLEANUP) | (1L << NAME))) != 0)) {
+			if ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << NULL) | (1L << AT_LEAST_ONE) | (1L << HYPHEN) | (1L << NEGATION) | (1L << WORD_BOUNDARY) | (1L << CLASS_DECL) | (1L << FEATURE_DECL) | (1L << DIACRITIC_DECL) | (1L << SYMBOL_DECL) | (1L << SYLLABLE_DECL) | (1L << EXPLICIT_SYLLABLES) | (1L << CLEAR_SYLLABLES) | (1L << DEROMANIZER) | (1L << ROMANIZER) | (1L << ALL_MATCHING) | (1L << FIRST_MATCHING) | (1L << LITERAL) | (1L << LTR) | (1L << RTL) | (1L << PROPAGATE) | (1L << CLEANUP) | (1L << UNCHANGED) | (1L << OFF) | (1L << NAME))) != 0)) {
 				{
 				setState(634);
 				fancyValue();
@@ -4160,6 +4138,8 @@ public class LscParser extends Parser {
 			case RTL:
 			case PROPAGATE:
 			case CLEANUP:
+			case UNCHANGED:
+			case OFF:
 			case NAME:
 				enterOuterAlt(_localctx, 1);
 				{
@@ -4715,7 +4695,7 @@ public class LscParser extends Parser {
 			setState(694);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			if ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << AT_LEAST_ONE) | (1L << HYPHEN) | (1L << CLASS_DECL) | (1L << FEATURE_DECL) | (1L << DIACRITIC_DECL) | (1L << SYMBOL_DECL) | (1L << SYLLABLE_DECL) | (1L << EXPLICIT_SYLLABLES) | (1L << CLEAR_SYLLABLES) | (1L << DEROMANIZER) | (1L << ROMANIZER) | (1L << ALL_MATCHING) | (1L << FIRST_MATCHING) | (1L << LITERAL) | (1L << LTR) | (1L << RTL) | (1L << PROPAGATE) | (1L << CLEANUP) | (1L << NAME))) != 0)) {
+			if ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << AT_LEAST_ONE) | (1L << HYPHEN) | (1L << CLASS_DECL) | (1L << FEATURE_DECL) | (1L << DIACRITIC_DECL) | (1L << SYMBOL_DECL) | (1L << SYLLABLE_DECL) | (1L << EXPLICIT_SYLLABLES) | (1L << CLEAR_SYLLABLES) | (1L << DEROMANIZER) | (1L << ROMANIZER) | (1L << ALL_MATCHING) | (1L << FIRST_MATCHING) | (1L << LITERAL) | (1L << LTR) | (1L << RTL) | (1L << PROPAGATE) | (1L << CLEANUP) | (1L << UNCHANGED) | (1L << OFF) | (1L << NAME))) != 0)) {
 				{
 				setState(693);
 				matrixValue();
@@ -4802,6 +4782,8 @@ public class LscParser extends Parser {
 			case RTL:
 			case PROPAGATE:
 			case CLEANUP:
+			case UNCHANGED:
+			case OFF:
 			case NAME:
 				enterOuterAlt(_localctx, 2);
 				{
@@ -4953,6 +4935,8 @@ public class LscParser extends Parser {
 			case RTL:
 			case PROPAGATE:
 			case CLEANUP:
+			case UNCHANGED:
+			case OFF:
 			case NAME:
 				{
 				setState(714);
@@ -5015,6 +4999,8 @@ public class LscParser extends Parser {
 		public TerminalNode RTL() { return getToken(LscParser.RTL, 0); }
 		public TerminalNode PROPAGATE() { return getToken(LscParser.PROPAGATE, 0); }
 		public TerminalNode CLEANUP() { return getToken(LscParser.CLEANUP, 0); }
+		public TerminalNode OFF() { return getToken(LscParser.OFF, 0); }
+		public TerminalNode UNCHANGED() { return getToken(LscParser.UNCHANGED, 0); }
 		public NameContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -5035,7 +5021,7 @@ public class LscParser extends Parser {
 			{
 			setState(722);
 			_la = _input.LA(1);
-			if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << CLASS_DECL) | (1L << FEATURE_DECL) | (1L << DIACRITIC_DECL) | (1L << SYMBOL_DECL) | (1L << SYLLABLE_DECL) | (1L << EXPLICIT_SYLLABLES) | (1L << CLEAR_SYLLABLES) | (1L << DEROMANIZER) | (1L << ROMANIZER) | (1L << ALL_MATCHING) | (1L << FIRST_MATCHING) | (1L << LITERAL) | (1L << LTR) | (1L << RTL) | (1L << PROPAGATE) | (1L << CLEANUP) | (1L << NAME))) != 0)) ) {
+			if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << CLASS_DECL) | (1L << FEATURE_DECL) | (1L << DIACRITIC_DECL) | (1L << SYMBOL_DECL) | (1L << SYLLABLE_DECL) | (1L << EXPLICIT_SYLLABLES) | (1L << CLEAR_SYLLABLES) | (1L << DEROMANIZER) | (1L << ROMANIZER) | (1L << ALL_MATCHING) | (1L << FIRST_MATCHING) | (1L << LITERAL) | (1L << LTR) | (1L << RTL) | (1L << PROPAGATE) | (1L << CLEANUP) | (1L << UNCHANGED) | (1L << OFF) | (1L << NAME))) != 0)) ) {
 			_errHandler.recoverInline(this);
 			}
 			else {
@@ -5114,7 +5100,7 @@ public class LscParser extends Parser {
 		"\32\34\36 \"$&(*,.\60\62\64\668:<>@BDFHJLNPRTVXZ\\^`bdfhjlnprtvxz|~\u0080"+
 		"\u0082\u0084\u0086\u0088\u008a\u008c\u008e\u0090\u0092\u0094\2\n\3\2#"+
 		"%\3\2()\3\2-.\4\2\60\63\67\67\3\2\64\65\3\2\34\36\4\2\22\22\24\24\7\2"+
-		"\37 \"\"&)+\63\67\67\2\u02ff\2\u00b2\3\2\2\2\4\u00bd\3\2\2\2\6\u00bf\3"+
+		"\37 \"\"&)+\65\67\67\2\u02ff\2\u00b2\3\2\2\2\4\u00bd\3\2\2\2\6\u00bf\3"+
 		"\2\2\2\b\u00d0\3\2\2\2\n\u00d2\3\2\2\2\f\u00f7\3\2\2\2\16\u00fc\3\2\2"+
 		"\2\20\u0103\3\2\2\2\22\u0106\3\2\2\2\24\u011a\3\2\2\2\26\u011c\3\2\2\2"+
 		"\30\u012a\3\2\2\2\32\u012c\3\2\2\2\34\u0140\3\2\2\2\36\u0148\3\2\2\2 "+

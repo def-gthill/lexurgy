@@ -110,7 +110,7 @@ var serializedATN = ["\u0003\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964",
     "\u0086\u0088\u008a\u008c\u008e\u0090\u0092\u0094\u0002\n\u0003\u0002",
     "#%\u0003\u0002()\u0003\u0002-.\u0004\u00020377\u0003\u000245\u0003\u0002",
     "\u001c\u001e\u0004\u0002\u0012\u0012\u0014\u0014\u0007\u0002\u001f ",
-    "\"\"&)+377\u0002\u02ff\u0002\u00b2\u0003\u0002\u0002\u0002\u0004\u00bd",
+    "\"\"&)+577\u0002\u02ff\u0002\u00b2\u0003\u0002\u0002\u0002\u0004\u00bd",
     "\u0003\u0002\u0002\u0002\u0006\u00bf\u0003\u0002\u0002\u0002\b\u00d0",
     "\u0003\u0002\u0002\u0002\n\u00d2\u0003\u0002\u0002\u0002\f\u00f7\u0003",
     "\u0002\u0002\u0002\u000e\u00fc\u0003\u0002\u0002\u0002\u0010\u0103\u0003",
@@ -776,6 +776,8 @@ LscParser.prototype.lscFile = function() {
         case LscParser.RTL:
         case LscParser.PROPAGATE:
         case LscParser.CLEANUP:
+        case LscParser.UNCHANGED:
+        case LscParser.OFF:
         case LscParser.NAME:
             this.enterOuterAlt(localctx, 2);
             this.state = 152;
@@ -794,7 +796,7 @@ LscParser.prototype.lscFile = function() {
             this.state = 156;
             this._errHandler.sync(this);
             _la = this._input.LA(1);
-            if(((((_la - 29)) & ~0x1f) == 0 && ((1 << (_la - 29)) & ((1 << (LscParser.CLASS_DECL - 29)) | (1 << (LscParser.FEATURE_DECL - 29)) | (1 << (LscParser.DIACRITIC_DECL - 29)) | (1 << (LscParser.SYMBOL_DECL - 29)) | (1 << (LscParser.SYLLABLE_DECL - 29)) | (1 << (LscParser.EXPLICIT_SYLLABLES - 29)) | (1 << (LscParser.CLEAR_SYLLABLES - 29)) | (1 << (LscParser.DEROMANIZER - 29)) | (1 << (LscParser.ROMANIZER - 29)) | (1 << (LscParser.ALL_MATCHING - 29)) | (1 << (LscParser.FIRST_MATCHING - 29)) | (1 << (LscParser.LITERAL - 29)) | (1 << (LscParser.LTR - 29)) | (1 << (LscParser.RTL - 29)) | (1 << (LscParser.PROPAGATE - 29)) | (1 << (LscParser.CLEANUP - 29)) | (1 << (LscParser.NAME - 29)))) !== 0)) {
+            if(((((_la - 29)) & ~0x1f) == 0 && ((1 << (_la - 29)) & ((1 << (LscParser.CLASS_DECL - 29)) | (1 << (LscParser.FEATURE_DECL - 29)) | (1 << (LscParser.DIACRITIC_DECL - 29)) | (1 << (LscParser.SYMBOL_DECL - 29)) | (1 << (LscParser.SYLLABLE_DECL - 29)) | (1 << (LscParser.EXPLICIT_SYLLABLES - 29)) | (1 << (LscParser.CLEAR_SYLLABLES - 29)) | (1 << (LscParser.DEROMANIZER - 29)) | (1 << (LscParser.ROMANIZER - 29)) | (1 << (LscParser.ALL_MATCHING - 29)) | (1 << (LscParser.FIRST_MATCHING - 29)) | (1 << (LscParser.LITERAL - 29)) | (1 << (LscParser.LTR - 29)) | (1 << (LscParser.RTL - 29)) | (1 << (LscParser.PROPAGATE - 29)) | (1 << (LscParser.CLEANUP - 29)) | (1 << (LscParser.UNCHANGED - 29)) | (1 << (LscParser.OFF - 29)) | (1 << (LscParser.NAME - 29)))) !== 0)) {
                 this.state = 155;
                 this.statement();
             }
@@ -1191,6 +1193,8 @@ LscParser.prototype.classElement = function() {
         case LscParser.RTL:
         case LscParser.PROPAGATE:
         case LscParser.CLEANUP:
+        case LscParser.UNCHANGED:
+        case LscParser.OFF:
         case LscParser.NAME:
         case LscParser.STR1:
         case LscParser.STR:
@@ -3513,6 +3517,8 @@ LscParser.prototype.ruleName = function() {
             case LscParser.RTL:
             case LscParser.PROPAGATE:
             case LscParser.CLEANUP:
+            case LscParser.UNCHANGED:
+            case LscParser.OFF:
             case LscParser.NAME:
                 this.state = 459;
                 this.name();
@@ -3600,43 +3606,15 @@ LscParser.prototype.expression = function() {
     try {
         this.state = 475;
         this._errHandler.sync(this);
-        switch(this._input.LA(1)) {
-        case LscParser.UNCHANGED:
-        case LscParser.OFF:
+        var la_ = this._interp.adaptivePredict(this._input,51,this._ctx);
+        switch(la_) {
+        case 1:
             this.enterOuterAlt(localctx, 1);
             this.state = 468;
             this.keywordExpression();
             break;
-        case LscParser.O_PAREN:
-        case LscParser.NULL:
-        case LscParser.MATRIX_START:
-        case LscParser.LIST_START:
-        case LscParser.INEXACT:
-        case LscParser.NEGATION:
-        case LscParser.SYLLABLE_BOUNDARY:
-        case LscParser.WORD_BOUNDARY:
-        case LscParser.BETWEEN_WORDS:
-        case LscParser.CLASSREF:
-        case LscParser.CLASS_DECL:
-        case LscParser.FEATURE_DECL:
-        case LscParser.DIACRITIC_DECL:
-        case LscParser.SYMBOL_DECL:
-        case LscParser.SYLLABLE_DECL:
-        case LscParser.EXPLICIT_SYLLABLES:
-        case LscParser.CLEAR_SYLLABLES:
-        case LscParser.ANY_SYLLABLE:
-        case LscParser.DEROMANIZER:
-        case LscParser.ROMANIZER:
-        case LscParser.ALL_MATCHING:
-        case LscParser.FIRST_MATCHING:
-        case LscParser.LITERAL:
-        case LscParser.LTR:
-        case LscParser.RTL:
-        case LscParser.PROPAGATE:
-        case LscParser.CLEANUP:
-        case LscParser.NAME:
-        case LscParser.STR1:
-        case LscParser.STR:
+
+        case 2:
             this.enterOuterAlt(localctx, 2);
             this.state = 469;
             this.from();
@@ -3653,8 +3631,7 @@ LscParser.prototype.expression = function() {
             }
 
             break;
-        default:
-            throw new antlr4.error.NoViableAltException(this);
+
         }
     } catch (re) {
     	if(re instanceof antlr4.error.RecognitionException) {
@@ -4880,7 +4857,7 @@ LscParser.prototype.environment = function() {
             this.state = 559;
             this._errHandler.sync(this);
             _la = this._input.LA(1);
-            if((((_la) & ~0x1f) == 0 && ((1 << _la) & ((1 << LscParser.O_PAREN) | (1 << LscParser.NULL) | (1 << LscParser.MATRIX_START) | (1 << LscParser.LIST_START) | (1 << LscParser.INEXACT) | (1 << LscParser.NEGATION) | (1 << LscParser.SYLLABLE_BOUNDARY) | (1 << LscParser.WORD_BOUNDARY) | (1 << LscParser.BETWEEN_WORDS) | (1 << LscParser.CLASSREF) | (1 << LscParser.CLASS_DECL) | (1 << LscParser.FEATURE_DECL))) !== 0) || ((((_la - 32)) & ~0x1f) == 0 && ((1 << (_la - 32)) & ((1 << (LscParser.DIACRITIC_DECL - 32)) | (1 << (LscParser.SYMBOL_DECL - 32)) | (1 << (LscParser.SYLLABLE_DECL - 32)) | (1 << (LscParser.EXPLICIT_SYLLABLES - 32)) | (1 << (LscParser.CLEAR_SYLLABLES - 32)) | (1 << (LscParser.ANY_SYLLABLE - 32)) | (1 << (LscParser.DEROMANIZER - 32)) | (1 << (LscParser.ROMANIZER - 32)) | (1 << (LscParser.ALL_MATCHING - 32)) | (1 << (LscParser.FIRST_MATCHING - 32)) | (1 << (LscParser.LITERAL - 32)) | (1 << (LscParser.LTR - 32)) | (1 << (LscParser.RTL - 32)) | (1 << (LscParser.PROPAGATE - 32)) | (1 << (LscParser.CLEANUP - 32)) | (1 << (LscParser.NAME - 32)) | (1 << (LscParser.STR1 - 32)) | (1 << (LscParser.STR - 32)))) !== 0)) {
+            if((((_la) & ~0x1f) == 0 && ((1 << _la) & ((1 << LscParser.O_PAREN) | (1 << LscParser.NULL) | (1 << LscParser.MATRIX_START) | (1 << LscParser.LIST_START) | (1 << LscParser.INEXACT) | (1 << LscParser.NEGATION) | (1 << LscParser.SYLLABLE_BOUNDARY) | (1 << LscParser.WORD_BOUNDARY) | (1 << LscParser.BETWEEN_WORDS) | (1 << LscParser.CLASSREF) | (1 << LscParser.CLASS_DECL) | (1 << LscParser.FEATURE_DECL))) !== 0) || ((((_la - 32)) & ~0x1f) == 0 && ((1 << (_la - 32)) & ((1 << (LscParser.DIACRITIC_DECL - 32)) | (1 << (LscParser.SYMBOL_DECL - 32)) | (1 << (LscParser.SYLLABLE_DECL - 32)) | (1 << (LscParser.EXPLICIT_SYLLABLES - 32)) | (1 << (LscParser.CLEAR_SYLLABLES - 32)) | (1 << (LscParser.ANY_SYLLABLE - 32)) | (1 << (LscParser.DEROMANIZER - 32)) | (1 << (LscParser.ROMANIZER - 32)) | (1 << (LscParser.ALL_MATCHING - 32)) | (1 << (LscParser.FIRST_MATCHING - 32)) | (1 << (LscParser.LITERAL - 32)) | (1 << (LscParser.LTR - 32)) | (1 << (LscParser.RTL - 32)) | (1 << (LscParser.PROPAGATE - 32)) | (1 << (LscParser.CLEANUP - 32)) | (1 << (LscParser.UNCHANGED - 32)) | (1 << (LscParser.OFF - 32)) | (1 << (LscParser.NAME - 32)) | (1 << (LscParser.STR1 - 32)) | (1 << (LscParser.STR - 32)))) !== 0)) {
                 this.state = 556;
                 this.environmentBefore();
                 this.state = 557;
@@ -4906,7 +4883,7 @@ LscParser.prototype.environment = function() {
             this.state = 567;
             this._errHandler.sync(this);
             _la = this._input.LA(1);
-            if((((_la) & ~0x1f) == 0 && ((1 << _la) & ((1 << LscParser.O_PAREN) | (1 << LscParser.NULL) | (1 << LscParser.MATRIX_START) | (1 << LscParser.LIST_START) | (1 << LscParser.INEXACT) | (1 << LscParser.NEGATION) | (1 << LscParser.SYLLABLE_BOUNDARY) | (1 << LscParser.WORD_BOUNDARY) | (1 << LscParser.BETWEEN_WORDS) | (1 << LscParser.CLASSREF) | (1 << LscParser.CLASS_DECL) | (1 << LscParser.FEATURE_DECL))) !== 0) || ((((_la - 32)) & ~0x1f) == 0 && ((1 << (_la - 32)) & ((1 << (LscParser.DIACRITIC_DECL - 32)) | (1 << (LscParser.SYMBOL_DECL - 32)) | (1 << (LscParser.SYLLABLE_DECL - 32)) | (1 << (LscParser.EXPLICIT_SYLLABLES - 32)) | (1 << (LscParser.CLEAR_SYLLABLES - 32)) | (1 << (LscParser.ANY_SYLLABLE - 32)) | (1 << (LscParser.DEROMANIZER - 32)) | (1 << (LscParser.ROMANIZER - 32)) | (1 << (LscParser.ALL_MATCHING - 32)) | (1 << (LscParser.FIRST_MATCHING - 32)) | (1 << (LscParser.LITERAL - 32)) | (1 << (LscParser.LTR - 32)) | (1 << (LscParser.RTL - 32)) | (1 << (LscParser.PROPAGATE - 32)) | (1 << (LscParser.CLEANUP - 32)) | (1 << (LscParser.NAME - 32)) | (1 << (LscParser.STR1 - 32)) | (1 << (LscParser.STR - 32)))) !== 0)) {
+            if((((_la) & ~0x1f) == 0 && ((1 << _la) & ((1 << LscParser.O_PAREN) | (1 << LscParser.NULL) | (1 << LscParser.MATRIX_START) | (1 << LscParser.LIST_START) | (1 << LscParser.INEXACT) | (1 << LscParser.NEGATION) | (1 << LscParser.SYLLABLE_BOUNDARY) | (1 << LscParser.WORD_BOUNDARY) | (1 << LscParser.BETWEEN_WORDS) | (1 << LscParser.CLASSREF) | (1 << LscParser.CLASS_DECL) | (1 << LscParser.FEATURE_DECL))) !== 0) || ((((_la - 32)) & ~0x1f) == 0 && ((1 << (_la - 32)) & ((1 << (LscParser.DIACRITIC_DECL - 32)) | (1 << (LscParser.SYMBOL_DECL - 32)) | (1 << (LscParser.SYLLABLE_DECL - 32)) | (1 << (LscParser.EXPLICIT_SYLLABLES - 32)) | (1 << (LscParser.CLEAR_SYLLABLES - 32)) | (1 << (LscParser.ANY_SYLLABLE - 32)) | (1 << (LscParser.DEROMANIZER - 32)) | (1 << (LscParser.ROMANIZER - 32)) | (1 << (LscParser.ALL_MATCHING - 32)) | (1 << (LscParser.FIRST_MATCHING - 32)) | (1 << (LscParser.LITERAL - 32)) | (1 << (LscParser.LTR - 32)) | (1 << (LscParser.RTL - 32)) | (1 << (LscParser.PROPAGATE - 32)) | (1 << (LscParser.CLEANUP - 32)) | (1 << (LscParser.UNCHANGED - 32)) | (1 << (LscParser.OFF - 32)) | (1 << (LscParser.NAME - 32)) | (1 << (LscParser.STR1 - 32)) | (1 << (LscParser.STR - 32)))) !== 0)) {
                 this.state = 566;
                 this.environmentBefore();
             }
@@ -5517,6 +5494,8 @@ LscParser.prototype.capture = function() {
         case LscParser.RTL:
         case LscParser.PROPAGATE:
         case LscParser.CLEANUP:
+        case LscParser.UNCHANGED:
+        case LscParser.OFF:
         case LscParser.NAME:
         case LscParser.STR1:
         case LscParser.STR:
@@ -5622,6 +5601,8 @@ LscParser.prototype.repeater = function() {
         case LscParser.RTL:
         case LscParser.PROPAGATE:
         case LscParser.CLEANUP:
+        case LscParser.UNCHANGED:
+        case LscParser.OFF:
         case LscParser.NAME:
         case LscParser.STR1:
         case LscParser.STR:
@@ -6057,7 +6038,7 @@ LscParser.prototype.fancyMatrix = function() {
         this.state = 635;
         this._errHandler.sync(this);
         _la = this._input.LA(1);
-        if((((_la) & ~0x1f) == 0 && ((1 << _la) & ((1 << LscParser.NULL) | (1 << LscParser.AT_LEAST_ONE) | (1 << LscParser.HYPHEN) | (1 << LscParser.NEGATION) | (1 << LscParser.WORD_BOUNDARY) | (1 << LscParser.CLASS_DECL) | (1 << LscParser.FEATURE_DECL))) !== 0) || ((((_la - 32)) & ~0x1f) == 0 && ((1 << (_la - 32)) & ((1 << (LscParser.DIACRITIC_DECL - 32)) | (1 << (LscParser.SYMBOL_DECL - 32)) | (1 << (LscParser.SYLLABLE_DECL - 32)) | (1 << (LscParser.EXPLICIT_SYLLABLES - 32)) | (1 << (LscParser.CLEAR_SYLLABLES - 32)) | (1 << (LscParser.DEROMANIZER - 32)) | (1 << (LscParser.ROMANIZER - 32)) | (1 << (LscParser.ALL_MATCHING - 32)) | (1 << (LscParser.FIRST_MATCHING - 32)) | (1 << (LscParser.LITERAL - 32)) | (1 << (LscParser.LTR - 32)) | (1 << (LscParser.RTL - 32)) | (1 << (LscParser.PROPAGATE - 32)) | (1 << (LscParser.CLEANUP - 32)) | (1 << (LscParser.NAME - 32)))) !== 0)) {
+        if((((_la) & ~0x1f) == 0 && ((1 << _la) & ((1 << LscParser.NULL) | (1 << LscParser.AT_LEAST_ONE) | (1 << LscParser.HYPHEN) | (1 << LscParser.NEGATION) | (1 << LscParser.WORD_BOUNDARY) | (1 << LscParser.CLASS_DECL) | (1 << LscParser.FEATURE_DECL))) !== 0) || ((((_la - 32)) & ~0x1f) == 0 && ((1 << (_la - 32)) & ((1 << (LscParser.DIACRITIC_DECL - 32)) | (1 << (LscParser.SYMBOL_DECL - 32)) | (1 << (LscParser.SYLLABLE_DECL - 32)) | (1 << (LscParser.EXPLICIT_SYLLABLES - 32)) | (1 << (LscParser.CLEAR_SYLLABLES - 32)) | (1 << (LscParser.DEROMANIZER - 32)) | (1 << (LscParser.ROMANIZER - 32)) | (1 << (LscParser.ALL_MATCHING - 32)) | (1 << (LscParser.FIRST_MATCHING - 32)) | (1 << (LscParser.LITERAL - 32)) | (1 << (LscParser.LTR - 32)) | (1 << (LscParser.RTL - 32)) | (1 << (LscParser.PROPAGATE - 32)) | (1 << (LscParser.CLEANUP - 32)) | (1 << (LscParser.UNCHANGED - 32)) | (1 << (LscParser.OFF - 32)) | (1 << (LscParser.NAME - 32)))) !== 0)) {
             this.state = 634;
             this.fancyValue();
         }
@@ -6162,6 +6143,8 @@ LscParser.prototype.fancyValue = function() {
         case LscParser.RTL:
         case LscParser.PROPAGATE:
         case LscParser.CLEANUP:
+        case LscParser.UNCHANGED:
+        case LscParser.OFF:
         case LscParser.NAME:
             this.enterOuterAlt(localctx, 1);
             this.state = 646;
@@ -7003,7 +6986,7 @@ LscParser.prototype.matrix = function() {
         this.state = 694;
         this._errHandler.sync(this);
         _la = this._input.LA(1);
-        if((((_la) & ~0x1f) == 0 && ((1 << _la) & ((1 << LscParser.AT_LEAST_ONE) | (1 << LscParser.HYPHEN) | (1 << LscParser.CLASS_DECL) | (1 << LscParser.FEATURE_DECL))) !== 0) || ((((_la - 32)) & ~0x1f) == 0 && ((1 << (_la - 32)) & ((1 << (LscParser.DIACRITIC_DECL - 32)) | (1 << (LscParser.SYMBOL_DECL - 32)) | (1 << (LscParser.SYLLABLE_DECL - 32)) | (1 << (LscParser.EXPLICIT_SYLLABLES - 32)) | (1 << (LscParser.CLEAR_SYLLABLES - 32)) | (1 << (LscParser.DEROMANIZER - 32)) | (1 << (LscParser.ROMANIZER - 32)) | (1 << (LscParser.ALL_MATCHING - 32)) | (1 << (LscParser.FIRST_MATCHING - 32)) | (1 << (LscParser.LITERAL - 32)) | (1 << (LscParser.LTR - 32)) | (1 << (LscParser.RTL - 32)) | (1 << (LscParser.PROPAGATE - 32)) | (1 << (LscParser.CLEANUP - 32)) | (1 << (LscParser.NAME - 32)))) !== 0)) {
+        if((((_la) & ~0x1f) == 0 && ((1 << _la) & ((1 << LscParser.AT_LEAST_ONE) | (1 << LscParser.HYPHEN) | (1 << LscParser.CLASS_DECL) | (1 << LscParser.FEATURE_DECL))) !== 0) || ((((_la - 32)) & ~0x1f) == 0 && ((1 << (_la - 32)) & ((1 << (LscParser.DIACRITIC_DECL - 32)) | (1 << (LscParser.SYMBOL_DECL - 32)) | (1 << (LscParser.SYLLABLE_DECL - 32)) | (1 << (LscParser.EXPLICIT_SYLLABLES - 32)) | (1 << (LscParser.CLEAR_SYLLABLES - 32)) | (1 << (LscParser.DEROMANIZER - 32)) | (1 << (LscParser.ROMANIZER - 32)) | (1 << (LscParser.ALL_MATCHING - 32)) | (1 << (LscParser.FIRST_MATCHING - 32)) | (1 << (LscParser.LITERAL - 32)) | (1 << (LscParser.LTR - 32)) | (1 << (LscParser.RTL - 32)) | (1 << (LscParser.PROPAGATE - 32)) | (1 << (LscParser.CLEANUP - 32)) | (1 << (LscParser.UNCHANGED - 32)) | (1 << (LscParser.OFF - 32)) | (1 << (LscParser.NAME - 32)))) !== 0)) {
             this.state = 693;
             this.matrixValue();
         }
@@ -7104,6 +7087,8 @@ LscParser.prototype.matrixValue = function() {
         case LscParser.RTL:
         case LscParser.PROPAGATE:
         case LscParser.CLEANUP:
+        case LscParser.UNCHANGED:
+        case LscParser.OFF:
         case LscParser.NAME:
             this.enterOuterAlt(localctx, 2);
             this.state = 706;
@@ -7328,6 +7313,8 @@ LscParser.prototype.text = function() {
         case LscParser.RTL:
         case LscParser.PROPAGATE:
         case LscParser.CLEANUP:
+        case LscParser.UNCHANGED:
+        case LscParser.OFF:
         case LscParser.NAME:
             this.state = 714;
             this.name();
@@ -7450,6 +7437,14 @@ NameContext.prototype.CLEANUP = function() {
     return this.getToken(LscParser.CLEANUP, 0);
 };
 
+NameContext.prototype.OFF = function() {
+    return this.getToken(LscParser.OFF, 0);
+};
+
+NameContext.prototype.UNCHANGED = function() {
+    return this.getToken(LscParser.UNCHANGED, 0);
+};
+
 NameContext.prototype.accept = function(visitor) {
     if ( visitor instanceof LscVisitor ) {
         return visitor.visitName(this);
@@ -7472,7 +7467,7 @@ LscParser.prototype.name = function() {
         this.enterOuterAlt(localctx, 1);
         this.state = 722;
         _la = this._input.LA(1);
-        if(!(((((_la - 29)) & ~0x1f) == 0 && ((1 << (_la - 29)) & ((1 << (LscParser.CLASS_DECL - 29)) | (1 << (LscParser.FEATURE_DECL - 29)) | (1 << (LscParser.DIACRITIC_DECL - 29)) | (1 << (LscParser.SYMBOL_DECL - 29)) | (1 << (LscParser.SYLLABLE_DECL - 29)) | (1 << (LscParser.EXPLICIT_SYLLABLES - 29)) | (1 << (LscParser.CLEAR_SYLLABLES - 29)) | (1 << (LscParser.DEROMANIZER - 29)) | (1 << (LscParser.ROMANIZER - 29)) | (1 << (LscParser.ALL_MATCHING - 29)) | (1 << (LscParser.FIRST_MATCHING - 29)) | (1 << (LscParser.LITERAL - 29)) | (1 << (LscParser.LTR - 29)) | (1 << (LscParser.RTL - 29)) | (1 << (LscParser.PROPAGATE - 29)) | (1 << (LscParser.CLEANUP - 29)) | (1 << (LscParser.NAME - 29)))) !== 0))) {
+        if(!(((((_la - 29)) & ~0x1f) == 0 && ((1 << (_la - 29)) & ((1 << (LscParser.CLASS_DECL - 29)) | (1 << (LscParser.FEATURE_DECL - 29)) | (1 << (LscParser.DIACRITIC_DECL - 29)) | (1 << (LscParser.SYMBOL_DECL - 29)) | (1 << (LscParser.SYLLABLE_DECL - 29)) | (1 << (LscParser.EXPLICIT_SYLLABLES - 29)) | (1 << (LscParser.CLEAR_SYLLABLES - 29)) | (1 << (LscParser.DEROMANIZER - 29)) | (1 << (LscParser.ROMANIZER - 29)) | (1 << (LscParser.ALL_MATCHING - 29)) | (1 << (LscParser.FIRST_MATCHING - 29)) | (1 << (LscParser.LITERAL - 29)) | (1 << (LscParser.LTR - 29)) | (1 << (LscParser.RTL - 29)) | (1 << (LscParser.PROPAGATE - 29)) | (1 << (LscParser.CLEANUP - 29)) | (1 << (LscParser.UNCHANGED - 29)) | (1 << (LscParser.OFF - 29)) | (1 << (LscParser.NAME - 29)))) !== 0))) {
         this._errHandler.recoverInline(this);
         }
         else {

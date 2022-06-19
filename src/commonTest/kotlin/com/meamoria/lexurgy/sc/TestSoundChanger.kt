@@ -685,5 +685,14 @@ class TestSoundChanger : StringSpec({
         )
 
         ch6("ifthendo") shouldBe "ifelsedo"
+
+        val ch7 = lsc(
+            """
+                off-unchanged:
+                    off => unchanged
+            """.trimIndent()
+        )
+
+        ch7("coffee") shouldBe "cunchangedee"
     }
 })
