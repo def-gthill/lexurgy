@@ -20,6 +20,8 @@ actual fun LscFileContext.allStatements(): List<StatementContext> = statement()
 
 actual typealias StatementContext = LscParser.StatementContext
 
+actual typealias ElementDeclContext = LscParser.ElementDeclContext
+
 actual typealias ClassDeclContext = LscParser.ClassDeclContext
 
 actual fun ClassDeclContext.allClassElements(): List<ClassElementContext> = classElement()
@@ -156,7 +158,7 @@ actual typealias SimpleContext = LscParser.SimpleContext
 
 actual typealias AnySyllableContext = LscParser.AnySyllableContext
 
-actual typealias ClassRefContext = LscParser.ClassRefContext
+actual typealias ElementRefContext = LscParser.ElementRefContext
 
 actual typealias CaptureRefContext = LscParser.CaptureRefContext
 

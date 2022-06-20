@@ -24,6 +24,12 @@ LscVisitor.prototype.visitStatement = function(ctx) {
 };
 
 
+// Visit a parse tree produced by LscParser#elementDecl.
+LscVisitor.prototype.visitElementDecl = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
 // Visit a parse tree produced by LscParser#classDecl.
 LscVisitor.prototype.visitClassDecl = function(ctx) {
   return this.visitChildren(ctx);
@@ -330,8 +336,8 @@ LscVisitor.prototype.visitAnySyllable = function(ctx) {
 };
 
 
-// Visit a parse tree produced by LscParser#classRef.
-LscVisitor.prototype.visitClassRef = function(ctx) {
+// Visit a parse tree produced by LscParser#elementRef.
+LscVisitor.prototype.visitElementRef = function(ctx) {
   return this.visitChildren(ctx);
 };
 

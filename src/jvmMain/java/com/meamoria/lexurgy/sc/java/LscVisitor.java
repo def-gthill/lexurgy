@@ -23,6 +23,12 @@ public interface LscVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitStatement(LscParser.StatementContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link LscParser#elementDecl}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitElementDecl(LscParser.ElementDeclContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link LscParser#classDecl}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -329,11 +335,11 @@ public interface LscVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitAnySyllable(LscParser.AnySyllableContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link LscParser#classRef}.
+	 * Visit a parse tree produced by {@link LscParser#elementRef}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitClassRef(LscParser.ClassRefContext ctx);
+	T visitElementRef(LscParser.ElementRefContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link LscParser#captureRef}.
 	 * @param ctx the parse tree

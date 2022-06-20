@@ -31,6 +31,13 @@ public class LscBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements Ls
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
+	@Override public T visitElementDecl(LscParser.ElementDeclContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
 	@Override public T visitClassDecl(LscParser.ClassDeclContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
@@ -388,7 +395,7 @@ public class LscBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements Ls
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitClassRef(LscParser.ClassRefContext ctx) { return visitChildren(ctx); }
+	@Override public T visitElementRef(LscParser.ElementRefContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *

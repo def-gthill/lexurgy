@@ -8,6 +8,31 @@ import com.meamoria.mpp.kotest.shouldThrow
 class TestReusable : StringSpec({
     val lsc = SoundChanger.Companion::fromLsc
 
+    "We should be able to declare reusable elements" {
+        val ch = lsc(
+            """
+                Feature +foo, +bar
+                Diacritic ᶠ [+foo]
+                Diacritic ᵇ [+bar]
+                
+                Element fooOrBar {[+foo], [+bar]}
+                
+                from-foo-or-bar:
+                    @fooOrBar => x
+                
+                to-foo-or-bar:
+                    {o, a} => @fooOrBar
+                
+                conditional-on-foo-or-bar:
+                    e => i / @fooOrBar _
+            """.trimIndent()
+        )
+
+        ch("reᶠurᵇish") shouldBe "rxuxish"
+        ch("potato") shouldBe "poᶠtaᵇtoᶠ"
+        ch("oeaee") shouldBe "oᶠiaᵇie"
+    }
+
     "We should be able to declare \"cleanup\" rules that run after every rule" {
         val ch = lsc(
             """

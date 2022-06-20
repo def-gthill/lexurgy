@@ -6,7 +6,6 @@ class Declarations(
     val features: List<Feature>,
     val diacritics: List<Diacritic>,
     val symbols: List<Symbol>,
-    val classes: List<SegmentClass>,
     val syllabifier: Syllabifier? = null,
 ) {
     private val featureNameToFeatureMap = features.associateByCheckingDuplicates(
@@ -59,8 +58,6 @@ class Declarations(
     private val phoneticSegmentToComplexSymbolCache = Cache<Segment, ComplexSymbol>()
     private val phoneticSegmentMatchCache = Cache<Pair<Segment, Segment>, Boolean>()
     private val undeclaredSymbolCache = Cache<String, Symbol>()
-
-    private val classNameToClass = classes.associateBy { it.name }
 
     private fun checkUndefinedFeatures(matrices: List<Matrix>) {
         for (value in matrices.flatMap { it.explicitSimpleValues }) {
@@ -132,13 +129,11 @@ class Declarations(
         features: List<Feature>? = null,
         diacritics: List<Diacritic>? = null,
         symbols: List<Symbol>? = null,
-        classes: List<SegmentClass>? = null,
         syllabifier: Syllabifier? = null,
     ): Declarations = Declarations(
         features ?: this.features,
         diacritics ?: this.diacritics,
         symbols ?: this.symbols,
-        classes ?: this.classes,
         syllabifier ?: this.syllabifier,
     )
 
@@ -158,9 +153,6 @@ class Declarations(
 
     fun String.toSimpleValue(): SimpleValue =
         valueNameToSimpleValue[this] ?: throw LscUndefinedName("feature value", this)
-
-    fun String.toClass(): SegmentClass =
-        classNameToClass[this] ?: throw LscUndefinedName("sound class", this)
 
     fun String.toUndeclaredSymbol(): Symbol =
         undeclaredSymbolCache.getOrPut(this) { Symbol(this, null) }
@@ -401,7 +393,7 @@ class Declarations(
         ComplexSymbol(null, map { it.toDiacritic() }).toMatrix()
 
     companion object {
-        val empty: Declarations = Declarations(emptyList(), emptyList(), emptyList(), emptyList())
+        val empty: Declarations = Declarations(emptyList(), emptyList(), emptyList())
     }
 }
 

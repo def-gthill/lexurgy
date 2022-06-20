@@ -11,6 +11,7 @@ actual external class LscLexer actual constructor(input: CharStream): Lexer
 actual external class LscParser actual constructor(input: TokenStream) : Parser {
     actual fun lscFile(): LscFileContext
     actual fun statement(): StatementContext
+    actual fun elementDecl(): ElementDeclContext
     actual fun classDecl(): ClassDeclContext
     actual fun classElement(): ClassElementContext
     actual fun featureDecl(): FeatureDeclContext
@@ -62,7 +63,7 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     actual fun repeater(): RepeaterContext
     actual fun simple(): SimpleContext
     actual fun anySyllable(): AnySyllableContext
-    actual fun classRef(): ClassRefContext
+    actual fun elementRef(): ElementRefContext
     actual fun captureRef(): CaptureRefContext
     actual fun fancyMatrix(): FancyMatrixContext
     actual fun fancyValue(): FancyValueContext
@@ -96,11 +97,19 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
         fun diacriticDecl(): DiacriticDeclContext?
         fun symbolDecl(): SymbolDeclContext?
         fun classDecl(): ClassDeclContext?
+        fun elementDecl(): ElementDeclContext?
         fun syllableDecl(): SyllableDeclContext?
         fun deromanizer(): DeromanizerContext?
         fun interRomanizer(): InterRomanizerContext?
         fun romanizer(): RomanizerContext?
         fun changeRule(): ChangeRuleContext?
+    }
+
+    class ElementDeclContext : ParserRuleContext {
+        fun ELEMENT_DECL(): TerminalNode
+        fun WHITESPACE(): Array<TerminalNode>
+        fun name(): NameContext
+        fun ruleElement(): RuleElementContext
     }
 
     class ClassDeclContext : ParserRuleContext {
@@ -114,7 +123,7 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     }
 
     class ClassElementContext : ParserRuleContext {
-        fun classRef(): ClassRefContext?
+        fun elementRef(): ElementRefContext?
         fun text(): TextContext?
     }
 
@@ -228,7 +237,7 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     }
 
     class FilterContext : ParserRuleContext {
-        fun classRef(): ClassRefContext?
+        fun elementRef(): ElementRefContext?
         fun fancyMatrix(): FancyMatrixContext?
     }
 
@@ -427,7 +436,7 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
 
     class SimpleContext : ParserRuleContext {
         fun anySyllable(): AnySyllableContext?
-        fun classRef(): ClassRefContext?
+        fun elementRef(): ElementRefContext?
         fun captureRef(): CaptureRefContext?
         fun fancyMatrix(): FancyMatrixContext?
         fun empty(): EmptyContext?
@@ -441,7 +450,7 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
         fun ANY_SYLLABLE(): TerminalNode
     }
 
-    class ClassRefContext : ParserRuleContext {
+    class ElementRefContext : ParserRuleContext {
         fun CLASSREF(): TerminalNode
         fun name(): NameContext
     }
@@ -579,6 +588,7 @@ open external class LscVisitor<T>{
 
     open fun visitLscFile(ctx: LscFileContext): T
     open fun visitStatement(ctx: StatementContext): T
+    open fun visitElementDecl(ctx: ElementDeclContext): T
     open fun visitClassDecl(ctx: ClassDeclContext): T
     open fun visitClassElement(ctx: ClassElementContext): T
     open fun visitFeatureDecl(ctx: FeatureDeclContext): T
@@ -630,7 +640,7 @@ open external class LscVisitor<T>{
     open fun visitRepeater(ctx: RepeaterContext): T
     open fun visitSimple(ctx: SimpleContext): T
     open fun visitAnySyllable(ctx: AnySyllableContext): T
-    open fun visitClassRef(ctx: ClassRefContext): T
+    open fun visitElementRef(ctx: ElementRefContext): T
     open fun visitCaptureRef(ctx: CaptureRefContext): T
     open fun visitFancyMatrix(ctx: FancyMatrixContext): T
     open fun visitFancyValue(ctx: FancyValueContext): T
@@ -660,6 +670,8 @@ actual typealias LscFileContext = LscParser.LscFileContext
 actual fun LscFileContext.allStatements(): List<StatementContext> = statement().toList()
 
 actual typealias StatementContext = LscParser.StatementContext
+
+actual typealias ElementDeclContext = LscParser.ElementDeclContext
 
 actual typealias ClassDeclContext = LscParser.ClassDeclContext
 
@@ -797,7 +809,7 @@ actual typealias SimpleContext = LscParser.SimpleContext
 
 actual typealias AnySyllableContext = LscParser.AnySyllableContext
 
-actual typealias ClassRefContext = LscParser.ClassRefContext
+actual typealias ElementRefContext = LscParser.ElementRefContext
 
 actual typealias CaptureRefContext = LscParser.CaptureRefContext
 

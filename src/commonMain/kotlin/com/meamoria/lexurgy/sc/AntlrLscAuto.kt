@@ -11,6 +11,7 @@ expect class LscLexer(input: CharStream) : Lexer
 expect class LscParser(input: TokenStream) : Parser {
     fun lscFile(): LscFileContext
     fun statement(): StatementContext
+    fun elementDecl(): ElementDeclContext
     fun classDecl(): ClassDeclContext
     fun classElement(): ClassElementContext
     fun featureDecl(): FeatureDeclContext
@@ -62,7 +63,7 @@ expect class LscParser(input: TokenStream) : Parser {
     fun repeater(): RepeaterContext
     fun simple(): SimpleContext
     fun anySyllable(): AnySyllableContext
-    fun classRef(): ClassRefContext
+    fun elementRef(): ElementRefContext
     fun captureRef(): CaptureRefContext
     fun fancyMatrix(): FancyMatrixContext
     fun fancyValue(): FancyValueContext
@@ -90,6 +91,7 @@ expect open class LscBaseVisitor<T>(){
 
     open fun visitLscFile(ctx: LscFileContext): T
     open fun visitStatement(ctx: StatementContext): T
+    open fun visitElementDecl(ctx: ElementDeclContext): T
     open fun visitClassDecl(ctx: ClassDeclContext): T
     open fun visitClassElement(ctx: ClassElementContext): T
     open fun visitFeatureDecl(ctx: FeatureDeclContext): T
@@ -141,7 +143,7 @@ expect open class LscBaseVisitor<T>(){
     open fun visitRepeater(ctx: RepeaterContext): T
     open fun visitSimple(ctx: SimpleContext): T
     open fun visitAnySyllable(ctx: AnySyllableContext): T
-    open fun visitClassRef(ctx: ClassRefContext): T
+    open fun visitElementRef(ctx: ElementRefContext): T
     open fun visitCaptureRef(ctx: CaptureRefContext): T
     open fun visitFancyMatrix(ctx: FancyMatrixContext): T
     open fun visitFancyValue(ctx: FancyValueContext): T
@@ -176,11 +178,19 @@ expect class StatementContext : ParserRuleContext {
     fun diacriticDecl(): DiacriticDeclContext?
     fun symbolDecl(): SymbolDeclContext?
     fun classDecl(): ClassDeclContext?
+    fun elementDecl(): ElementDeclContext?
     fun syllableDecl(): SyllableDeclContext?
     fun deromanizer(): DeromanizerContext?
     fun interRomanizer(): InterRomanizerContext?
     fun romanizer(): RomanizerContext?
     fun changeRule(): ChangeRuleContext?
+}
+
+
+expect class ElementDeclContext : ParserRuleContext {
+    fun ELEMENT_DECL(): TerminalNode
+    fun name(): NameContext
+    fun ruleElement(): RuleElementContext
 }
 
 
@@ -194,7 +204,7 @@ expect class ClassDeclContext : ParserRuleContext {
 expect fun ClassDeclContext.allClassElements(): List<ClassElementContext>
 
 expect class ClassElementContext : ParserRuleContext {
-    fun classRef(): ClassRefContext?
+    fun elementRef(): ElementRefContext?
     fun text(): TextContext?
 }
 
@@ -313,7 +323,7 @@ expect class ChangeRuleContext : ParserRuleContext {
 expect fun ChangeRuleContext.allChangeRuleModifiers(): List<ChangeRuleModifierContext>
 
 expect class FilterContext : ParserRuleContext {
-    fun classRef(): ClassRefContext?
+    fun elementRef(): ElementRefContext?
     fun fancyMatrix(): FancyMatrixContext?
 }
 
@@ -540,7 +550,7 @@ expect class RepeaterContext : ParserRuleContext {
 
 expect class SimpleContext : ParserRuleContext {
     fun anySyllable(): AnySyllableContext?
-    fun classRef(): ClassRefContext?
+    fun elementRef(): ElementRefContext?
     fun captureRef(): CaptureRefContext?
     fun fancyMatrix(): FancyMatrixContext?
     fun empty(): EmptyContext?
@@ -556,7 +566,7 @@ expect class AnySyllableContext : ParserRuleContext {
 }
 
 
-expect class ClassRefContext : ParserRuleContext {
+expect class ElementRefContext : ParserRuleContext {
     fun CLASSREF(): TerminalNode
     fun name(): NameContext
 }

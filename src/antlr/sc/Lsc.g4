@@ -2,11 +2,12 @@ grammar Lsc;
 
 lscFile: WHITESPACE | NEWLINE* statement? (NEWLINE+ statement)* NEWLINE* EOF;
 statement:
-    featureDecl | diacriticDecl | symbolDecl | classDecl | syllableDecl |
+    featureDecl | diacriticDecl | symbolDecl | classDecl | elementDecl | syllableDecl |
     deromanizer | interRomanizer | romanizer | changeRule;
 
+elementDecl: ELEMENT_DECL WHITESPACE name WHITESPACE ruleElement;
 classDecl: CLASS_DECL WHITESPACE name WHITESPACE LIST_START classElement (SEP classElement)* LIST_END;
-classElement: classRef | text;
+classElement: elementRef | text;
 featureDecl:
     FEATURE_DECL WHITESPACE (
         (plusFeature (SEP plusFeature)*) |
@@ -31,7 +32,7 @@ romanizer: ROMANIZER (WHITESPACE LITERAL)? RULE_START NEWLINE+ block;
 interRomanizer: ROMANIZER HYPHEN ruleName (WHITESPACE LITERAL)? RULE_START NEWLINE+ block;
 
 changeRule: ruleName (WHITESPACE changeRuleModifier)* RULE_START? NEWLINE+ block;
-filter: classRef | fancyMatrix;
+filter: elementRef | fancyMatrix;
 block: blockElement (NEWLINE+ blockType RULE_START (WHITESPACE | NEWLINE+) blockElement)*;
 blockElement: expressionList | O_PAREN NEWLINE* block NEWLINE* C_PAREN;
 blockType: (ALL_MATCHING | FIRST_MATCHING) (WHITESPACE changeRuleModifier)*;
@@ -81,9 +82,9 @@ capture: (bounded | negated | simple) captureRef;
 repeater: (bounded | simple) repeaterType;
 
 // "Simple" elements can't have other elements inside them
-simple: anySyllable | classRef | captureRef | fancyMatrix | empty | sylBoundary | boundary | betweenWords | text;
+simple: anySyllable | elementRef | captureRef | fancyMatrix | empty | sylBoundary | boundary | betweenWords | text;
 anySyllable: ANY_SYLLABLE;
-classRef: CLASSREF name;
+elementRef: CLASSREF name;
 captureRef: INEXACT? WORD_BOUNDARY NUMBER;
 
 fancyMatrix: MATRIX_START fancyValue? (WHITESPACE fancyValue)* MATRIX_END;
@@ -142,6 +143,7 @@ CLASSREF: '@';
 INTERSECTION: '&';
 INTERSECTION_NOT: '&!';
 TRANSFORMING: '>';
+ELEMENT_DECL: 'Element' | 'element';
 CLASS_DECL: 'Class' | 'class';
 FEATURE_DECL: 'Feature' | 'feature';
 SYLLABLE_FEATURE: '(Syllable)' | '(syllable)';
