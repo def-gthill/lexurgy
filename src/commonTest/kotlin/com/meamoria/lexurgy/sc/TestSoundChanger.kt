@@ -694,5 +694,14 @@ class TestSoundChanger : StringSpec({
         )
 
         ch7("coffee") shouldBe "cunchangedee"
+
+        val ch8 = lsc(
+            """
+                element-block:
+                    element => block
+            """.trimIndent()
+        )
+
+        ch8("elementary") shouldBe "blockary"
     }
 })

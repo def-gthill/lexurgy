@@ -696,6 +696,7 @@ expect class TextContext : ParserRuleContext {
 
 expect class NameContext : ParserRuleContext {
     fun NAME(): TerminalNode?
+    fun ELEMENT_DECL(): TerminalNode?
     fun CLASS_DECL(): TerminalNode?
     fun FEATURE_DECL(): TerminalNode?
     fun DIACRITIC_DECL(): TerminalNode?

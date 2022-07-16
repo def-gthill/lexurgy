@@ -33,6 +33,55 @@ class TestReusable : StringSpec({
         ch("oeaee") shouldBe "oᶠiaᵇie"
     }
 
+    "Elements can reference other elements" {
+        val ch = lsc(
+            """
+                Feature +foo, +bar, +baz
+                Diacritic ᶠ [+foo]
+                Diacritic ᵇ [+bar]
+                Diacritic ᶻ [+baz]
+                
+                Element fooOrBar {[+foo], [+bar]}
+                Element fooOrBarThenBaz @fooOrBar [+baz]
+                
+                from-foo-or-bar-then-baz:
+                    @fooOrBarThenBaz => x
+                
+                to-foo-or-bar-then-baz:
+                    {o, a} a => @fooOrBarThenBaz
+                
+                conditional-on-foo-or-bar-then-baz:
+                    e => i / @fooOrBarThenBaz _
+            """.trimIndent()
+        )
+
+        ch("reᶠuᶻrᵇish") shouldBe "rxrᵇish"
+        ch("poataato") shouldBe "poᶠaᶻtaᵇaᶻto"
+        ch("oaeaᵇee") shouldBe "oᶠaᶻiaᵇee"
+    }
+
+    "We get a clear error message if we use an element before it's defined" {
+        shouldThrow<LscUndefinedName> {
+            lsc(
+                """
+                    Feature +foo, +bar, +baz
+                    Diacritic ᶠ [+foo]
+                    Diacritic ᵇ [+bar]
+                    Diacritic ᶻ [+baz]
+                    
+                    Element fooOrBarThenBaz @fooOrBar [+baz]
+                    Element fooOrBar {[+foo], [+bar]}
+                """.trimIndent()
+            )
+        }.also {
+            it.message shouldBe "The element \"fooOrBar\" is used before it's defined"
+        }
+    }
+
+    // Prohibit elements used before declared
+    // Prohibit element references in class declarations
+    // Elements that take arguments?
+
     "We should be able to declare \"cleanup\" rules that run after every rule" {
         val ch = lsc(
             """
