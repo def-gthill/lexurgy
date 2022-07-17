@@ -60,6 +60,18 @@ class TestReusable : StringSpec({
         ch("oaeaᵇee") shouldBe "oᶠaᶻiaᵇee"
     }
 
+    "We get a clear error message if we reference an undefined element" {
+        shouldThrow<LscUndefinedName> {
+            lsc(
+                """
+                    Element foo @bar
+                """.trimIndent()
+            )
+        }.also {
+            it.message shouldBe "The element \"bar\" is not defined"
+        }
+    }
+
     "We get a clear error message if we use an element before it's defined" {
         shouldThrow<LscUndefinedName> {
             lsc(

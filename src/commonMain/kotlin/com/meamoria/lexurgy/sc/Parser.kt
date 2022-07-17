@@ -779,25 +779,25 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         val allElementNames = elementDeclarations.map { it.name }.toSet()
         for (elementNode in elementDeclarations) {
             val elementDefinition = elementNode.element as RuleElement
-            checkElementsUsedBeforeDefined(elementDefinition, definedElements.keys, allElementNames)
+            checkElementsDefined(elementDefinition, definedElements.keys, allElementNames)
             definedElements[elementNode.name] = elementDefinition
         }
         return definedClasses + definedElements
     }
 
-    private fun checkElementsUsedBeforeDefined(
+    private fun checkElementsDefined(
         element: RuleElement,
         definedElementNames: Set<String>,
         allElementNames: Set<String>,
     ) {
         if (element is ReferenceElement) {
             val name = element.name
-            if (name in allElementNames && name !in definedElementNames) {
-                throw LscUndefinedName("element", name, true)
+            if (name !in definedElementNames) {
+                throw LscUndefinedName("element", name, name in allElementNames)
             }
         } else {
             for (subElement in element.subElements) {
-                checkElementsUsedBeforeDefined(subElement, definedElementNames, allElementNames)
+                checkElementsDefined(subElement, definedElementNames, allElementNames)
             }
         }
     }

@@ -1,8 +1,8 @@
 package com.meamoria.lexurgy.sc
 
 import com.meamoria.mpp.kotest.StringSpec
-import com.meamoria.mpp.kotest.fail
 import com.meamoria.mpp.kotest.shouldBe
+import com.meamoria.mpp.kotest.shouldBeInstanceOf
 import com.meamoria.mpp.kotest.shouldThrow
 
 @Suppress("unused")
@@ -66,6 +66,30 @@ class TestAlternatives : StringSpec({
         ch("ararat") shouldBe "arara"
         ch("ananas") shouldBe "anana"
         ch("bananal") shouldBe "bananal"
+    }
+
+    "We get a clear error message if we reference an undefined class" {
+        shouldThrow<LscUndefinedName> {
+            lsc(
+                """
+                    Class foo {a, b, @bar}
+                """.trimIndent()
+            )
+        }.also {
+            it.message shouldBe "The class \"bar\" is not defined"
+        }
+
+        shouldThrow<LscInvalidRuleExpression> {
+            lsc(
+                """
+                    foo:
+                        @bar => x
+                """.trimIndent()
+            )
+        }.also {
+            it.reason.shouldBeInstanceOf<LscUndefinedName>()
+            it.reason.message shouldBe "The element \"bar\" is not defined"
+        }
     }
 
     "We should get a clear error message if we use a class before it's defined" {
