@@ -776,10 +776,30 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             )
         }
         val definedElements = mutableMapOf<String, RuleElement>()
+        val allElementNames = elementDeclarations.map { it.name }.toSet()
         for (elementNode in elementDeclarations) {
-            definedElements[elementNode.name] = elementNode.element as RuleElement
+            val elementDefinition = elementNode.element as RuleElement
+            checkElementsUsedBeforeDefined(elementDefinition, definedElements.keys, allElementNames)
+            definedElements[elementNode.name] = elementDefinition
         }
         return definedClasses + definedElements
+    }
+
+    private fun checkElementsUsedBeforeDefined(
+        element: RuleElement,
+        definedElementNames: Set<String>,
+        allElementNames: Set<String>,
+    ) {
+        if (element is ReferenceElement) {
+            val name = element.name
+            if (name in allElementNames && name !in definedElementNames) {
+                throw LscUndefinedName("element", name, true)
+            }
+        } else {
+            for (subElement in element.subElements) {
+                checkElementsUsedBeforeDefined(subElement, definedElementNames, allElementNames)
+            }
+        }
     }
 
     private fun walkElementDeclaration(
@@ -1723,6 +1743,9 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         val publicName: String
 
         fun matcher(context: RuleContext, declarations: ParseDeclarations): Matcher
+
+        val subElements: List<RuleElement>
+            get() = emptyList()
     }
 
     private data class RuleContext(
@@ -1785,6 +1808,9 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         ): Matcher
 
         abstract fun combineEmitters(elements: List<Emitter>): Emitter
+
+        override val subElements: List<RuleElement>
+            get() = elements
     }
 
     private object DoNothingElement : BaseParseNode("unchanged"), ResultElement {
@@ -1845,6 +1871,11 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                 element.matcher(context, declarations),
                 environment.link(declarations),
             )
+
+        override val subElements: List<RuleElement>
+            get() = listOf(element) +
+                    environment.positive.flatMap { listOfNotNull(it.before, it.after) } +
+                    environment.negative.flatMap { listOfNotNull(it.before, it.after) }
     }
 
     private class SequenceElement(
@@ -1893,6 +1924,9 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
         override fun matcher(context: RuleContext, declarations: ParseDeclarations): Matcher =
             CaptureMatcher(element.matcher(context, declarations), capture.number)
+
+        override val subElements: List<RuleElement>
+            get() = listOf(element)
     }
 
     private class RepeaterElement(
@@ -1923,6 +1957,9 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
         private fun RepeaterType.isSpecificMultiple(): Boolean =
             minReps > 1 && minReps == maxReps
+
+        override val subElements: List<RuleElement>
+            get() = listOf(element)
     }
 
     private class AlternativeElement(
@@ -1953,6 +1990,9 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                 initialElement.matcher(context, declarations),
                 checkElements.map { it.matcher(context, declarations) }
             )
+
+        override val subElements: List<RuleElement>
+            get() = listOf(initialElement) + checkElements.map { it.element }
     }
 
     private data class CheckElement(val element: RuleElement, val negated: Boolean) {
@@ -2100,6 +2140,9 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             }
             return alternatives
         }
+
+        override val subElements: List<RuleElement>
+            get() = elements
     }
 
     private class TextElement(
@@ -2178,6 +2221,9 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
         override fun matcher(context: RuleContext, declarations: ParseDeclarations): Matcher =
             NegatedMatcher(element.matcher(context, declarations))
+
+        override val subElements: List<RuleElement>
+            get() = listOf(element)
     }
 
     private object EmptyElement : BaseParseNode("*"), ResultElement {
