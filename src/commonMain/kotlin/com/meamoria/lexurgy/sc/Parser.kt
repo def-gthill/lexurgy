@@ -758,14 +758,26 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         val definedClassSounds = mutableMapOf<String, List<String>>()
         val definedClasses = mutableMapOf<String, AlternativeElement>()
         val allClassNames = classDeclarations.map { it.name }.toSet()
+
+        val definedElements = mutableMapOf<String, RuleElement>()
+        val allElementNames = elementDeclarations.map { it.name }.toSet() + allClassNames
+
         for (classNode in classDeclarations) {
             val newClassSounds = classNode.elements.flatMap {
                 if (it is TextNode) listOf(it.literalText)
                 else {
                     val nestedName = (it as ReferenceElement).name
-                    definedClassSounds[nestedName] ?: throw LscUndefinedName(
-                        "class", nestedName, nestedName in allClassNames
-                    )
+                    definedClassSounds[nestedName] ?: if (nestedName in allElementNames) {
+                        throw LscIllegalStructure(
+                            "non-class elements",
+                            nestedName,
+                            "in class declarations like \"${classNode.name}\"",
+                        )
+                    } else {
+                        throw LscUndefinedName(
+                            "class", nestedName, nestedName in allClassNames
+                        )
+                    }
                 }
             }
             if (classNode.name in definedClasses) throw LscDuplicateName("class", classNode.name)
@@ -775,12 +787,15 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                 newClassSounds.map { TextElement(it, it) }
             )
         }
-        val definedElements = mutableMapOf<String, RuleElement>()
-        val allElementNames = elementDeclarations.map { it.name }.toSet()
+
+        val definedElementNames = mutableSetOf<String>().also {
+            it.addAll(definedClasses.keys)
+        }
         for (elementNode in elementDeclarations) {
             val elementDefinition = elementNode.element as RuleElement
-            checkElementsDefined(elementDefinition, definedElements.keys, allElementNames)
+            checkElementsDefined(elementDefinition, definedElementNames, allElementNames)
             definedElements[elementNode.name] = elementDefinition
+            definedElementNames += elementNode.name
         }
         return definedClasses + definedElements
     }

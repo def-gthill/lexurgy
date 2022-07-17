@@ -60,6 +60,22 @@ class TestReusable : StringSpec({
         ch("oaeaᵇee") shouldBe "oᶠaᶻiaᵇee"
     }
 
+    "Elements can reference classes" {
+        val ch = lsc(
+            """
+                Class foo {a, b, c}
+                Class bar {d, e, f}
+                
+                Element baz (@foo @bar)
+                
+                rule:
+                    @baz => {A, B, C} {D, E, F}
+            """.trimIndent()
+        )
+
+        ch("adcbef") shouldBe "ADcBEf"
+    }
+
     "We get a clear error message if we reference an undefined element" {
         shouldThrow<LscUndefinedName> {
             lsc(
@@ -90,9 +106,18 @@ class TestReusable : StringSpec({
         }
     }
 
-    // Prohibit elements used before declared
-    // Prohibit element references in class declarations
-    // Elements that take arguments?
+    "We can't reference elements from inside class declarations" {
+        shouldThrow<LscIllegalStructure> {
+            lsc(
+                """
+                    Element foo a+
+                    Class bar {@foo, b, c}
+                """.trimIndent()
+            )
+        }.also {
+            it.message shouldBe "Non-class elements like \"foo\" can't be used in class declarations like \"bar\""
+        }
+    }
 
     "We should be able to declare \"cleanup\" rules that run after every rule" {
         val ch = lsc(
