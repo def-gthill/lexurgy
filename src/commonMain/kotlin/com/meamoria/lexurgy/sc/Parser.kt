@@ -770,14 +770,15 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         val allClassNames = classDeclarations.map { it.name }.toSet()
 
         val definedElements = mutableMapOf<String, RuleElement>()
-        val allElementNames = elementDeclarations.map { it.name }.toSet() + allClassNames
+        val allNonClassElementNames = elementDeclarations.map { it.name }.toSet()
+        val allElementNames = allNonClassElementNames + allClassNames
 
         for (classNode in classDeclarations) {
             val newClassSounds = classNode.elements.flatMap {
                 if (it is TextNode) listOf(it.literalText)
                 else {
                     val nestedName = (it as ReferenceElement).name
-                    definedClassSounds[nestedName] ?: if (nestedName in allElementNames) {
+                    definedClassSounds[nestedName] ?: if (nestedName in allNonClassElementNames) {
                         throw LscIllegalStructure(
                             "non-class elements",
                             nestedName,
