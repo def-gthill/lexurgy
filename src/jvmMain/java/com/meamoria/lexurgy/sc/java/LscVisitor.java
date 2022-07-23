@@ -185,6 +185,18 @@ public interface LscVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitKeywordExpression(LscParser.KeywordExpressionContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link LscParser#blockRef}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitBlockRef(LscParser.BlockRefContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link LscParser#standardExpression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitStandardExpression(LscParser.StandardExpressionContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link LscParser#from}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

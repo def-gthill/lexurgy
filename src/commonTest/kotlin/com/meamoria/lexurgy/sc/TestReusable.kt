@@ -119,6 +119,32 @@ class TestReusable : StringSpec({
         }
     }
 
+    "We can declare reusable blocks" {
+        val ch = lsc(
+            """
+                foo block:
+                    f => b
+                    o => a / _ $
+                
+                rule1:
+                    f => h / $ _
+                    :foo
+                    o => u
+                
+                rule2:
+                    v => f
+                    ɔ => o
+                    Then:
+                    :foo
+                    Then:
+                    a => e
+            """.trimIndent()
+        )
+
+        ch("fofo") shouldBe "hube"
+        ch("vɔvɔ") shouldBe "bobe"
+    }
+
     "We should be able to declare \"cleanup\" rules that run after every rule" {
         val ch = lsc(
             """

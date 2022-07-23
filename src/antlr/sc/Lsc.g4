@@ -37,12 +37,14 @@ block: blockElement (NEWLINE+ blockType RULE_START (WHITESPACE | NEWLINE+) block
 blockElement: expressionList | O_PAREN NEWLINE* block NEWLINE* C_PAREN;
 blockType: (ALL_MATCHING | FIRST_MATCHING) (WHITESPACE changeRuleModifier)*;
 changeRuleModifier: filter | keywordModifier;
-keywordModifier: LTR | RTL | PROPAGATE | CLEANUP | NAME;
+keywordModifier: LTR | RTL | PROPAGATE | BLOCK | CLEANUP | NAME;
 expressionList: expression (NEWLINE+ expression)*;
 ruleName: name (HYPHEN (name | NUMBER))*;
 
-expression: keywordExpression | (from CHANGE to compoundEnvironment?);
+expression: keywordExpression | blockRef | standardExpression;
 keywordExpression: UNCHANGED | OFF;
+blockRef: RULE_START name;
+standardExpression: from CHANGE to compoundEnvironment?;
 from: ruleElement;
 to: unconditionalRuleElement;
 
@@ -112,7 +114,7 @@ name:
     SYLLABLE_DECL | CLEAR_SYLLABLES | EXPLICIT_SYLLABLES |
     DEROMANIZER | ROMANIZER | LITERAL |
     ALL_MATCHING | FIRST_MATCHING |
-    LTR | RTL | PROPAGATE | CLEANUP |
+    LTR | RTL | PROPAGATE | BLOCK | CLEANUP |
     OFF | UNCHANGED;
 
 COMMENT: (WHITESPACE? COMMENT_START ~[\n\r]*) -> skip;
@@ -165,6 +167,7 @@ LTR: 'LTR' | 'Ltr' | 'ltr';
 RTL: 'RTL' | 'Rtl' | 'rtl';
 PROPAGATE: 'Propagate' | 'propagate';
 CLEANUP: 'Cleanup' | 'cleanup';
+BLOCK: 'Block' | 'block';
 UNCHANGED: 'Unchanged' | 'unchanged';
 OFF: 'Off' | 'off';
 NUMBER: DIGIT+;

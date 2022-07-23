@@ -328,11 +328,13 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         val matchMode = keywordModifiers.getMatchMode(ruleName)
         val isPropagate = keywordModifiers.any { it.PROPAGATE() != null }
         val isCleanup = keywordModifiers.any { it.CLEANUP() != null }
+        val isReusableBlock = keywordModifiers.any { it.BLOCK() != null }
         return RuleModifiers(
             ruleFilter = filter,
             matchMode = matchMode,
             isPropagate = isPropagate,
             isCleanup = isCleanup,
+            isReusableBlock = isReusableBlock,
         )
     }
 
@@ -371,6 +373,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         val matchMode: MatchMode,
         val isPropagate: Boolean,
         val isCleanup: Boolean,
+        val isReusableBlock: Boolean,
     )
 
     private fun noColon(
@@ -440,14 +443,10 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         walkExpressionList(ctx.getText(), listVisit(ctx.allExpressions()))
 
     override fun visitExpression(ctx: ExpressionContext): ParseNode =
-        if (ctx.keywordExpression() == null) {
-            walkRuleExpression(
-                ctx.getText(),
-                visit(ctx.from()!!),
-                visit(ctx.to()!!),
-                optionalVisit(ctx.compoundEnvironment()),
-            )
-        } else if (ctx.keywordExpression()?.UNCHANGED() != null) {
+        visit(ctx.getChild(0))
+
+    override fun visitKeywordExpression(ctx: KeywordExpressionContext): ParseNode =
+        if (ctx.UNCHANGED() != null) {
             walkDoNothingExpression()
         } else {
             throw LscNotParsable(
@@ -457,6 +456,17 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                 "The rule needs an arrow"
             )
         }
+
+    override fun visitBlockRef(ctx: BlockRefContext): ParseNode =
+        walkBlockReference(ctx.name().getText())
+
+    override fun visitStandardExpression(ctx: StandardExpressionContext): ParseNode =
+        walkRuleExpression(
+            ctx.getText(),
+            visit(ctx.from()),
+            visit(ctx.to()),
+            optionalVisit(ctx.compoundEnvironment()),
+        )
 
     override fun visitFrom(ctx: FromContext): ParseNode =
         visit(ctx.ruleElement())
@@ -969,6 +979,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         matchMode = modifiers.matchMode,
         propagate = modifiers.isPropagate,
         cleanup = modifiers.isCleanup,
+        isReusableBlock = modifiers.isReusableBlock,
     )
 
     private fun walkBlock(
@@ -988,7 +999,18 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         }
 
     private fun walkExpressionList(text: String, expressions: List<ParseNode>): ParseNode =
-        UnlinkedSimpleChangeRule(text, expressions.map { it as UnlinkedRuleExpression })
+        UnlinkedSimpleChangeRule(text, expressions.map { it as ExpressionNode })
+
+    private fun walkDoNothingExpression(): ParseNode =
+        UnlinkedRuleExpression(
+            "unchanged",
+            DoNothingElement,
+            DoNothingElement,
+            UnlinkedCompoundEnvironment("", emptyList(), emptyList())
+        )
+
+    private fun walkBlockReference(name: String): ParseNode =
+        BlockReference(name)
 
     private fun walkRuleExpression(
         text: String,
@@ -1001,14 +1023,6 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         ruleTo as RuleElement,
         compoundEnvironment as UnlinkedCompoundEnvironment?,
     )
-
-    private fun walkDoNothingExpression(): ParseNode =
-        UnlinkedRuleExpression(
-            "unchanged",
-            DoNothingElement,
-            DoNothingElement,
-            UnlinkedCompoundEnvironment("", emptyList(), emptyList())
-        )
 
     private fun walkRuleEnvironment(
         text: String,
@@ -1277,10 +1291,19 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             elementDeclarations.map { it as ElementDeclarationNode },
         )
 
-        private fun Declarations.withElements() =
-            ParseDeclarations(declaredElements, this)
+        private val reusableBlockSplit = changeRules.partition {
+            it.rule is UnlinkedStandardRule && it.rule.isReusableBlock
+        }
+        private val declaredBlocks = reusableBlockSplit.first.associate {
+            it.rule as UnlinkedStandardRule
+            it.rule.name to it.rule
+        }
+        private val realChangeRules = reusableBlockSplit.second
 
-        private val firstAnchoredStatement = changeRules.firstOrNull()?.statements?.firstOrNull()
+        private fun Declarations.withElements() =
+            ParseDeclarations(declaredElements, declaredBlocks, this)
+
+        private val firstAnchoredStatement = realChangeRules.firstOrNull()?.statements?.firstOrNull()
         private val initialSyllabifiedDeclarations =
             if (firstAnchoredStatement is SyllableStructureNode) {
                 // Put an implicit "Syllables: explicit" right at the
@@ -1309,7 +1332,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         private val realInitialDeclarations = linkedDeromanizer?.rule?.declarations
             ?: initialSyllabifiedDeclarations
 
-        private val linkedRules = changeRules.map { rule ->
+        private val linkedRules = realChangeRules.map { rule ->
             val anchoredSteps = rule.statements.map { anchoredStatement ->
                 when (anchoredStatement) {
                     is UnlinkedRomanizer -> SoundChanger.IntermediateRomanizerStep(
@@ -1361,14 +1384,18 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     private class ParseDeclarations(
         val elements: Map<String, RuleElement>,
+        val blocks: Map<String, UnlinkedStandardRule>,
         val runtime: Declarations,
     ) {
-        fun dereference(name: String): RuleElement =
+        fun dereferenceElement(name: String): RuleElement =
             elements[name] ?: throw LscUndefinedName("element", name)
+
+        fun dereferenceBlock(name: String): UnlinkedStandardRule =
+            blocks[name] ?: throw LscUndefinedName("block", name)
 
         companion object {
             val empty: ParseDeclarations =
-                ParseDeclarations(emptyMap(), Declarations.empty)
+                ParseDeclarations(emptyMap(), emptyMap(), Declarations.empty)
         }
     }
 
@@ -1475,7 +1502,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     private class UnlinkedSimpleChangeRule(
         override val text: String,
-        val expressions: List<UnlinkedRuleExpression>,
+        val expressions: List<ExpressionNode>,
         val matchMode: MatchMode = MatchMode.SIMULTANEOUS,
     ) : UnlinkedRule {
         override val numExpressions: Int = expressions.size
@@ -1487,17 +1514,38 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         ): ChangeRule =
             SimpleChangeRule(
                 declarations.runtime,
-                expressions.mapIndexed { index, expression ->
-                    expression.link(
-                        inherited.name!!,
-                        firstExpressionNumber + index,
-                        declarations,
-                        inherited.filter != null,
-                    )
+                expressions.flatMapIndexed { index, expression ->
+                    inlineBlockReferences(declarations, expression).map {
+                        it.link(
+                            inherited.name!!,
+                            firstExpressionNumber + index,
+                            declarations,
+                            inherited.filter != null,
+                        )
+                    }
                 },
                 inherited.filter,
                 matchMode,
             )
+
+        private fun inlineBlockReferences(
+            declarations: ParseDeclarations,
+            expression: ExpressionNode,
+        ): List<UnlinkedRuleExpression> =
+            when (expression) {
+                is UnlinkedRuleExpression -> listOf(expression)
+                is BlockReference -> {
+                    val block = declarations.dereferenceBlock(expression.name).mainBlock
+                    if (block !is UnlinkedSimpleChangeRule) {
+                        throw LscIllegalStructure(
+                            "complex block reference",
+                            expression.text,
+                            "in a group of simultaneous expressions"
+                        )
+                    }
+                    block.expressions.flatMap { inlineBlockReferences(declarations, it) }
+                }
+            }
 
         fun withMatchMode(matchMode: MatchMode): UnlinkedSimpleChangeRule =
             UnlinkedSimpleChangeRule(text, expressions, matchMode)
@@ -1600,6 +1648,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         val matchMode: MatchMode,
         val propagate: Boolean,
         val cleanup: Boolean,
+        val isReusableBlock: Boolean,
     ) : BaseUnlinkedRule(text, listOf(mainBlock)) {
 
         override fun link(
@@ -1695,12 +1744,29 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         override val text: String = subrule.text
     }
 
+    private class BlockReference(val name: String) : UnlinkedRule, ExpressionNode {
+        override val numExpressions: Int = 1
+
+        override fun link(
+            firstExpressionNumber: Int,
+            declarations: ParseDeclarations,
+            inherited: InheritedRuleProperties
+        ): ChangeRule =
+            declarations.dereferenceBlock(name).link(
+                firstExpressionNumber, declarations, inherited
+            )
+
+        override val text: String = ":$name"
+    }
+
+    private sealed interface ExpressionNode
+
     private class UnlinkedRuleExpression(
         text: String,
         val match: RuleElement,
         val result: RuleElement,
         val compoundEnvironment: UnlinkedCompoundEnvironment?,
-    ) : BaseParseNode(text) {
+    ) : BaseParseNode(text), ExpressionNode {
         fun link(
             ruleName: String,
             expressionNumber: Int,
@@ -2265,10 +2331,10 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         override val publicName: String = "an element reference"
 
         override fun matcher(context: RuleContext, declarations: ParseDeclarations): Matcher =
-            declarations.dereference(name).matcher(context, declarations)
+            declarations.dereferenceElement(name).matcher(context, declarations)
 
         override fun emitter(declarations: ParseDeclarations): Emitter =
-            castToResultElement(declarations.dereference(name)).emitter(declarations)
+            castToResultElement(declarations.dereferenceElement(name)).emitter(declarations)
     }
 
     private fun alternativeMatcher(

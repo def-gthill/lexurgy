@@ -98,6 +98,10 @@ actual typealias ExpressionContext = LscParser.ExpressionContext
 
 actual typealias KeywordExpressionContext = LscParser.KeywordExpressionContext
 
+actual typealias BlockRefContext = LscParser.BlockRefContext
+
+actual typealias StandardExpressionContext = LscParser.StandardExpressionContext
+
 actual typealias FromContext = LscParser.FromContext
 
 actual typealias ToContext = LscParser.ToContext

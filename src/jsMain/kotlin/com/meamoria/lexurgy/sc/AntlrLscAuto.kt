@@ -38,6 +38,8 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     actual fun ruleName(): RuleNameContext
     actual fun expression(): ExpressionContext
     actual fun keywordExpression(): KeywordExpressionContext
+    actual fun blockRef(): BlockRefContext
+    actual fun standardExpression(): StandardExpressionContext
     actual fun from(): FromContext
     actual fun to(): ToContext
     actual fun ruleElement(): RuleElementContext
@@ -273,6 +275,7 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
         fun LTR(): TerminalNode?
         fun RTL(): TerminalNode?
         fun PROPAGATE(): TerminalNode?
+        fun BLOCK(): TerminalNode?
         fun CLEANUP(): TerminalNode?
         fun NAME(): TerminalNode?
     }
@@ -290,15 +293,25 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
 
     class ExpressionContext : ParserRuleContext {
         fun keywordExpression(): KeywordExpressionContext?
-        fun from(): FromContext?
-        fun CHANGE(): TerminalNode?
-        fun to(): ToContext?
-        fun compoundEnvironment(): CompoundEnvironmentContext?
+        fun blockRef(): BlockRefContext?
+        fun standardExpression(): StandardExpressionContext?
     }
 
     class KeywordExpressionContext : ParserRuleContext {
         fun UNCHANGED(): TerminalNode?
         fun OFF(): TerminalNode?
+    }
+
+    class BlockRefContext : ParserRuleContext {
+        fun RULE_START(): TerminalNode
+        fun name(): NameContext
+    }
+
+    class StandardExpressionContext : ParserRuleContext {
+        fun from(): FromContext
+        fun CHANGE(): TerminalNode
+        fun to(): ToContext
+        fun compoundEnvironment(): CompoundEnvironmentContext?
     }
 
     class FromContext : ParserRuleContext {
@@ -578,6 +591,7 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
         fun LTR(): TerminalNode?
         fun RTL(): TerminalNode?
         fun PROPAGATE(): TerminalNode?
+        fun BLOCK(): TerminalNode?
         fun CLEANUP(): TerminalNode?
         fun OFF(): TerminalNode?
         fun UNCHANGED(): TerminalNode?
@@ -616,6 +630,8 @@ open external class LscVisitor<T>{
     open fun visitRuleName(ctx: RuleNameContext): T
     open fun visitExpression(ctx: ExpressionContext): T
     open fun visitKeywordExpression(ctx: KeywordExpressionContext): T
+    open fun visitBlockRef(ctx: BlockRefContext): T
+    open fun visitStandardExpression(ctx: StandardExpressionContext): T
     open fun visitFrom(ctx: FromContext): T
     open fun visitTo(ctx: ToContext): T
     open fun visitRuleElement(ctx: RuleElementContext): T
@@ -749,6 +765,10 @@ actual fun RuleNameContext.allNames(): List<NameContext> = name().toList()
 actual typealias ExpressionContext = LscParser.ExpressionContext
 
 actual typealias KeywordExpressionContext = LscParser.KeywordExpressionContext
+
+actual typealias BlockRefContext = LscParser.BlockRefContext
+
+actual typealias StandardExpressionContext = LscParser.StandardExpressionContext
 
 actual typealias FromContext = LscParser.FromContext
 

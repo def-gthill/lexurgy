@@ -38,6 +38,8 @@ expect class LscParser(input: TokenStream) : Parser {
     fun ruleName(): RuleNameContext
     fun expression(): ExpressionContext
     fun keywordExpression(): KeywordExpressionContext
+    fun blockRef(): BlockRefContext
+    fun standardExpression(): StandardExpressionContext
     fun from(): FromContext
     fun to(): ToContext
     fun ruleElement(): RuleElementContext
@@ -118,6 +120,8 @@ expect open class LscBaseVisitor<T>(){
     open fun visitRuleName(ctx: RuleNameContext): T
     open fun visitExpression(ctx: ExpressionContext): T
     open fun visitKeywordExpression(ctx: KeywordExpressionContext): T
+    open fun visitBlockRef(ctx: BlockRefContext): T
+    open fun visitStandardExpression(ctx: StandardExpressionContext): T
     open fun visitFrom(ctx: FromContext): T
     open fun visitTo(ctx: ToContext): T
     open fun visitRuleElement(ctx: RuleElementContext): T
@@ -361,6 +365,7 @@ expect class KeywordModifierContext : ParserRuleContext {
     fun LTR(): TerminalNode?
     fun RTL(): TerminalNode?
     fun PROPAGATE(): TerminalNode?
+    fun BLOCK(): TerminalNode?
     fun CLEANUP(): TerminalNode?
     fun NAME(): TerminalNode?
 }
@@ -380,16 +385,28 @@ expect fun RuleNameContext.allNames(): List<NameContext>
 
 expect class ExpressionContext : ParserRuleContext {
     fun keywordExpression(): KeywordExpressionContext?
-    fun from(): FromContext?
-    fun CHANGE(): TerminalNode?
-    fun to(): ToContext?
-    fun compoundEnvironment(): CompoundEnvironmentContext?
+    fun blockRef(): BlockRefContext?
+    fun standardExpression(): StandardExpressionContext?
 }
 
 
 expect class KeywordExpressionContext : ParserRuleContext {
     fun UNCHANGED(): TerminalNode?
     fun OFF(): TerminalNode?
+}
+
+
+expect class BlockRefContext : ParserRuleContext {
+    fun RULE_START(): TerminalNode
+    fun name(): NameContext
+}
+
+
+expect class StandardExpressionContext : ParserRuleContext {
+    fun from(): FromContext
+    fun CHANGE(): TerminalNode
+    fun to(): ToContext
+    fun compoundEnvironment(): CompoundEnvironmentContext?
 }
 
 
@@ -712,6 +729,7 @@ expect class NameContext : ParserRuleContext {
     fun LTR(): TerminalNode?
     fun RTL(): TerminalNode?
     fun PROPAGATE(): TerminalNode?
+    fun BLOCK(): TerminalNode?
     fun CLEANUP(): TerminalNode?
     fun OFF(): TerminalNode?
     fun UNCHANGED(): TerminalNode?

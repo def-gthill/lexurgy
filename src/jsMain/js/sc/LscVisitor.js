@@ -186,6 +186,18 @@ LscVisitor.prototype.visitKeywordExpression = function(ctx) {
 };
 
 
+// Visit a parse tree produced by LscParser#blockRef.
+LscVisitor.prototype.visitBlockRef = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
+// Visit a parse tree produced by LscParser#standardExpression.
+LscVisitor.prototype.visitStandardExpression = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
 // Visit a parse tree produced by LscParser#from.
 LscVisitor.prototype.visitFrom = function(ctx) {
   return this.visitChildren(ctx);
