@@ -1277,110 +1277,117 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         private val changeRules: List<RuleWithAnchoredStatements>,
         private val romanizer: ParseNode?,
     ) : BaseParseNode(text), SoundChangerNode {
-        private val initialDeclarations = Declarations(
-            featureDeclarations.flatMap { sublist ->
-                (sublist as ParseNodeList).elements.map { (it as FeatureDeclarationNode).feature }
-            },
-            diacriticDeclarations.map { (it as DiacriticDeclarationNode).diacritic },
-            symbolDeclarations.flatMap { sublist ->
-                (sublist as ParseNodeList).elements.map { (it as SymbolDeclarationNode).symbol }
-            },
-        )
 
-        private val declaredElements = resolveElements(
-            classDeclarations.map { it as ClassDeclarationNode },
-            elementDeclarations.map { it as ElementDeclarationNode },
-        )
-
-        private val reusableBlockSplit = changeRules.partition {
-            it.rule is UnlinkedStandardRule && it.rule.isReusableBlock
-        }
-        private val declaredBlocks = reusableBlockSplit.first.associate {
-            it.rule as UnlinkedStandardRule
-            it.rule.name to it.rule
-        }
-        private val realChangeRules = reusableBlockSplit.second
-
-        private fun Declarations.withElements() =
-            ParseDeclarations(declaredElements, declaredBlocks, this)
-
-        private val firstAnchoredStatement = realChangeRules.firstOrNull()?.statements?.firstOrNull()
-        private val initialSyllabifiedDeclarations =
-            if (firstAnchoredStatement is SyllableStructureNode) {
-                // Put an implicit "Syllables: explicit" right at the
-                // beginning to preserve syllable breaks in the input.
-                // We can't use the actual first syllabification rules
-                // yet, since the deromanizer hasn't run.
-                initialDeclarations.withSyllabifier(
-                    Syllabifier(initialDeclarations, emptyList())
+        override val soundChanger: SoundChanger
+            get() {
+                val initialDeclarations = Declarations(
+                    featureDeclarations.flatMap { sublist ->
+                        (sublist as ParseNodeList).elements.map { (it as FeatureDeclarationNode).feature }
+                    },
+                    diacriticDeclarations.map { (it as DiacriticDeclarationNode).diacritic },
+                    symbolDeclarations.flatMap { sublist ->
+                        (sublist as ParseNodeList).elements.map { (it as SymbolDeclarationNode).symbol }
+                    },
                 )
-            } else {
-                initialDeclarations
-            }
-        private var declarations = initialSyllabifiedDeclarations
 
-        private val linkedDeromanizer = (deromanizer as UnlinkedDeromanizer?)?.let {
-            SoundChanger.plainRule(
-                it.link(
-                    firstExpressionNumber = 1,
-                    declarations.withElements(),
-                    InheritedRuleProperties.none,
-                ) as NamedRule
-            )
-        }
+                val declaredElements = resolveElements(
+                    classDeclarations.map { it as ClassDeclarationNode },
+                    elementDeclarations.map { it as ElementDeclarationNode },
+                )
 
-        // The deromanizer might change the initial declarations!
-        private val realInitialDeclarations = linkedDeromanizer?.rule?.declarations
-            ?: initialSyllabifiedDeclarations
+                val reusableBlockSplit = changeRules.partition {
+                    it.rule is UnlinkedStandardRule && it.rule.isReusableBlock
+                }
 
-        private val linkedRules = realChangeRules.map { rule ->
-            val anchoredSteps = rule.statements.map { anchoredStatement ->
-                when (anchoredStatement) {
-                    is UnlinkedRomanizer -> SoundChanger.IntermediateRomanizerStep(
-                        anchoredStatement.link(
+                val declaredBlocks = reusableBlockSplit.first.associate {
+                    it.rule as UnlinkedStandardRule
+                    it.rule.name to it.rule
+                }
+
+                fun Declarations.withElements() =
+                    ParseDeclarations(declaredElements, declaredBlocks, this)
+
+                val realChangeRules = reusableBlockSplit.second
+
+                val firstAnchoredStatement = realChangeRules.firstOrNull()?.statements?.firstOrNull()
+
+                val initialSyllabifiedDeclarations =
+                    if (firstAnchoredStatement is SyllableStructureNode) {
+                        // Put an implicit "Syllables: explicit" right at the
+                        // beginning to preserve syllable breaks in the input.
+                        // We can't use the actual first syllabification rules
+                        // yet, since the deromanizer hasn't run.
+                        initialDeclarations.withSyllabifier(
+                            Syllabifier(initialDeclarations, emptyList())
+                        )
+                    } else {
+                        initialDeclarations
+                    }
+
+                var declarations = initialSyllabifiedDeclarations
+
+                val linkedDeromanizer = (deromanizer as UnlinkedDeromanizer?)?.let {
+                    SoundChanger.plainRule(
+                        it.link(
+                            firstExpressionNumber = 1,
+                            declarations.withElements(),
+                            InheritedRuleProperties.none,
+                        ) as NamedRule
+                    )
+                }
+
+                val realInitialDeclarations = linkedDeromanizer?.rule?.declarations
+                    ?: initialSyllabifiedDeclarations
+
+                val linkedRules = realChangeRules.map { rule ->
+                    val anchoredSteps = rule.statements.map { anchoredStatement ->
+                        when (anchoredStatement) {
+                            is UnlinkedRomanizer -> SoundChanger.IntermediateRomanizerStep(
+                                anchoredStatement.link(
+                                    1, declarations.withElements(), InheritedRuleProperties.none
+                                ) as NamedRule
+                            )
+                            is UnlinkedStandardRule -> {
+                                SoundChanger.CleanupStep(
+                                    anchoredStatement.link(
+                                        1, declarations.withElements(), InheritedRuleProperties.none
+                                    ) as NamedRule
+                                )
+                            }
+                            is UnlinkedCleanupOffStep -> {
+                                SoundChanger.CleanupOffStep(anchoredStatement.ruleName)
+                            }
+                            is SyllableStructureNode -> {
+                                declarations = initialDeclarations.withSyllabifier(
+                                    anchoredStatement.syllabifier(initialDeclarations.withElements())
+                                )
+                                SoundChanger.SyllabificationStep(declarations)
+                            }
+                            else -> throw AssertionError("Unrecognized anchored statement $anchoredStatement")
+                        }
+                    }
+                    val linkedRule = (rule.rule as UnlinkedRule?)?.link(
+                        1, declarations.withElements(), InheritedRuleProperties.none
+                    ) as NamedRule?
+                    SoundChanger.RuleWithAnchoredSteps(linkedRule, anchoredSteps)
+                }
+
+                val linkedRomanizer = (romanizer as UnlinkedRomanizer?)?.let {
+                    SoundChanger.plainRule(
+                        it.link(
                             1, declarations.withElements(), InheritedRuleProperties.none
                         ) as NamedRule
                     )
-                    is UnlinkedStandardRule -> {
-                        SoundChanger.CleanupStep(
-                            anchoredStatement.link(
-                                1, declarations.withElements(), InheritedRuleProperties.none
-                            ) as NamedRule
-                        )
-                    }
-                    is UnlinkedCleanupOffStep -> {
-                        SoundChanger.CleanupOffStep(anchoredStatement.ruleName)
-                    }
-                    is SyllableStructureNode -> {
-                        declarations = initialDeclarations.withSyllabifier(
-                            anchoredStatement.syllabifier(initialDeclarations.withElements())
-                        )
-                        SoundChanger.SyllabificationStep(declarations)
-                    }
-                    else -> throw AssertionError("Unrecognized anchored statement $anchoredStatement")
                 }
+
+                val allLinkedRules =
+                    listOfNotNull(linkedDeromanizer) + linkedRules + listOfNotNull(linkedRomanizer)
+
+                return SoundChanger(
+                    realInitialDeclarations,
+                    allLinkedRules,
+                )
             }
-            val linkedRule = (rule.rule as UnlinkedRule?)?.link(
-                1, declarations.withElements(), InheritedRuleProperties.none
-            ) as NamedRule?
-            SoundChanger.RuleWithAnchoredSteps(linkedRule, anchoredSteps)
-        }
-
-        private val linkedRomanizer = (romanizer as UnlinkedRomanizer?)?.let {
-            SoundChanger.plainRule(
-                it.link(
-                    1, declarations.withElements(), InheritedRuleProperties.none
-                ) as NamedRule
-            )
-        }
-
-        private val allLinkedRules =
-            listOfNotNull(linkedDeromanizer) + linkedRules + listOfNotNull(linkedRomanizer)
-
-        override val soundChanger = SoundChanger(
-            realInitialDeclarations,
-            allLinkedRules,
-        )
     }
 
     private class ParseDeclarations(
