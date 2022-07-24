@@ -697,11 +697,11 @@ class TestSoundChanger : StringSpec({
 
         val ch8 = lsc(
             """
-                element-block:
-                    element => block
+                element-defer:
+                    element => defer
             """.trimIndent()
         )
 
-        ch8("elementary") shouldBe "blockary"
+        ch8("elementary") shouldBe "deferary"
     }
 })

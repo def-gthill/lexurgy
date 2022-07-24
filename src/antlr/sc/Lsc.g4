@@ -167,7 +167,7 @@ LTR: 'LTR' | 'Ltr' | 'ltr';
 RTL: 'RTL' | 'Rtl' | 'rtl';
 PROPAGATE: 'Propagate' | 'propagate';
 CLEANUP: 'Cleanup' | 'cleanup';
-BLOCK: 'Block' | 'block';
+BLOCK: 'Defer' | 'defer';
 UNCHANGED: 'Unchanged' | 'unchanged';
 OFF: 'Off' | 'off';
 NUMBER: DIGIT+;

@@ -122,7 +122,7 @@ class TestReusable : StringSpec({
     "We can declare reusable blocks" {
         val ch = lsc(
             """
-                foo block:
+                foo defer:
                     f => b
                     o => a / _ $
                 
@@ -148,7 +148,7 @@ class TestReusable : StringSpec({
     "Reusable blocks don't execute when first defined" {
         val ch = lsc(
             """
-                foo block:
+                foo defer:
                     f => b
                 
                 real-rule:
@@ -163,12 +163,12 @@ class TestReusable : StringSpec({
     "Reusable blocks can contain Then and Else blocks" {
         val ch = lsc(
             """
-                double block:
+                double defer:
                     a => b
                     Then:
                     b => c
                 
-                orelse block:
+                orelse defer:
                     a => b
                     Else:
                     b => c
@@ -197,7 +197,7 @@ class TestReusable : StringSpec({
         shouldThrow<LscIllegalStructure> {
             lsc(
                 """
-                    double block:
+                    double defer:
                         a => b
                         Then:
                         b => c
@@ -215,7 +215,7 @@ class TestReusable : StringSpec({
             """
                 Element repeater a+ b+
                 
-                clean-up-repeaters block:
+                clean-up-repeaters defer:
                     @repeater => x
                 
                 grow1:
@@ -236,15 +236,15 @@ class TestReusable : StringSpec({
     "Blocks can reference each other" {
         val ch = lsc(
             """
-                do-it-once block:
+                do-it-once defer:
                     a => aa
                 
-                do-it-twice block:
+                do-it-twice defer:
                     :do-it-once
                     Then:
                     :do-it-once
                 
-                do-it-four-times block:
+                do-it-four-times defer:
                     :do-it-twice
                     Then:
                     :do-it-twice
@@ -264,7 +264,7 @@ class TestReusable : StringSpec({
                     rule:
                         :too-late
                     
-                    too-late block:
+                    too-late defer:
                         a => b
                 """.trimIndent()
                 )
@@ -276,7 +276,7 @@ class TestReusable : StringSpec({
             """
                 class vowel {a, i, u}
                 
-                assimilate block propagate @vowel:
+                assimilate defer propagate @vowel:
                     [] => $1 / []$1 _
                 
                 rule:
@@ -294,7 +294,7 @@ class TestReusable : StringSpec({
             """
                 class vowel {a, i, u}
                 
-                assimilate block:
+                assimilate defer:
                     u => i / _ i
                 
                 assimilate-near:
@@ -314,7 +314,7 @@ class TestReusable : StringSpec({
                 class high {i, u}
                 class front {i, e}
                 
-                dissimilate block @front:
+                dissimilate defer @front:
                     [] => a / [] _
                 
                 only-high @high:
