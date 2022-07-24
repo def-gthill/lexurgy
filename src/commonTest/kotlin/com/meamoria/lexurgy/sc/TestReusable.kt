@@ -271,6 +271,24 @@ class TestReusable : StringSpec({
         }
     }
 
+    "Blocks can have modifiers" {
+        val ch = lsc(
+            """
+                class vowel {a, i, u}
+                
+                assimilate block propagate @vowel:
+                    [] => $1 / []$1 _
+                
+                rule:
+                    i => j / {@vowel _, _ @vowel}
+                    Then:
+                    :assimilate
+            """.trimIndent()
+        )
+
+        ch("kabaitimu") shouldBe "kabajtama"
+    }
+
     "We should be able to declare \"cleanup\" rules that run after every rule" {
         val ch = lsc(
             """
