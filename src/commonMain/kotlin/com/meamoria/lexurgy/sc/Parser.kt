@@ -761,73 +761,6 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         romanizer = romanizer,
     )
 
-    private fun resolveElements(
-        classDeclarations: List<ClassDeclarationNode>,
-        elementDeclarations: List<ElementDeclarationNode>,
-    ): Map<String, RuleElement> {
-        val definedClassSounds = mutableMapOf<String, List<String>>()
-        val definedClasses = mutableMapOf<String, AlternativeElement>()
-        val allClassNames = classDeclarations.map { it.name }.toSet()
-
-        val definedElements = mutableMapOf<String, RuleElement>()
-        val allNonClassElementNames = elementDeclarations.map { it.name }.toSet()
-        val allElementNames = allNonClassElementNames + allClassNames
-
-        for (classNode in classDeclarations) {
-            val newClassSounds = classNode.elements.flatMap {
-                if (it is TextNode) listOf(it.literalText)
-                else {
-                    val nestedName = (it as ReferenceElement).name
-                    definedClassSounds[nestedName] ?: if (nestedName in allNonClassElementNames) {
-                        throw LscIllegalStructure(
-                            "non-class elements",
-                            nestedName,
-                            "in class declarations like \"${classNode.name}\"",
-                        )
-                    } else {
-                        throw LscUndefinedName(
-                            "class", nestedName, nestedName in allClassNames
-                        )
-                    }
-                }
-            }
-            if (classNode.name in definedClasses) throw LscDuplicateName("class", classNode.name)
-            definedClassSounds[classNode.name] = newClassSounds
-            definedClasses[classNode.name] = AlternativeElement(
-                classNode.text,
-                newClassSounds.map { TextElement(it, it) }
-            )
-        }
-
-        val definedElementNames = mutableSetOf<String>().also {
-            it.addAll(definedClasses.keys)
-        }
-        for (elementNode in elementDeclarations) {
-            val elementDefinition = elementNode.element as RuleElement
-            checkElementsDefined(elementDefinition, definedElementNames, allElementNames)
-            definedElements[elementNode.name] = elementDefinition
-            definedElementNames += elementNode.name
-        }
-        return definedClasses + definedElements
-    }
-
-    private fun checkElementsDefined(
-        element: RuleElement,
-        definedElementNames: Set<String>,
-        allElementNames: Set<String>,
-    ) {
-        if (element is ReferenceElement) {
-            val name = element.name
-            if (name !in definedElementNames) {
-                throw LscUndefinedName("element", name, name in allElementNames)
-            }
-        } else {
-            for (subElement in element.subElements) {
-                checkElementsDefined(subElement, definedElementNames, allElementNames)
-            }
-        }
-    }
-
     private fun walkElementDeclaration(
         text: String,
         className: ParseNode,
@@ -1295,19 +1228,10 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                     elementDeclarations.map { it as ElementDeclarationNode },
                 )
 
-                val reusableBlockSplit = changeRules.partition {
-                    it.rule is UnlinkedStandardRule && it.rule.isReusableBlock
-                }
-
-                val declaredBlocks = reusableBlockSplit.first.associate {
-                    it.rule as UnlinkedStandardRule
-                    it.rule.name to it.rule
-                }
+                val (declaredBlocks, realChangeRules) = resolveBlocks(changeRules)
 
                 fun Declarations.withElements() =
                     ParseDeclarations(declaredElements, declaredBlocks, this)
-
-                val realChangeRules = reusableBlockSplit.second
 
                 val firstAnchoredStatement = realChangeRules.firstOrNull()?.statements?.firstOrNull()
 
@@ -1388,6 +1312,88 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                     allLinkedRules,
                 )
             }
+
+        private fun resolveElements(
+            classDeclarations: List<ClassDeclarationNode>,
+            elementDeclarations: List<ElementDeclarationNode>,
+        ): Map<String, RuleElement> {
+            val definedClassSounds = mutableMapOf<String, List<String>>()
+            val definedClasses = mutableMapOf<String, AlternativeElement>()
+            val allClassNames = classDeclarations.map { it.name }.toSet()
+
+            val definedElements = mutableMapOf<String, RuleElement>()
+            val allNonClassElementNames = elementDeclarations.map { it.name }.toSet()
+            val allElementNames = allNonClassElementNames + allClassNames
+
+            for (classNode in classDeclarations) {
+                val newClassSounds = classNode.elements.flatMap {
+                    if (it is TextNode) listOf(it.literalText)
+                    else {
+                        val nestedName = (it as ReferenceElement).name
+                        definedClassSounds[nestedName] ?: if (nestedName in allNonClassElementNames) {
+                            throw LscIllegalStructure(
+                                "non-class elements",
+                                nestedName,
+                                "in class declarations like \"${classNode.name}\"",
+                            )
+                        } else {
+                            throw LscUndefinedName(
+                                "class", nestedName, nestedName in allClassNames
+                            )
+                        }
+                    }
+                }
+                if (classNode.name in definedClasses) throw LscDuplicateName("class", classNode.name)
+                definedClassSounds[classNode.name] = newClassSounds
+                definedClasses[classNode.name] = AlternativeElement(
+                    classNode.text,
+                    newClassSounds.map { TextElement(it, it) }
+                )
+            }
+
+            val definedElementNames = mutableSetOf<String>().also {
+                it.addAll(definedClasses.keys)
+            }
+            for (elementNode in elementDeclarations) {
+                val elementDefinition = elementNode.element as RuleElement
+                checkElementsDefined(elementDefinition, definedElementNames, allElementNames)
+                definedElements[elementNode.name] = elementDefinition
+                definedElementNames += elementNode.name
+            }
+            return definedClasses + definedElements
+        }
+
+        private fun checkElementsDefined(
+            element: RuleElement,
+            definedElementNames: Set<String>,
+            allElementNames: Set<String>,
+        ) {
+            if (element is ReferenceElement) {
+                val name = element.name
+                if (name !in definedElementNames) {
+                    throw LscUndefinedName("element", name, name in allElementNames)
+                }
+            } else {
+                for (subElement in element.subElements) {
+                    checkElementsDefined(subElement, definedElementNames, allElementNames)
+                }
+            }
+        }
+
+        private fun resolveBlocks(
+            rules: List<RuleWithAnchoredStatements>,
+        ): Pair<Map<String, UnlinkedStandardRule>, List<RuleWithAnchoredStatements>> {
+            val (blocks, realRules) = rules.partition {
+                it.rule is UnlinkedStandardRule && it.rule.isReusableBlock
+            }
+
+            val declaredBlocks = blocks.associate {
+                it.rule as UnlinkedStandardRule
+                it.rule.name to it.rule
+            }
+
+            return declaredBlocks to realRules
+        }
     }
 
     private class ParseDeclarations(
