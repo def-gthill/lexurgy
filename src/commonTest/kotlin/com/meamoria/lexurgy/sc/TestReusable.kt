@@ -289,6 +289,42 @@ class TestReusable : StringSpec({
         ch("kabaitimu") shouldBe "kabajtama"
     }
 
+    "Filters on rules still apply in blocks they reference" {
+        val ch = lsc(
+            """
+                class vowel {a, i, u}
+                
+                assimilate block:
+                    u => i / _ i
+                
+                assimilate-near:
+                    :assimilate
+                
+                assimilate-far @vowel:
+                    :assimilate
+            """.trimIndent()
+        )
+
+        ch("ukubuinu") shouldBe "ukibiinu"
+    }
+
+    "Rules inside nested filters work on the intersection of the filters" {
+        val ch = lsc(
+            """
+                class high {i, u}
+                class front {i, e}
+                
+                dissimilate block @front:
+                    [] => a / [] _
+                
+                only-high @high:
+                    :dissimilate
+            """.trimIndent()
+        )
+
+        ch("ipenima") shouldBe "ipenama"
+    }
+
     "We should be able to declare \"cleanup\" rules that run after every rule" {
         val ch = lsc(
             """

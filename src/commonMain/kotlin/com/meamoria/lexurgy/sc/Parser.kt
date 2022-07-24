@@ -1727,15 +1727,22 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             declarations: ParseDeclarations,
             inherited: InheritedRuleProperties
         ): ChangeRule {
-            val filter = ruleFilter?.let { filter ->
+            val filter = if (ruleFilter != null || inherited.filter != null) {
+                val thisFilter = ruleFilter?.let { filter ->
+                    { segment: Segment ->
+                        filter.matcher(RuleContext.aloneInMain(), declarations).claim(
+                            Phrase(StandardWord.single(segment)),
+                            PhraseIndex(0, 0),
+                            Bindings(),
+                        ).any { it.index.segmentIndex == 1 }
+                    }
+                } ?: { true }
+                val inheritedFilter = inherited.filter ?: { true }
                 { segment: Segment ->
-                    filter.matcher(RuleContext.aloneInMain(), declarations).claim(
-                        Phrase(StandardWord.single(segment)),
-                        PhraseIndex(0, 0),
-                        Bindings(),
-                    ).any { it.index.segmentIndex == 1 }
+                    thisFilter(segment) && inheritedFilter(segment)
                 }
-            }
+            } else null
+
             val subRule = linkSubRules(
                 firstExpressionNumber,
             ) { _, subRule, subFirstExpressionNumber ->
