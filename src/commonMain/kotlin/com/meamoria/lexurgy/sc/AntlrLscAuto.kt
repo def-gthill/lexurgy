@@ -398,7 +398,7 @@ expect class KeywordExpressionContext : ParserRuleContext {
 
 expect class BlockRefContext : ParserRuleContext {
     fun RULE_START(): TerminalNode
-    fun name(): NameContext
+    fun ruleName(): RuleNameContext
 }
 
 

@@ -458,7 +458,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         }
 
     override fun visitBlockRef(ctx: BlockRefContext): ParseNode =
-        walkBlockReference(ctx.name().getText())
+        walkBlockReference(ctx.ruleName().getText())
 
     override fun visitStandardExpression(ctx: StandardExpressionContext): ParseNode =
         walkRuleExpression(
@@ -1513,21 +1513,27 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             declarations: ParseDeclarations,
             inherited: InheritedRuleProperties,
         ): ChangeRule =
-            SimpleChangeRule(
-                declarations.runtime,
-                expressions.flatMapIndexed { index, expression ->
-                    inlineBlockReferences(declarations, expression).map {
-                        it.link(
-                            inherited.name!!,
-                            firstExpressionNumber + index,
-                            declarations,
-                            inherited.filter != null,
-                        )
-                    }
-                },
-                inherited.filter,
-                matchMode,
-            )
+            if (expressions.singleOrNull() is BlockReference) {
+                (expressions.single() as BlockReference).link(
+                    firstExpressionNumber, declarations, inherited
+                )
+            } else {
+                SimpleChangeRule(
+                    declarations.runtime,
+                    expressions.flatMapIndexed { index, expression ->
+                        inlineBlockReferences(declarations, expression).map {
+                            it.link(
+                                inherited.name!!,
+                                firstExpressionNumber + index,
+                                declarations,
+                                inherited.filter != null,
+                            )
+                        }
+                    },
+                    inherited.filter,
+                    matchMode,
+                )
+            }
 
         private fun inlineBlockReferences(
             declarations: ParseDeclarations,

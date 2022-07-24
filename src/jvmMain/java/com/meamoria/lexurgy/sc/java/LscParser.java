@@ -2448,8 +2448,8 @@ public class LscParser extends Parser {
 
 	public static class BlockRefContext extends ParserRuleContext {
 		public TerminalNode RULE_START() { return getToken(LscParser.RULE_START, 0); }
-		public NameContext name() {
-			return getRuleContext(NameContext.class,0);
+		public RuleNameContext ruleName() {
+			return getRuleContext(RuleNameContext.class,0);
 		}
 		public BlockRefContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -2471,7 +2471,7 @@ public class LscParser extends Parser {
 			setState(488);
 			match(RULE_START);
 			setState(489);
-			name();
+			ruleName();
 			}
 		}
 		catch (RecognitionException re) {
@@ -5398,8 +5398,8 @@ public class LscParser extends Parser {
 		"\2\2\u01e1\67\3\2\2\2\u01e2\u01e0\3\2\2\2\u01e3\u01e7\5:\36\2\u01e4\u01e7"+
 		"\5<\37\2\u01e5\u01e7\5> \2\u01e6\u01e3\3\2\2\2\u01e6\u01e4\3\2\2\2\u01e6"+
 		"\u01e5\3\2\2\2\u01e79\3\2\2\2\u01e8\u01e9\t\6\2\2\u01e9;\3\2\2\2\u01ea"+
-		"\u01eb\7\25\2\2\u01eb\u01ec\5\u009aN\2\u01ec=\3\2\2\2\u01ed\u01ee\5@!"+
-		"\2\u01ee\u01ef\7\5\2\2\u01ef\u01f1\5B\"\2\u01f0\u01f2\5R*\2\u01f1\u01f0"+
+		"\u01eb\7\25\2\2\u01eb\u01ec\5\66\34\2\u01ec=\3\2\2\2\u01ed\u01ee\5@!\2"+
+		"\u01ee\u01ef\7\5\2\2\u01ef\u01f1\5B\"\2\u01f0\u01f2\5R*\2\u01f1\u01f0"+
 		"\3\2\2\2\u01f1\u01f2\3\2\2\2\u01f2?\3\2\2\2\u01f3\u01f4\5D#\2\u01f4A\3"+
 		"\2\2\2\u01f5\u01f6\5F$\2\u01f6C\3\2\2\2\u01f7\u01f9\5F$\2\u01f8\u01fa"+
 		"\5R*\2\u01f9\u01f8\3\2\2\2\u01f9\u01fa\3\2\2\2\u01faE\3\2\2\2\u01fb\u0202"+

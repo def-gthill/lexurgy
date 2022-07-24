@@ -304,7 +304,7 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
 
     class BlockRefContext : ParserRuleContext {
         fun RULE_START(): TerminalNode
-        fun name(): NameContext
+        fun ruleName(): RuleNameContext
     }
 
     class StandardExpressionContext : ParserRuleContext {

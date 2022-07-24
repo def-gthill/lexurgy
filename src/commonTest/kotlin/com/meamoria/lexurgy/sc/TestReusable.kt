@@ -145,6 +145,132 @@ class TestReusable : StringSpec({
         ch("vɔvɔ") shouldBe "bobe"
     }
 
+    "Reusable blocks don't execute when first defined" {
+        val ch = lsc(
+            """
+                foo block:
+                    f => b
+                
+                real-rule:
+                    f => x
+                    :foo
+            """.trimIndent()
+        )
+
+        ch("fofo") shouldBe "xoxo"
+    }
+
+    "Reusable blocks can contain Then and Else blocks" {
+        val ch = lsc(
+            """
+                double block:
+                    a => b
+                    Then:
+                    b => c
+                
+                orelse block:
+                    a => b
+                    Else:
+                    b => c
+                
+                test-double:
+                    x => a
+                    Then:
+                    :double
+                    Then:
+                    c => p
+                
+                test-orelse:
+                    {y, z} => {a, b}
+                    Then:
+                    :orelse
+                    Then:
+                    {b, c} => {r, s}
+            """.trimIndent()
+        )
+
+        ch("xyz") shouldBe "prr"
+        ch("xz") shouldBe "ps"
+    }
+
+    "We get an error if we try to jam a complex block into simultaneous expressions" {
+        shouldThrow<LscIllegalStructure> {
+            lsc(
+                """
+                    double block:
+                        a => b
+                        Then:
+                        b => c
+                    
+                    bad:
+                        :double
+                        c => d
+                """.trimIndent()
+            )
+        }
+    }
+
+    "We can reference elements from inside blocks" {
+        val ch = lsc(
+            """
+                Element repeater a+ b+
+                
+                clean-up-repeaters block:
+                    @repeater => x
+                
+                grow1:
+                    p => abcabb
+                    Then:
+                    :clean-up-repeaters
+                
+                grow2:
+                    q => adaab
+                    Then:
+                    :clean-up-repeaters
+            """.trimIndent()
+        )
+
+        ch("quapp") shouldBe "adxuxcxxcx"
+    }
+
+    "Blocks can reference each other" {
+        val ch = lsc(
+            """
+                do-it-once block:
+                    a => aa
+                
+                do-it-twice block:
+                    :do-it-once
+                    Then:
+                    :do-it-once
+                
+                do-it-four-times block:
+                    :do-it-twice
+                    Then:
+                    :do-it-twice
+                
+                rule:
+                    :do-it-four-times
+            """.trimIndent()
+        )
+
+        ch("a") shouldBe "aaaaaaaaaaaaaaaa"
+    }
+
+    "Blocks can't be referenced before they're declared" {
+        shouldThrow<LscUndefinedName> {
+            lsc(
+                """
+                    rule:
+                        :too-late
+                    
+                    too-late block:
+                        a => b
+                """.trimIndent()
+                )
+        }
+    }
+
     "We should be able to declare \"cleanup\" rules that run after every rule" {
         val ch = lsc(
             """

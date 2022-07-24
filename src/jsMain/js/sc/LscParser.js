@@ -344,7 +344,7 @@ var serializedATN = ["\u0003\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964",
     "\u0002\u0002\u0002\u01e6\u01e4\u0003\u0002\u0002\u0002\u01e6\u01e5\u0003",
     "\u0002\u0002\u0002\u01e79\u0003\u0002\u0002\u0002\u01e8\u01e9\t\u0006",
     "\u0002\u0002\u01e9;\u0003\u0002\u0002\u0002\u01ea\u01eb\u0007\u0015",
-    "\u0002\u0002\u01eb\u01ec\u0005\u009aN\u0002\u01ec=\u0003\u0002\u0002",
+    "\u0002\u0002\u01eb\u01ec\u00056\u001c\u0002\u01ec=\u0003\u0002\u0002",
     "\u0002\u01ed\u01ee\u0005@!\u0002\u01ee\u01ef\u0007\u0005\u0002\u0002",
     "\u01ef\u01f1\u0005B\"\u0002\u01f0\u01f2\u0005R*\u0002\u01f1\u01f0\u0003",
     "\u0002\u0002\u0002\u01f1\u01f2\u0003\u0002\u0002\u0002\u01f2?\u0003",
@@ -3843,8 +3843,8 @@ BlockRefContext.prototype.RULE_START = function() {
     return this.getToken(LscParser.RULE_START, 0);
 };
 
-BlockRefContext.prototype.name = function() {
-    return this.getTypedRuleContext(NameContext,0);
+BlockRefContext.prototype.ruleName = function() {
+    return this.getTypedRuleContext(RuleNameContext,0);
 };
 
 BlockRefContext.prototype.accept = function(visitor) {
@@ -3869,7 +3869,7 @@ LscParser.prototype.blockRef = function() {
         this.state = 488;
         this.match(LscParser.RULE_START);
         this.state = 489;
-        this.name();
+        this.ruleName();
     } catch (re) {
     	if(re instanceof antlr4.error.RecognitionException) {
 	        localctx.exception = re;

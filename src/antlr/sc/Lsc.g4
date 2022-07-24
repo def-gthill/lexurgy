@@ -43,7 +43,7 @@ ruleName: name (HYPHEN (name | NUMBER))*;
 
 expression: keywordExpression | blockRef | standardExpression;
 keywordExpression: UNCHANGED | OFF;
-blockRef: RULE_START name;
+blockRef: RULE_START ruleName;
 standardExpression: from CHANGE to compoundEnvironment?;
 from: ruleElement;
 to: unconditionalRuleElement;
