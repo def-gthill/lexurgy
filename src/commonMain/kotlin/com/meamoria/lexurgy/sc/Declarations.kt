@@ -114,7 +114,7 @@ class Declarations(
         }
 
     private val phoneticParser = PhoneticParser(
-        symbols.map { it.name },
+        (symbols + normalizedSymbols).map { it.name },
         diacriticsByLevel[WordLevel.SEGMENT]?.map { it.toModifier() } ?: emptyList(),
         syllableSeparator = syllabifier?.let { "." },
         syllableModifiers = diacriticsByLevel[WordLevel.SYLLABLE]?.map {

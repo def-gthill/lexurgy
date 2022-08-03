@@ -353,4 +353,20 @@ class TestDiacritics : StringSpec({
         ch("béibéi") shouldBe "bibi"
         ch("baèbaè") shouldBe "bibi"
     }
+
+    "Symbols with built-in diacritics match input characters with combining diacritics" {
+        val ch = lsc(
+            """
+                Feature type(vowel, con)
+
+                Symbol e [vowel]
+                Symbol ç [con]
+                
+                rule:
+                    [con] => x
+            """.trimIndent()
+        )
+
+        ch("çe") shouldBe "xe"
+    }
 })
