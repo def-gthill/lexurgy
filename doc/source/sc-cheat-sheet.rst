@@ -296,11 +296,24 @@ diacritic declarations, then the rules.
 +-----------------------+---------------------------+-----------------------------------------------+---------------------------+
 | Floating diacritic    | Sounds and classes        | ::                                            | ::                        |
 |                       | without the diacritic     |                                               |                           |
-|                       | match sounds with it.     |   Feature +hightone                           |   be'ne'ne' => be'ne'ni'  |
-|                       |                           |   Diacritic ' (floating) [+hightone]          |   bununu    => bununo     |
+|                       | match sounds with it.     |   Feature +hightone                           |   be'ne'ne' => bi'ni'ni'  |
+|                       |                           |   Diacritic ' (floating) [+hightone]          |   bununu    => bonono     |
 |                       |                           |   rule:                                       |                           |
-|                       |                           |     {u, e} => {o, i} / _ $                    |                           |
-|                       |                           |                                               |                           |
+|                       |                           |     {u, e} => {o, i}                          |                           |
++-----------------------+---------------------------+-----------------------------------------------+---------------------------+
+| Exact match           | This sound must match     | ::                                            | ::                        |
+|                       | exactly, including        |                                               |                           |
+|                       | floating diacritics.      |   Feature +hightone                           |   be'ne'ne' => be'ne'ne'  |
+|                       |                           |   Diacritic ' (floating) [+hightone]          |   bununu    => bonono     |
+|                       |                           |   rule:                                       |                           |
+|                       |                           |     {u!, e!} => {o, i}                        |                           |
++-----------------------+---------------------------+-----------------------------------------------+---------------------------+
+| Inexact capture       | Match a captured sound,   | ::                                            | ::                        |
+|                       | even if it has different  |                                               |                           |
+|                       | floating diacritics       |   Feature +hightone                           |   be'eneu' => be'ineu'    |
+|                       |                           |   Diacritic ' (floating) [+hightone]          |   buunu'e' => buonu'e'    |
+|                       |                           |   rule:                                       |                           |
+|                       |                           |     {u, e}$1 => {o, i} / ~$1 _                |                           |
 +-----------------------+---------------------------+-----------------------------------------------+---------------------------+
 | Named absent value    | Use the specified name    | ::                                            | ::                        |
 |                       | to refer to the absent    |                                               |                           |
