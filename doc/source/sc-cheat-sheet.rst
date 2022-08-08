@@ -185,6 +185,13 @@ Combining Elements
 |                       |                           |   rule:                               |                           |
 |                       |                           |     @stop&@alveolar => r / a _ a      |                           |
 +-----------------------+---------------------------+---------------------------------------+---------------------------+
+| Negated Intersection  | Sounds must match the     | ::                                    | ::                        |
+|                       | first element but *not*   |                                       |                           |
+|                       | the second element.       |   Class stop {t, d, k, g}             |   bataka => batara        |
+|                       |                           |   Class alveolar {t, d, s, z}         |   tagasa => tarasa        |
+|                       |                           |   rule:                               |                           |
+|                       |                           |     @stop&!@alveolar => r / a _ a     |                           |
++-----------------------+---------------------------+---------------------------------------+---------------------------+
 | Dummy rule            | Does nothing. Use this    | ::                                    | ::                        |
 |                       | if you need a rule        |                                       |                           |
 |                       | for other reasons but     |   rule:                               |   banana => banana        |

@@ -145,6 +145,9 @@ Now we can write intervocalic lenition like this::
     intervocalic-lenition:
         @unvcdstop => @vcdstop / @vowel _ @vowel
 
+You need to include the `@` sign to make it clear that you're talking
+about the *class* called `vowel`, not the literal sounds /vowel/.
+
 You can use the names of previously defined classes in your
 class definitions::
 
@@ -200,6 +203,19 @@ specify exceptions to a rule using a double slash::
         e => * / _ $ // {p, t, k} _
 
 This rule drops a final [e], *except* after a voiceless stop.
+
+Wildcards
+~~~~~~~~~~
+
+The symbol ``[]`` matches any single sound. It's often useful for
+"skipping" a certain number of sounds. For example, the following
+rule deletes schwas, but not in the last two sounds of a word::
+
+    drop-schwas:
+        ə => * / _ [] []
+
+It works by requiring there to be two sounds (*any* two sounds)
+after the schwa.
 
 Comments
 ~~~~~~~~~
@@ -750,6 +766,29 @@ any glides or consonants at the end::
     stress-last-syllable:
         @vowel => [+stress] / _ {@glide, @consonant}* $
 
+You can get even more specific about the number of allowed repetitions by
+using numbers after the `*`. This rule will stress the last syllable
+only if there are *exactly two* coda consonants::
+
+    stress-last-syllable-picky:
+        @vowel => [+stress] / _ {@glide, @consonant}*2 $
+
+
+And this rule will stress the last syllable if there are *between one and three*
+coda consonants::
+
+    stress-last-syllable-less-picky:
+        @vowel => [+stress] / _ {@glide, @consonant}*(1-3) $
+
+If an entire sequence of sounds is optional or repeated, put those sounds in
+parentheses so it's clear that the repeater applies to all the sounds
+together, not just the last one. For example, if you wanted to assign stress
+to the last syllable if it's open *or* if there's *both* a glide and a consonant
+in its coda, you could do this::
+
+    stress-last-syllable-complicated:
+        @vowel => [+stress] / _ (@glide @consonant)? $
+
 .. warning::
 
     Overly complicated combinations of optionals and repeaters can
@@ -896,6 +935,14 @@ This rule uses a bare capture variable on the match side of the rule to remove g
     degemination:
         @consonant$1 $1 => $1 *
 
+.. warning::
+
+    Unlike most other elements, captures are picky about floating diacritics
+    by default. They only match sounds that are *exactly* the same as the
+    sound that was originally captured. If you want a capture reference
+    to ignore floating diacritics, put a ``~`` before it: ``~$1`` matches
+    whatever was captured by ``$1`` plus or minus any floating diacritics.
+
 Negation
 ~~~~~~~~~
 
@@ -905,6 +952,14 @@ the element --- by preceding the element with ``!``, as with matrix features.
 Currently you can do this with literal text (``!r`` matches anything but the sound [r]),
 classes (``!@vowel`` matches anything not in the ``vowel`` class), and capture references
 (``!$1`` matches anything except what was captured in the ``$1`` variable).
+
+You can negate *any* element that immediately follows an ``&``. For example,
+``([] [])&!(@consonant @vowel)`` matches any sequence of two sounds *other than*
+a consonant followed by a vowel. You can't just say ``!(@consonant @vowel)`` with
+no context: almost any sequence of sounds is "not a consonant followed by a vowel",
+and it often isn't clear which such sequence should be matched. Having a positive match first
+tells Lexurgy what it should look for first, before filtering out the cases
+you don't want.
 
 Nested Environments
 ~~~~~~~~~~~~~~~~~~~~
@@ -995,6 +1050,21 @@ only the statements in the block.
 
 Now you should be able to follow the
 `Advancedish example <https://www.lexurgy.com/examples/sc?changes=3&input=1>`_.
+
+Left-to-Right and Right-to-Left Rules
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Lexurgy also supports directional variants of propagation.
+If you mark a rule as ``ltr``, then it will be applied *exactly once*
+at each sound in the word, moving from left to right. Rules marked
+as ``rtl`` are similar, but move from right to left.
+
+Since the vowel harmony rule from the previous section propagates
+exclusively from left to right, it could equally well have been
+written as::
+
+    vowel-harmony [vowel] ltr:
+        [!central] => [$frontness] / [!central $frontness] _
 
 Interactions Between Words
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
