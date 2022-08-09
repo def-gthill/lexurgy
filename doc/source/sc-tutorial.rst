@@ -128,6 +128,8 @@ stops::
 Note the two underscores, one in each environment. Alternative environments are the
 *only* time you can have multiple underscores in the same expression!
 
+.. _sc-classes:
+
 Sound Classes
 ~~~~~~~~~~~~~~
 
@@ -816,6 +818,51 @@ stand out.
 
 Advanced Structures
 --------------------
+
+Reusable Elements
+~~~~~~~~~~~~~~~~~~
+
+If you find yourself repeating part of an expression across many rules,
+consider declaring it as an ``Element``.
+
+Element declarations are similar to `class declarations <sc-classes_>`_, but
+they can contain *anything* that you could find in an expression::
+
+    Element scluster (s @stop)
+    Element longorhigh {[+long], [+hightone]}
+
+Once declared, you can reference elements in rules (or other elements),
+using ``@`` just like class references::
+
+    Feature +long, +hightone, +stress
+    Diacritic ː (floating) [+long]
+    Diacritic ́  (floating) [+hightone]
+    Diacritic ˈ (floating) (before) [+stress]
+
+    Class stop {p, t, k}
+
+    Element scluster s @stop
+    Element longorhigh {[+long], [+hightone]}
+
+    epenthetic-e:
+        * => e / _ @scluster
+
+    stress:
+        @longorhigh => [+stress]
+
+    decluster-s:
+        @scluster => * @stop
+
+.. note::
+
+    Most sound classes could equally well be declared as
+    elements; e.g. ``Element stop {p, t, k}`` does the same thing
+    as ``Class stop {p, t, k}``. However, referencing a class in
+    an element declaration is slightly different from referencing a
+    class from another class: ``Class obstruent {@stop, s}`` expands to
+    ``{p, t, k, s}``, but ``Element obstruent {@stop, s}`` expands to
+    ``{{p, t, k}, s}``. This matters if you're trying to line
+    up corresponding sounds!
 
 Hierarchical Rules
 ~~~~~~~~~~~~~~~~~~~
