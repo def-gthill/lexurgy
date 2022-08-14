@@ -210,6 +210,13 @@ Combining Elements
 |                       |                           |     $$ => * / _ a                     |   ran tanta => ran danta  |
 |                       |                           |     t => d / n $$ _                   |                           |
 +-----------------------+---------------------------+---------------------------------------+---------------------------+
+| Reusable element      | Define a complex element  | ::                                    | ::                        |
+|                       | that can be referenced    |                                       |                           |
+|                       | by name                   |   Element batman (na)+                |   bananabad => bininabad  |
+|                       |                           |   rule:                               |   nananab => nininav      |
+|                       |                           |     a => i / _ @batman b              |                           |
+|                       |                           |     b => v / $ @batman _              |                           |
++-----------------------+---------------------------+---------------------------------------+---------------------------+
 
 Features
 ---------
@@ -362,27 +369,57 @@ Blocks
 +-----------------------+---------------------------+---------------------------------------+---------------------------+
 | Propagating rule      | Apply the rule repeatedly | ::                                    | ::                        |
 |                       | until the word stops      |                                       |                           |
-|                       | changing.                 |   rule propagate:                     |   aitaaita => etaeta      |
-|                       |                           |     ai => e                           |   aiaaia   => aa          |
-|                       |                           |     ea => a                           |   eaiteai  => eetee       |
+|                       | changing.                 |   rule propagate:                     |   abcddcba => axxxxxxa    |
+|                       |                           |     dd => xx                          |                           |
+|                       |                           |     {cx, xc} => xx                    |                           |
+|                       |                           |     {bx, xb} => xx                    |                           |
 +-----------------------+---------------------------+---------------------------------------+---------------------------+
 | Left-to-right rule    | Apply the rule once       | ::                                    | ::                        |
 |                       | starting at each          |                                       |                           |
-|                       | character, from the       |   rule ltr:                           |   aitaaita => etaeta      |
-|                       | beginning of the word to  |     ai => e                           |   aiaaia   => eaea        |
-|                       | the end.                  |     ea => a                           |   eaiteai  => aitai       |
+|                       | character, from the       |   rule ltr:                           |   abcddcba => abcxxxxa    |
+|                       | beginning of the word to  |     dd => xx                          |                           |
+|                       | the end.                  |     {cx, xc} => xx                    |                           |
+|                       |                           |     {bx, xb} => xx                    |                           |
 +-----------------------+---------------------------+---------------------------------------+---------------------------+
 | Right-to-left rule    | Apply the rule once       | ::                                    | ::                        |
 |                       | starting at each          |                                       |                           |
-|                       | character, from the       |   rule rtl:                           |   aitaaita => etaeta      |
-|                       | end of the word to        |     ai => e                           |   aiaaia   => eaea        |
-|                       | the beginning.            |     ea => a                           |   eaiteai  => eetee       |
+|                       | character, from the       |   rule ltr:                           |   abcddcba => axxxxcba    |
+|                       | end of the word to        |     dd => xx                          |                           |
+|                       | the beginning.            |     {cx, xc} => xx                    |                           |
+|                       |                           |     {bx, xb} => xx                    |                           |
 +-----------------------+---------------------------+---------------------------------------+---------------------------+
 | Filter                | The rule pretends that    | ::                                    | ::                        |
 |                       | only sounds that match    |                                       |                           |
 |                       | the filter exist.         |   Class vowel {a, e, i}               |   aitati  => eiteti       |
 |                       | Adjacency passes through  |   rule @vowel:                        |   annanni => annenni      |
 |                       | non-matching sounds.      |     a => e / _ i                      |                           |
++-----------------------+---------------------------+---------------------------------------+---------------------------+
+| Deferred rule         | The rule doesn't apply    | ::                                    | ::                        |
+|                       | when declared, but can    |                                       |                           |
+|                       | be applied later as part  |   x defer:                            |   abcddcba => axxxxxxa    |
+|                       | of other rules            |     {dd, bx, xb} => xx                |                           |
+|                       |                           |   rule:                               |                           |
+|                       |                           |     :x                                |                           |
+|                       |                           |     Then:                             |                           |
+|                       |                           |     {cx, xc} => xx                    |                           |
+|                       |                           |     Then:                             |                           |
+|                       |                           |     :x                                |                           |
++-----------------------+---------------------------+---------------------------------------+---------------------------+
+| Cleanup rule          | The rule applies once     | ::                                    | ::                        |
+|                       | when declared, then       |                                       |                           |
+|                       | again after every         |   x cleanup:                          |   abcddcba => axxxxxxa    |
+|                       | subsequent rule           |     {dd, bx, xb} => xx                |                           |
+|                       |                           |   rule:                               |                           |
+|                       |                           |     {cx, xc} => xx                    |                           |
++-----------------------+---------------------------+---------------------------------------+---------------------------+
+| Cleanup off           | Turn off an active        | ::                                    | ::                        |
+|                       | cleanup rule for          |                                       |                           |
+|                       | subsequent rules          |   x cleanup:                          |   abcddcba => abxxxxba    |
+|                       |                           |     {dd, bx, xb} => xx                |                           |
+|                       |                           |   x:                                  |                           |
+|                       |                           |     off                               |                           |
+|                       |                           |   rule:                               |                           |
+|                       |                           |     {cx, xc} => xx                    |                           |
 +-----------------------+---------------------------+---------------------------------------+---------------------------+
 | Deromanizer           | Convert the romanization  | ::                                    | ::                        |
 |                       | system into phonetic      |                                       |                           |
