@@ -514,7 +514,11 @@ internal class ClassMatcher(
     override fun transformerToAlternatives(
         result: AlternativeEmitter,
         filtered: Boolean,
-    ): Transformer = ClassTransformer(declarations, elements, result.elements, filtered)
+    ): Transformer = if (elements.size == result.elements.size) {
+        ClassTransformer(declarations, elements, result.elements, filtered)
+    } else {
+        mismatchedLengths(this, result, elements, result.elements)
+    }
 
     override fun transformerToSequence(
         result: SequenceEmitter,

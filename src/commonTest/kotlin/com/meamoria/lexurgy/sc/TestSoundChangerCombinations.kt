@@ -10,6 +10,14 @@ import com.meamoria.mpp.kotest.shouldThrow
 class TestSoundChangerCombinations : StringSpec({
     val lsc = SoundChanger.Companion::fromLsc
 
+    "We get an error if we try to transform a list to a list of a different length" {
+        shouldThrow<LscInvalidRuleExpression> {
+            lsc("bad-alts:\n{p, t, k} => {f, ts}")
+        }.also {
+            it.cause.shouldBeInstanceOf<LscInvalidTransformation>()
+        }
+    }
+
     "The parser should distribute sequences into adjacent alternative lists if the lengths match" {
         val ch = lsc(
             """
