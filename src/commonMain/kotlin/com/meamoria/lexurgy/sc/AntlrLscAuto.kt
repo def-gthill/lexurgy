@@ -172,7 +172,7 @@ expect open class LscBaseVisitor<T>(){
 
 expect class LscFileContext : ParserRuleContext {
     fun WHITESPACE(): TerminalNode?
-    fun EOF(): TerminalNode?
+    fun EOF(): TerminalNode
 }
 
 expect fun LscFileContext.allStatements(): List<StatementContext>

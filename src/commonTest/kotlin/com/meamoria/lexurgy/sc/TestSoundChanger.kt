@@ -678,6 +678,12 @@ class TestSoundChanger : StringSpec({
         )
     }
 
+    "We can have leading spaces at the beginning of the file" {
+        val ch = lsc("    rule:\na => b")
+
+        ch("aaa") shouldBe "bbb"
+    }
+
     "The file format should allow spaces to be included or not in places where this doesn't affect the meaning" {
         // We're just testing that these don't throw exceptions
         lsc("Feature Stress (*unstressed, stressed)")
