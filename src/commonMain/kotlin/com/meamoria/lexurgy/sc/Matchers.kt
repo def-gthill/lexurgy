@@ -424,12 +424,16 @@ class AlternativeMatcher(
             if (element is AbstractTextMatcher) {
                 currentGroup.add(element)
             } else {
-                groupedElements.add(ClassMatcher(declarations, currentGroup))
-                currentGroup = mutableListOf()
+                if (currentGroup.isNotEmpty()) {
+                    groupedElements.add(ClassMatcher(declarations, currentGroup))
+                    currentGroup = mutableListOf()
+                }
                 groupedElements.add(element)
             }
         }
-        groupedElements.add(ClassMatcher(declarations, currentGroup))
+        if (currentGroup.isNotEmpty()) {
+            groupedElements.add(ClassMatcher(declarations, currentGroup))
+        }
     }
 
     override fun claim(
