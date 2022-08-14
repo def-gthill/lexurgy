@@ -61,10 +61,13 @@ class LscInterpreter {
         offendingSymbol: String,
         offendingLine: String
     ): String =
-        if (offendingSymbol == "<EOF>") {
-            "The rules are incomplete; more is expected after \"$offendingLine\""
-        } else {
-            "\"$offendingSymbol\" doesn't make sense in the line \"$offendingLine\""
+        when (offendingSymbol) {
+            "<EOF>" ->
+                "The rules are incomplete; more is expected after \"$offendingLine\""
+            "\n" ->
+                "The line \"$offendingLine\" is incomplete"
+            else ->
+                "\"$offendingSymbol\" doesn't make sense in the line \"$offendingLine\""
         }
 }
 

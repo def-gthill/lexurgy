@@ -251,6 +251,22 @@ class TestLscParse : StringSpec({
         }
     }
 
+    "If the parser is expecting more tokens in an expression but hits newline, indicate this clearly" {
+        shouldThrow<LscNotParsable> {
+            parser.parseFile(
+                """
+                    rule:
+                        a
+                    
+                    rule-2:
+                        x => y
+                """.trimIndent()
+            )
+        }.also {
+            it.message should startWith("The line \"    a\" is incomplete")
+        }
+    }
+
     "Bad romanizers should be rejected" {
         shouldThrow<LscNotParsable> {
             parser.parseRomanizer(
