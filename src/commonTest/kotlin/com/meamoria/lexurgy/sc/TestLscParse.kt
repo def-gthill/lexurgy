@@ -158,7 +158,7 @@ class TestLscParse : StringSpec({
     }
 
     "Bad symbol declarations should be rejected" {
-        shouldThrow<LscNotParsable> { parser.parseSymbolDeclaration("Symbol blah blah [blah]") }
+        shouldThrow<LscNotParsable> { parser.parseSymbolDeclaration("Symbol [blah] blah blah") }
         shouldThrow<LscNotParsable> { parser.parseSymbolDeclaration("=>") }
     }
 
