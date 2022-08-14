@@ -6,12 +6,12 @@ statement:
     deromanizer | interRomanizer | romanizer | changeRule;
 
 elementDecl: ELEMENT_DECL WHITESPACE name WHITESPACE ruleElement;
-classDecl: CLASS_DECL WHITESPACE name WHITESPACE LIST_START classElement (SEP classElement)* LIST_END;
+classDecl: CLASS_DECL WHITESPACE name WHITESPACE (CLASS_START | LIST_START) classElement ((CLASS_SEP | LIST_SEP) classElement)* CLASS_SEP? LIST_END;
 classElement: elementRef | text;
 featureDecl:
     FEATURE_DECL WHITESPACE (
-        (plusFeature (SEP plusFeature)*) |
-        ((featureModifier WHITESPACE)? name WHITESPACE? O_PAREN (nullAlias SEP)? featureValue (SEP featureValue)* C_PAREN)
+        (plusFeature (LIST_SEP plusFeature)*) |
+        ((featureModifier WHITESPACE)? name WHITESPACE? O_PAREN (nullAlias LIST_SEP)? featureValue (LIST_SEP featureValue)* C_PAREN)
     );
 featureModifier: SYLLABLE_FEATURE;
 plusFeature: (featureModifier WHITESPACE)? AT_LEAST_ONE? name;
@@ -20,7 +20,7 @@ diacriticDecl:
     DIACRITIC_DECL WHITESPACE text WHITESPACE
     (diacriticModifier WHITESPACE)* matrix (WHITESPACE diacriticModifier)*;
 diacriticModifier: DIA_BEFORE | DIA_FIRST | DIA_FLOATING;
-symbolDecl: SYMBOL_DECL WHITESPACE symbolName ((SEP symbolName)* | WHITESPACE matrix);
+symbolDecl: SYMBOL_DECL WHITESPACE symbolName ((LIST_SEP symbolName)* | WHITESPACE matrix);
 symbolName: text;
 
 syllableDecl:
@@ -54,7 +54,7 @@ unconditionalRuleElement: bounded | interfix | negated | postfix | simple | sequ
 // "Bounded" elements have a clear start and end symbol
 bounded: group | list;
 group: O_PAREN ruleElement C_PAREN;
-list: LIST_START ruleElement (SEP ruleElement)* LIST_END;
+list: LIST_START ruleElement (LIST_SEP ruleElement)* LIST_END;
 
 // "Free" elements have sub-elements floating free amid whitespace
 sequence: freeElement (WHITESPACE freeElement)+;
@@ -63,7 +63,7 @@ freeElement: bounded | interfix | negated | postfix | simple;
 compoundEnvironment: condition | exclusion | (condition exclusion);
 condition: CONDITION (environment | environmentList);
 exclusion: EXCLUSION (environment | environmentList);
-environmentList: LIST_START environment (SEP environment)* LIST_END;
+environmentList: LIST_START environment (LIST_SEP environment)* LIST_END;
 environment:
     (environmentBefore WHITESPACE)? ANCHOR (WHITESPACE environmentAfter)?
     | environmentBefore?;
@@ -118,19 +118,21 @@ name:
     OFF | UNCHANGED;
 
 COMMENT: (WHITESPACE? COMMENT_START ~[\n\r]*) -> skip;
-SEP: ',' WHITESPACE?;
-CHANGE: WHITESPACE? '=>' WHITESPACE?;
-CONDITION: WHITESPACE? '/' WHITESPACE?;
-EXCLUSION: WHITESPACE? '//' WHITESPACE?;
+LIST_SEP: ',' WHITESPACE?;
+CLASS_SEP: ',' (WHITESPACE | NEWLINE)?;
+CHANGE: WHITESPACE? '=>' (WHITESPACE | NEWLINE)?;
+CONDITION: WHITESPACE? '/' (WHITESPACE | NEWLINE)?;
+EXCLUSION: WHITESPACE? '//' (WHITESPACE | NEWLINE)?;
 ANCHOR: '_';
 NEWLINE: WHITESPACE? ('\r\n' | '\n') WHITESPACE?;
-WHITESPACE: [\p{White_Space}]+;
+WHITESPACE: ~[\P{White_Space}\r\n]+;
 O_PAREN: '(';
 C_PAREN: ')';
 NULL: '*';
 MATRIX_START: '[';
 MATRIX_END: ']';
 LIST_START: '{';
+CLASS_START: '{' NEWLINE?;
 LIST_END: '}';
 AT_LEAST_ONE: '+';
 OPTIONAL: '?';

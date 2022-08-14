@@ -118,9 +118,11 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
         fun CLASS_DECL(): TerminalNode
         fun WHITESPACE(): Array<TerminalNode>
         fun name(): NameContext
-        fun LIST_START(): TerminalNode
+        fun CLASS_START(): TerminalNode?
+        fun LIST_START(): TerminalNode?
         fun classElement(): Array<ClassElementContext>
-        fun SEP(): Array<TerminalNode>
+        fun CLASS_SEP(): Array<TerminalNode>
+        fun LIST_SEP(): Array<TerminalNode>
         fun LIST_END(): TerminalNode
     }
 
@@ -133,7 +135,7 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
         fun FEATURE_DECL(): TerminalNode
         fun WHITESPACE(): Array<TerminalNode>
         fun plusFeature(): Array<PlusFeatureContext>
-        fun SEP(): Array<TerminalNode>
+        fun LIST_SEP(): Array<TerminalNode>
         fun featureModifier(): FeatureModifierContext?
         fun name(): NameContext?
         fun O_PAREN(): TerminalNode?
@@ -176,7 +178,7 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
         fun SYMBOL_DECL(): TerminalNode
         fun WHITESPACE(): Array<TerminalNode>
         fun symbolName(): Array<SymbolNameContext>
-        fun SEP(): Array<TerminalNode>
+        fun LIST_SEP(): Array<TerminalNode>
         fun matrix(): MatrixContext?
     }
 
@@ -350,7 +352,7 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     class ListContext : ParserRuleContext {
         fun LIST_START(): TerminalNode
         fun ruleElement(): Array<RuleElementContext>
-        fun SEP(): Array<TerminalNode>
+        fun LIST_SEP(): Array<TerminalNode>
         fun LIST_END(): TerminalNode
     }
 
@@ -387,7 +389,7 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     class EnvironmentListContext : ParserRuleContext {
         fun LIST_START(): TerminalNode
         fun environment(): Array<EnvironmentContext>
-        fun SEP(): Array<TerminalNode>
+        fun LIST_SEP(): Array<TerminalNode>
         fun LIST_END(): TerminalNode
     }
 

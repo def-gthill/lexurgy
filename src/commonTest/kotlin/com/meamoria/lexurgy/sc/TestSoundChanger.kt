@@ -50,6 +50,83 @@ class TestSoundChanger : StringSpec({
         }
     }
 
+    "We can break rules across lines at =>" {
+        val ch = lsc(
+            """
+                rule:
+                    a =>
+                    b
+            """.trimIndent()
+        )
+
+        ch("ara") shouldBe "brb"
+    }
+
+    "We can break rules across lines at /" {
+        val ch = lsc(
+            """
+                rule:
+                    a => b /
+                        _ c
+            """.trimIndent()
+        )
+
+        ch("aca") shouldBe "bca"
+    }
+
+    "We can't break rules across blank lines" {
+        shouldThrow<LscNotParsable> {
+            lsc(
+                """
+                    rule:
+                        a =>
+                        
+                        b
+                """.trimIndent()
+            )
+        }
+    }
+
+    "We can't break rules across lines inside sequences" {
+        shouldThrow<LscNotParsable> {
+            lsc(
+                """
+                    rule:
+                        a
+                        b => c
+                """.trimIndent()
+            )
+        }
+    }
+
+    "We can't break rules across lines inside alternative lists" {
+        shouldThrow<LscNotParsable> {
+            lsc(
+                """
+                    rule:
+                        {a,
+                        b} => c
+                """.trimIndent()
+            )
+        }
+    }
+
+    "We can break class declarations at commas and the opening brace" {
+        val ch = lsc(
+            """
+                Class letter {
+                    a, b, c, d, e, f, g, h, i, j, k, l, m,
+                    n, o, p, q, r, s, t, u, v, w, x, y, z,
+                }
+                
+                destroy-letters:
+                    @letter => *
+            """.trimIndent()
+        )
+
+        ch("1a2x3") shouldBe "123"
+    }
+
     "We should be able to declare multiple rules in a file, executed sequentially" {
         val ch = lsc(
             """

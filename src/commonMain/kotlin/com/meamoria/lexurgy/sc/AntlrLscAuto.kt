@@ -201,7 +201,8 @@ expect class ElementDeclContext : ParserRuleContext {
 expect class ClassDeclContext : ParserRuleContext {
     fun CLASS_DECL(): TerminalNode
     fun name(): NameContext
-    fun LIST_START(): TerminalNode
+    fun CLASS_START(): TerminalNode?
+    fun LIST_START(): TerminalNode?
     fun LIST_END(): TerminalNode
 }
 
