@@ -1113,6 +1113,141 @@ written as::
     vowel-harmony [vowel] ltr:
         [!central] => [$frontness] / [!central $frontness] _
 
+Deferred Rules
+~~~~~~~~~~~~~~~
+
+If you find yourself applying the same sound changes at several
+stages of your language's evolution, consider turning them into
+``deferred`` rules. A deferred rule isn't applied where it's declared;
+instead, you apply it later as part of other rules.
+
+For example, suppose you have a nasal assimilation rule::
+
+    Class nasal {m, n, ŋ}
+
+    nasal-assimilation:
+        @nasal => m / {p, b}
+        @nasal => n / {t, d}
+        @nasal => ŋ / {k, g}
+
+Then you go on developing your language, and at some point you
+have a vowel deletion rule::
+
+    Class vowel {a, e, o, i, u}
+
+    delete-pretonic-mid-vowels:
+        {e, o} => * / @vowel []* _ ([]* @vowel)*2 []* $
+
+But this reintroduces nasal-stop clusters at different places
+of articulation: your word ``anepato`` becomes ``anpato``. You
+don't like this, so you apply the nasal assimilation rule *again*.
+Now you have these sound changes::
+
+    Class nasal {m, n, ŋ}
+    Class vowel {a, e, o, i, u}
+
+    nasal-assimilation:
+        @nasal => m / _ {p, b}
+        @nasal => n / _ {t, d}
+        @nasal => ŋ / _ {k, g}
+
+    delete-pretonic-mid-vowels:
+        {e, o} => * / @vowel []* _ ([]* @vowel)*2 []* $
+
+    nasal-assimilation-again:
+        @nasal => m / _ {p, b}
+        @nasal => n / _ {t, d}
+        @nasal => ŋ / _ {k, g}
+
+That works, but it's annoying; this entire rule appears twice, cluttering
+up your sound changes. It also means that if you later find a mistake
+in this rule, you have to remember to fix the mistake in both places.
+
+You can get rid of this repetition by declaring nasal assimilation as
+a deferred rule::
+
+    nasal-assimilation defer:
+        @nasal => m / {p, b}
+        @nasal => n / {t, d}
+        @nasal => ŋ / {k, g}
+
+Now you can apply this rule whenever you need it using the syntax
+``:nasal-assimilation``::
+
+    Class nasal {m, n, ŋ}
+    Class vowel {a, e, o, i, u}
+
+    nasal-assimilation defer:
+        @nasal => m / _ {p, b}
+        @nasal => n / _ {t, d}
+        @nasal => ŋ / _ {k, g}
+
+    initial-nasal-assimilation:
+        :nasal-assimilation
+
+    delete-pretonic-mid-vowels:
+        {e, o} => * / @vowel []* _ ([]* @vowel)*2 []* $
+
+    nasal-assimilation-again:
+        :nasal-assimilation
+
+This is an improvement, but it could be a trap in the future:
+if you later reorder your rules, you might accidentally move
+``delete-pretonic-mid-vowels`` somewhere else and forget to move
+``nasal-assimilation-again`` along with it. Since these two rules
+belong together (the second cleans up a mess made by the first),
+why not combine them into one rule?
+
+::
+
+    delete-pretonic-mid-vowels:
+        {e, o} => * / @vowel []* _ ([]* @vowel)*2 []* $
+        Then:
+        :nasal-assimilation
+
+As this example illustrates, you can combine references to deferred
+rules with ordinary expressions.
+
+Deferred rules can contain all the structures normal rules can,
+including ``Then:`` and ``Else:`` blocks, filters,
+and modifiers like ``propagate``.
+
+.. note::
+
+    If a deferred rule contains a ``Then:`` or ``Else:``, any
+    references to it *must* be separated from adjacent expressions
+    by a ``Then:`` or ``Else:``.
+
+Cleanup Rules
+~~~~~~~~~~~~~~
+
+Deferred rules can help reduce repetition if you need to apply
+the same rule multiple times. But sometimes you don't need that
+much precision; you want something like nasal assimilation to
+apply after *every* rule, to clean up any illicit clusters.
+You can do this by declaring ``nasal-assimilation`` to be a
+``cleanup`` rule::
+
+    Class nasal {m, n, ŋ}
+    Class vowel {a, e, o, i, u}
+
+    nasal-assimilation cleanup:
+        @nasal => m / _ {p, b}
+        @nasal => n / _ {t, d}
+        @nasal => ŋ / _ {k, g}
+
+    delete-pretonic-mid-vowels:
+        {e, o} => * / @vowel []* _ ([]* @vowel)*2 []* $
+
+Cleanup rules run once when declared, and then again after every
+subsequent named rule.
+
+If you want a cleanup rule to *stop* applying at some point, you
+can turn it off using this syntax::
+
+    nasal-assimilation:
+        off
+
 Interactions Between Words
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
