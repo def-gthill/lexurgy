@@ -88,7 +88,7 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
     actual fun name(): NameContext
 
     class LscFileContext : ParserRuleContext {
-        fun WHITESPACE(): TerminalNode?
+        fun WHITESPACE(): Array<TerminalNode>
         fun NEWLINE(): Array<TerminalNode>
         fun statement(): Array<StatementContext>
         fun EOF(): TerminalNode

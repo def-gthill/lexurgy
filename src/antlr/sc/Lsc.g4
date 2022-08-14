@@ -1,6 +1,6 @@
 grammar Lsc;
 
-lscFile: (WHITESPACE | NEWLINE*) statement? (NEWLINE+ statement)* NEWLINE* EOF;
+lscFile: (WHITESPACE | NEWLINE*) statement? (NEWLINE+ statement)* (WHITESPACE | NEWLINE*) EOF;
 statement:
     featureDecl | diacriticDecl | symbolDecl | classDecl | elementDecl | syllableDecl |
     deromanizer | interRomanizer | romanizer | changeRule;
