@@ -916,4 +916,17 @@ class TestSyllables : StringSpec({
             null to listOf("ba.ba"),
         )
     }
+
+    "Unbounded syllable repeaters should be able to process empty words" {
+        val ch = lsc(
+            """
+                Syllables:
+                    b a
+                rule:
+                    <syl> => x / _ <syl> (<syl> <syl>)* $
+            """.trimIndent()
+        )
+
+        ch("") shouldBe ""
+    }
 })
