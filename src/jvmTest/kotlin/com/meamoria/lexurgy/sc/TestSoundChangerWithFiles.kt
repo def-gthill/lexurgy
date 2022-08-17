@@ -82,6 +82,12 @@ class TestSoundChangerWithFiles : StringSpec({
         listFrom("test_robust_length_ev.wlm") shouldBe listFrom("test_robust_length_expected.wlm")
     }
 
+    "Blank lines are transmitted unchanged, even if there are rules that apply to them" {
+        val blankChanger = soundChangerFromLscFile(pathOf("test_blank_lines.lsc"))
+        blankChanger.changeFiles(listOf(pathOf("test_blank_lines.wli")))
+        listFrom("test_blank_lines_ev.wli") shouldBe listFrom("test_blank_lines_ev_expected.wli")
+    }
+
     "This sample list of Three Rivers words should evolve into Muipidan words how they did in the old sound changer" {
         val expected = listOf(
             "hullïdo",

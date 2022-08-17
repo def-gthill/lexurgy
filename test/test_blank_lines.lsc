@@ -1,0 +1,4 @@
+Class vowel {a, e, i, o, u}
+
+epenthetic-final-e:
+ * => e / _ $ // @vowel _
