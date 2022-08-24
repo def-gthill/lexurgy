@@ -76,6 +76,8 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         val statementContexts = ctx.allStatements().map { it.getChild(0) as ParserRuleContext }
         validateOrder(statementContexts)
         val rulesWithAnchoredStatements = visitRulesWithAnchoredStatements(statementContexts)
+        val deromanizerContext = extractDeromanizerContext(statementContexts)
+        val romanizerContext = extractRomanizerContext(statementContexts)
         return walkFile(
             ctx.getText(),
             featureDeclarations = listVisit(statementContexts.filterIsInstance<FeatureDeclContext>()),
@@ -83,9 +85,9 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             symbolDeclarations = listVisit(statementContexts.filterIsInstance<SymbolDeclContext>()),
             classDeclarations = listVisit(statementContexts.filterIsInstance<ClassDeclContext>()),
             elementDeclarations = listVisit(statementContexts.filterIsInstance<ElementDeclContext>()),
-            deromanizer = optionalVisit(statementContexts.filterIsInstance<DeromanizerContext>().singleOrNull()),
+            deromanizer = optionalVisit(deromanizerContext),
             changeRules = rulesWithAnchoredStatements,
-            romanizer = optionalVisit(statementContexts.filterIsInstance<RomanizerContext>().singleOrNull()),
+            romanizer = optionalVisit(romanizerContext),
         )
     }
 
@@ -189,6 +191,16 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         val rule: ParseNode?,
         val statements: List<ParseNode>,
     )
+
+    private fun extractDeromanizerContext(statements: List<ParserRuleContext>): DeromanizerContext? =
+        statements.filterIsInstance<DeromanizerContext>().singleOrNullOrThrow {
+            LscDuplicateName("rule", "Deromanizer")
+        }
+
+    private fun extractRomanizerContext(statements: List<ParserRuleContext>): RomanizerContext? =
+        statements.filterIsInstance<RomanizerContext>().singleOrNullOrThrow {
+            LscDuplicateName("rule", "Romanizer")
+        }
 
     override fun visitElementDecl(ctx: ElementDeclContext): ParseNode = walkElementDeclaration(
         ctx.getText(),

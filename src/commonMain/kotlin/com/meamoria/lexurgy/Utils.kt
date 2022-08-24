@@ -33,10 +33,19 @@ fun <T, R, V> Iterable<T>?.zipOrThisNull(
 
 /**
  * Applies the specified function to this list if it isn't empty,
- * returns null otherwis
+ * returns null otherwise
  */
 fun <T, R> List<T>.ifNotEmpty(transform: (List<T>) -> R): R? =
     if (isEmpty()) null else transform(this)
+
+/**
+ * If this list has exactly one element return it.
+ * If it's empty, return null.
+ * Otherwise, throw the specified exception.
+ */
+fun <T> List<T>.singleOrNullOrThrow(exception: () -> Exception): T? =
+    if (size > 1) throw exception()
+    else singleOrNull()
 
 /**
  * Returns all possible subsets of this iterable
