@@ -46,7 +46,7 @@ class SoundChanger(
         romanize: Boolean = true,
         debug: (String) -> Unit = ::println,
     ): Map<String?, List<String>> {
-        val debugIndices = words.withIndex().filter { it.value in debugWords }.map { it.index }
+        val debugIndices = words.withIndex().filter { it.value in debugWords }.associateBy({it.index}, {it.value})
         val persistentEffects = PersistentEffects()
         val startPhrases = words.map {
             Phrase(
@@ -178,7 +178,7 @@ class SoundChanger(
         rule: NamedRule,
         origPhrases: List<String>,
         curPhrases: List<Phrase>,
-        debugIndices: List<Int>,
+        debugIndices: Map<Int, String>,
         debug: (String) -> Unit,
     ): List<Phrase> =
         curPhrases.fastZipMap(origPhrases) { curPhrase, phrase ->
@@ -189,9 +189,9 @@ class SoundChanger(
                 else throw LscRuleCrashed(e, rule.name, phrase, curPhrase.string)
             }
         }.also { newPhrases ->
-            for (i in debugIndices) {
+            for ((i, source) in debugIndices) {
                 if (newPhrases[i] != curPhrases[i]) {
-                    debug("Applied ${rule.name}: ${curPhrases[i].string} -> ${newPhrases[i].string}")
+                    debug("Applied ${rule.name} to ${source}: ${curPhrases[i].string} -> ${newPhrases[i].string}")
                 }
             }
         }
