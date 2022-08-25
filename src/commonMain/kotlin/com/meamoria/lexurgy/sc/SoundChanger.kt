@@ -46,17 +46,18 @@ class SoundChanger(
         romanize: Boolean = true,
         debug: (String) -> Unit = ::println,
     ): Map<String?, List<String>> {
-        val debugIndices = words.withIndex().filter { it.value in debugWords }.associateBy({it.index}, {it.value})
+        val debugIndices = words.withIndex().filter { it.value in debugWords }.associateBy({ it.index }, { it.value })
         val persistentEffects = PersistentEffects()
-        val startPhrases = words.map {
+        val phoneticPhrases = words.map {
             Phrase(
                 it.split(" ").map(
                     initialDeclarations::parsePhonetic
-                ).map(
-                    initialDeclarations::syllabify
                 )
             )
         }
+        val startPhrases = applySyllables(
+            initialDeclarations, phoneticPhrases, debugIndices, debug
+        )
 
         val result = mutableMapOf<String?, List<String>>()
 
@@ -77,18 +78,21 @@ class SoundChanger(
                         maybeReplace(rom), words, curPhrases, debugIndices, debug
                     ).map { it.string }
                 }
+
                 is CleanupStep -> {
                     curPhrases = applyRule(
                         anchoredStep.cleanupRule, words, curPhrases, debugIndices, debug
                     )
                 }
+
                 is CleanupOffStep -> {
                     persistentEffects.removeCleanupRule(anchoredStep.ruleName)
                 }
+
                 is SyllabificationStep -> {
-                    curPhrases = curPhrases.map {
-                        anchoredStep.declarations.syllabify(it)
-                    }
+                    curPhrases = applySyllables(
+                        anchoredStep.declarations, curPhrases, debugIndices, debug
+                    )
                 }
             }
         }
@@ -171,6 +175,21 @@ class SoundChanger(
 
         fun removeCleanupRule(ruleName: String) {
             cleanupRules.removeAll { it.cleanupRule.name == ruleName }
+        }
+    }
+
+    private fun applySyllables(
+        declarations: Declarations,
+        curPhrases: List<Phrase>,
+        debugIndices: Map<Int, String>,
+        debug: (String) -> Unit,
+    ): List<Phrase> = curPhrases.map {
+        declarations.syllabify(it)
+    }.also { newPhrases ->
+        for ((i, source) in debugIndices) {
+            if (newPhrases[i] != curPhrases[i]) {
+                debug("Applied syllables to ${source}: ${curPhrases[i].string} -> ${newPhrases[i].string}")
+            }
         }
     }
 
@@ -336,6 +355,7 @@ class SimpleChangeRule(
                 }.flatten()
                 filterOverlappingClaims(allTransformations)
             }
+
             MatchMode.LEFT_TO_RIGHT -> {
                 var curPhrase = phrase
                 var index = curPhrase.firstIndex
@@ -345,6 +365,7 @@ class SimpleChangeRule(
                 }
                 curPhrase
             }
+
             MatchMode.RIGHT_TO_LEFT -> {
                 var curPhrase = phrase
                 var index = curPhrase.lastIndex

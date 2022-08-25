@@ -35,6 +35,12 @@ class TestSoundChangerWithFiles : StringSpec({
         listFrom("ptr_test_1_trace.wli") shouldBe listFrom("ptr_test_1_trace_expected.wli")
     }
 
+    "A sound changer should be able to trace syllables" {
+        val syllabianChanger =  soundChangerFromLscFile(pathOf("syllabian.lsc"))
+        syllabianChanger.changeFiles(listOf(pathOf("proto-syllabian.wli")), debugWords=listOf("karapuna"))
+        listFrom("proto-syllabian_trace.wli") shouldBe listFrom("proto-syllabian_trace_expected.wli")
+    }
+
     "The --compare-stages setting should print the original in a wlm file" {
         changer.changeFiles(
             listOf(pathOf("ptr_test_1.wli"), pathOf("ptr_test_2.wli")),
