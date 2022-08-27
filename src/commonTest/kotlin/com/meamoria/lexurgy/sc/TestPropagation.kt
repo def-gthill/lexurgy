@@ -128,6 +128,31 @@ class TestPropagation : StringSpec({
         }
     }
 
+    "An ltr rule can have a filter" {
+        val ch = lsc(
+            """
+                Feature type(consonant, vowel)
+                Feature (syllable) stress(*unstressed, stress)
+                
+                Symbol C [consonant]
+                Symbol V [vowel]
+                
+                Diacritic ˈ (before) (floating) [stress]
+                
+                Syllables:
+                  C? V C? C?
+                
+                rule-one [vowel]:
+                  [] => [stress] / $ _
+                
+                rule-two ltr [vowel]:
+                  [unstressed] => [stress] / [stress] [] _
+            """.trimIndent()
+        )
+
+        ch("CVCCVCVV") shouldBe "ˈCVC.CV.ˈCV.V"
+    }
+
     "We should get a nice error message when we misspell a modifier" {
         shouldThrow<LscInvalidModifier> {
             lsc(

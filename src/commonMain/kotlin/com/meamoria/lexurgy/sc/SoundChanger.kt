@@ -359,7 +359,7 @@ class SimpleChangeRule(
     private fun matchAndTransformOnceAt(
         phrase: Phrase,
         index: PhraseIndex,
-    ) = matchAndTransformOnce(phrase) { filteredPhrase ->
+    ): Phrase = matchAndTransformOnce(phrase) { filteredPhrase ->
         listOfNotNull(
             expressions.asSequence().mapIndexed { i, expr ->
                 expr.claimAt(i, filteredPhrase, index)
