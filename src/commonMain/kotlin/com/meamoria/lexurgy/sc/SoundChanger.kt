@@ -330,7 +330,7 @@ class SimpleChangeRule(
 ) : ChangeRule {
     override operator fun invoke(phrase: Phrase): Phrase? =
         when (matchMode) {
-            MatchMode.SIMULTANEOUS -> matchAndTransformOnce(phrase) { filteredPhrase ->
+            MatchMode.SIMULTANEOUS -> matchAndTransformOnce(phrase) { filteredPhrase, _ ->
                 val allTransformations = expressions.mapIndexed { i, expr ->
                     expr.claimAll(i, filteredPhrase)
                 }.flatten()
@@ -359,22 +359,34 @@ class SimpleChangeRule(
     private fun matchAndTransformOnceAt(
         phrase: Phrase,
         index: PhraseIndex,
-    ): Phrase = matchAndTransformOnce(phrase) { filteredPhrase ->
+    ): Phrase = matchAndTransformOnce(phrase) { filteredPhrase, filterMap ->
+        val filteredIndex = if (filterMap == null) {
+            index
+        } else {
+            // Convert index in the original word into index in the filtered word
+            val filteredSegmentIndex = filterMap[index.wordIndex].indexOf(index.segmentIndex)
+            if (filteredSegmentIndex >= 0) {
+                PhraseIndex(index.wordIndex, filteredSegmentIndex)
+            } else {
+                // The sound at this index doesn't pass the filter, so we can't possibly match here
+                return phrase
+            }
+        }
         listOfNotNull(
             expressions.asSequence().mapIndexed { i, expr ->
-                expr.claimAt(i, filteredPhrase, index)
+                expr.claimAt(i, filteredPhrase, filteredIndex)
             }.firstNotNullOfOrNull { it }
         )
     } ?: phrase
 
-    private fun matchAndTransformOnce(
+    private inline fun matchAndTransformOnce(
         phrase: Phrase,
-        transformationMaker: (Phrase) -> List<Transformation>
+        transformationMaker: (Phrase, List<IntArray>?) -> List<Transformation>
     ): Phrase? {
         val (filteredWords, filterMaps) =
             if (filter == null) phrase to null else phrase.map(::filterWord).unzip()
         val filteredPhrase = Phrase(filteredWords.toList())
-        val transformations = transformationMaker(filteredPhrase)
+        val transformations = transformationMaker(filteredPhrase, filterMaps)
         val realTransformations = unfilterTransformations(phrase, filterMaps, transformations)
         if (realTransformations.isEmpty()) return null
         return applyTransformations(phrase, realTransformations)
