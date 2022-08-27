@@ -3,6 +3,7 @@
     <option name="MAIN_CLASS_NAME" value="com.meamoria.lexurgy.MainJvmKt" />
     <module name="lexurgy.jvmMain" />
     <option name="PROGRAM_PARAMETERS" value="sc test/unicode.lsc test/test_robust_length.wli -t pʰaz" />
+    <shortenClasspath name="NONE" />
     <method v="2">
       <option name="Make" enabled="true" />
     </method>
