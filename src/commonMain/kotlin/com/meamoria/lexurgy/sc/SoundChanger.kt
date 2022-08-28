@@ -46,7 +46,10 @@ class SoundChanger(
         romanize: Boolean = true,
         debug: (String) -> Unit = ::println,
     ): Map<String?, List<String>> {
-        val debugIndices = words.withIndex().filter { it.value in debugWords }.associateBy({ it.index }, { it.value })
+        val tracer = words.withIndex()
+            .filter { it.value in debugWords }
+            .associate { it.index to it.value }
+            .let { Tracer(debug, it) }
         val persistentEffects = PersistentEffects()
         val phoneticPhrases = words.map {
             Phrase(
@@ -56,7 +59,7 @@ class SoundChanger(
             )
         }
         val startPhrases = applySyllables(
-            initialDeclarations, phoneticPhrases, debugIndices, debug
+            initialDeclarations, phoneticPhrases, tracer
         )
 
         val result = mutableMapOf<String?, List<String>>()
@@ -75,13 +78,13 @@ class SoundChanger(
                 is IntermediateRomanizerStep -> {
                     val rom = anchoredStep.romanizer
                     result[rom.name] = applyRule(
-                        maybeReplace(rom), words, curPhrases, debugIndices, debug
+                        maybeReplace(rom), words, curPhrases, tracer
                     ).map { it.string }
                 }
 
                 is CleanupStep -> {
                     curPhrases = applyRule(
-                        anchoredStep.cleanupRule, words, curPhrases, debugIndices, debug
+                        anchoredStep.cleanupRule, words, curPhrases, tracer
                     )
                 }
 
@@ -91,7 +94,7 @@ class SoundChanger(
 
                 is SyllabificationStep -> {
                     curPhrases = applySyllables(
-                        anchoredStep.declarations, curPhrases, debugIndices, debug
+                        anchoredStep.declarations, curPhrases, tracer
                     )
                 }
             }
@@ -143,7 +146,7 @@ class SoundChanger(
             if (started) {
                 if (rule != null && (romanize || rule.ruleType != RuleType.ROMANIZER)) {
                     curPhrases = applyRule(
-                        rule, words, curPhrases, debugIndices, debug
+                        rule, words, curPhrases, tracer
                     )
                 }
             }
@@ -178,27 +181,46 @@ class SoundChanger(
         }
     }
 
+    private class Tracer(
+        val debug: (String) -> Unit,
+        val indexToDebugWords: Map<Int, String>,
+    ) {
+        init {
+            debug("Tracing ${indexToDebugWords.values.joinToString(", ")}")
+        }
+        operator fun invoke(
+            name: String,
+            curPhrases: List<Phrase>,
+            newPhrases: List<Phrase>,
+        ) {
+            for (i in indexToDebugWords.keys) {
+                if (newPhrases[i] != curPhrases[i]) {
+                    debug("Applied ${name}${appliedTo(i)}: ${curPhrases[i].string} -> ${newPhrases[i].string}")
+                }
+            }
+        }
+
+        fun appliedTo(index: Int): String =
+            if (indexToDebugWords.size > 1) {
+                " to ${indexToDebugWords[index]}"
+            } else {
+                ""
+            }
+    }
+
     private fun applySyllables(
         declarations: Declarations,
         curPhrases: List<Phrase>,
-        debugIndices: Map<Int, String>,
-        debug: (String) -> Unit,
+        tracer: Tracer,
     ): List<Phrase> = curPhrases.map {
         declarations.syllabify(it)
-    }.also { newPhrases ->
-        for ((i, source) in debugIndices) {
-            if (newPhrases[i] != curPhrases[i]) {
-                debug("Applied syllables to ${source}: ${curPhrases[i].string} -> ${newPhrases[i].string}")
-            }
-        }
-    }
+    }.also { newPhrases -> tracer("syllables", curPhrases, newPhrases) }
 
     private fun applyRule(
         rule: NamedRule,
         origPhrases: List<String>,
         curPhrases: List<Phrase>,
-        debugIndices: Map<Int, String>,
-        debug: (String) -> Unit,
+        tracer: Tracer,
     ): List<Phrase> =
         curPhrases.fastZipMap(origPhrases) { curPhrase, phrase ->
             try {
@@ -207,13 +229,8 @@ class SoundChanger(
                 if (e is UserError) throw LscRuleNotApplicable(e, rule.name, phrase, curPhrase.string)
                 else throw LscRuleCrashed(e, rule.name, phrase, curPhrase.string)
             }
-        }.also { newPhrases ->
-            for ((i, source) in debugIndices) {
-                if (newPhrases[i] != curPhrases[i]) {
-                    debug("Applied ${rule.name} to ${source}: ${curPhrases[i].string} -> ${newPhrases[i].string}")
-                }
-            }
-        }
+        }.also { newPhrases -> tracer(rule.name, curPhrases, newPhrases) }
+
 
     data class RuleWithAnchoredSteps(
         val rule: NamedRule?,
