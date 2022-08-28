@@ -186,7 +186,9 @@ class SoundChanger(
         val indexToDebugWords: Map<Int, String>,
     ) {
         init {
-            debug("Tracing ${indexToDebugWords.values.joinToString(", ")}")
+            if (indexToDebugWords.isNotEmpty()) {
+                debug("Tracing ${indexToDebugWords.values.joinToString(", ")}")
+            }
         }
         operator fun invoke(
             name: String,

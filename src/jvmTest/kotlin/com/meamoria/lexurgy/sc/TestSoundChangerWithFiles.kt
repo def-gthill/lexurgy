@@ -10,6 +10,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import kotlin.time.ExperimentalTime
 
+@Suppress("unused")
 @ExperimentalTime
 class TestSoundChangerWithFiles : StringSpec({
     fun pathOf(vararg pathComponents: String): Path =
@@ -45,6 +46,19 @@ class TestSoundChangerWithFiles : StringSpec({
         val syllabianChanger =  soundChangerFromLscFile(pathOf("syllabian.lsc"))
         syllabianChanger.changeFiles(listOf(pathOf("proto-syllabian.wli")), debugWords=listOf("karapuna", "pana"))
         listFrom("proto-syllabian_trace.wli") shouldBe listFrom("proto-syllabian_trace_many_expected.wli")
+    }
+
+    "A sound changer should not produce a trace file when not tracing" {
+        val syllabianChanger =  soundChangerFromLscFile(pathOf("syllabian.lsc"))
+        val traceFile = pathOf("proto-syllabian_trace.wli").toFile()
+
+        if (traceFile.exists() && traceFile.isFile) {
+            pathOf("proto-syllabian_trace.wli").toFile().delete()
+        }
+
+        syllabianChanger.changeFiles(listOf(pathOf("proto-syllabian.wli")))
+
+        pathOf("proto-syllabian_trace.wli").toFile().exists() shouldBe false
     }
 
     "The --compare-stages setting should print the original in a wlm file" {
