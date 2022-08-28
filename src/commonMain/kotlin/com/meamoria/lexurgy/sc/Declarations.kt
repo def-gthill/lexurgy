@@ -311,7 +311,6 @@ class Declarations(
         bestDistance: Int? = null,
         availableDiacritics: List<Diacritic> = normalizedDiacritics
     ): ComplexSymbol? {
-        if (availableDiacritics.isEmpty()) return null
         if (matrix.hasUndeclaredSymbol() && candidates.isEmpty()) {
             return searchDiacritics(
                 matrix,

@@ -153,6 +153,17 @@ class TestFeatures : StringSpec({
         ch("prefabricative") shouldBe "prefapricatife"
     }
 
+    "The empty matrix leaves literal sounds unchanged" {
+        val ch = lsc(
+            """
+                unchanged:
+                    t => []
+            """.trimIndent()
+        )
+
+        ch("tati") shouldBe "tati"
+    }
+
     "We should be able to name the \"absent\" value of a feature" {
         val ch = lsc(
             """
