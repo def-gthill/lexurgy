@@ -119,7 +119,7 @@ class TestReusable : StringSpec({
         }
     }
 
-    "We can declare reusable blocks" {
+    "We can declare deferred rules" {
         val ch = lsc(
             """
                 foo defer:
@@ -145,7 +145,7 @@ class TestReusable : StringSpec({
         ch("vɔvɔ") shouldBe "bobe"
     }
 
-    "Reusable blocks don't execute when first defined" {
+    "Deferred rules don't execute when first defined" {
         val ch = lsc(
             """
                 foo defer:
@@ -160,7 +160,7 @@ class TestReusable : StringSpec({
         ch("fofo") shouldBe "xoxo"
     }
 
-    "Reusable blocks can contain Then and Else blocks" {
+    "Deferred rules can contain Then and Else blocks" {
         val ch = lsc(
             """
                 double defer:
@@ -193,7 +193,7 @@ class TestReusable : StringSpec({
         ch("xz") shouldBe "ps"
     }
 
-    "We get an error if we try to jam a complex block into simultaneous expressions" {
+    "We get an error if we try to jam a complex deferred rule into simultaneous expressions" {
         shouldThrow<LscIllegalStructure> {
             lsc(
                 """
@@ -210,7 +210,7 @@ class TestReusable : StringSpec({
         }
     }
 
-    "We can reference elements from inside blocks" {
+    "We can reference elements from inside deferred rules" {
         val ch = lsc(
             """
                 Element repeater a+ b+
@@ -233,7 +233,7 @@ class TestReusable : StringSpec({
         ch("quapp") shouldBe "adxuxcxxcx"
     }
 
-    "Blocks can reference each other" {
+    "Deferred rules can reference each other" {
         val ch = lsc(
             """
                 do-it-once defer:
@@ -257,7 +257,7 @@ class TestReusable : StringSpec({
         ch("a") shouldBe "aaaaaaaaaaaaaaaa"
     }
 
-    "Blocks can't be referenced before they're declared" {
+    "Deferred rules can't be referenced before they're declared" {
         shouldThrow<LscUndefinedName> {
             lsc(
                 """
@@ -271,7 +271,7 @@ class TestReusable : StringSpec({
         }
     }
 
-    "Blocks can have modifiers" {
+    "Deferred rules can have modifiers" {
         val ch = lsc(
             """
                 class vowel {a, i, u}
@@ -289,7 +289,7 @@ class TestReusable : StringSpec({
         ch("kabaitimu") shouldBe "kabajtama"
     }
 
-    "Filters on rules still apply in blocks they reference" {
+    "Filters on rules still apply in deferred rules they reference" {
         val ch = lsc(
             """
                 class vowel {a, i, u}
@@ -323,6 +323,26 @@ class TestReusable : StringSpec({
         )
 
         ch("ipenima") shouldBe "ipenama"
+    }
+
+    "Intermediate romanizers declared immediately before deferred rules work" {
+        val ch = lsc(
+            """
+                romanizer-intermediate:
+                    i => o
+                
+                deferred-rule defer:
+                    unchanged
+                
+                romanizer:
+                    a => o
+            """.trimIndent()
+        )
+
+        ch.changeWithIntermediates(listOf("tati")) shouldBe mapOf(
+            "intermediate" to listOf("tato"),
+            null to listOf("toti"),
+        )
     }
 
     "We should be able to declare \"cleanup\" rules that run after every rule" {

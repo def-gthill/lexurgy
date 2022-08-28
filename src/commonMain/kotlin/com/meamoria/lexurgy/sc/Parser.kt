@@ -146,6 +146,11 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                         val rule = visit(context) as UnlinkedStandardRule
                         if (rule.cleanup) {
                             curAnchoredStatements += rule
+                        } else if (rule.deferred) {
+                            // Don't anchor anything to a deferred rule!
+                            rulesWithAnchoredStatements += RuleWithAnchoredStatements(
+                                rule, emptyList()
+                            )
                         } else {
                             rulesWithAnchoredStatements += RuleWithAnchoredStatements(
                                 rule, curAnchoredStatements
@@ -343,13 +348,13 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         val matchMode = keywordModifiers.getMatchMode(ruleName)
         val isPropagate = keywordModifiers.any { it.PROPAGATE() != null }
         val isCleanup = keywordModifiers.any { it.CLEANUP() != null }
-        val isReusableBlock = keywordModifiers.any { it.BLOCK() != null }
+        val isDeferred = keywordModifiers.any { it.BLOCK() != null }
         return RuleModifiers(
             ruleFilter = filter,
             matchMode = matchMode,
             isPropagate = isPropagate,
             isCleanup = isCleanup,
-            isReusableBlock = isReusableBlock,
+            isDeferred = isDeferred,
         )
     }
 
@@ -388,7 +393,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         val matchMode: MatchMode,
         val isPropagate: Boolean,
         val isCleanup: Boolean,
-        val isReusableBlock: Boolean,
+        val isDeferred: Boolean,
     )
 
     private fun noColon(
@@ -928,7 +933,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         matchMode = modifiers.matchMode,
         propagate = modifiers.isPropagate,
         cleanup = modifiers.isCleanup,
-        isReusableBlock = modifiers.isReusableBlock,
+        deferred = modifiers.isDeferred,
     )
 
     private fun walkBlock(
@@ -1399,7 +1404,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             rules: List<RuleWithAnchoredStatements>,
         ): Pair<Map<String, UnlinkedStandardRule>, List<RuleWithAnchoredStatements>> {
             val (blocks, realRules) = rules.partition {
-                it.rule is UnlinkedStandardRule && it.rule.isReusableBlock
+                it.rule is UnlinkedStandardRule && it.rule.deferred
             }
 
             val definedBlockNames = mutableSetOf<String>()
@@ -1407,7 +1412,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
             for (rule in rules) {
                 val coreRule = rule.rule
-                if (coreRule is UnlinkedStandardRule && coreRule.isReusableBlock) {
+                if (coreRule is UnlinkedStandardRule && coreRule.deferred) {
                     definedBlockNames += coreRule.name
                 }
                 if (coreRule != null) {
@@ -1734,7 +1739,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         val matchMode: MatchMode,
         val propagate: Boolean,
         val cleanup: Boolean,
-        val isReusableBlock: Boolean,
+        val deferred: Boolean,
     ) : BaseUnlinkedRule(text, listOf(mainBlock)) {
 
         override fun link(
