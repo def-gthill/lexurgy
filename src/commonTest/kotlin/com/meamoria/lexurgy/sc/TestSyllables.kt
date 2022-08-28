@@ -144,6 +144,18 @@ class TestSyllables : StringSpec({
         )
 
         ch("i.ti") shouldBe "iti"
+
+        val ch2 = lsc(
+            """
+                Syllables:
+                  explicit
+                
+                remove-break:
+                  i t? . => i [] *
+            """.trimIndent()
+        )
+
+        ch2("i.ti") shouldBe "iti"
     }
 
     "Explicit syllable breaks in repeaters should be removed" {

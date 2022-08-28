@@ -444,17 +444,22 @@ data class UnboundTransformation(
             subs: List<UnboundTransformation>,
         ): UnboundTransformation {
             fun result(finalBindings: Bindings): Phrase {
+                val (nonEmptySubs, results) = subs.map {
+                    it to it.result(finalBindings)
+                }.filter {
+                    it.second.words.isNotEmpty()
+                }.unzip()
+
                 val subPhrases = mutableListOf<Phrase>()
-                for (i in subs.indices) {
-                    val sub = subs[i]
-                    var subPhrase = sub.result(finalBindings)
+                for ((i, sub) in nonEmptySubs.withIndex()) {
+                    var subPhrase = results[i]
                     if (
                         sub.removesSyllableBreakBefore ||
-                        (i > 0 && subs[i - 1].removesSyllableBreakAfter)
+                        (i > 0 && nonEmptySubs[i - 1].removesSyllableBreakAfter)
                     ) subPhrase = subPhrase.removeLeadingBreak()
                     if (
                         sub.removesSyllableBreakAfter ||
-                        (i < subs.indices.last && subs[i + 1].removesSyllableBreakBefore)
+                        (i < nonEmptySubs.indices.last && nonEmptySubs[i + 1].removesSyllableBreakBefore)
                     ) subPhrase = subPhrase.removeTrailingBreak()
                     subPhrases += subPhrase
                 }
