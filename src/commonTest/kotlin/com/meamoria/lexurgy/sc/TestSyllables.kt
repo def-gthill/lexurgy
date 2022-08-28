@@ -132,6 +132,20 @@ class TestSyllables : StringSpec({
         ch4("mua.a.ah") shouldBe "muabcah"
     }
 
+    "An explicit syllable break can be removed after an optional that doesn't match" {
+        val ch = lsc(
+            """
+                Syllables:
+                  explicit
+                
+                remove-break:
+                  t? . => [] *
+            """.trimIndent()
+        )
+
+        ch("i.ti") shouldBe "iti"
+    }
+
     "Explicit syllable breaks in repeaters should be removed" {
         val ch = lsc(
             """
