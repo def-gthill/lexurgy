@@ -353,7 +353,7 @@ class IndependentSequenceTransformer(
                     },
                 )
                 val resultSyllableFeatureChanges = with (emitter.declarations) {
-                    results.map { it.syllableFeatureChanges }.reduce()
+                    results.map { it.syllableFeatureChanges }.reduce(keepExplicitDefaults = true)
                 }
 
                 Result(resultPhrase, resultSyllableFeatureChanges)
@@ -493,7 +493,7 @@ data class UnboundTransformation(
 
                 val resultPhrase = Phrase.fromSubPhrases(subPhrases)
                 val resultSyllableFeatureChanges = with (declarations) {
-                    results.map { it.syllableFeatureChanges }.reduce()
+                    results.map { it.syllableFeatureChanges }.reduce(keepExplicitDefaults = true)
                 }
 
                 Result(resultPhrase, resultSyllableFeatureChanges)

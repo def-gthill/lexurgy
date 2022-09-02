@@ -346,14 +346,17 @@ class Declarations(
      * Compute a matrix with all the feature values in this matrix,
      * and all the feature values in `updateMatrix`. Feature values in `updateMatrix`
      * override values for the same feature in this matrix.
+     * @param keepExplicitDefaults Whether to keep explicit default values from
+     * `updateMatrix`, instead of just having them delete associated non-default values
+     * from this matrix.
      */
-    fun Matrix.update(updateMatrix: Matrix): Matrix {
+    fun Matrix.update(updateMatrix: Matrix, keepExplicitDefaults: Boolean = false): Matrix {
         val oldMatrixFeatures = simpleValues.associateBy { it.toFeature() }
         val newMatrixValues = valueList.toMutableList()
         for (value in updateMatrix.valueList) {
             val updateFeature = (value as SimpleValue).toFeature()
             oldMatrixFeatures[updateFeature]?.let { newMatrixValues.remove(it) }
-            if (!value.isDefault())
+            if (keepExplicitDefaults || !value.isDefault())
                 newMatrixValues += value
         }
         return Matrix(newMatrixValues)
@@ -361,9 +364,12 @@ class Declarations(
 
     /**
      * Successively update the empty matrix by each matrix in the list.
+     * @param keepExplicitDefaults Whether to keep explicit default values from
+     * `updateMatrix`, instead of just having them delete associated non-default values
+     * from this matrix.
      */
-    fun List<Matrix>.reduce(): Matrix =
-        fold(Matrix.EMPTY) { acc, matrix -> acc.update(matrix) }
+    fun List<Matrix>.reduce(keepExplicitDefaults: Boolean = false): Matrix =
+        fold(Matrix.EMPTY) { acc, matrix -> acc.update(matrix, keepExplicitDefaults) }
 
     /**
      * If this matrix represents an undeclared symbol, convert to a Symbol.
