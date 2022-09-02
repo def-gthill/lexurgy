@@ -1979,7 +1979,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             combineMatchers(declarations, elements.map { it.matcher(context, declarations) })
 
         override fun emitter(declarations: ParseDeclarations): Emitter =
-            combineEmitters(resultElements.map { it.emitter(declarations) })
+            combineEmitters(declarations, resultElements.map { it.emitter(declarations) })
 
         abstract val elements: List<RuleElement>
 
@@ -1990,7 +1990,10 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             elements: List<Matcher>,
         ): Matcher
 
-        abstract fun combineEmitters(elements: List<Emitter>): Emitter
+        abstract fun combineEmitters(
+            declarations: ParseDeclarations,
+            elements: List<Emitter>,
+        ): Emitter
 
         override val subElements: List<RuleElement>
             get() = elements
@@ -2093,9 +2096,12 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         override fun combineMatchers(
             declarations: ParseDeclarations,
             elements: List<Matcher>,
-        ): Matcher = SequenceMatcher(elements)
+        ): Matcher = SequenceMatcher(declarations.runtime, elements)
 
-        override fun combineEmitters(elements: List<Emitter>): Emitter = SequenceEmitter(elements)
+        override fun combineEmitters(
+            declarations: ParseDeclarations,
+            elements: List<Emitter>,
+        ): Emitter = SequenceEmitter(declarations.runtime, elements)
     }
 
     private class CaptureElement(
@@ -2125,6 +2131,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         override fun matcher(context: RuleContext, declarations: ParseDeclarations): Matcher {
             checkContext(context)
             return RepeaterMatcher(
+                declarations.runtime,
                 element.matcher(context, declarations),
                 repeaterType.type,
             )
@@ -2157,7 +2164,10 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         ): Matcher =
             alternativeMatcher(declarations.runtime, elements)
 
-        override fun combineEmitters(elements: List<Emitter>): Emitter =
+        override fun combineEmitters(
+            declarations: ParseDeclarations,
+            elements: List<Emitter>
+        ): Emitter =
             alternativeEmitter(elements)
     }
 
@@ -2210,6 +2220,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                     )
                 is SequenceEmitter ->
                     SequenceMatcher(
+                        declarations.runtime,
                         (element as SequenceElement).elements.zip(
                             emitter.elements
                         ) { subElement, subEmitter ->
@@ -2233,8 +2244,12 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             ).map { transformations ->
                 EmitterMatcher(
                     TransformingEmitter(
+                        declarations.runtime,
                         castToIndependent(element, emitter),
-                        transformations.singleOrNull() ?: MultiConditionalEmitter(transformations),
+                        transformations.singleOrNull() ?: MultiConditionalEmitter(
+                            declarations.runtime,
+                            transformations,
+                        ),
                     )
                 )
             }
@@ -2260,9 +2275,10 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                     )
                 is SequenceEmitter ->
                     SequenceEmitter(
+                        declarations.runtime,
                         emitter.elements.map {
                             emitter(declarations, it)
-                        }
+                        },
                     )
                 else -> singleEmitter(declarations, emitter)
             }
@@ -2276,11 +2292,16 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             ).map { transformations ->
                 if (emitter.isIndependent()) {
                     TransformingEmitter(
+                        declarations.runtime,
                         emitter as IndependentEmitter,
-                        transformations.singleOrNull() ?: MultiConditionalEmitter(transformations)
+                        transformations.singleOrNull() ?: MultiConditionalEmitter(
+                            declarations.runtime,
+                            transformations,
+                        )
                     )
                 } else {
                     MultiConditionalEmitter(
+                        declarations.runtime,
                         listOf(emitter as ConditionalEmitter) + transformations
                     )
                 }
@@ -2390,7 +2411,10 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                     if (segmentEmitter == null) {
                         syllableEmitter
                     } else {
-                        MultiConditionalEmitter(listOf(segmentEmitter, syllableEmitter))
+                        MultiConditionalEmitter(
+                            declarations.runtime,
+                            listOf(segmentEmitter, syllableEmitter)
+                        )
                     }
                 }
             }

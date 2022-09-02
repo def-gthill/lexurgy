@@ -288,7 +288,10 @@ class Environment(val before: Matcher, val after: Matcher) {
     override fun toString(): String = "$before _ $after"
 }
 
-class SequenceMatcher(val elements: List<Matcher>) : BaseMatcher() {
+class SequenceMatcher(
+    val declarations: Declarations,
+    val elements: List<Matcher>
+) : BaseMatcher() {
     override fun claim(
         phrase: Phrase,
         start: PhraseIndex,
@@ -312,7 +315,10 @@ class SequenceMatcher(val elements: List<Matcher>) : BaseMatcher() {
         return ends
     }
 
-    override fun reversed(): Matcher = SequenceMatcher(elements.asReversed().map { it.reversed() })
+    override fun reversed(): Matcher = SequenceMatcher(
+        declarations,
+        elements.asReversed().map { it.reversed() }
+    )
 
     override fun toString(): String = elements.joinToString(separator = " ", prefix = "(", postfix = ")")
 
@@ -331,7 +337,7 @@ class SequenceMatcher(val elements: List<Matcher>) : BaseMatcher() {
                     is AlternativeMatcher -> it.elements
                     else -> generateSequence { it }.asIterable()
                 }
-            }.zipAll { SequenceMatcher(it) }
+            }.zipAll { SequenceMatcher(declarations, it) }
             return AlternativeTransformer(
                 matchSequences,
                 resultSequences.requireNoNulls(),
@@ -346,7 +352,7 @@ class SequenceMatcher(val elements: List<Matcher>) : BaseMatcher() {
         result: SequenceEmitter,
         filtered: Boolean
     ): Transformer = if (elements.size == result.elements.size) {
-        SequenceTransformer(elements, result.elements, filtered)
+        SequenceTransformer(result.declarations, elements, result.elements, filtered)
     } else {
         mismatchedLengths(this, result, elements, result.elements)
     }
@@ -354,12 +360,15 @@ class SequenceMatcher(val elements: List<Matcher>) : BaseMatcher() {
     override fun transformerToConditional(
         result: ConditionalEmitter,
         filtered: Boolean
-    ): Transformer = SequenceTransformer(elements, elements.map { result }, filtered)
+    ): Transformer = SequenceTransformer(
+        declarations, elements, elements.map { result }, filtered
+    )
 
     override fun prefersIndependentEmitters(): Boolean = true
 }
 
 class RepeaterMatcher(
+    val declarations: Declarations,
     val element: Matcher,
     val type: RepeaterType,
 ) : LiftingMatcher() {
@@ -396,6 +405,7 @@ class RepeaterMatcher(
 
     override fun reversed(): Matcher =
         RepeaterMatcher(
+            declarations,
             element.reversed(),
             type,
         )
@@ -405,7 +415,7 @@ class RepeaterMatcher(
     override fun liftingTransformerTo(
         result: Emitter,
         filtered: Boolean
-    ): Transformer = RepeaterTransformer(this, result, filtered)
+    ): Transformer = RepeaterTransformer(declarations, this, result, filtered)
 
     override fun prefersIndependentEmitters(): Boolean = true
 
@@ -700,7 +710,7 @@ class EmitterMatcher(
         partial: Boolean,
     ): List<PhraseMatchEnd> {
         val emitterResult = emitter.result()
-        val resultPhrase = emitterResult(bindings).fullyReversedIf(isReversed)
+        val resultPhrase = emitterResult.bind(bindings).phrase.fullyReversedIf(isReversed)
         val matchEnd = matchSubPhrase(phrase, start, resultPhrase) ?: return emptyList()
         return listOf(PhraseMatchEnd(matchEnd, bindings))
     }

@@ -394,31 +394,47 @@ class SimpleChangeRule(
 
     private fun applyTransformations(phrase: Phrase, transformations: List<Transformation>): Phrase {
         var result = Phrase()
-        var removeNextSyllableBreak = false
-        var cursor = PhraseIndex(0, 0)
+        var previousTransformation: Transformation? = null
 
         fun addExistingSlice(start: PhraseIndex, end: PhraseIndex? = null) {
             var existingSlice = end?.let { phrase.slice(start, it) } ?: phrase.dropUntil(start)
-            if (removeNextSyllableBreak)
+            if (previousTransformation?.removesSyllableBreakAfter == true)
                 existingSlice = existingSlice.removeLeadingBreak()
             result = result.concat(
                 existingSlice
-            ) { left, _ -> left }
+            ) { left, right ->
+                previousTransformation?.let {
+                    with (declarations) {
+                        right.toMatrix()
+                            .update(left.toMatrix())
+                            .update(it.syllableFeatureChanges)
+                            .toModifiers()
+                    }
+                } ?: right
+            }
         }
 
+        fun cursor() = previousTransformation?.end ?: PhraseIndex(0, 0)
+
         for (transformation in transformations.sortedBy { it.start }) {
-            if (cursor > transformation.start) continue
-            addExistingSlice(cursor, transformation.start)
+            if (cursor() > transformation.start) continue
+            addExistingSlice(cursor(), transformation.start)
             if (transformation.removesSyllableBreakBefore) {
                 result = result.removeTrailingBreak()
             }
             result = result.concat(
                 transformation.result,
-            ) { _, right -> right }
-            removeNextSyllableBreak = transformation.removesSyllableBreakAfter
-            cursor = transformation.end
+            ) { left, right ->
+                with (declarations) {
+                    left.toMatrix()
+                        .update(right.toMatrix())
+                        .update(transformation.syllableFeatureChanges)
+                        .toModifiers()
+                }
+            }
+            previousTransformation = transformation
         }
-        addExistingSlice(cursor)
+        addExistingSlice(cursor())
         return result
     }
 

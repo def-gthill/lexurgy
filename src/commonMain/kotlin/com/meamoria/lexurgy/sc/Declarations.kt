@@ -342,6 +342,11 @@ class Declarations(
     private fun Matrix.removeExplicitDefaults(): Matrix =
         Matrix(valueList.filterNot { it.isDefault() || it.isAbsent() })
 
+    /**
+     * Compute a matrix with all the feature values in this matrix,
+     * and all the feature values in `updateMatrix`. Feature values in `updateMatrix`
+     * override values for the same feature in this matrix.
+     */
     fun Matrix.update(updateMatrix: Matrix): Matrix {
         val oldMatrixFeatures = simpleValues.associateBy { it.toFeature() }
         val newMatrixValues = valueList.toMutableList()
@@ -355,6 +360,12 @@ class Declarations(
     }
 
     /**
+     * Successively update the empty matrix by each matrix in the list.
+     */
+    fun List<Matrix>.reduce(): Matrix =
+        fold(Matrix.EMPTY) { acc, matrix -> acc.update(matrix) }
+
+    /**
      * If this matrix represents an undeclared symbol, convert to a Symbol.
      */
     fun Matrix.undeclaredSymbol(): Symbol =
@@ -362,12 +373,21 @@ class Declarations(
 
     /**
      * Splits apart the explicit values of this matrix that operate at each
-     * level
+     * level.
      */
     fun Matrix.splitByLevel(): Map<WordLevel, Matrix> =
         valueList.groupBy {
             it.wordLevel(this@Declarations)
         }.mapValues { (_, v) -> Matrix(v) }
+
+    /**
+     * Return a matrix containing only the features of this matrix
+     * at the specified level.
+     */
+    fun Matrix.onlyAtLevel(level: WordLevel): Matrix =
+        Matrix(
+            valueList.filter { it.wordLevel(this@Declarations) == level }
+        )
 
     fun Matrix.matches(matrix: Matrix, bindings: Bindings): Bindings? {
         var result = bindings

@@ -720,6 +720,60 @@ class TestSyllables : StringSpec({
         ch("bababa") shouldBe "baH.baL.'baL"
     }
 
+    "Syllable-level features persist when manually merging two syllables" {
+        val ch = lsc(
+            """
+                Feature (syllable) +stress
+
+                Diacritic ˈ (before) [+stress]
+                
+                Syllables:
+                    explicit
+                
+                syllable-merge:
+                    . => * / i _ t
+            """.trimIndent()
+        )
+
+        ch("ˈi.te.ti") shouldBe "ˈite.ti"
+        ch("i.ˈte.ti") shouldBe "ˈite.ti"
+
+        val ch2 = lsc(
+            """
+                Feature (syllable) +stress
+
+                Diacritic ˈ (before) [+stress]
+                
+                Syllables:
+                  explicit
+                
+                complex-syllable-merge:
+                  . t ə => * [] *
+            """.trimIndent()
+        )
+
+        ch2("ˈi.tə.ti") shouldBe "ˈit.ti"
+    }
+
+    "We can explicitly override syllable-level features while manually merging syllables" {
+        val ch = lsc(
+            """
+                Feature (syllable) +stress
+
+                Diacritic ˈ (before) [+stress]
+                
+                Syllables:
+                    explicit
+                
+                syllable-merge:
+                    . t e => * t [-stress]
+            """.trimIndent()
+        )
+
+        ch("ˈi.te.ti") shouldBe "ite.ti"
+        ch("i.ˈte.ti") shouldBe "ite.ti"
+    }
+
     "Syllable-level features should persist through filter rules" {
         val ch = lsc(
             """

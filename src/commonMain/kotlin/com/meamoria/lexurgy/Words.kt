@@ -1140,12 +1140,11 @@ class Phrase(val words: List<Word>) : Iterable<Word> {
      * Concatenates the specified phrase to the end of this phrase.
      * ``syllableModifierCombiner`` specifies how to resolve
      * syllable modifiers when two syllables are combined into
-     * one at the boundary. By default, the new syllable gets
-     * the modifiers from the left component only.
+     * one at the boundary.
      */
     fun concat(
         other: Phrase,
-        syllableModifierCombiner: (List<Modifier>, List<Modifier>) -> List<Modifier> = { a, _ -> a },
+        syllableModifierCombiner: (List<Modifier>, List<Modifier>) -> List<Modifier>,
     ): Phrase = when {
         words.isEmpty() -> other
         other.words.isEmpty() -> this

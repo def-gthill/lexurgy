@@ -2,7 +2,31 @@ package com.meamoria.lexurgy.sc
 
 import com.meamoria.lexurgy.*
 
-typealias UnboundResult = (Bindings) -> Phrase
+data class Result(
+    val phrase: Phrase,
+    val syllableFeatureChanges: Matrix,
+)
+
+data class UnboundResult(val bind: (Bindings) -> Result) {
+    /**
+     * Transform the phrase resulting from binding this `UnboundResult`.
+     */
+    fun map(f: (Phrase) -> Phrase) =
+        UnboundResult { bindings ->
+            val result = bind(bindings)
+            Result(f(result.phrase), result.syllableFeatureChanges)
+        }
+
+    companion object {
+        fun fromPhrase(phrase: Phrase) = UnboundResult {
+            Result(phrase, Matrix.EMPTY)
+        }
+
+        fun fromPhraseBinder(bind: (Bindings) -> Phrase) = UnboundResult { bindings ->
+            Result(bind(bindings), Matrix.EMPTY)
+        }
+    }
+}
 
 /**
  * A device that produces segments in the output word.
@@ -27,7 +51,10 @@ interface Emitter {
     fun isIndependent(): Boolean
 }
 
-class SequenceEmitter(val elements: List<Emitter>) : Emitter {
+class SequenceEmitter(
+    val declarations: Declarations,
+    val elements: List<Emitter>,
+) : Emitter {
     override fun toString(): String =
         elements.joinToString(separator = " ", prefix = "(", postfix = ")")
 
@@ -77,43 +104,69 @@ interface ConditionalEmitter : Emitter {
 }
 
 class TransformingEmitter(
+    val declarations: Declarations,
     val initialEmitter: IndependentEmitter,
     val transformation: ConditionalEmitter,
 ) : IndependentEmitter {
     override fun result(): UnboundResult =
-        { bindings ->
-            val initialResult = initialEmitter.result()(bindings)
-            transformation.result(NeverMatcher, initialResult)(bindings)
+        UnboundResult { bindings ->
+            val initialResult = initialEmitter.result().bind(bindings)
+            val (initialPhrase, initialSyllableFeatureChanges) = initialResult
+            val finalResult = transformation.result(NeverMatcher, initialPhrase).bind(bindings)
+            val finalPhrase = finalResult.phrase
+            val finalSyllableFeatureChanges = with(declarations) {
+                initialSyllableFeatureChanges.update(finalResult.syllableFeatureChanges)
+            }
+            Result(
+                finalPhrase,
+                finalSyllableFeatureChanges,
+            )
         }
 }
 
-class MultiConditionalEmitter(val elements: List<ConditionalEmitter>) : ConditionalEmitter {
+class MultiConditionalEmitter(
+    val declarations: Declarations,
+    val elements: List<ConditionalEmitter>,
+) : ConditionalEmitter {
     override fun result(
         matcher: SimpleMatcher,
-        original: Word
+        original: Phrase
     ): UnboundResult =
-        { bindings ->
-            var current = original
+        UnboundResult { bindings ->
+            var currentPhrase = original
+            var currentSyllableFeatureChanges = Matrix.EMPTY
             for (element in elements) {
-                current = element.result(matcher, current)(bindings).first()
+                val result = element.result(matcher, currentPhrase).bind(bindings)
+                currentPhrase = result.phrase
+                with (declarations) {
+                    currentSyllableFeatureChanges = currentSyllableFeatureChanges.update(
+                        result.syllableFeatureChanges
+                    )
+                }
             }
-            Phrase(current)
+            Result(currentPhrase, currentSyllableFeatureChanges)
         }
+
+    override fun result(
+        matcher: SimpleMatcher,
+        original: Word,
+    ): UnboundResult =
+        result(matcher, Phrase(original))
 }
 
 object BetweenWordsEmitter : IndependentEmitter {
     override fun result(): UnboundResult =
-        { Phrase(StandardWord.EMPTY, StandardWord.EMPTY) }
+        UnboundResult.fromPhrase(Phrase(StandardWord.EMPTY, StandardWord.EMPTY))
 }
 
 object SyllableBoundaryEmitter : IndependentEmitter {
     override fun result(): UnboundResult =
-        { Phrase(StandardWord.SYLLABLE_BREAK_ONLY) }
+        UnboundResult.fromPhrase(Phrase(StandardWord.SYLLABLE_BREAK_ONLY))
 }
 
 class CaptureReferenceEmitter(val number: Int) : IndependentEmitter {
     override fun result(): UnboundResult =
-        { bindings ->
+        UnboundResult.fromPhraseBinder { bindings ->
             bindings.captures[number] ?: throw LscUnboundCapture(number)
         }
 
@@ -132,7 +185,7 @@ class MatrixEmitter(val declarations: Declarations, val matrix: Matrix) :
     override fun result(
         matcher: SimpleMatcher, original: Word
     ): UnboundResult =
-        { bindings ->
+        UnboundResult.fromPhraseBinder { bindings ->
             Phrase(
                 with(declarations) {
                     val boundMatrix = matrix.bindVariables(bindings)
@@ -169,18 +222,19 @@ class SyllableMatrixEmitter(val declarations: Declarations, val matrix: Matrix) 
     override fun result(
         matcher: SimpleMatcher, original: Word
     ): UnboundResult =
-        {
+        UnboundResult {
             with(declarations) {
                 val originalModifiers = original.syllableModifiers
                 val newModifiers = (0 until original.numSyllables).associateWith { syllableNumber ->
                     val originalMatrix = originalModifiers[syllableNumber]?.toMatrix() ?: Matrix.EMPTY
                     originalMatrix.update(matrix).toModifiers()
                 }
-                Phrase(
+                val phrase = Phrase(
                     original.toStandard().withSyllabification(
                         original.syllableBreaks, newModifiers
                     )
                 )
+                Result(phrase, matrix)
             }
         }
 
@@ -191,21 +245,29 @@ class SymbolEmitter(val declarations: Declarations, val text: Word) :
     ConditionalEmitter,
     IndependentEmitter {
 
-    override fun result(): UnboundResult = { Phrase(text) }
+    override fun result(): UnboundResult = UnboundResult.fromPhrase(Phrase(text))
 
     override fun result(
         matcher: SimpleMatcher, original: Word
-    ): UnboundResult = {
-        Phrase(
-            original.recoverStructure(
-                when (matcher) {
-                    is SymbolMatcher -> resultFromSymbolMatcher(matcher, original)
-                    is MatrixMatcher -> resultFromMatrixMatcher(original)
-                    else -> text
-                }
+    ): UnboundResult =
+        UnboundResult {
+            val phrase = Phrase(
+                original.recoverStructure(
+                    when (matcher) {
+                        is SymbolMatcher -> resultFromSymbolMatcher(matcher, original)
+                        is MatrixMatcher -> resultFromMatrixMatcher(original)
+                        else -> text
+                    }
+                )
             )
-        )
-    }
+            var matrix = Matrix.EMPTY
+            with (declarations) {
+                for (modifiers in text.syllableModifiers.values) {
+                    matrix = matrix.update(modifiers.toMatrix())
+                }
+            }
+            Result(phrase, matrix)
+        }
 
     private fun resultFromSymbolMatcher(
         matcher: SymbolMatcher, original: Word
@@ -252,16 +314,15 @@ class SymbolEmitter(val declarations: Declarations, val text: Word) :
 }
 
 class TextEmitter(val text: Word) : IndependentEmitter {
-    override fun result(): UnboundResult {
-        return { Phrase(text) }
-    }
+    override fun result(): UnboundResult =
+        UnboundResult.fromPhrase(Phrase(text))
 
     override fun toString(): String = text.string.ifEmpty { "*" }
 }
 
 object EmptyEmitter : IndependentEmitter {
     override fun result(): UnboundResult =
-        { Phrase(StandardWord.EMPTY) }
+        UnboundResult.fromPhrase(Phrase(StandardWord.EMPTY))
 
     override fun toString(): String = "*"
 }
