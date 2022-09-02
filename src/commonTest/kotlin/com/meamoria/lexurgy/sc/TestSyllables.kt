@@ -132,6 +132,20 @@ class TestSyllables : StringSpec({
         ch4("mua.a.ah") shouldBe "muabcah"
     }
 
+    "An explicit syllable break mentioned on both sides of the arrow is maintained" {
+        val ch = lsc(
+            """
+                Syllables:
+                    explicit
+                
+                change-across-boundary:
+                    a . t => e . r
+            """.trimIndent()
+        )
+
+        ch("at.ka.ta") shouldBe "at.ke.ra"
+    }
+
     "An explicit syllable break can be removed after an optional that doesn't match" {
         val ch = lsc(
             """
@@ -772,6 +786,26 @@ class TestSyllables : StringSpec({
 
         ch("ˈi.te.ti") shouldBe "ite.ti"
         ch("i.ˈte.ti") shouldBe "ite.ti"
+    }
+
+    "We can override syllable-level features in different ways across syllable boundaries" {
+        val ch = lsc(
+            """
+                Feature (syllable) +stress
+
+                Diacritic ˈ (before) [+stress]
+                
+                Class vowel {a, e, i, o, u}
+                
+                Syllables:
+                    explicit
+                
+                stress-move:
+                    [+stress] . t @vowel => [-stress] . t [+stress]
+            """.trimIndent()
+        )
+
+        ch("ˈi.te.ti") shouldBe "i.ˈte.ti"
     }
 
     "Syllable-level features should persist through filter rules" {
