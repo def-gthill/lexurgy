@@ -428,8 +428,9 @@ class SimpleChangeRule(
             if (transformation.removesSyllableBreakBefore) {
                 result = result.removeTrailingBreak()
             }
+            val newBit = transformation.finalResult(declarations)
             result = result.concat(
-                transformation.result,
+                newBit,
             ) { left, right ->
                 with (declarations) {
                     var matrix = left.toMatrix().update(right.toMatrix())
@@ -437,7 +438,7 @@ class SimpleChangeRule(
                         matrix = matrix.update(
                             transformation.syllableFeatureChanges[index] ?: Matrix.EMPTY
                         )
-                        if (transformation.result.hasSyllableBreakAfter(index)) {
+                        if (newBit.hasSyllableBreakAfter(index)) {
                             break
                         }
                     }

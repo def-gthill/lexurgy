@@ -423,6 +423,17 @@ data class Transformation(
 
     val elementalSubs: List<Transformation>
         get() = if (subs.isEmpty()) listOf(this) else subs.flatMap { it.elementalSubs }
+
+    /**
+     * The result of the transformation, applying explicit changes
+     * (e.g. syllable feature changes)
+     */
+    fun finalResult(declarations: Declarations): Phrase =
+        result.updateSyllableModifiers(syllableFeatureChanges) { existing, new ->
+            with(declarations) {
+                existing.toMatrix().update(new).toModifiers()
+            }
+        }
 }
 
 data class UnboundTransformation(

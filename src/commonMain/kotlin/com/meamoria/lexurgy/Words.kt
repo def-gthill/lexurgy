@@ -83,6 +83,10 @@ interface Word {
         syllableModifierCombiner: (List<Modifier>, List<Modifier>) -> List<Modifier> = { a, _ -> a },
     ): Word
 
+    fun <T> updateSyllableModifiers(
+        changes: Map<Int, T>, updater: (List<Modifier>, T) -> List<Modifier>,
+    ): Word
+
     /**
      * Returns a word with the same segments as ``other``,
      * but structures copied from this word.
@@ -231,6 +235,17 @@ private class ReversedWord(val inner: Word) : Word {
             else -> force().concat(other, syllableModifierCombiner)
         }
 
+    override fun <T> updateSyllableModifiers(
+        changes: Map<Int, T>,
+        updater: (List<Modifier>, T) -> List<Modifier>
+    ): Word =
+        ReversedWord(
+            inner.updateSyllableModifiers(
+                changes.mapKeys { inner.length - it.key - 1 },
+                updater,
+            ),
+        )
+
     override fun recoverStructure(other: Word, exceptSyllableBreaks: List<Int>): Word =
         when (other) {
             is ReversedWord -> ReversedWord(
@@ -373,6 +388,14 @@ class StandardWord private constructor(
         )
     }
 
+    override fun <T> updateSyllableModifiers(
+        changes: Map<Int, T>,
+        updater: (List<Modifier>, T) -> List<Modifier>
+    ): Word =
+        StandardWord(
+            segments,
+            syllabification?.updateSyllableModifiers(changes, updater),
+        )
 
     override fun recoverStructure(other: Word, exceptSyllableBreaks: List<Int>): Word =
         syllabification?.recoverStructure(other, exceptSyllableBreaks) ?: other
@@ -779,6 +802,25 @@ private class Syllabification(
         )
     }
 
+    fun <T> updateSyllableModifiers(
+        changes: Map<Int, T>,
+        updater: (List<Modifier>, T) -> List<Modifier>
+    ): Syllabification {
+        val newModifiers = syllableModifiers.toMutableMap()
+        for ((index, change) in changes) {
+            val syllableNumber = syllableNumberAt(index)
+            newModifiers[syllableNumber] = updater(
+                newModifiers[syllableNumber] ?: emptyList(),
+                change,
+            )
+        }
+        return Syllabification(
+            segments,
+            syllableBreaks,
+            newModifiers,
+        )
+    }
+
     /**
      * Syllable modifiers excluding "hanging" modifiers, i.e.
      * modifiers for the syllable after the last.
@@ -1106,8 +1148,15 @@ class Phrase(val words: List<Word>) : Iterable<Word> {
     val lastIndex: PhraseIndex =
         PhraseIndex(size - 1, words.lastOrNull()?.length ?: 0)
 
+    /**
+     * The valid indices that can be used to access segments in this `Phrase`.
+     */
     val indices: List<PhraseIndex>
-        get() = iterateFrom(firstIndex).asSequence().toList()
+        get() = words.flatMapIndexed { wordIndex, word ->
+            (0 until word.length).map { segmentIndex ->
+                PhraseIndex(wordIndex, segmentIndex)
+            }
+        }
 
     fun hasIndex(index: PhraseIndex): Boolean =
         index.wordIndex in 0 until size &&
@@ -1226,6 +1275,21 @@ class Phrase(val words: List<Word>) : Iterable<Word> {
                         ) +
                         other.drop(1)
             )
+    }
+
+    fun <T> updateSyllableModifiers(
+        changes: Map<PhraseIndex, T>, updater: (List<Modifier>, T) -> List<Modifier>,
+    ): Phrase {
+        val changesByWord = changes.entries.groupBy { it.key.wordIndex }
+        val updatedWords = words.mapIndexed { i, word ->
+            changesByWord[i]?.let { changes ->
+                word.updateSyllableModifiers(
+                    changes.associate { it.key.segmentIndex to it.value },
+                    updater,
+                )
+            } ?: word
+        }
+        return Phrase(updatedWords)
     }
 
     /**
