@@ -76,6 +76,9 @@ class SoundChanger(
         fun runAnchoredStep(anchoredStep: AnchoredStep) {
             when (anchoredStep) {
                 is IntermediateRomanizerStep -> {
+                    if (!started) {
+                        return
+                    }
                     val rom = anchoredStep.romanizer
                     result[rom.name] = applyRule(
                         maybeReplace(rom), words, curPhrases, tracer
@@ -83,6 +86,9 @@ class SoundChanger(
                 }
 
                 is CleanupStep -> {
+                    if (!started) {
+                        return
+                    }
                     curPhrases = applyRule(
                         anchoredStep.cleanupRule, words, curPhrases, tracer
                     )
@@ -93,6 +99,9 @@ class SoundChanger(
                 }
 
                 is SyllabificationStep -> {
+                    if (!started) {
+                        return
+                    }
                     curPhrases = applySyllables(
                         anchoredStep.declarations, curPhrases, tracer
                     )
@@ -102,6 +111,10 @@ class SoundChanger(
 
         for (ruleWithAnchoredSteps in rules) {
             val rule = ruleWithAnchoredSteps.rule
+
+            if (!started && (startAt == null || rule?.name == startAt)) {
+                started = true
+            }
 
             for (anchoredStep in persistentEffects.cleanupRules) {
                 // Always run persistent cleanup rules first.
@@ -140,9 +153,6 @@ class SoundChanger(
                 break
             }
 
-            if (!started && (startAt == null || rule?.name == startAt)) {
-                started = true
-            }
             if (started) {
                 if (rule != null && (romanize || rule.ruleType != RuleType.ROMANIZER)) {
                     curPhrases = applyRule(
@@ -186,7 +196,9 @@ class SoundChanger(
         val indexToDebugWords: Map<Int, String>,
     ) {
         init {
-            debug("Tracing ${indexToDebugWords.values.joinToString(", ")}")
+            if (indexToDebugWords.isNotEmpty()) {
+                debug("Tracing ${indexToDebugWords.values.joinToString(", ")}")
+            }
         }
         operator fun invoke(
             name: String,
