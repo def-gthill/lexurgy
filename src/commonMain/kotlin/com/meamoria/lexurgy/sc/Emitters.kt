@@ -15,7 +15,7 @@ import com.meamoria.lexurgy.*
 data class Result(
     val phrase: Phrase,
     val emitsSyllableBreaks: List<PhraseIndex>,
-    val syllableFeatureChanges: Matrix,
+    val syllableFeatureChanges: Map<PhraseIndex, Matrix>,
 ) {
     val emitsSyllableBreakBefore: Boolean = emitsSyllableBreaks.firstOrNull() == phrase.firstIndex
     val emitsSyllableBreakAfter: Boolean = emitsSyllableBreaks.lastOrNull() == phrase.lastIndex
@@ -24,11 +24,11 @@ data class Result(
 data class UnboundResult(val bind: (Bindings) -> Result) {
     companion object {
         fun fromPhrase(phrase: Phrase) = UnboundResult {
-            Result(phrase, emptyList(), Matrix.EMPTY)
+            Result(phrase, emptyList(), emptyMap())
         }
 
         fun fromPhraseBinder(bind: (Bindings) -> Phrase) = UnboundResult { bindings ->
-            Result(bind(bindings), emptyList(), Matrix.EMPTY)
+            Result(bind(bindings), emptyList(), emptyMap())
         }
     }
 }
@@ -45,6 +45,20 @@ fun List<Result>.sequenceEmitsSyllableBreaks(): List<PhraseIndex> {
     }
 
     return allBreaks
+}
+
+fun List<Result>.sequenceSyllableFeatureChanges(): Map<PhraseIndex, Matrix> {
+    val allChanges = mutableMapOf<PhraseIndex, Matrix>()
+    var start = PhraseIndex(0, 0)
+
+    for (result in this) {
+        allChanges += result.syllableFeatureChanges.mapKeys { (index, _) ->
+            start + index
+        }
+        start += result.phrase.lastIndex
+    }
+
+    return allChanges
 }
 
 /**
@@ -70,10 +84,7 @@ interface Emitter {
     fun isIndependent(): Boolean
 }
 
-class SequenceEmitter(
-    val declarations: Declarations,
-    val elements: List<Emitter>,
-) : Emitter {
+class SequenceEmitter(val elements: List<Emitter>) : Emitter {
     override fun toString(): String =
         elements.joinToString(separator = " ", prefix = "(", postfix = ")")
 
@@ -123,28 +134,17 @@ interface ConditionalEmitter : Emitter {
 }
 
 class TransformingEmitter(
-    val declarations: Declarations,
     val initialEmitter: IndependentEmitter,
     val transformation: ConditionalEmitter,
 ) : IndependentEmitter {
     override fun result(): UnboundResult =
         UnboundResult { bindings ->
             val initialResult = initialEmitter.result().bind(bindings)
-            val finalResult = transformation.result(NeverMatcher, initialResult.phrase).bind(bindings)
-            val finalPhrase = finalResult.phrase
-            val finalSyllableFeatureChanges = with(declarations) {
-                initialResult.syllableFeatureChanges.update(finalResult.syllableFeatureChanges)
-            }
-            Result(
-                finalPhrase,
-                finalResult.emitsSyllableBreaks,
-                finalSyllableFeatureChanges,
-            )
+            transformation.result(NeverMatcher, initialResult.phrase).bind(bindings)
         }
 }
 
 class MultiConditionalEmitter(
-    val declarations: Declarations,
     val elements: List<ConditionalEmitter>,
 ) : ConditionalEmitter {
     override fun result(
@@ -154,16 +154,12 @@ class MultiConditionalEmitter(
         UnboundResult { bindings ->
             var currentPhrase = original
             var currentEmitsSyllableBreaks = emptyList<PhraseIndex>()
-            var currentSyllableFeatureChanges = Matrix.EMPTY
+            var currentSyllableFeatureChanges = emptyMap<PhraseIndex, Matrix>()
             for (element in elements) {
                 val result = element.result(matcher, currentPhrase).bind(bindings)
                 currentPhrase = result.phrase
                 currentEmitsSyllableBreaks = result.emitsSyllableBreaks
-                with (declarations) {
-                    currentSyllableFeatureChanges = currentSyllableFeatureChanges.update(
-                        result.syllableFeatureChanges
-                    )
-                }
+                currentSyllableFeatureChanges = result.syllableFeatureChanges
             }
             Result(
                 currentPhrase,
@@ -190,9 +186,11 @@ object SyllableBoundaryEmitter : IndependentEmitter {
             Result(
                 Phrase(StandardWord.SYLLABLE_BREAK_ONLY),
                 listOf(PhraseIndex(0, 0)),
-                Matrix.EMPTY,
+                emptyMap(),
             )
         }
+
+    override fun toString(): String = "."
 }
 
 class CaptureReferenceEmitter(val number: Int) : IndependentEmitter {
@@ -265,7 +263,7 @@ class SyllableMatrixEmitter(val declarations: Declarations, val matrix: Matrix) 
                         original.syllableBreaks, newModifiers
                     )
                 )
-                Result(phrase, emptyList(), matrix)
+                Result(phrase, emptyList(), phrase.indices.associateWith { matrix })
             }
         }
 
@@ -297,7 +295,7 @@ class SymbolEmitter(val declarations: Declarations, val text: Word) :
                     matrix = matrix.update(modifiers.toMatrix())
                 }
             }
-            Result(phrase, emptyList(), matrix)
+            Result(phrase, emptyList(), phrase.indices.associateWith { matrix })
         }
 
     private fun resultFromSymbolMatcher(

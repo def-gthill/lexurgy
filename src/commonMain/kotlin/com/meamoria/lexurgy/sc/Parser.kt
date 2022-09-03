@@ -2101,7 +2101,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         override fun combineEmitters(
             declarations: ParseDeclarations,
             elements: List<Emitter>,
-        ): Emitter = SequenceEmitter(declarations.runtime, elements)
+        ): Emitter = SequenceEmitter(elements)
     }
 
     private class CaptureElement(
@@ -2244,10 +2244,8 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             ).map { transformations ->
                 EmitterMatcher(
                     TransformingEmitter(
-                        declarations.runtime,
                         castToIndependent(element, emitter),
                         transformations.singleOrNull() ?: MultiConditionalEmitter(
-                            declarations.runtime,
                             transformations,
                         ),
                     )
@@ -2275,7 +2273,6 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                     )
                 is SequenceEmitter ->
                     SequenceEmitter(
-                        declarations.runtime,
                         emitter.elements.map {
                             emitter(declarations, it)
                         },
@@ -2292,16 +2289,13 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             ).map { transformations ->
                 if (emitter.isIndependent()) {
                     TransformingEmitter(
-                        declarations.runtime,
                         emitter as IndependentEmitter,
                         transformations.singleOrNull() ?: MultiConditionalEmitter(
-                            declarations.runtime,
                             transformations,
                         )
                     )
                 } else {
                     MultiConditionalEmitter(
-                        declarations.runtime,
                         listOf(emitter as ConditionalEmitter) + transformations
                     )
                 }
@@ -2412,7 +2406,6 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                         syllableEmitter
                     } else {
                         MultiConditionalEmitter(
-                            declarations.runtime,
                             listOf(segmentEmitter, syllableEmitter)
                         )
                     }

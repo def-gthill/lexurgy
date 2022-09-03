@@ -405,10 +405,16 @@ class SimpleChangeRule(
             ) { left, right ->
                 previousTransformation?.let {
                     with (declarations) {
-                        right.toMatrix()
-                            .update(left.toMatrix())
-                            .update(it.syllableFeatureChanges)
-                            .toModifiers()
+                        var matrix = right.toMatrix().update(left.toMatrix())
+                        for (index in result.iterateBackFrom(result.lastIndex)) {
+                            matrix = matrix.update(
+                                it.syllableFeatureChanges[index] ?: Matrix.EMPTY
+                            )
+                            if (result.hasSyllableBreakBefore(index)) {
+                                break
+                            }
+                        }
+                        matrix.toModifiers()
                     }
                 } ?: right
             }
@@ -426,10 +432,16 @@ class SimpleChangeRule(
                 transformation.result,
             ) { left, right ->
                 with (declarations) {
-                    left.toMatrix()
-                        .update(right.toMatrix())
-                        .update(transformation.syllableFeatureChanges)
-                        .toModifiers()
+                    var matrix = left.toMatrix().update(right.toMatrix())
+                    for (index in result.iterateFrom(result.firstIndex)) {
+                        matrix = matrix.update(
+                            transformation.syllableFeatureChanges[index] ?: Matrix.EMPTY
+                        )
+                        if (transformation.result.hasSyllableBreakAfter(index)) {
+                            break
+                        }
+                    }
+                    matrix.toModifiers()
                 }
             }
             previousTransformation = transformation

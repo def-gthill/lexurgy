@@ -352,7 +352,7 @@ class SequenceMatcher(
         result: SequenceEmitter,
         filtered: Boolean
     ): Transformer = if (elements.size == result.elements.size) {
-        SequenceTransformer(result.declarations, elements, result.elements, filtered)
+        SequenceTransformer(elements, result.elements, filtered)
     } else {
         mismatchedLengths(this, result, elements, result.elements)
     }
@@ -361,7 +361,7 @@ class SequenceMatcher(
         result: ConditionalEmitter,
         filtered: Boolean
     ): Transformer = SequenceTransformer(
-        declarations, elements, elements.map { result }, filtered
+        elements, elements.map { result }, filtered
     )
 
     override fun prefersIndependentEmitters(): Boolean = true
@@ -415,7 +415,7 @@ class RepeaterMatcher(
     override fun liftingTransformerTo(
         result: Emitter,
         filtered: Boolean
-    ): Transformer = RepeaterTransformer(declarations, this, result, filtered)
+    ): Transformer = RepeaterTransformer(this, result, filtered)
 
     override fun prefersIndependentEmitters(): Boolean = true
 

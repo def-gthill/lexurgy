@@ -42,17 +42,14 @@ class EnvironmentTransformer(
 }
 
 class SequenceTransformer(
-    val declarations: Declarations,
     val elements: List<Transformer>
 ) : Transformer {
 
     constructor(
-        declarations: Declarations,
         matchers: List<Matcher>,
         emitters: List<Emitter>,
         filtered: Boolean,
     ) : this(
-        declarations,
         matchers.zip(emitters) { matcher, emitter ->
             matcher.transformerTo(emitter, filtered)
         },
@@ -80,7 +77,7 @@ class SequenceTransformer(
 
         return resultBits.map {
             UnboundTransformation.fromSubTransformations(
-                declarations, order, start, bindings, it
+                order, start, bindings, it
             )
         }
     }
@@ -166,21 +163,23 @@ internal class ClassTransformer(
         tree.tryMatch(phrase[start.wordIndex], start.segmentIndex).flatMap {
             transformers[it].transform(order, phrase, start, bindings)
         }
+
+    override fun toString(): String = transformers.joinToString(
+        prefix = "{",
+        postfix = "}",
+    )
 }
 
 class RepeaterTransformer(
-    val declarations: Declarations,
     val transformer: Transformer,
     val type: RepeaterType,
 ) : Transformer {
 
     constructor(
-        declarations: Declarations,
         matcher: RepeaterMatcher,
         emitter: Emitter,
         filtered: Boolean,
     ) : this(
-        declarations,
         matcher.element.transformerTo(emitter, filtered),
         matcher.type,
     )
@@ -209,7 +208,7 @@ class RepeaterTransformer(
 
         return resultBits.drop(type.minReps).reversed().flatten().map {
             UnboundTransformation.fromSubTransformations(
-                declarations, order, start, bindings, it
+                order, start, bindings, it
             )
         }
     }
@@ -359,9 +358,7 @@ class IndependentSequenceTransformer(
                     },
                 )
                 val resultEmitsSyllableBreaks = results.sequenceEmitsSyllableBreaks()
-                val resultSyllableFeatureChanges = with (emitter.declarations) {
-                    results.map { it.syllableFeatureChanges }.reduce(keepExplicitDefaults = true)
-                }
+                val resultSyllableFeatureChanges = results.sequenceSyllableFeatureChanges()
 
                 Result(
                     resultPhrase,
@@ -419,7 +416,7 @@ data class Transformation(
     val result: Phrase,
     val subs: List<Transformation> = emptyList(),
     val removesSyllableBreaks: List<PhraseIndex> = emptyList(),
-    val syllableFeatureChanges: Matrix = Matrix.EMPTY,
+    val syllableFeatureChanges: Map<PhraseIndex, Matrix> = emptyMap(),
 ) {
     val removesSyllableBreakBefore: Boolean = removesSyllableBreaks.firstOrNull() == start
     val removesSyllableBreakAfter: Boolean = removesSyllableBreaks.lastOrNull() == end
@@ -473,7 +470,6 @@ data class UnboundTransformation(
 
     companion object {
         fun fromSubTransformations(
-            declarations: Declarations,
             order: Int,
             start: PhraseIndex,
             bindings: Bindings,
@@ -516,9 +512,7 @@ data class UnboundTransformation(
 
                 val resultPhrase = Phrase.fromSubPhrases(subPhrases)
                 val resultEmitsSyllableBreaks = results.sequenceEmitsSyllableBreaks()
-                val resultSyllableFeatureChanges = with (declarations) {
-                    results.map { it.syllableFeatureChanges }.reduce(keepExplicitDefaults = true)
-                }
+                val resultSyllableFeatureChanges = results.sequenceSyllableFeatureChanges()
 
                 Result(
                     resultPhrase,

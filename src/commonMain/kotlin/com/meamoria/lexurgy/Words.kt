@@ -1106,6 +1106,9 @@ class Phrase(val words: List<Word>) : Iterable<Word> {
     val lastIndex: PhraseIndex =
         PhraseIndex(size - 1, words.lastOrNull()?.length ?: 0)
 
+    val indices: List<PhraseIndex>
+        get() = iterateFrom(firstIndex).asSequence().toList()
+
     fun hasIndex(index: PhraseIndex): Boolean =
         index.wordIndex in 0 until size &&
                 index.segmentIndex in 0..words[index.wordIndex].length
@@ -1120,6 +1123,16 @@ class Phrase(val words: List<Word>) : Iterable<Word> {
                 cursor.wordIndex < words.size
 
             override fun next(): PhraseIndex = cursor.also { cursor = stepForward(it) }
+        }
+
+    fun iterateBackFrom(start: PhraseIndex): Iterator<PhraseIndex> =
+        object : Iterator<PhraseIndex> {
+            private var cursor: PhraseIndex = start
+
+            override fun hasNext(): Boolean =
+                cursor.wordIndex > 0 || cursor.segmentIndex > 0
+
+            override fun next(): PhraseIndex = cursor.also { cursor = stepBack(it) }
         }
 
     fun stepForward(index: PhraseIndex): PhraseIndex {
@@ -1182,6 +1195,15 @@ class Phrase(val words: List<Word>) : Iterable<Word> {
      */
     fun removeBoundingBreaks(): Phrase =
         Phrase(words.map { it.removeBoundingBreaks() })
+
+    fun hasSyllableBreakBefore(index: PhraseIndex): Boolean =
+        index.segmentIndex == 0 || index.segmentIndex in words[index.wordIndex].syllableBreaks
+
+    fun hasSyllableBreakAfter(index: PhraseIndex): Boolean {
+        val word = words[index.wordIndex]
+        val nextSegmentIndex = index.segmentIndex + 1
+        return nextSegmentIndex == word.length || nextSegmentIndex in word.syllableBreaks
+    }
 
     /**
      * Concatenates the specified phrase to the end of this phrase.
