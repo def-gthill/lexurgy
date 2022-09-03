@@ -306,12 +306,18 @@ class IndependentTransformer(
         bindings: Bindings
     ): List<UnboundTransformation> =
         matcher.claim(phrase, start, bindings).map { claimEnd ->
-            val unboundResult = emitter.result().map { result ->
-                phrase.slice(start, claimEnd.index).recoverStructure(
-                    result,
+            val unboundResult = UnboundResult { bindings ->
+                val result = emitter.result().bind(bindings)
+                val resultPhrase = phrase.slice(start, claimEnd.index).recoverStructure(
+                    result.phrase,
                     exceptSyllableBreaks = claimEnd.matchedSyllableBreaks.map {
-                        phrase.relativeIndex(it, start)
+                        it - start
                     }
+                )
+                Result(
+                    resultPhrase,
+                    result.emitsSyllableBreaks,
+                    result.syllableFeatureChanges,
                 )
             }
 
@@ -349,14 +355,19 @@ class IndependentSequenceTransformer(
                 val resultPhrase = phrase.slice(start, claimEnd.index).recoverStructure(
                     Phrase.fromSubPhrases(results.map { it.phrase }),
                     exceptSyllableBreaks = claimEnd.matchedSyllableBreaks.map {
-                        phrase.relativeIndex(it, start)
+                        it - start
                     },
                 )
+                val resultEmitsSyllableBreaks = results.sequenceEmitsSyllableBreaks()
                 val resultSyllableFeatureChanges = with (emitter.declarations) {
                     results.map { it.syllableFeatureChanges }.reduce(keepExplicitDefaults = true)
                 }
 
-                Result(resultPhrase, resultSyllableFeatureChanges)
+                Result(
+                    resultPhrase,
+                    resultEmitsSyllableBreaks,
+                    resultSyllableFeatureChanges,
+                )
             }
 
             UnboundTransformation(
@@ -430,15 +441,15 @@ data class UnboundTransformation(
     val removesSyllableBreakAfter: Boolean = removesSyllableBreaks.lastOrNull() == end
 
     fun bindVariables(bindings: Bindings = returnBindings): Transformation {
-        val (resultPhrase, syllableFeatureChanges) = result.bind(bindings)
+        val boundResult = result.bind(bindings)
         return Transformation(
             order,
             start,
             end,
-            resultPhrase,
+            boundResult.phrase,
             subs.map { it.bindVariables(bindings) },
             removesSyllableBreaks,
-            syllableFeatureChanges,
+            boundResult.syllableFeatureChanges,
         )
     }
 
@@ -480,23 +491,40 @@ data class UnboundTransformation(
                 val subPhrases = mutableListOf<Phrase>()
                 for ((i, sub) in nonEmptySubs.withIndex()) {
                     var subPhrase = resultPhrases[i]
+
+                    val thisRemovesSyllableBreakBefore =
+                        sub.removesSyllableBreakBefore &&
+                                !results[i].emitsSyllableBreakBefore
+                    val previousRemovesSyllableBreakAfter =
+                        i > 0 && nonEmptySubs[i - 1].removesSyllableBreakAfter
                     if (
-                        sub.removesSyllableBreakBefore ||
-                        (i > 0 && nonEmptySubs[i - 1].removesSyllableBreakAfter)
+                        thisRemovesSyllableBreakBefore ||
+                        previousRemovesSyllableBreakAfter
                     ) subPhrase = subPhrase.removeLeadingBreak()
+
+                    val thisRemovesSyllableBreakAfter =
+                        sub.removesSyllableBreakAfter &&
+                                !results[i].emitsSyllableBreakAfter
+                    val nextRemovesSyllableBreakBefore =
+                        i < nonEmptySubs.indices.last && nonEmptySubs[i + 1].removesSyllableBreakBefore
                     if (
-                        sub.removesSyllableBreakAfter ||
-                        (i < nonEmptySubs.indices.last && nonEmptySubs[i + 1].removesSyllableBreakBefore)
+                        thisRemovesSyllableBreakAfter ||
+                        nextRemovesSyllableBreakBefore
                     ) subPhrase = subPhrase.removeTrailingBreak()
                     subPhrases += subPhrase
                 }
 
                 val resultPhrase = Phrase.fromSubPhrases(subPhrases)
+                val resultEmitsSyllableBreaks = results.sequenceEmitsSyllableBreaks()
                 val resultSyllableFeatureChanges = with (declarations) {
                     results.map { it.syllableFeatureChanges }.reduce(keepExplicitDefaults = true)
                 }
 
-                Result(resultPhrase, resultSyllableFeatureChanges)
+                Result(
+                    resultPhrase,
+                    resultEmitsSyllableBreaks,
+                    resultSyllableFeatureChanges,
+                )
             }
 
             return UnboundTransformation(
