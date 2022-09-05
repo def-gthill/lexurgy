@@ -12,7 +12,8 @@ class TestSyllabifiedWords : StringSpec({
     val shine = word("sc/ei/n||ʰ))`")
     val startBreak = word("//f/oo")
     val endBreak = word("f/oo//")
-    val empty = StandardWord.SYLLABLE_BREAK_ONLY
+    val empty = StandardWord.EMPTY
+    val breakOnly = StandardWord.SYLLABLE_BREAK_ONLY
 
     val stress = Modifier("ˈ", ModifierPosition.BEFORE)
     val h = Modifier("ʰ", ModifierPosition.FIRST)
@@ -24,7 +25,7 @@ class TestSyllabifiedWords : StringSpec({
         shine.string shouldBe "sʰcein`"
         startBreak.string shouldBe ".foo"
         endBreak.string shouldBe "foo."
-        empty.string shouldBe "."
+        breakOnly.string shouldBe "."
     }
 
     "The \"toString\" should recreate the schematic" {
@@ -91,7 +92,11 @@ class TestSyllabifiedWords : StringSpec({
         (banana + shine).string shouldBe "ba.na.nascein"
         (banana + startBreak).string shouldBe "ba.na.na.foo"
         (startBreak + excellent).string shouldBe ".fooek.se.ˈlen.te"
+        (breakOnly + banana).string shouldBe ".ba.na.na"
+        (breakOnly + excellent).string shouldBe ".ek.se.ˈlen.te"
         ((shine + endBreak) + (startBreak + excellent)).string shouldBe "sʰceinfoo`.fooek.se.ˈlen.te"
+        (empty + (startBreak + excellent)).string shouldBe ".fooek.se.ˈlen.te"
+        (breakOnly + (startBreak + excellent)).string shouldBe ".fooek.se.ˈlen.te"
         (excellent + startBreak + shine).string shouldBe "ek.se.ˈlen.te.fooscein"
     }
 

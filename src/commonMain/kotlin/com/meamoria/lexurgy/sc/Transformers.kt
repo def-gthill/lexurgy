@@ -499,25 +499,25 @@ data class UnboundTransformation(
                 for ((i, sub) in nonEmptySubs.withIndex()) {
                     var subPhrase = resultPhrases[i]
 
-                    val thisRemovesSyllableBreakBefore =
-                        sub.removesSyllableBreakBefore &&
-                                !results[i].emitsSyllableBreakBefore
-                    val previousRemovesSyllableBreakAfter =
-                        i > 0 && nonEmptySubs[i - 1].removesSyllableBreakAfter
-                    if (
-                        thisRemovesSyllableBreakBefore ||
-                        previousRemovesSyllableBreakAfter
-                    ) subPhrase = subPhrase.removeLeadingBreak()
+                    if (!results[i].emitsSyllableBreakBefore) {
+                        val previousRemovesSyllableBreakAfter =
+                            i > 0 && nonEmptySubs[i - 1].removesSyllableBreakAfter
+                        if (
+                            sub.removesSyllableBreakBefore ||
+                            previousRemovesSyllableBreakAfter
+                        ) subPhrase = subPhrase.removeLeadingBreak()
+                    }
 
-                    val thisRemovesSyllableBreakAfter =
-                        sub.removesSyllableBreakAfter &&
-                                !results[i].emitsSyllableBreakAfter
-                    val nextRemovesSyllableBreakBefore =
-                        i < nonEmptySubs.indices.last && nonEmptySubs[i + 1].removesSyllableBreakBefore
-                    if (
-                        thisRemovesSyllableBreakAfter ||
-                        nextRemovesSyllableBreakBefore
-                    ) subPhrase = subPhrase.removeTrailingBreak()
+                    if (!results[i].emitsSyllableBreakAfter) {
+                        val nextRemovesSyllableBreakBefore =
+                            i < nonEmptySubs.indices.last &&
+                                    nonEmptySubs[i + 1].removesSyllableBreakBefore
+                        if (
+                            sub.removesSyllableBreakAfter ||
+                            nextRemovesSyllableBreakBefore
+                        ) subPhrase = subPhrase.removeTrailingBreak()
+                    }
+
                     subPhrases += subPhrase
                 }
 

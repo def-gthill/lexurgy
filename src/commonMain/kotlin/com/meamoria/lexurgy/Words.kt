@@ -770,7 +770,7 @@ private class Syllabification(
         other: Syllabification,
         syllableModifierCombiner: (List<Modifier>, List<Modifier>) -> List<Modifier>
     ): Syllabification {
-        if (length == 0) {
+        if (length == 0 && syllableBreaks.isEmpty()) {
             return other
         }
         var otherSyllableBreaks = other.syllableBreaks.map { it + length }

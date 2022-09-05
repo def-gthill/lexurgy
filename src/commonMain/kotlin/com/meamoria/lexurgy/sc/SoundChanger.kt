@@ -763,4 +763,7 @@ class LscTooManyOptions(val matcher: Any) :
         "Too many possibilities when matching $matcher"
     )
 
-class LscFutureStructure(val structureName: String) : LscUserError(structureName)
+class LscFutureStructure(val structureName: String) :
+    LscUserError(
+        "$structureName aren't implemented yet"
+    )
