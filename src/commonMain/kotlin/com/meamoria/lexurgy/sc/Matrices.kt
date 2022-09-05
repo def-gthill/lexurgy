@@ -82,8 +82,6 @@ data class FeatureVariable(val featureName: String) : MatrixValue {
 
     override fun matches(declarations: Declarations, matrix: Matrix, bindings: Bindings): Bindings? {
         with(declarations) {
-            // Don't try to bind the default values from an empty matrix
-            if (matrix.valueList.isEmpty()) return null
             val featureObject = featureName.toFeature()
             val match = featureObject.allValues.filter { it in matrix.fullValueSet }
             return match.firstOrNull()?.let {

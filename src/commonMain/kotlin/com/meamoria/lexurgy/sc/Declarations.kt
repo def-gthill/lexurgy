@@ -374,15 +374,6 @@ class Declarations(
             it.wordLevel(this@Declarations)
         }.mapValues { (_, v) -> Matrix(v) }
 
-    /**
-     * Return a matrix containing only the features of this matrix
-     * at the specified level.
-     */
-    fun Matrix.onlyAtLevel(level: WordLevel): Matrix =
-        Matrix(
-            valueList.filter { it.wordLevel(this@Declarations) == level }
-        )
-
     fun Matrix.matches(matrix: Matrix, bindings: Bindings): Bindings? {
         var result = bindings
         for (value in matrix.valueList) {

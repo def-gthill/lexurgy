@@ -251,19 +251,20 @@ class SyllableMatrixEmitter(val declarations: Declarations, val matrix: Matrix) 
     override fun result(
         matcher: SimpleMatcher, original: Word
     ): UnboundResult =
-        UnboundResult {
+        UnboundResult { bindings ->
             with(declarations) {
+                val boundMatrix = matrix.bindVariables(bindings)
                 val originalModifiers = original.syllableModifiers
                 val newModifiers = (0 until original.numSyllables).associateWith { syllableNumber ->
                     val originalMatrix = originalModifiers[syllableNumber]?.toMatrix() ?: Matrix.EMPTY
-                    originalMatrix.update(matrix).toModifiers()
+                    originalMatrix.update(boundMatrix).toModifiers()
                 }
                 val phrase = Phrase(
                     original.toStandard().withSyllabification(
                         original.syllableBreaks, newModifiers
                     )
                 )
-                Result(phrase, emptyList(), phrase.indices.associateWith { matrix })
+                Result(phrase, emptyList(), phrase.indices.associateWith { boundMatrix })
             }
         }
 

@@ -586,6 +586,24 @@ class TestSyllables : StringSpec({
         ch("ˈtest^") shouldBe "test^"
     }
 
+    "We can copy syllable-level features with a feature variable" {
+        val ch = lsc(
+            """
+                Feature (syllable) +stress
+                Diacritic ˈ (before) [+stress]
+
+                Syllables:
+                 explicit
+                                
+                stress-spread:
+                 i => [${'$'}stress] / e&[${'$'}stress] t* _
+            """.trimIndent()
+        )
+
+        ch("i.ˈte.ti") shouldBe "i.ˈte.ˈti"
+        ch("i.te.ˈti") shouldBe "i.te.ti"
+    }
+
     "Default syllable level features shouldn't match off the end of a word" {
         val ch = lsc(
             """
