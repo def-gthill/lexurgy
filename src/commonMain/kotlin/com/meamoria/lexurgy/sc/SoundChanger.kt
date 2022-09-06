@@ -112,16 +112,16 @@ class SoundChanger(
         for (ruleWithAnchoredSteps in rules) {
             val rule = ruleWithAnchoredSteps.rule
 
-            if (!started && (startAt == null || rule?.name == startAt)) {
-                started = true
-            }
-
             for (anchoredStep in persistentEffects.cleanupRules) {
                 // Always run persistent cleanup rules first.
                 // They have to run before any syllabification rules,
                 // and if they're about to be cancelled, they need one
                 // last chance to run.
                 runAnchoredStep(anchoredStep)
+            }
+
+            if (!started && (startAt == null || rule?.name == startAt)) {
+                started = true
             }
 
             val stepsToRunBeforeSyllabification =
