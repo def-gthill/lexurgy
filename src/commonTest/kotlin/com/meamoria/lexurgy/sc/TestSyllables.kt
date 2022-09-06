@@ -1063,6 +1063,44 @@ class TestSyllables : StringSpec({
         )
     }
 
+    "Start-at should not run earlier anchored steps, but still keep them" {
+        val ch = lsc(
+            """
+                    syllables:
+                        C V+
+                        
+                    clusters cleanup:
+                        C => * / $ _ C
+                        
+                    hiatus cleanup:
+                        V => * / V _
+                        
+                    syllables:
+                        C V
+                    
+                    rule1:
+                        C => C C / $ _
+                        
+                    syllables:
+                        C C V
+                        C V
+                        
+                    clusters:
+                        off
+                        
+                    another-rule:
+                        unchanged
+                        
+                    rule2:
+                        unchanged
+                        
+                """.trimIndent()
+        )
+
+        ch.change(listOf("CVCV")) shouldBe listOf("CV.CV")
+        ch.change(listOf("CCVCVV"), startAt = "rule2") shouldBe listOf("CCV.CV")
+    }
+
     "Unbounded syllable repeaters should be able to process empty words" {
         val ch = lsc(
             """
