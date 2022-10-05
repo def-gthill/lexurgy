@@ -3,6 +3,7 @@ package com.meamoria.lexurgy.sc
 import com.meamoria.lexurgy.normalizeCompose
 import com.meamoria.mpp.kotest.StringSpec
 import com.meamoria.mpp.kotest.shouldBe
+import com.meamoria.mpp.kotest.shouldThrow
 
 @Suppress("unused")
 class TestRealExamples : StringSpec({
@@ -1191,6 +1192,92 @@ class TestRealExamples : StringSpec({
         "haniposa",
         "kani'asoto nekosa'ima",
     )
+
+    "This example with tons of features should throw an error quickly" {
+        val ch = lsc(
+            """
+                Feature type(*consonant, vowel)
+                Feature low, high, middle
+                Feature front, back, central
+                Feature round, unround
+                Feature +nasalized
+                feature +long
+                Feature +stressed
+                Feature +aspirated
+                Feature +ejective
+                Feature +labialized
+                Feature +lateral
+
+                Feature voicing(unvoiced, voiced)
+                Feature place(bilabial, labiodental, dental, alveolar, postalveolar, retroflex, palatal, velar, uvular, epiglottal, glottal)
+                Feature manner(nasal, plosive, affricate, fricative, approximate, tap, trill)
+
+                Symbol m [voiced bilabial nasal]
+                Symbol n [voiced dental nasal]
+                Symbol ŋ [voiced velar nasal]
+                Symbol p [unvoiced bilabial plosive]
+                Symbol pʼ [unvoiced bilabial plosive +ejective]
+                Symbol t [unvoiced dental plosive]
+                Symbol tʼ [unvoiced dental plosive +ejective]
+                Symbol c [unvoiced palatal plosive]
+                Symbol ɟ [voiced palatal plosive]
+                Symbol k [unvoiced velar plosive]
+                Symbol kʼ [unvoiced velar plosive +ejective]
+                Symbol q [unvoiced uvular plosive]
+                Symbol qʼ [unvoiced uvular plosive +ejective]
+                Symbol ʔ [unvoiced glottal plosive]
+                Symbol ɸ [unvoiced bilabial fricative]
+                Symbol β [voiced bilabial fricative]
+                Symbol ð [voiced dental fricative]
+                Symbol s [unvoiced alveolar fricative]
+                Symbol z [voiced alveolar fricative]
+                Symbol ʃ [unvoiced postalveolar fricative]
+                Symbol ʒ [voiced postalveolar fricative]
+                Symbol ç [unvoiced palatal fricative]
+                Symbol ʝ [voiced palatal fricative]
+                Symbol x [unvoiced velar fricative]
+                Symbol ɣ [voiced velar fricative]
+                Symbol ʀ [voiced uvular trill]
+                Symbol j [voiced palatal approximate]
+
+                #vowels
+
+                Symbol i [+unround -round +high -middle -low +front -central -back vowel]
+                Symbol iː [+unround -round +high -middle -low +front -central -back +long vowel]
+                Symbol ĩ [+unround -round +high -middle -low +front -central -back +nasalized vowel]
+                Symbol y [-unround +round +high -middle -low +front -central -back vowel]
+                Symbol ỹ [-unround +round +high -middle -low +front -central -back +nasalized vowel]
+                Symbol e [+unround -round -high +middle -low +front -central -back vowel]
+                Symbol eː [+unround -round -high +middle -low +front -central -back +long vowel]
+                Symbol ɛ̃ [+unround -round -high +middle -low +front -central -back +nasalized vowel]
+                Symbol ø [-unround +round -high +middle -low +front -central -back vowel]
+                Symbol a [+unround -round -high -middle +low +front -central -back vowel]
+                Symbol aː [+unround -round -high -middle +low +front -central -back +long vowel]
+                Symbol ã [+unround -round -high -middle +low +front -central -back +nasalized vowel]
+                Symbol ə [+unround -round -high +middle -low -front +central -back vowel]
+                Symbol u [-unround +round +high -middle -low -front -central +back vowel]
+                Symbol uː [-unround +round +high -middle -low -front -central +back +long vowel]
+                Symbol ũ [-unround +round +high -middle -low -front -central +back +nasalized vowel]
+                Symbol o [-unround +round -high +middle -low -front -central +back vowel]
+                Symbol oː [-unround +round -high +middle -low -front -central +back +long vowel]
+                Symbol õ [-unround +round -high +middle -low -front -central +back +nasalized vowel]
+                Symbol ɔ [-unround +round -high -middle +low -front -central +back vowel]
+                Symbol ɨ [+unround -round +high -middle -low -front +central -back vowel]
+                Symbol ɨː [+unround -round +high -middle -low -front +central -back +long vowel]
+                Symbol ɨ̃ [+unround -round +high -middle -low -front +central -back +nasalized vowel]
+                Symbol ʌː [+unround -round -high +middle -low -front +central -back +long vowel]
+                Symbol ʌ̃ [+unround -round -high +middle -low -front +central -back +nasalized vowel]
+
+                vowel-harmony:
+                [-high -middle +low] => [-high +middle -low] / _ i
+                [-front -central +back +round] => [-front +central -back -round] / _ i
+            """.trimIndent()
+        )
+
+        shouldThrow<LscRuleNotApplicable> {
+            ch("ɔi")
+        }
+    }
 
     "The Basican example in the web app should work" {
         val ch = lsc(

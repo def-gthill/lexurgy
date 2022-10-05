@@ -321,6 +321,7 @@ class Declarations(
         val sortedCandidates = candidates.ifEmpty { symbolsAsComplexSymbols }.sortedBy { it.distanceTo(matrix) }
         if (sortedCandidates.isEmpty()) return null
         sortedCandidates.first().takeIf { it.distanceTo(matrix) == 0 }?.let { return it }
+        if (availableDiacritics.isEmpty()) return null
 
         for (candidate in sortedCandidates) {
             val candidateDistance = candidate.distanceTo(matrix)

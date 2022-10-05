@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Propagation tests" type="GradleRunConfiguration" factoryName="Gradle">
+  <configuration default="false" name="Filter tests" type="GradleRunConfiguration" factoryName="Gradle">
     <ExternalSystemSettings>
       <option name="executionName" />
       <option name="externalProjectPath" value="$PROJECT_DIR$" />
@@ -12,7 +12,7 @@
         <list>
           <option value="jvmTest" />
           <option value="--tests" />
-          <option value="TestPropagation" />
+          <option value="TestFilters" />
         </list>
       </option>
       <option name="vmOptions" value="" />
