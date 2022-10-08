@@ -168,11 +168,14 @@ class Declarations(
         val thisSymbol = this.toComplexSymbol()
         if (!thisSymbol.diacritics.any { it.floating }) return this == pattern
         val patternSymbol = pattern.toComplexSymbol()
-        return (searchDiacritics(
+        val symbolWithDiacritics = addDiacriticsToMatch(
             thisSymbol.toMatrix(),
-            listOf(patternSymbol),
+            startingCandidates = listOf(patternSymbol),
             availableDiacritics = floatingDiacritics
-        ) == this.toComplexSymbol()).also { phoneticSegmentMatchCache[this to pattern] = it }
+        )
+        return (symbolWithDiacritics == this.toComplexSymbol()).also {
+            phoneticSegmentMatchCache[this to pattern] = it
+        }
     }
 
     /**
@@ -289,7 +292,7 @@ class Declarations(
         val matrix = removeExplicitDefaults()
 
         val result = matrixToSimpleSymbol[matrix]?.toSegment()
-            ?: searchDiacritics(matrix)?.toSegment()
+            ?: findSymbolWithDiacriticsMatching(matrix)?.toSegment()
             ?: throw LscInvalidMatrix(matrix)
 
         return result.also { matrixToSymbolCache[this] = it }
@@ -301,25 +304,39 @@ class Declarations(
     fun Matrix.toDiacritics(): List<Diacritic> {
         val matrix = removeExplicitDefaults()
         if (matrix.valueList.isEmpty()) return emptyList()
-        return searchDiacritics(matrix, candidates = listOf(ComplexSymbol()))?.diacritics
-            ?: throw LscInvalidMatrix(matrix)
+        val matchingSymbol = addDiacriticsToMatch(matrix, startingCandidates = listOf(ComplexSymbol()))
+        return matchingSymbol?.diacritics ?: throw LscInvalidMatrix(matrix)
     }
 
-    private fun searchDiacritics(
-        matrix: Matrix,
-        candidates: List<ComplexSymbol> = emptyList(),
-        bestDistance: Int? = null,
-        availableDiacritics: List<Diacritic> = normalizedDiacritics
-    ): ComplexSymbol? {
-        if (matrix.hasUndeclaredSymbol() && candidates.isEmpty()) {
-            return searchDiacritics(
-                matrix,
-                listOf(complexSymbol(matrix.undeclaredSymbol())),
-                bestDistance,
-                availableDiacritics)
+    private fun findSymbolWithDiacriticsMatching(matrix: Matrix): ComplexSymbol? {
+        val startingCandidates = if (matrix.hasUndeclaredSymbol()) {
+            listOf(complexSymbol(matrix.undeclaredSymbol()))
+        } else {
+            symbolsAsComplexSymbols
         }
-        val sortedCandidates = candidates.ifEmpty { symbolsAsComplexSymbols }.sortedBy { it.distanceTo(matrix) }
-        if (sortedCandidates.isEmpty()) return null
+        return addDiacriticsToMatch(matrix, startingCandidates = startingCandidates)
+    }
+
+    private fun addDiacriticsToMatch(
+        matrix: Matrix,
+        startingCandidates: List<ComplexSymbol>,
+        availableDiacritics: List<Diacritic> = normalizedDiacritics,
+    ): ComplexSymbol? {
+        return recursivelyAddDiacriticsToMatch(
+            matrix,
+            startingCandidates = startingCandidates,
+            availableDiacritics = availableDiacritics,
+        )
+    }
+
+    private fun recursivelyAddDiacriticsToMatch(
+        matrix: Matrix,
+        startingCandidates: List<ComplexSymbol>,
+        availableDiacritics: List<Diacritic> = normalizedDiacritics,
+        bestDistance: Int? = null,
+    ): ComplexSymbol? {
+        if (startingCandidates.isEmpty()) return null
+        val sortedCandidates = startingCandidates.sortedBy { it.distanceTo(matrix) }
         sortedCandidates.first().takeIf { it.distanceTo(matrix) == 0 }?.let { return it }
         if (availableDiacritics.isEmpty()) return null
 
@@ -327,7 +344,12 @@ class Declarations(
             val candidateDistance = candidate.distanceTo(matrix)
             if (bestDistance != null && candidateDistance >= bestDistance) return null
             val withDiacritics = availableDiacritics.map { candidate.withDiacritic(it) }
-            searchDiacritics(matrix, withDiacritics, candidateDistance, availableDiacritics)?.let { return it }
+            recursivelyAddDiacriticsToMatch(
+                matrix,
+                withDiacritics,
+                availableDiacritics,
+                candidateDistance,
+            )?.let { return it }
         }
         return null
     }
