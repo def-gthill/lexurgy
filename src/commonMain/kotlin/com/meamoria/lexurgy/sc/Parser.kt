@@ -2586,6 +2586,15 @@ class LscIllegalStructureInOutput(
     "in the output of a rule"
 )
 
+class LscIllegalStructureInFilteredRuleInput(
+    invalidNodeType: String,
+    invalidNode: String,
+) : LscIllegalStructure(
+    invalidNodeType,
+    invalidNode,
+    "on the match side of filtered rules"
+)
+
 class LscMixedBlock(
     val firstBlockType: BlockType,
     val conflictingBlockType: BlockType,

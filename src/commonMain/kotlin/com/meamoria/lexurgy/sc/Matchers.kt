@@ -45,7 +45,7 @@ abstract class BaseMatcher : Matcher {
         result: Emitter,
         filtered: Boolean,
     ): Transformer {
-        if (filtered) checkValidInFilter(result)
+        if (filtered) checkValidInFilterIfEmitterIs(result)
         return try {
             when (result) {
                 is AlternativeEmitter -> transformerToAlternatives(result, filtered)
@@ -81,7 +81,7 @@ abstract class BaseMatcher : Matcher {
      * Returns normally if yes, throws an appropriate `LscInvalidTransformation` if not.
      * The default implementation always returns normally.
      */
-    protected open fun checkValidInFilter(result: Emitter) = Unit
+    protected open fun checkValidInFilterIfEmitterIs(result: Emitter) = Unit
 
     protected abstract fun transformerToAlternatives(
         result: AlternativeEmitter,
@@ -905,12 +905,11 @@ class SyllableMatrixMatcher(
 }
 
 abstract class AbstractTextMatcher(val text: Word) : SimpleMatcher() {
-    override fun checkValidInFilter(result: Emitter) {
+    override fun checkValidInFilterIfEmitterIs(result: Emitter) {
         if (text.length > 1) {
-            throw LscInvalidTransformation(
-                matcher = this,
-                emitter = result,
-                message = "Multi-segment matches aren't allowed on the match side of filtered rules",
+            throw LscIllegalStructureInFilteredRuleInput(
+                "a multi-segment element",
+                text.string,
             )
         }
     }
@@ -1033,11 +1032,10 @@ object EmptyMatcher : SimpleMatcher() {
 
     override fun reversed(): Matcher = this
 
-    override fun checkValidInFilter(result: Emitter) =
-        throw LscInvalidTransformation(
-            matcher = this,
-            emitter = result,
-            message = "Asterisks aren't allowed on the match side of filtered rules",
+    override fun checkValidInFilterIfEmitterIs(result: Emitter) =
+        throw LscIllegalStructureInFilteredRuleInput(
+            "an empty element",
+            "*"
         )
 
     override fun toString(): String = "*"
@@ -1074,11 +1072,10 @@ object SyllableMatcher : SimpleMatcher() {
 
     override fun reversed(): Matcher = this
 
-    override fun checkValidInFilter(result: Emitter) =
-        throw LscInvalidTransformation(
-            matcher = this,
-            emitter = result,
-            message = "<syl> isn't allowed in filtered rules"
+    override fun checkValidInFilterIfEmitterIs(result: Emitter) =
+        throw LscIllegalStructureInFilteredRuleInput(
+            "a syllable element",
+            "<syl>",
         )
 
     override fun toString(): String = "<syl>"

@@ -6,7 +6,7 @@ import com.meamoria.mpp.kotest.*
 class TestFilters : StringSpec({
     val lsc = SoundChanger.Companion::fromLsc
 
-    "A rule with a filter should only operate on sounds that pass the filter" {
+    "A rule with a filter only operates on sounds that pass the filter" {
         val ch = lsc(
             """
                 Feature Height(low, high)
@@ -30,23 +30,34 @@ class TestFilters : StringSpec({
 
         ch("onno") shouldBe "inn"
         ch("onni") shouldBe "onnai"
+    }
 
+    "A rule with a filter can't have empty elements on the match side" {
         shouldThrow<LscInvalidRuleExpression> {
             lsc("Feature bad(vowel, low, high)\nharmony [vowel]:\n[low] * => [high] a")
         }.also {
-            it.cause.shouldBeInstanceOf<LscInvalidTransformation>()
+            it.cause.shouldBeInstanceOf<LscIllegalStructureInFilteredRuleInput>()
             it.message shouldBe """
                 Error in expression 1 ("[low] * => [high] a") of rule "harmony"
-                Asterisks aren't allowed on the match side of filtered rules
+                An empty element like "*" can't be used on the match side of filtered rules
             """.trimIndent()
         }
+    }
+
+    "A rule with a filter can't have empty elements on the match side even if it's conditional" {
+        shouldThrow<LscInvalidRuleExpression> {
+            lsc("Feature bad(vowel, low, high)\nharmony [vowel]:\n* => a / [low] _")
+        }
+    }
+
+    "A rule with a filter can't have multi-segment elements on the match side" {
         shouldThrow<LscInvalidRuleExpression> {
             lsc("Feature bad(vowel, low, high)\nharmony [vowel]:\n[low] ai => [high] a")
         }.also {
-            it.cause.shouldBeInstanceOf<LscInvalidTransformation>()
+            it.cause.shouldBeInstanceOf<LscIllegalStructureInFilteredRuleInput>()
             it.message shouldBe """
                 Error in expression 1 ("[low] ai => [high] a") of rule "harmony"
-                Multi-segment matches aren't allowed on the match side of filtered rules
+                A multi-segment element like "ai" can't be used on the match side of filtered rules
             """.trimIndent()
         }
         shouldNotThrowAny {
