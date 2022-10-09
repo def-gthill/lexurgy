@@ -1,5 +1,6 @@
 package com.meamoria.lexurgy.sc
 
+import com.meamoria.lexurgy.sc.parser.LscPeripheralRepeater
 import com.meamoria.mpp.kotest.*
 
 @Suppress("unused")

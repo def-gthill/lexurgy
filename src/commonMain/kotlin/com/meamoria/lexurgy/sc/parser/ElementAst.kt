@@ -1,5 +1,6 @@
 package com.meamoria.lexurgy.sc.parser
 
+import com.meamoria.lexurgy.LscUserError
 import com.meamoria.lexurgy.WordLevel
 import com.meamoria.lexurgy.sc.*
 import com.meamoria.lexurgy.zipOrThisNull
@@ -524,4 +525,94 @@ internal class TextElement(
         declarations.runtime.parsePhonetic(literalText, syllabify = false).let {
             if (exact) TextEmitter(it) else SymbolEmitter(declarations.runtime, it)
         }
+}
+
+abstract class LscBadSequence(
+    cause: LscBadSequence?,
+    prefix: String,
+    val sequence: String?,
+    val environment: String?,
+    postfix: String
+) : LscUserError(
+    badSequenceMessage(
+        prefix,
+        sequence,
+        environment,
+        postfix,
+    ), cause
+) {
+
+    abstract fun initEnvironment(newEnvironment: String): LscBadSequence
+
+    abstract fun initSequence(newSequence: String): LscBadSequence
+}
+
+private fun badSequenceMessage(
+    prefix: String,
+    sequence: String?,
+    environment: String?,
+    postfix: String,
+): String {
+    val sequenceText = if (sequence == null || sequence == environment) null else "in \"$sequence\""
+    val environmentText = environment?.let { "in the environment \"$environment\"" }
+    return listOfNotNull(
+        prefix, sequenceText, environmentText, postfix
+    ).joinToString(" ")
+}
+
+class LscInteriorWordBoundary(
+    override val cause: LscInteriorWordBoundary?,
+    sequence: String?,
+    environment: String?
+) : LscBadSequence(
+    cause,
+    "A word boundary",
+    sequence,
+    environment,
+    "needs to be at the beginning or end"
+) {
+
+    constructor() : this(null, null, null)
+
+    override fun initEnvironment(newEnvironment: String): LscInteriorWordBoundary =
+        LscInteriorWordBoundary(this, sequence, environment ?: newEnvironment)
+
+    override fun initSequence(newSequence: String): LscBadSequence =
+        LscInteriorWordBoundary(this, sequence ?: newSequence, environment)
+}
+
+class LscPeripheralRepeater(
+    override val cause: LscPeripheralRepeater?,
+    val text: String,
+    val repeaterType: RepeaterType,
+    sequence: String?,
+    environment: String?
+) : LscBadSequence(
+    cause,
+    "The repeater \"$text\"",
+    sequence,
+    environment,
+    "is meaningless because it's at the edge of the environment; " +
+            peripheralRepeaterInstruction(text, repeaterType),
+) {
+
+    constructor(text: String, repeaterType: RepeaterType) : this(
+        null, text, repeaterType, null, null
+    )
+
+    override fun initEnvironment(newEnvironment: String): LscPeripheralRepeater =
+        LscPeripheralRepeater(this, text, repeaterType, sequence, environment ?: newEnvironment)
+
+    override fun initSequence(newSequence: String): LscPeripheralRepeater =
+        LscPeripheralRepeater(this, text, repeaterType, sequence ?: newSequence, environment)
+}
+
+private fun peripheralRepeaterInstruction(text: String, repeaterType: RepeaterType): String {
+    val repeaterSymbolIndex = text.lastIndexOfAny(charArrayOf('*', '+', '?'))
+    val elementText = text.take(repeaterSymbolIndex)
+    return when (repeaterType.minReps) {
+        0 -> "remove it"
+        1 -> "just use \"$elementText\""
+        else -> "just use \"$elementText*${repeaterType.minReps}\""
+    }
 }

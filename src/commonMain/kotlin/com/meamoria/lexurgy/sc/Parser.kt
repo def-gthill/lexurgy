@@ -1921,6 +1921,11 @@ open class LscIllegalStructure(
     "${invalidNodeType.capitalize()} like \"$invalidNode\" can't be used $location"
 )
 
+class LscFutureStructure(val structureName: String) :
+    LscUserError(
+        "$structureName aren't implemented yet"
+    )
+
 private fun String.capitalize(): String = replaceFirstChar { it.uppercase() }
 
 class LscIllegalStructureInInput(

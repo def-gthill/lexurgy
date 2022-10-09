@@ -1127,3 +1127,13 @@ data class PhraseMatchEnd(
 
 fun <T> checkTooManyOptions(matcher: Any, options: List<T>): List<T> =
     if (options.size >= 1000) throw LscTooManyOptions(matcher) else options
+
+@Suppress("unused")
+class LscInvalidTransformation(
+    val matcher: Matcher, val emitter: Emitter, message: String
+) : LscUserError(message)
+
+class LscTooManyOptions(val matcher: Any) :
+    LscUserError(
+        "Too many possibilities when matching $matcher"
+    )
