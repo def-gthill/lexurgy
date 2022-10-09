@@ -1,27 +1,28 @@
 package com.meamoria.lexurgy.sc
 
 import com.meamoria.lexurgy.*
+import com.meamoria.lexurgy.sc.parser.*
 import com.meamoria.mpp.antlr.*
 import kotlin.reflect.KClass
 
 class LscInterpreter {
-    fun parseFile(text: String): LscWalker.ParseNode = parseAndWalk(text) { it.lscFile() }
+    fun parseFile(text: String): AstNode = parseAndWalk(text) { it.lscFile() }
 
-    fun parseFeatureDeclaration(text: String): LscWalker.ParseNode = parseAndWalk(text) { it.featureDecl() }
+    fun parseFeatureDeclaration(text: String): AstNode = parseAndWalk(text) { it.featureDecl() }
 
-    fun parseDiacriticDeclaration(text: String): LscWalker.ParseNode = parseAndWalk(text) { it.diacriticDecl() }
+    fun parseDiacriticDeclaration(text: String): AstNode = parseAndWalk(text) { it.diacriticDecl() }
 
-    fun parseSymbolDeclaration(text: String): LscWalker.ParseNode = parseAndWalk(text) { it.symbolDecl() }
+    fun parseSymbolDeclaration(text: String): AstNode = parseAndWalk(text) { it.symbolDecl() }
 
-    fun parseDeromanizer(text: String): LscWalker.ParseNode = parseAndWalk(text) { it.deromanizer() }
+    fun parseDeromanizer(text: String): AstNode = parseAndWalk(text) { it.deromanizer() }
 
-    fun parseRomanizer(text: String): LscWalker.ParseNode = parseAndWalk(text) { it.romanizer() }
+    fun parseRomanizer(text: String): AstNode = parseAndWalk(text) { it.romanizer() }
 
-    fun parseChangeRule(text: String): LscWalker.ParseNode = parseAndWalk(text) { it.changeRule() }
+    fun parseChangeRule(text: String): AstNode = parseAndWalk(text) { it.changeRule() }
 
-    fun parseMatrix(text: String): LscWalker.ParseNode = parseAndWalk(text) { it.matrix() }
+    fun parseMatrix(text: String): AstNode = parseAndWalk(text) { it.matrix() }
 
-    private fun parseAndWalk(text: String, parser: (LscParser) -> ParseTree): LscWalker.ParseNode {
+    private fun parseAndWalk(text: String, parser: (LscParser) -> ParseTree): AstNode {
         val inputStream = CharStreams.fromString(text)
         val lexer = LscLexer(inputStream)
         val tokenStream = CommonTokenStream(lexer)
@@ -71,8 +72,8 @@ class LscInterpreter {
         }
 }
 
-object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
-    override fun visitLscFile(ctx: LscFileContext): ParseNode {
+object LscWalker : LscBaseVisitor<AstNode>() {
+    override fun visitLscFile(ctx: LscFileContext): AstNode {
         val statementContexts = ctx.allStatements().map { it.getChild(0) as ParserRuleContext }
         validateOrder(statementContexts)
         val rulesWithAnchoredStatements = visitRulesWithAnchoredStatements(statementContexts)
@@ -133,7 +134,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         contexts: List<ParserRuleContext>
     ): List<RuleWithAnchoredStatements> {
         val rulesWithAnchoredStatements = mutableListOf<RuleWithAnchoredStatements>()
-        var curAnchoredStatements = mutableListOf<ParseNode>()
+        var curAnchoredStatements = mutableListOf<AstNode>()
         for (context in contexts) {
             when (context) {
                 is ChangeRuleContext -> {
@@ -183,7 +184,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     private class UnlinkedCleanupOffStep(
         text: String,
         val ruleName: String,
-    ) : BaseParseNode(text)
+    ) : BaseAstNode(text)
 
 
     /**
@@ -193,8 +194,8 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
      * are after all the rules.
      */
     private data class RuleWithAnchoredStatements(
-        val rule: ParseNode?,
-        val statements: List<ParseNode>,
+        val rule: AstNode?,
+        val statements: List<AstNode>,
     )
 
     private fun extractDeromanizerContext(statements: List<ParserRuleContext>): DeromanizerContext? =
@@ -207,27 +208,27 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             LscDuplicateName("rule", "Romanizer")
         }
 
-    override fun visitElementDecl(ctx: ElementDeclContext): ParseNode = walkElementDeclaration(
+    override fun visitElementDecl(ctx: ElementDeclContext): AstNode = walkElementDeclaration(
         ctx.getText(),
         visit(ctx.name()),
         visit(ctx.ruleElement()),
     )
 
-    override fun visitClassDecl(ctx: ClassDeclContext): ParseNode = walkClassDeclaration(
+    override fun visitClassDecl(ctx: ClassDeclContext): AstNode = walkClassDeclaration(
         ctx.getText(),
         visit(ctx.name()),
         listVisit(ctx.allClassElements()),
     )
 
-    override fun visitClassElement(ctx: ClassElementContext): ParseNode = visit(ctx.getChild(0))
+    override fun visitClassElement(ctx: ClassElementContext): AstNode = visit(ctx.getChild(0))
 
-    override fun visitFeatureDecl(ctx: FeatureDeclContext): ParseNode =
+    override fun visitFeatureDecl(ctx: FeatureDeclContext): AstNode =
         if (ctx.name() == null) {
-            ParseNodeList(
+            AstNodeList(
                 listVisit(ctx.allPlusFeatures()),
             )
         } else {
-            ParseNodeList(
+            AstNodeList(
                 listOf(
                     walkFeatureDeclaration(
                         ctx.getText(),
@@ -240,19 +241,19 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             )
         }
 
-    override fun visitFeatureModifier(ctx: FeatureModifierContext): ParseNode =
+    override fun visitFeatureModifier(ctx: FeatureModifierContext): AstNode =
         FeatureLevelNode(ctx.getText(), WordLevel.SYLLABLE)
 
-    override fun visitPlusFeature(ctx: PlusFeatureContext): ParseNode = walkPlusFeature(
+    override fun visitPlusFeature(ctx: PlusFeatureContext): AstNode = walkPlusFeature(
         ctx.getText(),
         visit(ctx.name()),
         ctx.AT_LEAST_ONE() != null,
         optionalVisit(ctx.featureModifier()),
     )
 
-    override fun visitNullAlias(ctx: NullAliasContext): ParseNode = visit(ctx.featureValue())
+    override fun visitNullAlias(ctx: NullAliasContext): AstNode = visit(ctx.featureValue())
 
-    override fun visitDiacriticDecl(ctx: DiacriticDeclContext): ParseNode {
+    override fun visitDiacriticDecl(ctx: DiacriticDeclContext): AstNode {
         val modifiers = ctx.allDiacriticModifiers()
         val position = when {
             modifiers.any { it.DIA_BEFORE() != null } -> ModifierPosition.BEFORE
@@ -269,25 +270,25 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         )
     }
 
-    override fun visitSymbolDecl(ctx: SymbolDeclContext): ParseNode {
+    override fun visitSymbolDecl(ctx: SymbolDeclContext): AstNode {
         val symbolNames = ctx.allSymbolNames().map { removeEscapes(it.getText()) }
         val matrix = ctx.matrix()
-        return if (matrix == null) ParseNodeList(
+        return if (matrix == null) AstNodeList(
             symbolNames.map { walkSymbolDeclaration(it, it, null) }
         )
-        else ParseNodeList(
+        else AstNodeList(
             listOf(walkSymbolDeclaration(ctx.getText(), symbolNames.single(), visit(matrix)))
         )
     }
 
-    override fun visitSyllableDecl(ctx: SyllableDeclContext): ParseNode =
+    override fun visitSyllableDecl(ctx: SyllableDeclContext): AstNode =
         walkSyllableDecl(
             ctx.getText(),
             if (ctx.CLEAR_SYLLABLES() != null) null
             else listVisit(ctx.allSyllablePatterns()),
         )
 
-    override fun visitSyllablePattern(ctx: SyllablePatternContext): ParseNode =
+    override fun visitSyllablePattern(ctx: SyllablePatternContext): AstNode =
         walkSyllablePattern(
             ctx.getText(),
             visit(ctx.unconditionalRuleElement()),
@@ -295,21 +296,21 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             optionalVisit(ctx.matrix()),
         )
 
-    override fun visitDeromanizer(ctx: DeromanizerContext): ParseNode =
+    override fun visitDeromanizer(ctx: DeromanizerContext): AstNode =
         walkDeromanizer(
             ctx.getText(),
             unpackBlock(visit(ctx.block())),
             ctx.LITERAL() != null
         )
 
-    override fun visitRomanizer(ctx: RomanizerContext): ParseNode =
+    override fun visitRomanizer(ctx: RomanizerContext): AstNode =
         walkRomanizer(
             ctx.getText(),
             unpackBlock(visit(ctx.block())),
             ctx.LITERAL() != null
         )
 
-    override fun visitInterRomanizer(ctx: InterRomanizerContext): ParseNode =
+    override fun visitInterRomanizer(ctx: InterRomanizerContext): AstNode =
         walkIntermediateRomanizer(
             ctx.getText(),
             ctx.ruleName().getText(),
@@ -317,13 +318,13 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             ctx.LITERAL() != null
         )
 
-    private fun unpackBlock(block: ParseNode): List<ParseNode> =
+    private fun unpackBlock(block: AstNode): List<AstNode> =
         when (block) {
             is UnlinkedSequentialBlock -> block.subRules
             else -> listOf(block)
         }
 
-    override fun visitChangeRule(ctx: ChangeRuleContext): ParseNode {
+    override fun visitChangeRule(ctx: ChangeRuleContext): AstNode {
         val ruleName = ctx.ruleName().getText()
         val modifierContexts = ctx.allChangeRuleModifiers()
         if (ctx.RULE_START() == null) {
@@ -358,7 +359,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         )
     }
 
-    private fun List<ChangeRuleModifierContext>.getFilter(ruleName: String): ParseNode? =
+    private fun List<ChangeRuleModifierContext>.getFilter(ruleName: String): AstNode? =
         optionalVisit(
             mapNotNull { it.filter() }.let { filters ->
                 if (filters.isEmpty()) null
@@ -389,7 +390,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     }
 
     private data class RuleModifiers(
-        val ruleFilter: ParseNode?,
+        val ruleFilter: AstNode?,
         val matchMode: MatchMode,
         val isPropagate: Boolean,
         val isCleanup: Boolean,
@@ -420,10 +421,10 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                     "${contexts[0].getText()} and ${contexts[1].getText()}"
         )
 
-    override fun visitFilter(ctx: FilterContext): ParseNode =
+    override fun visitFilter(ctx: FilterContext): AstNode =
         visit(ctx.getChild(0))
 
-    override fun visitBlock(ctx: BlockContext): ParseNode {
+    override fun visitBlock(ctx: BlockContext): AstNode {
         val blockTypes = ctx.allBlockTypes()
         if (blockTypes.isEmpty()) return visit(ctx.allBlockElements().single())
         val blockType = checkUniformBlockType(blockTypes)
@@ -456,16 +457,16 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             else -> throw AssertionError("Block has no block type")
         }
 
-    override fun visitBlockElement(ctx: BlockElementContext): ParseNode =
+    override fun visitBlockElement(ctx: BlockElementContext): AstNode =
         if (ctx.block() != null) visit(ctx.block()!!) else visit(ctx.expressionList()!!)
 
-    override fun visitExpressionList(ctx: ExpressionListContext): ParseNode =
+    override fun visitExpressionList(ctx: ExpressionListContext): AstNode =
         walkExpressionList(ctx.getText(), listVisit(ctx.allExpressions()))
 
-    override fun visitExpression(ctx: ExpressionContext): ParseNode =
+    override fun visitExpression(ctx: ExpressionContext): AstNode =
         visit(ctx.getChild(0))
 
-    override fun visitKeywordExpression(ctx: KeywordExpressionContext): ParseNode =
+    override fun visitKeywordExpression(ctx: KeywordExpressionContext): AstNode =
         if (ctx.UNCHANGED() != null) {
             walkDoNothingExpression()
         } else {
@@ -477,10 +478,10 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             )
         }
 
-    override fun visitBlockRef(ctx: BlockRefContext): ParseNode =
+    override fun visitBlockRef(ctx: BlockRefContext): AstNode =
         walkBlockReference(ctx.ruleName().getText())
 
-    override fun visitStandardExpression(ctx: StandardExpressionContext): ParseNode =
+    override fun visitStandardExpression(ctx: StandardExpressionContext): AstNode =
         walkRuleExpression(
             ctx.getText(),
             visit(ctx.from()),
@@ -488,13 +489,13 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             optionalVisit(ctx.compoundEnvironment()),
         )
 
-    override fun visitFrom(ctx: FromContext): ParseNode =
+    override fun visitFrom(ctx: FromContext): AstNode =
         visit(ctx.ruleElement())
 
-    override fun visitTo(ctx: ToContext): ParseNode =
+    override fun visitTo(ctx: ToContext): AstNode =
         visit(ctx.unconditionalRuleElement())
 
-    override fun visitRuleElement(ctx: RuleElementContext): ParseNode =
+    override fun visitRuleElement(ctx: RuleElementContext): AstNode =
         ctx.compoundEnvironment()?.let { env ->
             walkLookaround(
                 ctx.getText(),
@@ -503,44 +504,44 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             )
         } ?: visit(ctx.unconditionalRuleElement())
 
-    override fun visitUnconditionalRuleElement(ctx: UnconditionalRuleElementContext): ParseNode =
+    override fun visitUnconditionalRuleElement(ctx: UnconditionalRuleElementContext): AstNode =
         visit(ctx.getChild(0))
 
-    override fun visitBounded(ctx: BoundedContext): ParseNode =
+    override fun visitBounded(ctx: BoundedContext): AstNode =
         visit(ctx.getChild(0))
 
-    override fun visitGroup(ctx: GroupContext): ParseNode =
+    override fun visitGroup(ctx: GroupContext): AstNode =
         visit(ctx.ruleElement())
 
-    override fun visitList(ctx: ListContext): ParseNode =
+    override fun visitList(ctx: ListContext): AstNode =
         walkRuleList(
             ctx.getText(),
             listVisit(ctx.allRuleElements()),
         )
 
-    override fun visitSequence(ctx: SequenceContext): ParseNode =
+    override fun visitSequence(ctx: SequenceContext): AstNode =
         walkRuleSequence(ctx.getText(), listVisit(ctx.allFreeElements()))
 
-    override fun visitFreeElement(ctx: FreeElementContext): ParseNode =
+    override fun visitFreeElement(ctx: FreeElementContext): AstNode =
         visit(ctx.getChild(0))
 
-    override fun visitCompoundEnvironment(ctx: CompoundEnvironmentContext): ParseNode =
+    override fun visitCompoundEnvironment(ctx: CompoundEnvironmentContext): AstNode =
         walkCompoundEnvironment(
             ctx.getText(),
             optionalVisit(ctx.condition()),
             optionalVisit(ctx.exclusion()),
         )
 
-    override fun visitCondition(ctx: ConditionContext): ParseNode =
+    override fun visitCondition(ctx: ConditionContext): AstNode =
         visit(ctx.getChild(1))
 
-    override fun visitExclusion(ctx: ExclusionContext): ParseNode =
+    override fun visitExclusion(ctx: ExclusionContext): AstNode =
         visit(ctx.getChild(1))
 
-    override fun visitEnvironmentList(ctx: EnvironmentListContext): ParseNode =
-        ParseNodeList(listVisit(ctx.allEnvironments()))
+    override fun visitEnvironmentList(ctx: EnvironmentListContext): AstNode =
+        AstNodeList(listVisit(ctx.allEnvironments()))
 
-    override fun visitEnvironment(ctx: EnvironmentContext): ParseNode {
+    override fun visitEnvironment(ctx: EnvironmentContext): AstNode {
         if (ctx.ANCHOR() == null) {
             val ruleName = ctx.upToType<ChangeRuleContext>().downToType<RuleNameContext>()?.getText()
             throw LscNotParsable(
@@ -555,13 +556,13 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         )
     }
 
-    override fun visitEnvironmentBefore(ctx: EnvironmentBeforeContext): ParseNode =
+    override fun visitEnvironmentBefore(ctx: EnvironmentBeforeContext): AstNode =
         visit(ctx.unconditionalRuleElement())
 
-    override fun visitEnvironmentAfter(ctx: EnvironmentAfterContext): ParseNode =
+    override fun visitEnvironmentAfter(ctx: EnvironmentAfterContext): AstNode =
         visit(ctx.unconditionalRuleElement())
 
-    override fun visitInterfix(ctx: InterfixContext): ParseNode {
+    override fun visitInterfix(ctx: InterfixContext): AstNode {
         val (interfixType, negations) = checkUniformInterfixType(ctx.allInterfixTypes())
         return walkInterfix(
             ctx.getText(),
@@ -615,83 +616,83 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         return firstType
     }
 
-    override fun visitInterfixElement(ctx: InterfixElementContext): ParseNode =
+    override fun visitInterfixElement(ctx: InterfixElementContext): AstNode =
         visit(ctx.getChild(0))
 
-    override fun visitNegated(ctx: NegatedContext): ParseNode =
+    override fun visitNegated(ctx: NegatedContext): AstNode =
         walkNegatedElement(
             ctx.getText(),
             visit(ctx.getChild(1)),
         )
 
-    override fun visitPostfix(ctx: PostfixContext): ParseNode =
+    override fun visitPostfix(ctx: PostfixContext): AstNode =
         visit(ctx.getChild(0))
 
-    override fun visitCapture(ctx: CaptureContext): ParseNode =
+    override fun visitCapture(ctx: CaptureContext): AstNode =
         walkRuleCapture(
             ctx.getText(),
             visit(ctx.getChild(0)),
             visit(ctx.captureRef()),
         )
 
-    override fun visitRepeater(ctx: RepeaterContext): ParseNode =
+    override fun visitRepeater(ctx: RepeaterContext): AstNode =
         walkRuleRepeater(ctx.getText(), visit(ctx.getChild(0)), visit(ctx.repeaterType()))
 
-    override fun visitSimple(ctx: SimpleContext): ParseNode =
+    override fun visitSimple(ctx: SimpleContext): AstNode =
         walkSimpleElement(visit(ctx.getChild(0)))
 
-    override fun visitAnySyllable(ctx: AnySyllableContext): ParseNode =
+    override fun visitAnySyllable(ctx: AnySyllableContext): AstNode =
         walkAnySyllable()
 
-    override fun visitElementRef(ctx: ElementRefContext): ParseNode =
+    override fun visitElementRef(ctx: ElementRefContext): AstNode =
         walkElementReference(
             ctx.getText(),
             visit(ctx.name()),
         )
 
-    override fun visitCaptureRef(ctx: CaptureRefContext): ParseNode =
+    override fun visitCaptureRef(ctx: CaptureRefContext): AstNode =
         walkCaptureReference(
             ctx.getText(),
             ctx.NUMBER().toInt(),
             ctx.INEXACT() == null,
         )
 
-    override fun visitFancyMatrix(ctx: FancyMatrixContext): ParseNode =
+    override fun visitFancyMatrix(ctx: FancyMatrixContext): AstNode =
         walkMatrix(
             ctx.getText(),
             listVisit(ctx.allFancyValues()),
         )
 
-    override fun visitFancyValue(ctx: FancyValueContext): ParseNode =
+    override fun visitFancyValue(ctx: FancyValueContext): AstNode =
         visit(ctx.getChild(0))
 
-    override fun visitNegatedValue(ctx: NegatedValueContext): ParseNode =
+    override fun visitNegatedValue(ctx: NegatedValueContext): AstNode =
         walkNegatedValue(
             ctx.getText(),
             visit(ctx.matrixValue()),
         )
 
-    override fun visitAbsentFeature(ctx: AbsentFeatureContext): ParseNode =
+    override fun visitAbsentFeature(ctx: AbsentFeatureContext): AstNode =
         walkAbsentFeature(
             ctx.getText(),
             visit(ctx.name()),
         )
 
-    override fun visitFeatureVariable(ctx: FeatureVariableContext): ParseNode =
+    override fun visitFeatureVariable(ctx: FeatureVariableContext): AstNode =
         walkFeatureVariable(
             ctx.getText(),
             visit(ctx.name()),
         )
 
-    override fun visitEmpty(ctx: EmptyContext): ParseNode = walkEmpty()
+    override fun visitEmpty(ctx: EmptyContext): AstNode = walkEmpty()
 
-    override fun visitSylBoundary(ctx: SylBoundaryContext): ParseNode = walkSyllableBoundary()
+    override fun visitSylBoundary(ctx: SylBoundaryContext): AstNode = walkSyllableBoundary()
 
-    override fun visitBoundary(ctx: BoundaryContext): ParseNode = walkBoundary()
+    override fun visitBoundary(ctx: BoundaryContext): AstNode = walkBoundary()
 
-    override fun visitBetweenWords(ctx: BetweenWordsContext): ParseNode = walkBetweenWords()
+    override fun visitBetweenWords(ctx: BetweenWordsContext): AstNode = walkBetweenWords()
 
-    override fun visitRepeaterType(ctx: RepeaterTypeContext): ParseNode =
+    override fun visitRepeaterType(ctx: RepeaterTypeContext): AstNode =
         optionalVisit(ctx.repeatRange()) ?: walkRepeaterType(
             ctx.getText(),
             when {
@@ -702,7 +703,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             }
         )
 
-    override fun visitRepeatRange(ctx: RepeatRangeContext): ParseNode =
+    override fun visitRepeatRange(ctx: RepeatRangeContext): AstNode =
         walkRepeaterType(
             ctx.getText(),
             ctx.NUMBER()?.let {
@@ -714,16 +715,16 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             )
         )
 
-    override fun visitMatrix(ctx: MatrixContext): ParseNode =
+    override fun visitMatrix(ctx: MatrixContext): AstNode =
         walkMatrix(
             ctx.getText(),
             listVisit(ctx.allMatrixValues()),
         )
 
-    override fun visitMatrixValue(ctx: MatrixValueContext): ParseNode =
+    override fun visitMatrixValue(ctx: MatrixValueContext): AstNode =
         visit(ctx.getChild(0))
 
-    override fun visitPlusFeatureValue(ctx: PlusFeatureValueContext): ParseNode =
+    override fun visitPlusFeatureValue(ctx: PlusFeatureValueContext): AstNode =
         walkPlusFeatureValue(
             ctx.getText(),
             visit(ctx.name()),
@@ -739,19 +740,19 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         MINUS("-"),
     }
 
-    override fun visitFeatureValue(ctx: FeatureValueContext): ParseNode =
+    override fun visitFeatureValue(ctx: FeatureValueContext): AstNode =
         walkFeatureValue(
             ctx.getText(),
             visit(ctx.name()),
         )
 
-    override fun visitName(ctx: NameContext): ParseNode =
+    override fun visitName(ctx: NameContext): AstNode =
         walkName(
             ctx.getText(),
             ctx.getText(),
         )
 
-    override fun visitText(ctx: TextContext): ParseNode =
+    override fun visitText(ctx: TextContext): AstNode =
         walkText(ctx.getText(), removeEscapes(ctx.getChild(0).getText()), ctx.NEGATION() != null)
 
     private fun removeEscapes(text: String): String =
@@ -761,15 +762,15 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     private fun walkFile(
         text: String,
-        featureDeclarations: List<ParseNode>,
-        diacriticDeclarations: List<ParseNode>,
-        symbolDeclarations: List<ParseNode>,
-        classDeclarations: List<ParseNode>,
-        elementDeclarations: List<ParseNode>,
-        deromanizer: ParseNode?,
+        featureDeclarations: List<AstNode>,
+        diacriticDeclarations: List<AstNode>,
+        symbolDeclarations: List<AstNode>,
+        classDeclarations: List<AstNode>,
+        elementDeclarations: List<AstNode>,
+        deromanizer: AstNode?,
         changeRules: List<RuleWithAnchoredStatements>,
-        romanizer: ParseNode?,
-    ): ParseNode = SoundChangerNodeImpl(
+        romanizer: AstNode?,
+    ): AstNode = SoundChangerNodeImpl(
         text,
         featureDeclarations = featureDeclarations,
         diacriticDeclarations = diacriticDeclarations,
@@ -783,9 +784,9 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     private fun walkElementDeclaration(
         text: String,
-        className: ParseNode,
-        element: ParseNode,
-    ): ParseNode =
+        className: AstNode,
+        element: AstNode,
+    ): AstNode =
         ElementDeclarationNode(
             text,
             (className as NameNode).name,
@@ -794,9 +795,9 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     private fun walkClassDeclaration(
         text: String,
-        className: ParseNode,
-        elements: List<ParseNode>,
-    ): ParseNode =
+        className: AstNode,
+        elements: List<AstNode>,
+    ): AstNode =
         ClassDeclarationNode(
             text,
             (className as NameNode).name,
@@ -805,11 +806,11 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     private fun walkFeatureDeclaration(
         text: String,
-        featureName: ParseNode,
-        nullAlias: ParseNode?,
-        values: List<ParseNode>,
-        level: ParseNode?,
-    ): ParseNode = FeatureDeclarationNode(
+        featureName: AstNode,
+        nullAlias: AstNode?,
+        values: List<AstNode>,
+        level: AstNode?,
+    ): AstNode = FeatureDeclarationNode(
         text,
         Feature(
             (featureName as NameNode).name,
@@ -821,10 +822,10 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     private fun walkPlusFeature(
         text: String,
-        featureName: ParseNode,
+        featureName: AstNode,
         plusOnly: Boolean,
-        level: ParseNode?,
-    ): ParseNode {
+        level: AstNode?,
+    ): AstNode {
         val name = (featureName as NameNode).name
         return FeatureDeclarationNode(
             text,
@@ -841,10 +842,10 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     private fun walkDiacriticDeclaration(
         text: String,
         diacritic: String,
-        matrix: ParseNode,
+        matrix: AstNode,
         position: ModifierPosition,
         floating: Boolean,
-    ): ParseNode =
+    ): AstNode =
         DiacriticDeclarationNode(
             text,
             Diacritic(diacritic, (matrix as MatrixNode).matrix, position, floating),
@@ -853,8 +854,8 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     private fun walkSymbolDeclaration(
         text: String,
         symbol: String,
-        matrix: ParseNode?,
-    ): ParseNode =
+        matrix: AstNode?,
+    ): AstNode =
         SymbolDeclarationNode(
             text,
             Symbol(symbol, (matrix as? MatrixNode)?.matrix),
@@ -862,29 +863,29 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     private fun walkSyllableDecl(
         text: String,
-        patterns: List<ParseNode>?,
-    ): ParseNode =
+        patterns: List<AstNode>?,
+    ): AstNode =
         SyllableStructureNode(text, patterns?.map { it as SyllablePatternNode })
 
     private fun walkSyllablePattern(
         text: String,
-        ruleElement: ParseNode,
-        environment: ParseNode?,
-        matrix: ParseNode?,
-    ): ParseNode =
+        ruleElement: AstNode,
+        environment: AstNode?,
+        matrix: AstNode?,
+    ): AstNode =
         SyllablePatternNode(
             text,
             (environment?.let {
                 walkLookaround(text, ruleElement, it)
-            } ?: ruleElement) as RuleElement,
+            } ?: ruleElement) as Element,
             matrix as MatrixNode?,
         )
 
     private fun walkDeromanizer(
         text: String,
-        subRules: List<ParseNode>,
+        subRules: List<AstNode>,
         literal: Boolean,
-    ): ParseNode =
+    ): AstNode =
         UnlinkedDeromanizer(
             text,
             subRules.map { it as UnlinkedRule },
@@ -893,9 +894,9 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     private fun walkRomanizer(
         text: String,
-        subRules: List<ParseNode>,
+        subRules: List<AstNode>,
         literal: Boolean
-    ): ParseNode =
+    ): AstNode =
         UnlinkedRomanizer(
             text,
             subRules.map { it as UnlinkedRule },
@@ -905,9 +906,9 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     private fun walkIntermediateRomanizer(
         text: String,
         ruleName: String,
-        subRules: List<ParseNode>,
+        subRules: List<AstNode>,
         literal: Boolean
-    ): ParseNode =
+    ): AstNode =
         UnlinkedRomanizer(
             text,
             subRules.map { it as UnlinkedRule },
@@ -918,9 +919,9 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     private fun walkChangeRule(
         text: String,
         ruleName: String,
-        mainBlock: ParseNode,
+        mainBlock: AstNode,
         modifiers: RuleModifiers,
-    ): ParseNode = UnlinkedStandardRule(
+    ): AstNode = UnlinkedStandardRule(
         text,
         ruleName,
         mainBlock as UnlinkedRule,
@@ -928,7 +929,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             is MatrixNode -> MatrixElement(
                 modifiers.ruleFilter.text, modifiers.ruleFilter.matrix
             )
-            else -> modifiers.ruleFilter as RuleElement?
+            else -> modifiers.ruleFilter as Element?
         },
         matchMode = modifiers.matchMode,
         propagate = modifiers.isPropagate,
@@ -939,8 +940,8 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     private fun walkBlock(
         text: String,
         blockType: BlockType,
-        subRules: List<ParseNode>,
-    ): ParseNode =
+        subRules: List<AstNode>,
+    ): AstNode =
         when (blockType) {
             BlockType.SEQUENTIAL -> UnlinkedSequentialBlock(
                 text,
@@ -952,10 +953,10 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             )
         }
 
-    private fun walkExpressionList(text: String, expressions: List<ParseNode>): ParseNode =
+    private fun walkExpressionList(text: String, expressions: List<AstNode>): AstNode =
         UnlinkedSimpleChangeRule(text, expressions.map { it as ExpressionNode })
 
-    private fun walkDoNothingExpression(): ParseNode =
+    private fun walkDoNothingExpression(): AstNode =
         UnlinkedRuleExpression(
             "unchanged",
             DoNothingElement,
@@ -963,75 +964,75 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             UnlinkedCompoundEnvironment("", emptyList(), emptyList())
         )
 
-    private fun walkBlockReference(name: String): ParseNode =
+    private fun walkBlockReference(name: String): AstNode =
         BlockReference(name)
 
     private fun walkRuleExpression(
         text: String,
-        ruleFrom: ParseNode,
-        ruleTo: ParseNode,
-        compoundEnvironment: ParseNode?,
-    ): ParseNode = UnlinkedRuleExpression(
+        ruleFrom: AstNode,
+        ruleTo: AstNode,
+        compoundEnvironment: AstNode?,
+    ): AstNode = UnlinkedRuleExpression(
         text,
-        ruleFrom as RuleElement,
-        ruleTo as RuleElement,
+        ruleFrom as Element,
+        ruleTo as Element,
         compoundEnvironment as UnlinkedCompoundEnvironment?,
     )
 
     private fun walkRuleEnvironment(
         text: String,
-        before: ParseNode?,
-        after: ParseNode?,
-    ): ParseNode = UnlinkedEnvironment(
+        before: AstNode?,
+        after: AstNode?,
+    ): AstNode = UnlinkedEnvironment(
         text,
-        (before as? RuleElement),
-        (after as? RuleElement),
+        (before as? Element),
+        (after as? Element),
     )
 
     private fun walkRuleSequence(
         text: String,
-        items: List<ParseNode>
-    ): ParseNode =
+        items: List<AstNode>
+    ): AstNode =
         SequenceElement(
             text,
-            items.map { it as RuleElement }
+            items.map { it as Element }
         )
 
     private fun walkLookaround(
         text: String,
-        element: ParseNode,
-        environment: ParseNode,
-    ): ParseNode =
+        element: AstNode,
+        environment: AstNode,
+    ): AstNode =
         EnvironmentElement(
             text,
-            element as RuleElement,
+            element as Element,
             environment as UnlinkedCompoundEnvironment,
         )
 
     private fun walkCompoundEnvironment(
         text: String,
-        positive: ParseNode?,
-        negative: ParseNode?,
-    ): ParseNode =
+        positive: AstNode?,
+        negative: AstNode?,
+    ): AstNode =
         UnlinkedCompoundEnvironment(
             text,
             walkEnvironmentOrEnvironmentList(positive),
             walkEnvironmentOrEnvironmentList(negative),
         )
 
-    private fun walkEnvironmentOrEnvironmentList(node: ParseNode?): List<UnlinkedEnvironment> =
+    private fun walkEnvironmentOrEnvironmentList(node: AstNode?): List<UnlinkedEnvironment> =
         when (node) {
             null -> emptyList()
             is UnlinkedEnvironment -> listOf(node)
-            is ParseNodeList -> node.elements.map { it as UnlinkedEnvironment }
+            is AstNodeList -> node.elements.map { it as UnlinkedEnvironment }
             else -> throw AssertionError()
         }
 
     private fun walkRuleCapture(
         text: String,
-        item: ParseNode,
-        capture: ParseNode
-    ): ParseNode = when (item) {
+        item: AstNode,
+        capture: AstNode
+    ): AstNode = when (item) {
         is MatrixNode ->
             CaptureElement(
                 text,
@@ -1041,44 +1042,44 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         else ->
             CaptureElement(
                 text,
-                item as RuleElement,
+                item as Element,
                 capture as CaptureReferenceElement
             )
     }
 
     private fun walkRuleRepeater(
         text: String,
-        item: ParseNode,
-        repeaterType: ParseNode
-    ): ParseNode =
+        item: AstNode,
+        repeaterType: AstNode
+    ): AstNode =
         RepeaterElement(
             text,
-            item as RuleElement,
+            item as Element,
             repeaterType as RepeaterTypeNode
         )
 
     private fun walkRuleList(
         text: String,
-        items: List<ParseNode>,
-    ): ParseNode =
+        items: List<AstNode>,
+    ): AstNode =
         AlternativeElement(
             text,
-            items.map { it as RuleElement },
+            items.map { it as Element },
         )
 
     private fun walkInterfix(
         text: String,
         interfixType: InterfixType,
-        items: List<ParseNode>,
+        items: List<AstNode>,
         negations: List<Boolean>,
-    ): ParseNode =
+    ): AstNode =
         when (interfixType) {
             InterfixType.INTERSECTION ->
                 IntersectionElement(
                     text,
-                    items.first() as RuleElement,
+                    items.first() as Element,
                     items.drop(1).zip(negations) { item, negated ->
-                        CheckElement(item as RuleElement, negated)
+                        CheckElement(item as Element, negated)
                     },
                 )
             InterfixType.TRANSFORMING ->
@@ -1091,28 +1092,28 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         }
 
     private fun walkSimpleElement(
-        element: ParseNode,
-    ): ParseNode = when (element) {
-        is TextNode -> TextElement(element.text, element.literalText, element.exact)
+        element: AstNode,
+    ): AstNode = when (element) {
+        is TextNode -> TextElement(element.text, element.literalText, element.isExact)
         is MatrixNode -> MatrixElement(element.text, element.matrix)
         else -> element
     }
 
     private fun walkNegatedElement(
         text: String,
-        element: ParseNode,
-    ): ParseNode = NegatedElement(
+        element: AstNode,
+    ): AstNode = NegatedElement(
         text,
         when (element) {
-            is TextNode -> TextElement(element.text, element.literalText, element.exact)
-            else -> element as RuleElement
+            is TextNode -> TextElement(element.text, element.literalText, element.isExact)
+            else -> element as Element
         }
     )
 
     private fun walkNegatedValue(
         text: String,
-        value: ParseNode,
-    ): ParseNode =
+        value: AstNode,
+    ): AstNode =
         MatrixValueNode(
             text,
             NegatedValue((value as SimpleValueNode).simpleValue.name)
@@ -1120,8 +1121,8 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     private fun walkAbsentFeature(
         text: String,
-        feature: ParseNode,
-    ): ParseNode =
+        feature: AstNode,
+    ): AstNode =
         MatrixValueNode(
             text,
             SimpleValue.absent((feature as NameNode).name)
@@ -1129,27 +1130,27 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     private fun walkFeatureVariable(
         text: String,
-        feature: ParseNode,
-    ): ParseNode =
+        feature: AstNode,
+    ): AstNode =
         MatrixValueNode(
             text,
             FeatureVariable((feature as NameNode).name)
         )
 
-    private fun walkEmpty(): ParseNode = EmptyElement
+    private fun walkEmpty(): AstNode = EmptyElement
 
-    private fun walkSyllableBoundary(): ParseNode = SyllableBoundaryElement
+    private fun walkSyllableBoundary(): AstNode = SyllableBoundaryElement
 
-    private fun walkBoundary(): ParseNode = WordBoundaryElement
+    private fun walkBoundary(): AstNode = WordBoundaryElement
 
-    private fun walkBetweenWords(): ParseNode = BetweenWordsElement
+    private fun walkBetweenWords(): AstNode = BetweenWordsElement
 
-    private fun walkAnySyllable(): ParseNode = SyllableElement
+    private fun walkAnySyllable(): AstNode = SyllableElement
 
     private fun walkElementReference(
         text: String,
-        value: ParseNode
-    ): ParseNode =
+        value: AstNode
+    ): AstNode =
         ReferenceElement(
             text,
             (value as NameNode).name
@@ -1159,19 +1160,19 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         text: String,
         number: Int,
         exact: Boolean,
-    ): ParseNode =
+    ): AstNode =
         CaptureReferenceElement(text, number, exact)
 
     private fun walkRepeaterType(
         text: String,
         type: RepeaterType,
-    ): ParseNode =
+    ): AstNode =
         RepeaterTypeNode(text, type)
 
     private fun walkMatrix(
         text: String,
-        values: List<ParseNode>,
-    ): ParseNode =
+        values: List<AstNode>,
+    ): AstNode =
         MatrixNode(
             text,
             Matrix(values.map { (it as MatrixValueNode).value })
@@ -1179,41 +1180,30 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     private fun walkPlusFeatureValue(
         text: String,
-        name: ParseNode,
+        name: AstNode,
         plusMinus: PlusMinus,
-    ): ParseNode =
+    ): AstNode =
         SimpleValueNode(text, SimpleValue(plusMinus.string + (name as NameNode).name))
 
     private fun walkFeatureValue(
         text: String,
-        name: ParseNode,
-    ): ParseNode = SimpleValueNode(text, SimpleValue((name as NameNode).name))
+        name: AstNode,
+    ): AstNode = SimpleValueNode(text, SimpleValue((name as NameNode).name))
 
     private fun walkName(
         text: String,
         name: String,
-    ): ParseNode = NameNode(text, name)
+    ): AstNode = NameNode(text, name)
 
     private fun walkText(
         text: String,
         literalText: String,
         exact: Boolean,
-    ): ParseNode = TextNode(text, literalText, exact)
+    ): AstNode = TextNode(text, literalText, exact)
 
-    private data class ParseNodeList(
-        val elements: List<ParseNode>
-    ) : BaseParseNode(elements.joinToString())
-
-    interface ParseNode {
-        /**
-         * The original text that was parsed to produce this node
-         */
-        val text: String
-    }
-
-    abstract class BaseParseNode(override val text: String) : ParseNode {
-        override fun toString(): String = text
-    }
+    private data class AstNodeList(
+        val elements: List<AstNode>
+    ) : BaseAstNode(elements.joinToString())
 
     interface SoundChangerNode {
         val soundChanger: SoundChanger
@@ -1221,25 +1211,25 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     private class SoundChangerNodeImpl(
         text: String,
-        private val featureDeclarations: List<ParseNode>,
-        private val diacriticDeclarations: List<ParseNode>,
-        private val symbolDeclarations: List<ParseNode>,
-        private val classDeclarations: List<ParseNode>,
-        private val elementDeclarations: List<ParseNode>,
-        private val deromanizer: ParseNode?,
+        private val featureDeclarations: List<AstNode>,
+        private val diacriticDeclarations: List<AstNode>,
+        private val symbolDeclarations: List<AstNode>,
+        private val classDeclarations: List<AstNode>,
+        private val elementDeclarations: List<AstNode>,
+        private val deromanizer: AstNode?,
         private val changeRules: List<RuleWithAnchoredStatements>,
-        private val romanizer: ParseNode?,
-    ) : BaseParseNode(text), SoundChangerNode {
+        private val romanizer: AstNode?,
+    ) : BaseAstNode(text), SoundChangerNode {
 
         override val soundChanger: SoundChanger
             get() {
                 val initialDeclarations = Declarations(
                     featureDeclarations.flatMap { sublist ->
-                        (sublist as ParseNodeList).elements.map { (it as FeatureDeclarationNode).feature }
+                        (sublist as AstNodeList).elements.map { (it as FeatureDeclarationNode).feature }
                     },
                     diacriticDeclarations.map { (it as DiacriticDeclarationNode).diacritic },
                     symbolDeclarations.flatMap { sublist ->
-                        (sublist as ParseNodeList).elements.map { (it as SymbolDeclarationNode).symbol }
+                        (sublist as AstNodeList).elements.map { (it as SymbolDeclarationNode).symbol }
                     },
                 )
 
@@ -1336,12 +1326,12 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         private fun resolveElements(
             classDeclarations: List<ClassDeclarationNode>,
             elementDeclarations: List<ElementDeclarationNode>,
-        ): Map<String, RuleElement> {
+        ): Map<String, Element> {
             val definedClassSounds = mutableMapOf<String, List<String>>()
             val definedClasses = mutableMapOf<String, AlternativeElement>()
             val allClassNames = classDeclarations.map { it.name }.toSet()
 
-            val definedElements = mutableMapOf<String, RuleElement>()
+            val definedElements = mutableMapOf<String, Element>()
             val allNonClassElementNames = elementDeclarations.map { it.name }.toSet()
             val allElementNames = allNonClassElementNames + allClassNames
 
@@ -1375,7 +1365,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
                 it.addAll(definedClasses.keys)
             }
             for (elementNode in elementDeclarations) {
-                val elementDefinition = elementNode.element as RuleElement
+                val elementDefinition = elementNode.element as Element
                 checkElementsDefined(elementDefinition, definedElementNames, allElementNames)
                 definedElements[elementNode.name] = elementDefinition
                 definedElementNames += elementNode.name
@@ -1384,7 +1374,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         }
 
         private fun checkElementsDefined(
-            element: RuleElement,
+            element: Element,
             definedElementNames: Set<String>,
             allElementNames: Set<String>,
         ) {
@@ -1461,12 +1451,12 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         }
     }
 
-    private class ParseDeclarations(
-        val elements: Map<String, RuleElement>,
+    internal class ParseDeclarations(
+        val elements: Map<String, Element>,
         val blocks: Map<String, UnlinkedStandardRule>,
         val runtime: Declarations,
     ) {
-        fun dereferenceElement(name: String): RuleElement =
+        fun dereferenceElement(name: String): Element =
             elements[name] ?: throw LscUndefinedName("element", name)
 
         fun dereferenceBlock(name: String): UnlinkedStandardRule =
@@ -1481,39 +1471,39 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     private class FeatureDeclarationNode(
         text: String,
         val feature: Feature,
-    ) : BaseParseNode(text)
+    ) : BaseAstNode(text)
 
     private class FeatureLevelNode(
         text: String,
         val level: WordLevel,
-    ) : BaseParseNode(text)
+    ) : BaseAstNode(text)
 
     private class DiacriticDeclarationNode(
         text: String,
         val diacritic: Diacritic,
-    ) : BaseParseNode(text)
+    ) : BaseAstNode(text)
 
     private class SymbolDeclarationNode(
         text: String,
         val symbol: Symbol,
-    ) : BaseParseNode(text)
+    ) : BaseAstNode(text)
 
     private class ClassDeclarationNode(
         text: String,
         val name: String,
-        val elements: List<ParseNode>,
-    ) : BaseParseNode(text)
+        val elements: List<AstNode>,
+    ) : BaseAstNode(text)
 
     private class ElementDeclarationNode(
         text: String,
         val name: String,
-        val element: ParseNode,
-    ) : BaseParseNode(text)
+        val element: AstNode,
+    ) : BaseAstNode(text)
 
     private class SyllableStructureNode(
         text: String,
         val patterns: List<SyllablePatternNode>?,
-    ) : BaseParseNode(text) {
+    ) : BaseAstNode(text) {
         fun syllabifier(declarations: ParseDeclarations): Syllabifier? =
             patterns?.let { notNullPatterns ->
                 Syllabifier(
@@ -1525,17 +1515,17 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     private class SyllablePatternNode(
         text: String,
-        val element: RuleElement,
+        val element: Element,
         val matrix: MatrixNode?,
-    ) : BaseParseNode(text) {
+    ) : BaseAstNode(text) {
         fun syllabifierPattern(declarations: ParseDeclarations): Syllabifier.Pattern =
             Syllabifier.Pattern(
-                element.matcher(RuleContext.aloneInMain(), declarations),
+                element.matcher(ElementContext.aloneInMain(), declarations),
                 matrix?.matrix,
             )
     }
 
-    private interface UnlinkedRule : ParseNode {
+    internal interface UnlinkedRule : AstNode {
         val numExpressions: Int
 
         fun link(
@@ -1557,10 +1547,10 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         }
     }
 
-    private abstract class BaseUnlinkedRule(
+    internal abstract class BaseUnlinkedRule(
         text: String,
         final override val subRules: List<UnlinkedRule>,
-    ) : BaseParseNode(text), UnlinkedRule {
+    ) : BaseAstNode(text), UnlinkedRule {
 
         val cumulativeNumExpressions: List<Int> =
             subRules.scan(0) { acc, cur -> acc + cur.numExpressions }
@@ -1731,11 +1721,11 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         }
     }
 
-    private class UnlinkedStandardRule(
+    internal class UnlinkedStandardRule(
         text: String,
         val name: String,
         val mainBlock: UnlinkedRule,
-        val ruleFilter: RuleElement?,
+        val ruleFilter: Element?,
         val matchMode: MatchMode,
         val propagate: Boolean,
         val cleanup: Boolean,
@@ -1750,7 +1740,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             val filter = if (ruleFilter != null || inherited.filter != null) {
                 val thisFilter = ruleFilter?.let { filter ->
                     { segment: Segment ->
-                        filter.matcher(RuleContext.aloneInMain(), declarations).claim(
+                        filter.matcher(ElementContext.aloneInMain(), declarations).claim(
                             Phrase(StandardWord.single(segment)),
                             PhraseIndex(0, 0),
                             Bindings(),
@@ -1865,17 +1855,17 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     private class UnlinkedRuleExpression(
         text: String,
-        val match: RuleElement,
-        val result: RuleElement,
+        val match: Element,
+        val result: Element,
         val compoundEnvironment: UnlinkedCompoundEnvironment?,
-    ) : BaseParseNode(text), ExpressionNode {
+    ) : BaseAstNode(text), ExpressionNode {
         fun link(
             ruleName: String,
             expressionNumber: Int,
             declarations: ParseDeclarations,
             filtered: Boolean,
         ): RuleExpression = try {
-            val coreMatcher = match.matcher(RuleContext.aloneInMain(), declarations)
+            val coreMatcher = match.matcher(ElementContext.aloneInMain(), declarations)
             val matcher = compoundEnvironment?.let { env ->
                 EnvironmentMatcher(
                     coreMatcher,
@@ -1898,7 +1888,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         text: String,
         val positive: List<UnlinkedEnvironment>,
         val negative: List<UnlinkedEnvironment>,
-    ) : BaseParseNode(text) {
+    ) : BaseAstNode(text) {
         fun link(declarations: ParseDeclarations): CompoundEnvironment =
             CompoundEnvironment(
                 positive.map { it.link(declarations) },
@@ -1908,80 +1898,78 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     private class UnlinkedEnvironment(
         text: String,
-        val before: RuleElement?,
-        val after: RuleElement?,
-    ) : BaseParseNode(text) {
+        val before: Element?,
+        val after: Element?,
+    ) : BaseAstNode(text) {
 
         fun link(declarations: ParseDeclarations): Environment = try {
             Environment(
-                before?.matcher(RuleContext.rightBeforeAnchor(), declarations) ?: EmptyMatcher,
-                after?.matcher(RuleContext.rightAfterAnchor(), declarations) ?: EmptyMatcher
+                before?.matcher(ElementContext.rightBeforeAnchor(), declarations) ?: EmptyMatcher,
+                after?.matcher(ElementContext.rightAfterAnchor(), declarations) ?: EmptyMatcher
             )
         } catch (e: LscBadSequence) {
             throw e.initEnvironment(text)
         }
     }
 
-    private interface RuleElement : ParseNode {
-        val publicName: String
-
-        fun matcher(context: RuleContext, declarations: ParseDeclarations): Matcher
-
-        val subElements: List<RuleElement>
-            get() = emptyList()
-    }
-
-    private data class RuleContext(
+    /**
+     * The surroundings of an `Element` AST node within its
+     * expression
+     */
+    internal data class ElementContext(
         val section: RuleSection,
-        val precedingElement: ContextElement,
-        val followingElement: ContextElement,
+        val isAtStartOfSection: Boolean,
+        val isAtEndOfSection: Boolean,
     ) {
-        fun isAtEdgeOfEnvironment(): Boolean =
-            section == RuleSection.ENVIRON &&
-                    (precedingElement is None ||
-                            followingElement is None)
+        val isAtEdgeOfEnvironment: Boolean
+            get() =
+                section == RuleSection.ENVIRON &&
+                        (isAtStartOfSection || isAtEndOfSection)
+
+        fun butBetween(
+            precedingElement: Element?,
+            followingElement: Element?,
+        ): ElementContext {
+            return ElementContext(
+                this.section,
+                isAtStartOfSection = (precedingElement == null && this.isAtStartOfSection),
+                isAtEndOfSection = (followingElement == null && this.isAtEndOfSection),
+            )
+        }
 
         companion object {
-            fun aloneInMain(): RuleContext =
-                RuleContext(RuleSection.MAIN, None, None)
+            fun aloneInMain(): ElementContext =
+                ElementContext(RuleSection.MAIN, isAtStartOfSection = true, isAtEndOfSection = true)
 
-            fun rightBeforeAnchor(): RuleContext =
-                RuleContext(RuleSection.ENVIRON, None, Anchor)
+            fun rightBeforeAnchor(): ElementContext =
+                ElementContext(RuleSection.ENVIRON, isAtStartOfSection = true, isAtEndOfSection = false)
 
-            fun rightAfterAnchor(): RuleContext =
-                RuleContext(RuleSection.ENVIRON, Anchor, None)
+            fun rightAfterAnchor(): ElementContext =
+                ElementContext(RuleSection.ENVIRON, isAtStartOfSection = false, isAtEndOfSection = true)
         }
     }
 
-    private enum class RuleSection {
+    internal enum class RuleSection {
         MAIN,
         ENVIRON,
     }
 
-    private sealed class ContextElement
-
-    private object None : ContextElement()
-
-    private object Anchor : ContextElement()
-
-    private data class Some(val element: RuleElement) : ContextElement()
-
-    private interface ResultElement : RuleElement {
+    private interface ResultElement : Element {
         fun emitter(declarations: ParseDeclarations): Emitter
     }
 
-    private fun castToResultElement(element: RuleElement): ResultElement =
+    private fun castToResultElement(element: Element): ResultElement =
         element as? ResultElement ?: throw LscIllegalStructureInOutput(element.publicName, element.text)
 
     // Base class for elements that simply forward matcher/emitter calls to sub-elements
-    private abstract class ContainerResultElement(text: String) : BaseParseNode(text), ResultElement {
-        override fun matcher(context: RuleContext, declarations: ParseDeclarations): Matcher =
+    private abstract class ContainerResultElement(text: String) : BaseAstNode(text), ResultElement {
+        override fun matcher(context: ElementContext, declarations: ParseDeclarations): Matcher =
             combineMatchers(declarations, elements.map { it.matcher(context, declarations) })
 
         override fun emitter(declarations: ParseDeclarations): Emitter =
             combineEmitters(declarations, resultElements.map { it.emitter(declarations) })
 
-        abstract val elements: List<RuleElement>
+        abstract val elements: List<Element>
 
         val resultElements: List<ResultElement> by lazy { elements.map(::castToResultElement) }
 
@@ -1995,24 +1983,24 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             elements: List<Emitter>,
         ): Emitter
 
-        override val subElements: List<RuleElement>
+        override val subElements: List<Element>
             get() = elements
     }
 
-    private object DoNothingElement : BaseParseNode("unchanged"), ResultElement {
+    private object DoNothingElement : BaseAstNode("unchanged"), ResultElement {
         override val publicName: String = "an \"unchanged\" element"
 
-        override fun matcher(context: RuleContext, declarations: ParseDeclarations): Matcher =
+        override fun matcher(context: ElementContext, declarations: ParseDeclarations): Matcher =
             NeverMatcher
 
         override fun emitter(declarations: ParseDeclarations): Emitter =
             NeverEmitter
     }
 
-    private object SyllableBoundaryElement : BaseParseNode("."), ResultElement {
+    private object SyllableBoundaryElement : BaseAstNode("."), ResultElement {
         override val publicName: String = "a syllable boundary"
 
-        override fun matcher(context: RuleContext, declarations: ParseDeclarations): Matcher =
+        override fun matcher(context: ElementContext, declarations: ParseDeclarations): Matcher =
             if (declarations.runtime.syllabifier == null) {
                 TextElement(".", ".").matcher(context, declarations)
             } else SyllableBoundaryMatcher
@@ -2023,22 +2011,23 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             } else SyllableBoundaryEmitter
     }
 
-    private object WordBoundaryElement : BaseParseNode("$"), RuleElement {
+    private object WordBoundaryElement : BaseAstNode("$"), Element {
         override val publicName: String = "a word boundary"
 
-        override fun matcher(context: RuleContext, declarations: ParseDeclarations): Matcher =
+        override fun matcher(context: ElementContext, declarations: ParseDeclarations): Matcher =
             when {
                 context.section == RuleSection.MAIN -> throw LscIllegalStructureInInput(publicName, text)
-                context.precedingElement is None -> WordStartMatcher
-                context.followingElement is None -> WordEndMatcher
+                context.isAtStartOfSection -> WordStartMatcher
+                context.isAtEndOfSection -> WordEndMatcher
                 else -> throw LscInteriorWordBoundary()
             }
+
     }
 
-    private object BetweenWordsElement : BaseParseNode("$$"), ResultElement, RuleElement {
+    private object BetweenWordsElement : BaseAstNode("$$"), ResultElement, Element {
         override val publicName: String = "a space between words"
 
-        override fun matcher(context: RuleContext, declarations: ParseDeclarations): Matcher =
+        override fun matcher(context: ElementContext, declarations: ParseDeclarations): Matcher =
             BetweenWordsMatcher
 
         override fun emitter(declarations: ParseDeclarations): Emitter =
@@ -2047,18 +2036,18 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     private class EnvironmentElement(
         text: String,
-        val element: RuleElement,
+        val element: Element,
         val environment: UnlinkedCompoundEnvironment,
-    ) : BaseParseNode(text), RuleElement {
+    ) : BaseAstNode(text), Element {
         override val publicName: String = "a nested environment"
 
-        override fun matcher(context: RuleContext, declarations: ParseDeclarations): Matcher =
+        override fun matcher(context: ElementContext, declarations: ParseDeclarations): Matcher =
             EnvironmentMatcher(
                 element.matcher(context, declarations),
                 environment.link(declarations),
             )
 
-        override val subElements: List<RuleElement>
+        override val subElements: List<Element>
             get() = listOf(element) +
                     environment.positive.flatMap { listOfNotNull(it.before, it.after) } +
                     environment.negative.flatMap { listOfNotNull(it.before, it.after) }
@@ -2066,25 +2055,18 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     private class SequenceElement(
         text: String,
-        override val elements: List<RuleElement>,
+        override val elements: List<Element>,
     ) : ContainerResultElement(text) {
         override val publicName: String = "a sequence"
 
-        override fun matcher(context: RuleContext, declarations: ParseDeclarations): Matcher =
+        override fun matcher(context: ElementContext, declarations: ParseDeclarations): Matcher =
             try {
                 combineMatchers(
                     declarations,
-                    (listOf<RuleElement?>(null) + elements + listOf(null)).windowed(3) { window ->
+                    (listOf<Element?>(null) + elements + listOf(null)).windowed(3) { window ->
                         val (preceding, current, following) = window
                         current!!.matcher(
-                            context.copy(
-                                precedingElement = preceding?.let {
-                                    Some(it)
-                                } ?: context.precedingElement,
-                                followingElement = following?.let {
-                                    Some(it)
-                                } ?: context.followingElement,
-                            ),
+                            context.butBetween(preceding, following),
                             declarations,
                         )
                     },
@@ -2106,29 +2088,29 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     private class CaptureElement(
         text: String,
-        val element: RuleElement,
+        val element: Element,
         val capture: CaptureReferenceElement,
-    ) : BaseParseNode(text), RuleElement {
+    ) : BaseAstNode(text), Element {
         override val publicName: String = "a capture"
 
-        override fun matcher(context: RuleContext, declarations: ParseDeclarations): Matcher =
+        override fun matcher(context: ElementContext, declarations: ParseDeclarations): Matcher =
             CaptureMatcher(element.matcher(context, declarations), capture.number)
 
-        override val subElements: List<RuleElement>
+        override val subElements: List<Element>
             get() = listOf(element)
     }
 
     private class RepeaterElement(
         text: String,
-        val element: RuleElement,
+        val element: Element,
         val repeaterType: RepeaterTypeNode,
-    ) : BaseParseNode(text), RuleElement {
+    ) : BaseAstNode(text), Element {
         override val publicName: String = when (repeaterType.type) {
             StandardRepeaterType.ZERO_OR_ONE -> "an optional"
             else -> "a repeater"
         }
 
-        override fun matcher(context: RuleContext, declarations: ParseDeclarations): Matcher {
+        override fun matcher(context: ElementContext, declarations: ParseDeclarations): Matcher {
             checkContext(context)
             return RepeaterMatcher(
                 declarations.runtime,
@@ -2137,9 +2119,9 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             )
         }
 
-        private fun checkContext(context: RuleContext) {
+        private fun checkContext(context: ElementContext) {
             if (!repeaterType.type.isSpecificMultiple() &&
-                context.isAtEdgeOfEnvironment()
+                context.isAtEdgeOfEnvironment
             ) {
                 throw LscPeripheralRepeater(text, repeaterType.type)
             }
@@ -2148,13 +2130,13 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         private fun RepeaterType.isSpecificMultiple(): Boolean =
             minReps > 1 && minReps == maxReps
 
-        override val subElements: List<RuleElement>
+        override val subElements: List<Element>
             get() = listOf(element)
     }
 
     private class AlternativeElement(
         text: String,
-        override val elements: List<RuleElement>,
+        override val elements: List<Element>,
     ) : ContainerResultElement(text) {
         override val publicName: String = "an alternative list"
 
@@ -2173,23 +2155,23 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     private class IntersectionElement(
         text: String,
-        val initialElement: RuleElement,
+        val initialElement: Element,
         val checkElements: List<CheckElement>,
-    ) : BaseParseNode(text), RuleElement {
+    ) : BaseAstNode(text), Element {
         override val publicName: String = "an intersection"
 
-        override fun matcher(context: RuleContext, declarations: ParseDeclarations): Matcher =
+        override fun matcher(context: ElementContext, declarations: ParseDeclarations): Matcher =
             IntersectionMatcher(
                 initialElement.matcher(context, declarations),
                 checkElements.map { it.matcher(context, declarations) }
             )
 
-        override val subElements: List<RuleElement>
+        override val subElements: List<Element>
             get() = listOf(initialElement) + checkElements.map { it.element }
     }
 
-    private data class CheckElement(val element: RuleElement, val negated: Boolean) {
-        fun matcher(context: RuleContext, declarations: ParseDeclarations): CheckMatcher =
+    private data class CheckElement(val element: Element, val negated: Boolean) {
+        fun matcher(context: ElementContext, declarations: ParseDeclarations): CheckMatcher =
             CheckMatcher(element.matcher(context, declarations), negated)
     }
 
@@ -2197,10 +2179,10 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     private class TransformingElement(
         text: String,
         val elements: List<ResultElement>,
-    ) : BaseParseNode(text), ResultElement {
+    ) : BaseAstNode(text), ResultElement {
         override val publicName: String = "a transforming element"
 
-        override fun matcher(context: RuleContext, declarations: ParseDeclarations): Matcher =
+        override fun matcher(context: ElementContext, declarations: ParseDeclarations): Matcher =
             matcher(declarations, elements.first(), elements.first().emitter(declarations))
 
         private fun matcher(
@@ -2339,7 +2321,7 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             return alternatives
         }
 
-        override val subElements: List<RuleElement>
+        override val subElements: List<Element>
             get() = elements
     }
 
@@ -2347,10 +2329,10 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         text: String,
         val literalText: String,
         val exact: Boolean = false,
-    ) : BaseParseNode(text), ResultElement {
+    ) : BaseAstNode(text), ResultElement {
         override val publicName: String = "literal text"
 
-        override fun matcher(context: RuleContext, declarations: ParseDeclarations): Matcher =
+        override fun matcher(context: ElementContext, declarations: ParseDeclarations): Matcher =
             declarations.runtime.parsePhonetic(literalText, syllabify = false).let {
                 if (exact) TextMatcher(it) else SymbolMatcher(declarations.runtime, it)
             }
@@ -2364,10 +2346,10 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     private class MatrixElement(
         text: String,
         val matrix: Matrix,
-    ) : BaseParseNode(text), ResultElement {
+    ) : BaseAstNode(text), ResultElement {
         override val publicName: String = "a matrix"
 
-        override fun matcher(context: RuleContext, declarations: ParseDeclarations): Matcher =
+        override fun matcher(context: ElementContext, declarations: ParseDeclarations): Matcher =
             with(declarations.runtime) {
                 val split = matrix.splitByLevel()
                 val segmentMatcher = split[WordLevel.SEGMENT]?.let {
@@ -2415,30 +2397,30 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
 
     private class NegatedElement(
         text: String,
-        val element: RuleElement,
-    ) : BaseParseNode(text), RuleElement {
+        val element: Element,
+    ) : BaseAstNode(text), Element {
         override val publicName: String = "a negated element"
 
-        override fun matcher(context: RuleContext, declarations: ParseDeclarations): Matcher =
+        override fun matcher(context: ElementContext, declarations: ParseDeclarations): Matcher =
             NegatedMatcher(element.matcher(context, declarations))
 
-        override val subElements: List<RuleElement>
+        override val subElements: List<Element>
             get() = listOf(element)
     }
 
-    private object EmptyElement : BaseParseNode("*"), ResultElement {
+    private object EmptyElement : BaseAstNode("*"), ResultElement {
         override val publicName: String = "an empty element"
 
-        override fun matcher(context: RuleContext, declarations: ParseDeclarations): Matcher =
+        override fun matcher(context: ElementContext, declarations: ParseDeclarations): Matcher =
             EmptyMatcher
 
         override fun emitter(declarations: ParseDeclarations): Emitter = EmptyEmitter
     }
 
-    private object SyllableElement : BaseParseNode("<syl>"), RuleElement {
+    private object SyllableElement : BaseAstNode("<syl>"), Element {
         override val publicName: String = "a syllable element"
 
-        override fun matcher(context: RuleContext, declarations: ParseDeclarations): Matcher =
+        override fun matcher(context: ElementContext, declarations: ParseDeclarations): Matcher =
             SyllableMatcher
 
     }
@@ -2446,10 +2428,10 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
     private class ReferenceElement(
         text: String,
         val name: String,
-    ) : BaseParseNode(text), ResultElement {
+    ) : BaseAstNode(text), ResultElement {
         override val publicName: String = "an element reference"
 
-        override fun matcher(context: RuleContext, declarations: ParseDeclarations): Matcher =
+        override fun matcher(context: ElementContext, declarations: ParseDeclarations): Matcher =
             declarations.dereferenceElement(name).matcher(context, declarations)
 
         override fun emitter(declarations: ParseDeclarations): Emitter =
@@ -2469,10 +2451,10 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
         text: String,
         val number: Int,
         val exact: Boolean,
-    ) : BaseParseNode(text), ResultElement {
+    ) : BaseAstNode(text), ResultElement {
         override val publicName: String = "a capture reference"
 
-        override fun matcher(context: RuleContext, declarations: ParseDeclarations): Matcher =
+        override fun matcher(context: ElementContext, declarations: ParseDeclarations): Matcher =
             CaptureReferenceMatcher(declarations.runtime, number, exact)
 
         override fun emitter(declarations: ParseDeclarations): Emitter =
@@ -2481,40 +2463,9 @@ object LscWalker : LscBaseVisitor<LscWalker.ParseNode>() {
             ) else CaptureReferenceEmitter(number)
     }
 
-    private class RepeaterTypeNode(
-        text: String,
-        val type: RepeaterType,
-    ) : BaseParseNode(text)
+    private fun listVisit(node: List<ParseTree>): List<AstNode> = node.map { visit(it) }
 
-    private class MatrixNode(
-        text: String,
-        val matrix: Matrix,
-    ) : BaseParseNode(text)
-
-    private open class MatrixValueNode(
-        text: String,
-        val value: MatrixValue,
-    ) : BaseParseNode(text)
-
-    private class SimpleValueNode(
-        text: String,
-        val simpleValue: SimpleValue,
-    ) : MatrixValueNode(text, simpleValue)
-
-    private class NameNode(
-        text: String,
-        val name: String,
-    ) : BaseParseNode(text)
-
-    private class TextNode(
-        text: String,
-        val literalText: String,
-        val exact: Boolean
-    ) : BaseParseNode(text)
-
-    private fun listVisit(node: List<ParseTree>): List<ParseNode> = node.map { visit(it) }
-
-    private fun optionalVisit(node: ParseTree?): ParseNode? = node?.let { visit(it) }
+    private fun optionalVisit(node: ParseTree?): AstNode? = node?.let { visit(it) }
 
     private fun ParseTree.toInt(): Int = getText().toIntOrNull() ?: throw LscNumberOverflow(getText())
 }
