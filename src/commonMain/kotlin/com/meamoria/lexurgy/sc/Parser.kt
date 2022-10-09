@@ -961,7 +961,7 @@ object LscWalker : LscBaseVisitor<AstNode>() {
             "unchanged",
             DoNothingElement,
             DoNothingElement,
-            UnlinkedCompoundEnvironment("", emptyList(), emptyList())
+            CompoundEnvironmentNode("", emptyList(), emptyList())
         )
 
     private fun walkBlockReference(name: String): AstNode =
@@ -976,14 +976,14 @@ object LscWalker : LscBaseVisitor<AstNode>() {
         text,
         ruleFrom as Element,
         ruleTo as Element,
-        compoundEnvironment as UnlinkedCompoundEnvironment?,
+        compoundEnvironment as CompoundEnvironmentNode?,
     )
 
     private fun walkRuleEnvironment(
         text: String,
         before: AstNode?,
         after: AstNode?,
-    ): AstNode = UnlinkedEnvironment(
+    ): AstNode = EnvironmentNode(
         text,
         (before as? Element),
         (after as? Element),
@@ -1006,7 +1006,7 @@ object LscWalker : LscBaseVisitor<AstNode>() {
         EnvironmentElement(
             text,
             element as Element,
-            environment as UnlinkedCompoundEnvironment,
+            environment as CompoundEnvironmentNode,
         )
 
     private fun walkCompoundEnvironment(
@@ -1014,17 +1014,17 @@ object LscWalker : LscBaseVisitor<AstNode>() {
         positive: AstNode?,
         negative: AstNode?,
     ): AstNode =
-        UnlinkedCompoundEnvironment(
+        CompoundEnvironmentNode(
             text,
             walkEnvironmentOrEnvironmentList(positive),
             walkEnvironmentOrEnvironmentList(negative),
         )
 
-    private fun walkEnvironmentOrEnvironmentList(node: AstNode?): List<UnlinkedEnvironment> =
+    private fun walkEnvironmentOrEnvironmentList(node: AstNode?): List<EnvironmentNode> =
         when (node) {
             null -> emptyList()
-            is UnlinkedEnvironment -> listOf(node)
-            is AstNodeList -> node.elements.map { it as UnlinkedEnvironment }
+            is EnvironmentNode -> listOf(node)
+            is AstNodeList -> node.elements.map { it as EnvironmentNode }
             else -> throw AssertionError()
         }
 
@@ -1079,7 +1079,7 @@ object LscWalker : LscBaseVisitor<AstNode>() {
                     text,
                     items.first() as Element,
                     items.drop(1).zip(negations) { item, negated ->
-                        CheckElement(item as Element, negated)
+                        MatchVerifierElement(item as Element, negated)
                     },
                 )
             InterfixType.TRANSFORMING ->
@@ -1151,7 +1151,7 @@ object LscWalker : LscBaseVisitor<AstNode>() {
         text: String,
         value: AstNode
     ): AstNode =
-        ReferenceElement(
+        ElementReferenceElement(
             text,
             (value as NameNode).name
         )
@@ -1241,7 +1241,7 @@ object LscWalker : LscBaseVisitor<AstNode>() {
                 val (declaredBlocks, realChangeRules) = resolveBlocks(changeRules)
 
                 fun Declarations.withElements() =
-                    ParseDeclarations(declaredElements, declaredBlocks, this)
+                    ParseTimeDeclarations(declaredElements, declaredBlocks, this)
 
                 val firstAnchoredStatement = realChangeRules.firstOrNull()?.statements?.firstOrNull()
 
@@ -1339,7 +1339,7 @@ object LscWalker : LscBaseVisitor<AstNode>() {
                 val newClassSounds = classNode.elements.flatMap {
                     if (it is TextNode) listOf(it.literalText)
                     else {
-                        val nestedName = (it as ReferenceElement).name
+                        val nestedName = (it as ElementReferenceElement).name
                         definedClassSounds[nestedName] ?: if (nestedName in allNonClassElementNames) {
                             throw LscIllegalStructure(
                                 "non-class elements",
@@ -1378,7 +1378,7 @@ object LscWalker : LscBaseVisitor<AstNode>() {
             definedElementNames: Set<String>,
             allElementNames: Set<String>,
         ) {
-            if (element is ReferenceElement) {
+            if (element is ElementReferenceElement) {
                 val name = element.name
                 if (name !in definedElementNames) {
                     throw LscUndefinedName("element", name, name in allElementNames)
@@ -1451,23 +1451,6 @@ object LscWalker : LscBaseVisitor<AstNode>() {
         }
     }
 
-    internal class ParseDeclarations(
-        val elements: Map<String, Element>,
-        val blocks: Map<String, UnlinkedStandardRule>,
-        val runtime: Declarations,
-    ) {
-        fun dereferenceElement(name: String): Element =
-            elements[name] ?: throw LscUndefinedName("element", name)
-
-        fun dereferenceBlock(name: String): UnlinkedStandardRule =
-            blocks[name] ?: throw LscUndefinedName("block", name)
-
-        companion object {
-            val empty: ParseDeclarations =
-                ParseDeclarations(emptyMap(), emptyMap(), Declarations.empty)
-        }
-    }
-
     private class FeatureDeclarationNode(
         text: String,
         val feature: Feature,
@@ -1504,7 +1487,7 @@ object LscWalker : LscBaseVisitor<AstNode>() {
         text: String,
         val patterns: List<SyllablePatternNode>?,
     ) : BaseAstNode(text) {
-        fun syllabifier(declarations: ParseDeclarations): Syllabifier? =
+        fun syllabifier(declarations: ParseTimeDeclarations): Syllabifier? =
             patterns?.let { notNullPatterns ->
                 Syllabifier(
                     declarations.runtime,
@@ -1518,7 +1501,7 @@ object LscWalker : LscBaseVisitor<AstNode>() {
         val element: Element,
         val matrix: MatrixNode?,
     ) : BaseAstNode(text) {
-        fun syllabifierPattern(declarations: ParseDeclarations): Syllabifier.Pattern =
+        fun syllabifierPattern(declarations: ParseTimeDeclarations): Syllabifier.Pattern =
             Syllabifier.Pattern(
                 element.matcher(ElementContext.aloneInMain(), declarations),
                 matrix?.matrix,
@@ -1530,7 +1513,7 @@ object LscWalker : LscBaseVisitor<AstNode>() {
 
         fun link(
             firstExpressionNumber: Int,
-            declarations: ParseDeclarations,
+            declarations: ParseTimeDeclarations,
             inherited: InheritedRuleProperties,
         ): ChangeRule
 
@@ -1581,7 +1564,7 @@ object LscWalker : LscBaseVisitor<AstNode>() {
 
         override fun link(
             firstExpressionNumber: Int,
-            declarations: ParseDeclarations,
+            declarations: ParseTimeDeclarations,
             inherited: InheritedRuleProperties,
         ): ChangeRule =
             if (expressions.singleOrNull() is BlockReference) {
@@ -1607,7 +1590,7 @@ object LscWalker : LscBaseVisitor<AstNode>() {
             }
 
         private fun inlineBlockReferences(
-            declarations: ParseDeclarations,
+            declarations: ParseTimeDeclarations,
             expression: ExpressionNode,
         ): List<UnlinkedRuleExpression> =
             when (expression) {
@@ -1648,14 +1631,14 @@ object LscWalker : LscBaseVisitor<AstNode>() {
 
         override fun link(
             firstExpressionNumber: Int,
-            declarations: ParseDeclarations,
+            declarations: ParseTimeDeclarations,
             inherited: InheritedRuleProperties,
         ): ChangeRule {
             val linkedSubRules = linkSubRules(
                 firstExpressionNumber,
             ) { index, subRule, subFirstExpressionNumber ->
                 if (literal && index == 0) {
-                    subRule.link(subFirstExpressionNumber, ParseDeclarations.empty, inherited.copy(name = name))
+                    subRule.link(subFirstExpressionNumber, ParseTimeDeclarations.empty, inherited.copy(name = name))
                 } else {
                     subRule.link(subFirstExpressionNumber, declarations, inherited.copy(name = name))
                 }
@@ -1689,14 +1672,14 @@ object LscWalker : LscBaseVisitor<AstNode>() {
 
         override fun link(
             firstExpressionNumber: Int,
-            declarations: ParseDeclarations,
+            declarations: ParseTimeDeclarations,
             inherited: InheritedRuleProperties
         ): ChangeRule {
             val linkedSubRules = linkSubRules(
                 firstExpressionNumber,
             ) { index, subRule, subFirstExpressionNumber ->
                 if (literal && index == subRules.size - 1) {
-                    subRule.link(subFirstExpressionNumber, ParseDeclarations.empty, inherited.copy(name = name))
+                    subRule.link(subFirstExpressionNumber, ParseTimeDeclarations.empty, inherited.copy(name = name))
                 } else {
                     subRule.link(subFirstExpressionNumber, declarations, inherited.copy(name = name))
                 }
@@ -1734,7 +1717,7 @@ object LscWalker : LscBaseVisitor<AstNode>() {
 
         override fun link(
             firstExpressionNumber: Int,
-            declarations: ParseDeclarations,
+            declarations: ParseTimeDeclarations,
             inherited: InheritedRuleProperties
         ): ChangeRule {
             val filter = if (ruleFilter != null || inherited.filter != null) {
@@ -1780,7 +1763,7 @@ object LscWalker : LscBaseVisitor<AstNode>() {
     ) : BaseUnlinkedRule(text, subRules) {
         override fun link(
             firstExpressionNumber: Int,
-            declarations: ParseDeclarations,
+            declarations: ParseTimeDeclarations,
             inherited: InheritedRuleProperties,
         ): ChangeRule =
             SequentialBlock(
@@ -1798,7 +1781,7 @@ object LscWalker : LscBaseVisitor<AstNode>() {
     ) : BaseUnlinkedRule(text, subRules) {
         override fun link(
             firstExpressionNumber: Int,
-            declarations: ParseDeclarations,
+            declarations: ParseTimeDeclarations,
             inherited: InheritedRuleProperties,
         ): ChangeRule =
             WithinWordBlock(
@@ -1819,7 +1802,7 @@ object LscWalker : LscBaseVisitor<AstNode>() {
 
         override fun link(
             firstExpressionNumber: Int,
-            declarations: ParseDeclarations,
+            declarations: ParseTimeDeclarations,
             inherited: InheritedRuleProperties
         ): ChangeRule = PropagateBlock(
             subRule.link(
@@ -1839,7 +1822,7 @@ object LscWalker : LscBaseVisitor<AstNode>() {
 
         override fun link(
             firstExpressionNumber: Int,
-            declarations: ParseDeclarations,
+            declarations: ParseTimeDeclarations,
             inherited: InheritedRuleProperties
         ): ChangeRule =
             declarations.dereferenceBlock(name).link(
@@ -1857,12 +1840,12 @@ object LscWalker : LscBaseVisitor<AstNode>() {
         text: String,
         val match: Element,
         val result: Element,
-        val compoundEnvironment: UnlinkedCompoundEnvironment?,
+        val compoundEnvironment: CompoundEnvironmentNode?,
     ) : BaseAstNode(text), ExpressionNode {
         fun link(
             ruleName: String,
             expressionNumber: Int,
-            declarations: ParseDeclarations,
+            declarations: ParseTimeDeclarations,
             filtered: Boolean,
         ): RuleExpression = try {
             val coreMatcher = match.matcher(ElementContext.aloneInMain(), declarations)
@@ -1882,585 +1865,6 @@ object LscWalker : LscBaseVisitor<AstNode>() {
         } catch (e: UserError) {
             throw LscInvalidRuleExpression(e, ruleName, text, expressionNumber)
         }
-    }
-
-    private class UnlinkedCompoundEnvironment(
-        text: String,
-        val positive: List<UnlinkedEnvironment>,
-        val negative: List<UnlinkedEnvironment>,
-    ) : BaseAstNode(text) {
-        fun link(declarations: ParseDeclarations): CompoundEnvironment =
-            CompoundEnvironment(
-                positive.map { it.link(declarations) },
-                negative.map { it.link(declarations) },
-            )
-    }
-
-    private class UnlinkedEnvironment(
-        text: String,
-        val before: Element?,
-        val after: Element?,
-    ) : BaseAstNode(text) {
-
-        fun link(declarations: ParseDeclarations): Environment = try {
-            Environment(
-                before?.matcher(ElementContext.rightBeforeAnchor(), declarations) ?: EmptyMatcher,
-                after?.matcher(ElementContext.rightAfterAnchor(), declarations) ?: EmptyMatcher
-            )
-        } catch (e: LscBadSequence) {
-            throw e.initEnvironment(text)
-        }
-    }
-
-    /**
-     * The surroundings of an `Element` AST node within its
-     * expression
-     */
-    internal data class ElementContext(
-        val section: RuleSection,
-        val isAtStartOfSection: Boolean,
-        val isAtEndOfSection: Boolean,
-    ) {
-        val isAtEdgeOfEnvironment: Boolean
-            get() =
-                section == RuleSection.ENVIRON &&
-                        (isAtStartOfSection || isAtEndOfSection)
-
-        fun butBetween(
-            precedingElement: Element?,
-            followingElement: Element?,
-        ): ElementContext {
-            return ElementContext(
-                this.section,
-                isAtStartOfSection = (precedingElement == null && this.isAtStartOfSection),
-                isAtEndOfSection = (followingElement == null && this.isAtEndOfSection),
-            )
-        }
-
-        companion object {
-            fun aloneInMain(): ElementContext =
-                ElementContext(RuleSection.MAIN, isAtStartOfSection = true, isAtEndOfSection = true)
-
-            fun rightBeforeAnchor(): ElementContext =
-                ElementContext(RuleSection.ENVIRON, isAtStartOfSection = true, isAtEndOfSection = false)
-
-            fun rightAfterAnchor(): ElementContext =
-                ElementContext(RuleSection.ENVIRON, isAtStartOfSection = false, isAtEndOfSection = true)
-        }
-    }
-
-    internal enum class RuleSection {
-        MAIN,
-        ENVIRON,
-    }
-
-    private interface ResultElement : Element {
-        fun emitter(declarations: ParseDeclarations): Emitter
-    }
-
-    private fun castToResultElement(element: Element): ResultElement =
-        element as? ResultElement ?: throw LscIllegalStructureInOutput(element.publicName, element.text)
-
-    // Base class for elements that simply forward matcher/emitter calls to sub-elements
-    private abstract class ContainerResultElement(text: String) : BaseAstNode(text), ResultElement {
-        override fun matcher(context: ElementContext, declarations: ParseDeclarations): Matcher =
-            combineMatchers(declarations, elements.map { it.matcher(context, declarations) })
-
-        override fun emitter(declarations: ParseDeclarations): Emitter =
-            combineEmitters(declarations, resultElements.map { it.emitter(declarations) })
-
-        abstract val elements: List<Element>
-
-        val resultElements: List<ResultElement> by lazy { elements.map(::castToResultElement) }
-
-        abstract fun combineMatchers(
-            declarations: ParseDeclarations,
-            elements: List<Matcher>,
-        ): Matcher
-
-        abstract fun combineEmitters(
-            declarations: ParseDeclarations,
-            elements: List<Emitter>,
-        ): Emitter
-
-        override val subElements: List<Element>
-            get() = elements
-    }
-
-    private object DoNothingElement : BaseAstNode("unchanged"), ResultElement {
-        override val publicName: String = "an \"unchanged\" element"
-
-        override fun matcher(context: ElementContext, declarations: ParseDeclarations): Matcher =
-            NeverMatcher
-
-        override fun emitter(declarations: ParseDeclarations): Emitter =
-            NeverEmitter
-    }
-
-    private object SyllableBoundaryElement : BaseAstNode("."), ResultElement {
-        override val publicName: String = "a syllable boundary"
-
-        override fun matcher(context: ElementContext, declarations: ParseDeclarations): Matcher =
-            if (declarations.runtime.syllabifier == null) {
-                TextElement(".", ".").matcher(context, declarations)
-            } else SyllableBoundaryMatcher
-
-        override fun emitter(declarations: ParseDeclarations): Emitter =
-            if (declarations.runtime.syllabifier == null) {
-                TextElement(".", ".").emitter(declarations)
-            } else SyllableBoundaryEmitter
-    }
-
-    private object WordBoundaryElement : BaseAstNode("$"), Element {
-        override val publicName: String = "a word boundary"
-
-        override fun matcher(context: ElementContext, declarations: ParseDeclarations): Matcher =
-            when {
-                context.section == RuleSection.MAIN -> throw LscIllegalStructureInInput(publicName, text)
-                context.isAtStartOfSection -> WordStartMatcher
-                context.isAtEndOfSection -> WordEndMatcher
-                else -> throw LscInteriorWordBoundary()
-            }
-
-    }
-
-    private object BetweenWordsElement : BaseAstNode("$$"), ResultElement, Element {
-        override val publicName: String = "a space between words"
-
-        override fun matcher(context: ElementContext, declarations: ParseDeclarations): Matcher =
-            BetweenWordsMatcher
-
-        override fun emitter(declarations: ParseDeclarations): Emitter =
-            BetweenWordsEmitter
-    }
-
-    private class EnvironmentElement(
-        text: String,
-        val element: Element,
-        val environment: UnlinkedCompoundEnvironment,
-    ) : BaseAstNode(text), Element {
-        override val publicName: String = "a nested environment"
-
-        override fun matcher(context: ElementContext, declarations: ParseDeclarations): Matcher =
-            EnvironmentMatcher(
-                element.matcher(context, declarations),
-                environment.link(declarations),
-            )
-
-        override val subElements: List<Element>
-            get() = listOf(element) +
-                    environment.positive.flatMap { listOfNotNull(it.before, it.after) } +
-                    environment.negative.flatMap { listOfNotNull(it.before, it.after) }
-    }
-
-    private class SequenceElement(
-        text: String,
-        override val elements: List<Element>,
-    ) : ContainerResultElement(text) {
-        override val publicName: String = "a sequence"
-
-        override fun matcher(context: ElementContext, declarations: ParseDeclarations): Matcher =
-            try {
-                combineMatchers(
-                    declarations,
-                    (listOf<Element?>(null) + elements + listOf(null)).windowed(3) { window ->
-                        val (preceding, current, following) = window
-                        current!!.matcher(
-                            context.butBetween(preceding, following),
-                            declarations,
-                        )
-                    },
-                )
-            } catch (e: LscBadSequence) {
-                throw e.initSequence(text)
-            }
-
-        override fun combineMatchers(
-            declarations: ParseDeclarations,
-            elements: List<Matcher>,
-        ): Matcher = SequenceMatcher(declarations.runtime, elements)
-
-        override fun combineEmitters(
-            declarations: ParseDeclarations,
-            elements: List<Emitter>,
-        ): Emitter = SequenceEmitter(elements)
-    }
-
-    private class CaptureElement(
-        text: String,
-        val element: Element,
-        val capture: CaptureReferenceElement,
-    ) : BaseAstNode(text), Element {
-        override val publicName: String = "a capture"
-
-        override fun matcher(context: ElementContext, declarations: ParseDeclarations): Matcher =
-            CaptureMatcher(element.matcher(context, declarations), capture.number)
-
-        override val subElements: List<Element>
-            get() = listOf(element)
-    }
-
-    private class RepeaterElement(
-        text: String,
-        val element: Element,
-        val repeaterType: RepeaterTypeNode,
-    ) : BaseAstNode(text), Element {
-        override val publicName: String = when (repeaterType.type) {
-            StandardRepeaterType.ZERO_OR_ONE -> "an optional"
-            else -> "a repeater"
-        }
-
-        override fun matcher(context: ElementContext, declarations: ParseDeclarations): Matcher {
-            checkContext(context)
-            return RepeaterMatcher(
-                declarations.runtime,
-                element.matcher(context, declarations),
-                repeaterType.type,
-            )
-        }
-
-        private fun checkContext(context: ElementContext) {
-            if (!repeaterType.type.isSpecificMultiple() &&
-                context.isAtEdgeOfEnvironment
-            ) {
-                throw LscPeripheralRepeater(text, repeaterType.type)
-            }
-        }
-
-        private fun RepeaterType.isSpecificMultiple(): Boolean =
-            minReps > 1 && minReps == maxReps
-
-        override val subElements: List<Element>
-            get() = listOf(element)
-    }
-
-    private class AlternativeElement(
-        text: String,
-        override val elements: List<Element>,
-    ) : ContainerResultElement(text) {
-        override val publicName: String = "an alternative list"
-
-        override fun combineMatchers(
-            declarations: ParseDeclarations,
-            elements: List<Matcher>
-        ): Matcher =
-            alternativeMatcher(declarations.runtime, elements)
-
-        override fun combineEmitters(
-            declarations: ParseDeclarations,
-            elements: List<Emitter>
-        ): Emitter =
-            alternativeEmitter(elements)
-    }
-
-    private class IntersectionElement(
-        text: String,
-        val initialElement: Element,
-        val checkElements: List<CheckElement>,
-    ) : BaseAstNode(text), Element {
-        override val publicName: String = "an intersection"
-
-        override fun matcher(context: ElementContext, declarations: ParseDeclarations): Matcher =
-            IntersectionMatcher(
-                initialElement.matcher(context, declarations),
-                checkElements.map { it.matcher(context, declarations) }
-            )
-
-        override val subElements: List<Element>
-            get() = listOf(initialElement) + checkElements.map { it.element }
-    }
-
-    private data class CheckElement(val element: Element, val negated: Boolean) {
-        fun matcher(context: ElementContext, declarations: ParseDeclarations): CheckMatcher =
-            CheckMatcher(element.matcher(context, declarations), negated)
-    }
-
-    @Suppress("unused")
-    private class TransformingElement(
-        text: String,
-        val elements: List<ResultElement>,
-    ) : BaseAstNode(text), ResultElement {
-        override val publicName: String = "a transforming element"
-
-        override fun matcher(context: ElementContext, declarations: ParseDeclarations): Matcher =
-            matcher(declarations, elements.first(), elements.first().emitter(declarations))
-
-        private fun matcher(
-            declarations: ParseDeclarations,
-            element: ResultElement?,
-            emitter: Emitter,
-        ): Matcher =
-            when (emitter) {
-                is AlternativeEmitter ->
-                    AlternativeMatcher(
-                        declarations.runtime,
-                        (element as? AlternativeElement)?.elements.zipOrThisNull(
-                            emitter.elements
-                        ) { subElement, subEmitter ->
-                            matcher(declarations, subElement as ResultElement?, subEmitter)
-                        },
-                    )
-                is SequenceEmitter ->
-                    SequenceMatcher(
-                        declarations.runtime,
-                        (element as SequenceElement).elements.zip(
-                            emitter.elements
-                        ) { subElement, subEmitter ->
-                            matcher(declarations, subElement as ResultElement, subEmitter)
-                        }
-                    )
-                else -> singleMatcher(
-                    declarations,
-                    element,
-                    emitter,
-                )
-            }
-
-        private fun singleMatcher(
-            declarations: ParseDeclarations,
-            element: ResultElement?,
-            emitter: Emitter,
-        ): Matcher {
-            val alternatives = remainingElementsAsConditional(
-                declarations, "matcher"
-            ).map { transformations ->
-                EmitterMatcher(
-                    TransformingEmitter(
-                        castToIndependent(element, emitter),
-                        transformations.singleOrNull() ?: MultiConditionalEmitter(
-                            transformations,
-                        ),
-                    )
-                )
-            }
-            return alternatives.singleOrNull() ?: AlternativeMatcher(
-                declarations.runtime,
-                alternatives
-            )
-        }
-
-        override fun emitter(declarations: ParseDeclarations): Emitter =
-            emitter(declarations, elements.first().emitter(declarations))
-
-        private fun emitter(
-            declarations: ParseDeclarations,
-            emitter: Emitter,
-        ): Emitter =
-            when (emitter) {
-                is AlternativeEmitter ->
-                    AlternativeEmitter(
-                        emitter.elements.map {
-                            emitter(declarations, it)
-                        }
-                    )
-                is SequenceEmitter ->
-                    SequenceEmitter(
-                        emitter.elements.map {
-                            emitter(declarations, it)
-                        },
-                    )
-                else -> singleEmitter(declarations, emitter)
-            }
-
-        private fun singleEmitter(
-            declarations: ParseDeclarations,
-            emitter: Emitter,
-        ): Emitter {
-            val alternatives = remainingElementsAsConditional(
-                declarations, "emitter"
-            ).map { transformations ->
-                if (emitter.isIndependent()) {
-                    TransformingEmitter(
-                        emitter as IndependentEmitter,
-                        transformations.singleOrNull() ?: MultiConditionalEmitter(
-                            transformations,
-                        )
-                    )
-                } else {
-                    MultiConditionalEmitter(
-                        listOf(emitter as ConditionalEmitter) + transformations
-                    )
-                }
-            }
-            return alternatives.singleOrNull() ?: AlternativeEmitter(alternatives)
-        }
-
-        private fun castToIndependent(element: ResultElement?, emitter: Emitter): IndependentEmitter =
-            emitter as? IndependentEmitter ?: throw LscIllegalStructure(
-                element!!.publicName, element.text, "at the start of a transforming matcher"
-            )
-
-        // The outer list represents "lifted" alternative lists.
-        private fun remainingElementsAsConditional(
-            declarations: ParseDeclarations,
-            elementType: String,
-        ): List<List<ConditionalEmitter>> {
-            var alternatives = emptyList<List<ConditionalEmitter>>()
-            val remainingElements = elements.drop(1)
-            for (remainingElement in remainingElements) {
-                val elements =
-                    if (remainingElement is AlternativeElement) {
-                        remainingElement.elements
-                    } else {
-                        listOf(remainingElement)
-                    }
-                val emitters = elements.map { element ->
-                    val emitter = castToResultElement(element).emitter(declarations)
-                    emitter as? ConditionalEmitter ?: throw LscIllegalStructure(
-                        element.publicName, element.text, "to continue a transforming $elementType"
-                    )
-                }
-                alternatives = if (alternatives.isEmpty()) {
-                    emitters.map { listOf(it) }
-                } else {
-                    alternatives.flatMap { alternative ->
-                        emitters.map { alternative + it }
-                    }
-                }
-            }
-            return alternatives
-        }
-
-        override val subElements: List<Element>
-            get() = elements
-    }
-
-    private class TextElement(
-        text: String,
-        val literalText: String,
-        val exact: Boolean = false,
-    ) : BaseAstNode(text), ResultElement {
-        override val publicName: String = "literal text"
-
-        override fun matcher(context: ElementContext, declarations: ParseDeclarations): Matcher =
-            declarations.runtime.parsePhonetic(literalText, syllabify = false).let {
-                if (exact) TextMatcher(it) else SymbolMatcher(declarations.runtime, it)
-            }
-
-        override fun emitter(declarations: ParseDeclarations): Emitter =
-            declarations.runtime.parsePhonetic(literalText, syllabify = false).let {
-                if (exact) TextEmitter(it) else SymbolEmitter(declarations.runtime, it)
-            }
-    }
-
-    private class MatrixElement(
-        text: String,
-        val matrix: Matrix,
-    ) : BaseAstNode(text), ResultElement {
-        override val publicName: String = "a matrix"
-
-        override fun matcher(context: ElementContext, declarations: ParseDeclarations): Matcher =
-            with(declarations.runtime) {
-                val split = matrix.splitByLevel()
-                val segmentMatcher = split[WordLevel.SEGMENT]?.let {
-                    MatrixMatcher(this, it)
-                }
-                val syllableMatcher = split[WordLevel.SYLLABLE]?.let {
-                    SyllableMatrixMatcher(this, it)
-                }
-                if (syllableMatcher == null) {
-                    segmentMatcher ?: MatrixMatcher(this, Matrix.EMPTY)
-                } else {
-                    if (segmentMatcher == null) {
-                        syllableMatcher
-                    } else {
-                        IntersectionMatcher(
-                            segmentMatcher,
-                            listOf(CheckMatcher(syllableMatcher, false))
-                        )
-                    }
-                }
-            }
-
-        override fun emitter(declarations: ParseDeclarations): Emitter =
-            with(declarations.runtime) {
-                val split = matrix.splitByLevel()
-                val segmentEmitter = split[WordLevel.SEGMENT]?.let {
-                    MatrixEmitter(this, it)
-                }
-                val syllableEmitter = split[WordLevel.SYLLABLE]?.let {
-                    SyllableMatrixEmitter(this, it)
-                }
-                if (syllableEmitter == null) {
-                    segmentEmitter ?: MatrixEmitter(this, Matrix.EMPTY)
-                } else {
-                    if (segmentEmitter == null) {
-                        syllableEmitter
-                    } else {
-                        MultiConditionalEmitter(
-                            listOf(segmentEmitter, syllableEmitter)
-                        )
-                    }
-                }
-            }
-    }
-
-    private class NegatedElement(
-        text: String,
-        val element: Element,
-    ) : BaseAstNode(text), Element {
-        override val publicName: String = "a negated element"
-
-        override fun matcher(context: ElementContext, declarations: ParseDeclarations): Matcher =
-            NegatedMatcher(element.matcher(context, declarations))
-
-        override val subElements: List<Element>
-            get() = listOf(element)
-    }
-
-    private object EmptyElement : BaseAstNode("*"), ResultElement {
-        override val publicName: String = "an empty element"
-
-        override fun matcher(context: ElementContext, declarations: ParseDeclarations): Matcher =
-            EmptyMatcher
-
-        override fun emitter(declarations: ParseDeclarations): Emitter = EmptyEmitter
-    }
-
-    private object SyllableElement : BaseAstNode("<syl>"), Element {
-        override val publicName: String = "a syllable element"
-
-        override fun matcher(context: ElementContext, declarations: ParseDeclarations): Matcher =
-            SyllableMatcher
-
-    }
-
-    private class ReferenceElement(
-        text: String,
-        val name: String,
-    ) : BaseAstNode(text), ResultElement {
-        override val publicName: String = "an element reference"
-
-        override fun matcher(context: ElementContext, declarations: ParseDeclarations): Matcher =
-            declarations.dereferenceElement(name).matcher(context, declarations)
-
-        override fun emitter(declarations: ParseDeclarations): Emitter =
-            castToResultElement(declarations.dereferenceElement(name)).emitter(declarations)
-    }
-
-    private fun alternativeMatcher(
-        declarations: Declarations,
-        elements: List<Matcher>,
-    ): Matcher =
-        elements.singleOrNull() ?: AlternativeMatcher(declarations, elements)
-
-    private fun alternativeEmitter(elements: List<Emitter>): Emitter =
-        elements.singleOrNull() ?: AlternativeEmitter(elements)
-
-    private class CaptureReferenceElement(
-        text: String,
-        val number: Int,
-        val exact: Boolean,
-    ) : BaseAstNode(text), ResultElement {
-        override val publicName: String = "a capture reference"
-
-        override fun matcher(context: ElementContext, declarations: ParseDeclarations): Matcher =
-            CaptureReferenceMatcher(declarations.runtime, number, exact)
-
-        override fun emitter(declarations: ParseDeclarations): Emitter =
-            if (!exact) throw LscIllegalStructureInOutput(
-                "an inexact capture reference", "~"
-            ) else CaptureReferenceEmitter(number)
     }
 
     private fun listVisit(node: List<ParseTree>): List<AstNode> = node.map { visit(it) }

@@ -547,7 +547,7 @@ internal class ClassMatcher(
 
 class IntersectionMatcher(
     val initialMatcher: Matcher,
-    val checkMatchers: List<CheckMatcher>,
+    val matchVerifiers: List<MatchVerifier>,
 ) : LiftingMatcher() {
     override fun claim(
         phrase: Phrase,
@@ -559,17 +559,17 @@ class IntersectionMatcher(
             phrase, start, bindings, partial
         )
         return filterIntersection(
-            checkMatchers, phrase, start, bindings, matchEnds
+            matchVerifiers, phrase, start, bindings, matchEnds
         ) { it }
     }
 
     override fun reversed(): Matcher = IntersectionMatcher(
         initialMatcher.reversed(),
-        checkMatchers.map { it.reversed() }
+        matchVerifiers.map { it.reversed() }
     )
 
     override fun toString(): String =
-        "$initialMatcher&${checkMatchers.joinToString("&")}"
+        "$initialMatcher&${matchVerifiers.joinToString("&")}"
 
     override fun liftingTransformerTo(
         result: Emitter,
@@ -577,18 +577,18 @@ class IntersectionMatcher(
     ): Transformer =
         IntersectionTransformer(
             initialMatcher.transformerTo(result, filtered),
-            checkMatchers,
+            matchVerifiers,
         )
 }
 
-data class CheckMatcher(val matcher: Matcher, val negated: Boolean) {
-    fun reversed(): CheckMatcher = CheckMatcher(matcher.reversed(), negated)
+data class MatchVerifier(val matcher: Matcher, val negated: Boolean) {
+    fun reversed(): MatchVerifier = MatchVerifier(matcher.reversed(), negated)
 
     override fun toString(): String = "${if (negated) "!" else ""}$matcher"
 }
 
 fun <T : WithBindings<T>> filterIntersection(
-    elements: List<CheckMatcher>,
+    elements: List<MatchVerifier>,
     phrase: Phrase,
     start: PhraseIndex,
     initialBindings: Bindings,
