@@ -21,32 +21,6 @@ internal interface ResultElement : Element {
 internal fun castToResultElement(element: Element): ResultElement =
     element as? ResultElement ?: throw LscIllegalStructureInOutput(element.publicName, element.text)
 
-// Base class for elements that simply forward matcher/emitter calls to sub-elements
-internal abstract class ContainerResultElement(text: String) : BaseAstNode(text), ResultElement {
-    override fun matcher(context: ElementContext, declarations: ParseTimeDeclarations): Matcher =
-        combineMatchers(declarations, elements.map { it.matcher(context, declarations) })
-
-    override fun emitter(declarations: ParseTimeDeclarations): Emitter =
-        combineEmitters(declarations, resultElements.map { it.emitter(declarations) })
-
-    abstract val elements: List<Element>
-
-    val resultElements: List<ResultElement> by lazy { elements.map(::castToResultElement) }
-
-    abstract fun combineMatchers(
-        declarations: ParseTimeDeclarations,
-        elements: List<Matcher>,
-    ): Matcher
-
-    abstract fun combineEmitters(
-        declarations: ParseTimeDeclarations,
-        elements: List<Emitter>,
-    ): Emitter
-
-    override val subElements: List<Element>
-        get() = elements
-}
-
 internal object DoNothingElement : BaseAstNode("unchanged"), ResultElement {
     override val publicName: String = "an \"unchanged\" element"
 
@@ -106,54 +80,61 @@ internal class EnvironmentNode(
 
 internal class AlternativeElement(
     text: String,
-    override val elements: List<Element>,
-) : ContainerResultElement(text) {
+    val elements: List<Element>,
+) : BaseAstNode(text), ResultElement {
     override val publicName: String = "an alternative list"
+    override val subElements: List<Element> = elements
 
-    override fun combineMatchers(
-        declarations: ParseTimeDeclarations,
-        elements: List<Matcher>
-    ): Matcher =
-        elements.singleOrNull() ?: AlternativeMatcher(declarations.runtime, elements)
+    override fun matcher(context: ElementContext, declarations: ParseTimeDeclarations): Matcher {
+        val matchers = elements.map { it.matcher(context, declarations) }
+        return matchers.singleOrNull() ?: AlternativeMatcher(declarations.runtime, matchers)
+    }
 
-    override fun combineEmitters(
-        declarations: ParseTimeDeclarations,
-        elements: List<Emitter>
-    ): Emitter =
-        elements.singleOrNull() ?: AlternativeEmitter(elements)
+    override fun emitter(declarations: ParseTimeDeclarations): Emitter {
+        val emitters = elements.map(::castToResultElement).map { it.emitter(declarations) }
+        return emitters.singleOrNull() ?: AlternativeEmitter(emitters)
+    }
 }
 
 internal class SequenceElement(
     text: String,
-    override val elements: List<Element>,
-) : ContainerResultElement(text) {
+    val elements: List<Element>,
+) : BaseAstNode(text), ResultElement {
     override val publicName: String = "a sequence"
+    val resultElements: List<ResultElement> by lazy { elements.map(::castToResultElement) }
+    override val subElements: List<Element>
+        get() = elements
 
     override fun matcher(context: ElementContext, declarations: ParseTimeDeclarations): Matcher =
         try {
-            combineMatchers(
-                declarations,
-                (listOf<Element?>(null) + elements + listOf(null)).windowed(3) { window ->
-                    val (preceding, current, following) = window
-                    current!!.matcher(
-                        context.butBetween(preceding, following),
-                        declarations,
-                    )
-                },
+            SequenceMatcher(
+                declarations.runtime,
+                matchersWithContexts(context, declarations)
             )
         } catch (e: LscBadSequence) {
             throw e.initSequence(text)
         }
 
-    override fun combineMatchers(
-        declarations: ParseTimeDeclarations,
-        elements: List<Matcher>,
-    ): Matcher = SequenceMatcher(declarations.runtime, elements)
+    private fun matchersWithContexts(
+        context: ElementContext,
+        declarations: ParseTimeDeclarations
+    ) = elements.withPrecedingAndFollowing { current, preceding, following ->
+        current.matcher(
+            context.butBetween(preceding, following),
+            declarations,
+        )
+    }
 
-    override fun combineEmitters(
-        declarations: ParseTimeDeclarations,
-        elements: List<Emitter>,
-    ): Emitter = SequenceEmitter(elements)
+    private fun <T, R> List<T>.withPrecedingAndFollowing(transform: (T, T?, T?) -> R): List<R> =
+        withANullOnBothEnds().windowed(3) { window ->
+            val (preceding, current, following) = window
+            transform(current!!, preceding, following)
+        }
+
+    private fun <T> List<T>.withANullOnBothEnds() = (listOf<T?>(null) + this + listOf(null))
+
+    override fun emitter(declarations: ParseTimeDeclarations): Emitter =
+        SequenceEmitter(resultElements.map { it.emitter(declarations) })
 }
 
 internal class IntersectionElement(
