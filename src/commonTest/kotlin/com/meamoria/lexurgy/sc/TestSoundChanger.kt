@@ -472,4 +472,20 @@ class TestSoundChanger : StringSpec({
 
         ch8("elementary") shouldBe "deferary"
     }
+
+    "We can ask a sound changer to return all successfully changed words and all errors" {
+        val ch = lsc(
+            """
+                Class vowel {a, e, i, o, u}
+                conditional-binding:
+                    h => $1 / {@vowel$1, j, w} _
+            """.trimIndent()
+        )
+
+        val actual = ch.changeWithIndividualErrors(listOf("mahtiht", "bajhowh"))
+        actual[0] shouldBe Result.success("maatiit")
+        shouldThrow<LscRuleNotApplicable> {
+            actual[1].getOrThrow()
+        }
+    }
 })

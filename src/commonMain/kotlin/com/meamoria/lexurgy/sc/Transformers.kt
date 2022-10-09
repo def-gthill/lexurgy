@@ -313,7 +313,7 @@ class IndependentTransformer(
                         it - start
                     }
                 )
-                Result(
+                ChangeResult(
                     resultPhrase,
                     result.emitsSyllableBreaks,
                     result.syllableFeatureChanges,
@@ -360,7 +360,7 @@ class IndependentSequenceTransformer(
                 val resultEmitsSyllableBreaks = results.sequenceEmitsSyllableBreaks()
                 val resultSyllableFeatureChanges = results.sequenceSyllableFeatureChanges()
 
-                Result(
+                ChangeResult(
                     resultPhrase,
                     resultEmitsSyllableBreaks,
                     resultSyllableFeatureChanges,
@@ -525,7 +525,7 @@ data class UnboundTransformation(
                 val resultEmitsSyllableBreaks = results.sequenceEmitsSyllableBreaks()
                 val resultSyllableFeatureChanges = results.sequenceSyllableFeatureChanges()
 
-                Result(
+                ChangeResult(
                     resultPhrase,
                     resultEmitsSyllableBreaks,
                     resultSyllableFeatureChanges,
