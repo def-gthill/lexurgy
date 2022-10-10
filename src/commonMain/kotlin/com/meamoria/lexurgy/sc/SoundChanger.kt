@@ -518,11 +518,12 @@ class LscRuleNotApplicable(
     reason
 )
 
-class LscRuleCrashed(val reason: Exception, val rule: String, val originalWord: String, val currentWord: String) :
-    Exception(
-        "Rule $rule encountered a programming error when applied to word $currentWord (originally $originalWord)",
-        reason
-    )
+expect class LscRuleCrashed(reason: Exception, rule: String, originalWord: String, currentWord: String) : Exception {
+    val reason: Exception
+    val rule: String
+    val originalWord: String
+    val currentWord: String
+}
 
 class LscRuleNotFound(val ruleName: String, val attemptedAction: String) :
     LscUserError("Can't $attemptedAction rule $ruleName; there is no rule with that name")

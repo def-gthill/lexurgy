@@ -158,3 +158,14 @@ actual fun <T, U, R> Iterable<T>.fastZipMap(other: Iterable<U>, function: (T, U)
 class LscFileNotFound(path: Path) : LscUserError(
     "Can't compare output words to ${path.fileName}; the file doesn't exist"
 )
+
+actual class LscRuleCrashed actual constructor(
+    actual val reason: Exception,
+    actual val rule: String,
+    actual val originalWord: String,
+    actual val currentWord: String,
+) :
+    Exception(
+        "Rule $rule encountered a programming error when applied to word $currentWord (originally $originalWord)",
+        reason
+    )
