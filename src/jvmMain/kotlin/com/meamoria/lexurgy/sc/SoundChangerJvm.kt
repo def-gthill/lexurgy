@@ -18,6 +18,7 @@ fun changeFiles(
     inSuffix: String? = null,
     outSuffix: String = "ev",
     debugWords: List<String> = emptyList(),
+    allErrors: Boolean = false,
     intermediates: Boolean = false,
     romanize: Boolean = true,
     compareStages: Boolean = false,
@@ -32,6 +33,7 @@ fun changeFiles(
         inSuffix = inSuffix,
         outSuffix = outSuffix,
         debugWords = debugWords,
+        allErrors = allErrors,
         intermediates = intermediates,
         romanize = romanize,
         compareStages = compareStages,
@@ -50,6 +52,7 @@ fun SoundChanger.changeFiles(
     inSuffix: String? = null,
     outSuffix: String = "ev",
     debugWords: List<String> = emptyList(),
+    allErrors: Boolean = false,
     intermediates: Boolean = false,
     romanize: Boolean = true,
     compareStages: Boolean = false,
@@ -92,6 +95,23 @@ fun SoundChanger.changeFiles(
             TimedValue(
                 listOf(words) + intermediateStages.values + listOf(stages.getValue(null)),
                 time
+            )
+        } else if (allErrors) {
+            val (outputs, time) = measureTimedValue {
+                changeWithIndividualErrors(
+                    words,
+                )
+            }
+
+            val outputsWithErrors = outputs.map { it.getOrElse { "ERROR" } }
+            val errors = words.zip(outputs).mapNotNull { (word, output) ->
+                output.exceptionOrNull()?.let { "$word =>\n${it.message}" }
+            }
+            dumpList(wordsPath, errors, suffix = "errors")
+
+            TimedValue(
+                listOf(words, outputsWithErrors),
+                time,
             )
         } else {
             measureTimedValue {

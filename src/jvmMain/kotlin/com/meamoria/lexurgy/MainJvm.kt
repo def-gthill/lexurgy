@@ -1,6 +1,7 @@
 package com.meamoria.lexurgy
 
 import com.github.ajalt.clikt.core.CliktCommand
+import com.github.ajalt.clikt.core.ProgramResult
 import com.github.ajalt.clikt.core.subcommands
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.arguments.multiple
@@ -49,6 +50,10 @@ class SC : CliktCommand(
         "-t", "--trace-word",
         help = "A word to trace the evolution of. Can be provided multiple times to specify several words to trace."
     ).multiple()
+    val allErrors by option(
+        "-e", "--all-errors",
+        help = "Produce all successful outputs and all error messages (rather than crashing on the first error)."
+    ).flag("-E", "--first-error", default = false)
     val intermediates by option(
         "-m", "--intermediates",
         help = "Use intermediate romanizers to dump intermediate forms of the words. " +
@@ -87,6 +92,7 @@ class SC : CliktCommand(
                 inSuffix = inSuffix,
                 outSuffix = outSuffix,
                 debugWords = traceWords,
+                allErrors = allErrors,
                 intermediates = intermediates,
                 romanize = romanize,
                 compareStages = compareStages,
@@ -110,12 +116,14 @@ class SC : CliktCommand(
                             "at https://github.com/def-gthill/lexurgy/issues with the output attached."
                 )
             }
-            exitProcess(1)
+            throw ProgramResult(1)
         }
     }
 }
 
+val lexurgyCommand = Lexurgy().subcommands(SC())
+
 fun main(args: Array<String>) {
     val realArgs = getArgs(args)
-    Lexurgy().subcommands(SC()).main(realArgs)
+    lexurgyCommand.main(realArgs)
 }
