@@ -37,4 +37,16 @@ class TestCLI : StringSpec({
         listFrom("test_all_errors_errors.wli") shouldBe
                 listFrom("test_all_errors_errors_expected.wli")
     }
+
+    "Intermediates and all-errors mode can be active at the same time" {
+        lexurgyCommand.parse(
+            arrayOf("sc", "--intermediates", "--all-errors", "test/test_all_errors.lsc", "test/test_all_errors.wli")
+        )
+        listFrom("test_all_errors_ev.wli") shouldBe
+                listFrom("test_all_errors_ev_expected.wli")
+        listFrom("test_all_errors_inter.wli") shouldBe
+                listFrom("test_all_errors_inter_expected.wli")
+        listFrom("test_all_errors_errors.wli") shouldBe
+                listFrom("test_all_errors_errors_expected.wli")
+    }
 })

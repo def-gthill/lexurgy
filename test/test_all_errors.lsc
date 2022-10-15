@@ -2,3 +2,6 @@ Class vowel {a, e, i, o, u}
 
 conditional-binding:
     h => $1 / {@vowel$1, j, w} _
+
+romanizer-inter:
+    {aa, ee, ii, oo, uu} => {á, é, í, ó, ú}

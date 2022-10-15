@@ -117,6 +117,7 @@ hs_err_pid*
 /test/*.wlm
 /test/*trace.wli
 /test/*test_all_errors_errors.wli
+/test/*test_all_errors_inter.wli
 /doc/build/*
 /doc/build-public/*
 /.idea/artifacts/

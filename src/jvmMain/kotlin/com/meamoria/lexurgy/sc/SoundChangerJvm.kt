@@ -92,35 +92,57 @@ fun SoundChanger.changeFiles(
         //      - Otherwise, just package the original words and final stage into a two-element list
 
         val wordListSequence = if (allErrors) {
-            val finalOutput = fullOutput.getValue(null)
+            if (intermediates) {
+                val outputsWithErrors = fullOutput.mapValues { (_, outputWords) ->
+                    outputWords.map { it.getOrElse { "ERROR" } }
+                }
+                val finalOutput = fullOutput.getValue(null)
+                val errors = words.zip(finalOutput).mapNotNull { (word, output) ->
+                    output.exceptionOrNull()?.let { "$word =>\n${it.message}" }
+                }
+                dumpList(wordsPath, errors, suffix = "errors")
 
-            val outputsWithErrors = finalOutput.map { it.getOrElse { "ERROR" } }
-            val errors = words.zip(finalOutput).mapNotNull { (word, output) ->
-                output.exceptionOrNull()?.let { "$word =>\n${it.message}" }
+                val intermediateStages = outputsWithErrors.filterKeys { it != null }
+
+                for ((name, stageWords) in intermediateStages) {
+                    dumpList(wordsPath, stageWords, suffix = name)
+                    console("Wrote the forms at stage $name to ${suffixPath(wordsPath, name)}")
+                }
+
+                listOf(words) + outputsWithErrors.values
+            } else {
+                val finalOutput = fullOutput.getValue(null)
+
+                val outputsWithErrors = finalOutput.map { it.getOrElse { "ERROR" } }
+                val errors = words.zip(finalOutput).mapNotNull { (word, output) ->
+                    output.exceptionOrNull()?.let { "$word =>\n${it.message}" }
+                }
+                dumpList(wordsPath, errors, suffix = "errors")
+
+                listOf(words, outputsWithErrors)
             }
-            dumpList(wordsPath, errors, suffix = "errors")
-
-            listOf(words, outputsWithErrors)
-        } else if (intermediates) {
-            val successfulOutput = fullOutput.mapValues { (_, outputWords) ->
-                outputWords.map { it.getOrThrow() }
-            }
-
-            val intermediateStages = successfulOutput.filterKeys { it != null }
-
-            for ((name, stageWords) in intermediateStages) {
-                dumpList(wordsPath, stageWords, suffix = name)
-                console("Wrote the forms at stage $name to ${suffixPath(wordsPath, name)}")
-            }
-
-            listOf(words) + successfulOutput.values
         } else {
-            val successfulOutput = fullOutput.mapValues { (_, outputWords) ->
-                outputWords.map { it.getOrThrow() }
-            }
-            val finalOutput = successfulOutput.getValue(null)
+            if (intermediates) {
+                val successfulOutput = fullOutput.mapValues { (_, outputWords) ->
+                    outputWords.map { it.getOrThrow() }
+                }
 
-            listOf(words, finalOutput)
+                val intermediateStages = successfulOutput.filterKeys { it != null }
+
+                for ((name, stageWords) in intermediateStages) {
+                    dumpList(wordsPath, stageWords, suffix = name)
+                    console("Wrote the forms at stage $name to ${suffixPath(wordsPath, name)}")
+                }
+
+                listOf(words) + successfulOutput.values
+            } else {
+                val successfulOutput = fullOutput.mapValues { (_, outputWords) ->
+                    outputWords.map { it.getOrThrow() }
+                }
+                val finalOutput = successfulOutput.getValue(null)
+
+                listOf(words, finalOutput)
+            }
         }
 
         val finalWords = wordListSequence.last()
