@@ -1,5 +1,6 @@
 package com.meamoria.lexurgy.sc
 
+import com.meamoria.lexurgy.SyllableStructureViolated
 import com.meamoria.mpp.kotest.*
 
 @Suppress("unused")
@@ -487,5 +488,25 @@ class TestSoundChanger : StringSpec({
         shouldThrow<LscRuleNotApplicable> {
             actual[1].getOrThrow()
         }
+    }
+
+    "A sound changer can be used as a word verifier" {
+        val ch = lsc(
+            """
+                Class cons {p, t, k, s, m, n, l}
+                Class glide {w, y}
+                Class vowel {a, e, i, o, u}
+                
+                Syllables:
+                    @cons @glide? @vowel @cons?
+            """.trimIndent()
+        )
+
+        val actual = ch.changeWithIndividualErrors(listOf("lo", "pye", "pte", "kwus", "ak"))
+        actual[0] shouldBe Result.success("lo")
+        actual[1] shouldBe Result.success("pye")
+        actual[2].exceptionOrNull().shouldBeInstanceOf<SyllableStructureViolated>()
+        actual[3] shouldBe Result.success("kwus")
+        actual[4].exceptionOrNull().shouldBeInstanceOf<SyllableStructureViolated>()
     }
 })

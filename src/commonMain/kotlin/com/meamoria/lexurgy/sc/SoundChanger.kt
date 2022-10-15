@@ -119,16 +119,13 @@ class SoundChanger(
             .associate { it.index to it.value }
             .let { Tracer(debug, it) }
         val persistentEffects = PersistentEffects()
-        val phoneticPhrases = words.map {
+        val startPhrases = words.map {
             Phrase(
                 it.split(" ").map(
                     initialDeclarations::parsePhonetic
                 )
             )
         }
-        val startPhrases = applySyllables(
-            initialDeclarations, phoneticPhrases, tracer
-        )
 
         val result = mutableMapOf<String?, List<Result<String>>>()
 
@@ -170,7 +167,7 @@ class SoundChanger(
                     if (!started) {
                         return
                     }
-                    curPhrases = applySyllablesWithIndividualErrors(
+                    curPhrases = applySyllables(
                         anchoredStep.declarations, curPhrases, tracer
                     )
                 }
@@ -293,14 +290,6 @@ class SoundChanger(
     }
 
     private fun applySyllables(
-        declarations: Declarations,
-        curPhrases: List<Phrase>,
-        tracer: Tracer,
-    ): List<Phrase> = curPhrases.map {
-        declarations.syllabify(it)
-    }.also { newPhrases -> tracer("syllables", curPhrases, newPhrases) }
-
-    private fun applySyllablesWithIndividualErrors(
         declarations: Declarations,
         curPhrases: List<Result<Phrase>>,
         tracer: Tracer,
