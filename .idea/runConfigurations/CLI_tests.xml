@@ -13,6 +13,8 @@
           <option value="jvmTest" />
           <option value="--tests" />
           <option value="TestCLI" />
+          <option value="--tests" />
+          <option value="TestSoundChangerWithFiles" />
         </list>
       </option>
       <option name="vmOptions" value="" />

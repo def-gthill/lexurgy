@@ -17,6 +17,18 @@ class SoundChanger(
 
     operator fun invoke(word: String): String = change(listOf(word)).single()
 
+    /**
+     * Run the sound changer on the specified words.
+     *
+     * Throws an exception as soon as it encounters an error in any word.
+     *
+     * @param words The list of words to change
+     * @param startAt If provided, ignore all rules before the one with the specified name
+     * @param stopBefore If provided, ignore the rule with the specified name and all rules after it
+     * @param debugWords Words to trace the evolution of
+     * @param romanize True to run the romanizer (if any), false to ignore it
+     * @param debug Function to call with tracing output
+     */
     fun change(
         words: List<String>,
         startAt: String? = null,
@@ -33,6 +45,13 @@ class SoundChanger(
         debug = debug,
     ).getValue(null)
 
+    /**
+     * Run the sound changer on the specified words, returning
+     * a `Result` for each word encapsulating any errors encountered
+     * when applying the changes to that word.
+     *
+     * Parameters are the same as `change`.
+     */
     fun changeWithIndividualErrors(
         words: List<String>,
         startAt: String? = null,
@@ -50,9 +69,14 @@ class SoundChanger(
     ).getValue(null)
 
     /**
-     * Runs the sound changes on the specified words, capturing intermediate stages using the sound changer's
-     * intermediate romanizers. This produces a map associating the name of each romanizer to the intermediate
-     * words produced by that romanizer. The final results are included under the ``null`` key.
+     * Runs the sound changes on the specified words, capturing
+     * intermediate stages using the sound changer's
+     * intermediate romanizers. This produces a map associating
+     * the name of each romanizer to the intermediate
+     * words produced by that romanizer. The final results are
+     * included under the ``null`` key.
+     *
+     * Parameters are the same as `change`.
      */
     fun changeWithIntermediates(
         words: List<String>,
@@ -62,134 +86,26 @@ class SoundChanger(
         romanize: Boolean = true,
         debug: (String) -> Unit = ::println,
     ): Map<String?, List<String>> {
-        val tracer = words.withIndex()
-            .filter { it.value in debugWords }
-            .associate { it.index to it.value }
-            .let { Tracer(debug, it) }
-        val persistentEffects = PersistentEffects()
-        val phoneticPhrases = words.map {
-            Phrase(
-                it.split(" ").map(
-                    initialDeclarations::parsePhonetic
-                )
-            )
-        }
-        val startPhrases = applySyllables(
-            initialDeclarations, phoneticPhrases, tracer
+        val fullResult = changeWithIntermediatesAndIndividualErrors(
+            words = words,
+            startAt = startAt,
+            stopBefore = stopBefore,
+            debugWords = debugWords,
+            romanize = romanize,
+            debug = debug,
         )
-
-        val result = mutableMapOf<String?, List<String>>()
-
-        var curPhrases = startPhrases
-        var started = false
-        var stopped = false
-
-        fun maybeReplace(realRomanizer: NamedRule): NamedRule =
-            if (romanize) realRomanizer else StandardNamedRule(
-                "fake-romanizer", initialDeclarations, EmptyRule
-            )
-
-        fun runAnchoredStep(anchoredStep: AnchoredStep) {
-            when (anchoredStep) {
-                is IntermediateRomanizerStep -> {
-                    if (!started) {
-                        return
-                    }
-                    val rom = anchoredStep.romanizer
-                    result[rom.name] = applyRule(
-                        maybeReplace(rom), words, curPhrases, tracer
-                    ).map { it.string }
-                }
-
-                is CleanupStep -> {
-                    if (!started) {
-                        return
-                    }
-                    curPhrases = applyRule(
-                        anchoredStep.cleanupRule, words, curPhrases, tracer
-                    )
-                }
-
-                is CleanupOffStep -> {
-                    persistentEffects.removeCleanupRule(anchoredStep.ruleName)
-                }
-
-                is SyllabificationStep -> {
-                    if (!started) {
-                        return
-                    }
-                    curPhrases = applySyllables(
-                        anchoredStep.declarations, curPhrases, tracer
-                    )
-                }
-            }
+        return fullResult.mapValues { (_, outputWords) ->
+            outputWords.map { it.getOrThrow() }
         }
-
-        for (ruleWithAnchoredSteps in rules) {
-            val rule = ruleWithAnchoredSteps.rule
-
-            for (anchoredStep in persistentEffects.cleanupRules) {
-                // Always run persistent cleanup rules first.
-                // They have to run before any syllabification rules,
-                // and if they're about to be cancelled, they need one
-                // last chance to run.
-                runAnchoredStep(anchoredStep)
-            }
-
-            if (!started && (startAt == null || rule?.name == startAt)) {
-                started = true
-            }
-
-            val stepsToRunBeforeSyllabification =
-                if (ruleWithAnchoredSteps.anchoredSteps.firstOrNull() is IntermediateRomanizerStep)
-                    0 else 1
-
-            for (anchoredStep in ruleWithAnchoredSteps.anchoredSteps.take(stepsToRunBeforeSyllabification)) {
-                // Then run the *first* new anchored step (if it isn't a romanizer).
-                // The first step is considered "more tightly bound" to the preceding
-                // rule, and can intervene before persistent syllabification
-                // rules.
-                runAnchoredStep(anchoredStep)
-                persistentEffects += anchoredStep
-            }
-
-            persistentEffects.syllabificationStep?.let {
-                // Now run the persistent syllabification rule, if any.
-                runAnchoredStep(it)
-            }
-
-            for (anchoredStep in ruleWithAnchoredSteps.anchoredSteps.drop(stepsToRunBeforeSyllabification)) {
-                // Now run the remaining anchored steps, in declaration order.
-                runAnchoredStep(anchoredStep)
-                persistentEffects += anchoredStep
-            }
-
-            if (stopBefore != null && rule?.name == stopBefore) {
-                stopped = true
-                break
-            }
-
-            if (started) {
-                if (rule != null && (romanize || rule.ruleType != RuleType.ROMANIZER)) {
-                    curPhrases = applyRule(
-                        rule, words, curPhrases, tracer
-                    )
-                }
-            }
-        }
-
-        if (stopBefore != null && !stopped) {
-            throw LscRuleNotFound(stopBefore, "stop before")
-        }
-        if (startAt != null && !started) {
-            throw LscRuleNotFound(startAt, "start at")
-        }
-
-        result[null] = curPhrases.map { it.string.normalizeCompose() }
-
-        return result
     }
 
+    /**
+     * Runs the sound changer on the specified words, encapsulating
+     * errors in `Result` objects like `changeWithIndividualErrors` AND
+     * capturing intermediate stages like `changeWithIndermediates`.
+     *
+     * Parameters are the same as `change`.
+     */
     fun changeWithIntermediatesAndIndividualErrors(
         words: List<String>,
         startAt: String? = null,
@@ -232,7 +148,7 @@ class SoundChanger(
                         return
                     }
                     val rom = anchoredStep.romanizer
-                    result[rom.name] = applyRuleWithIndividualErrors(
+                    result[rom.name] = applyRule(
                         maybeReplace(rom), words, curPhrases, tracer
                     ).map { res -> res.map { it.string } }
                 }
@@ -241,7 +157,7 @@ class SoundChanger(
                     if (!started) {
                         return
                     }
-                    curPhrases = applyRuleWithIndividualErrors(
+                    curPhrases = applyRule(
                         anchoredStep.cleanupRule, words, curPhrases, tracer
                     )
                 }
@@ -307,7 +223,7 @@ class SoundChanger(
 
             if (started) {
                 if (rule != null && (romanize || rule.ruleType != RuleType.ROMANIZER)) {
-                    curPhrases = applyRuleWithIndividualErrors(
+                    curPhrases = applyRule(
                         rule, words, curPhrases, tracer
                     )
                 }
@@ -402,21 +318,6 @@ class SoundChanger(
         }
 
     private fun applyRule(
-        rule: NamedRule,
-        origPhrases: List<String>,
-        curPhrases: List<Phrase>,
-        tracer: Tracer,
-    ): List<Phrase> =
-        curPhrases.fastZipMap(origPhrases) { curPhrase, phrase ->
-            try {
-                rule(curPhrase).removeBoundingBreaks()
-            } catch (e: Exception) {
-                if (e is UserError) throw LscRuleNotApplicable(e, rule.name, phrase, curPhrase.string)
-                else throw LscRuleCrashed(e, rule.name, phrase, curPhrase.string)
-            }
-        }.also { newPhrases -> tracer(rule.name, curPhrases, newPhrases) }
-
-    private fun applyRuleWithIndividualErrors(
         rule: NamedRule,
         origPhrases: List<String>,
         curPhrases: List<Result<Phrase>>,

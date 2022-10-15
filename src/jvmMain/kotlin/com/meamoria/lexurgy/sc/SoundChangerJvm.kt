@@ -73,60 +73,54 @@ fun SoundChanger.changeFiles(
             }
         } else null
 
-        val (wordListSequence, time) = if (intermediates) {
-            val (stages, time) = measureTimedValue {
-                changeWithIntermediates(
-                    words,
-                    startAt = startAt,
-                    stopBefore = stopBefore,
-                    debugWords = debugWords,
-                    romanize = romanize,
-                    debug = ::debug,
-                )
+        val (fullOutput, fullTime) = measureTimedValue {
+            changeWithIntermediatesAndIndividualErrors(
+                words = words,
+                startAt = startAt,
+                stopBefore = stopBefore,
+                debugWords = debugWords,
+                romanize = romanize,
+            ) { it: String -> debug(it) }
+        }
+
+        // Now we handle the output in two stages:
+        // - Convert Map<String?, List<Result<String>>> to Map<String?, List<String>>
+        //      - If allErrors, extract successes, convert failures to "ERROR" and emit them to the error file
+        //      - Otherwise, throw the first failure, extract successes if there are no failures
+        // - Convert Map<String?, List<String>> to List<List<String>>
+        //      - If intermediates, use the stage names to dump out intermediate files and return just the lists in order
+        //      - Otherwise, just package the original words and final stage into a two-element list
+
+        val wordListSequence = if (allErrors) {
+            val finalOutput = fullOutput.getValue(null)
+
+            val outputsWithErrors = finalOutput.map { it.getOrElse { "ERROR" } }
+            val errors = words.zip(finalOutput).mapNotNull { (word, output) ->
+                output.exceptionOrNull()?.let { "$word =>\n${it.message}" }
+            }
+            dumpList(wordsPath, errors, suffix = "errors")
+
+            listOf(words, outputsWithErrors)
+        } else if (intermediates) {
+            val successfulOutput = fullOutput.mapValues { (_, outputWords) ->
+                outputWords.map { it.getOrThrow() }
             }
 
-            val intermediateStages = stages.filterKeys { it != null }
+            val intermediateStages = successfulOutput.filterKeys { it != null }
 
             for ((name, stageWords) in intermediateStages) {
                 dumpList(wordsPath, stageWords, suffix = name)
                 console("Wrote the forms at stage $name to ${suffixPath(wordsPath, name)}")
             }
 
-            TimedValue(
-                listOf(words) + intermediateStages.values + listOf(stages.getValue(null)),
-                time
-            )
-        } else if (allErrors) {
-            val (outputs, time) = measureTimedValue {
-                changeWithIndividualErrors(
-                    words,
-                )
-            }
-
-            val outputsWithErrors = outputs.map { it.getOrElse { "ERROR" } }
-            val errors = words.zip(outputs).mapNotNull { (word, output) ->
-                output.exceptionOrNull()?.let { "$word =>\n${it.message}" }
-            }
-            dumpList(wordsPath, errors, suffix = "errors")
-
-            TimedValue(
-                listOf(words, outputsWithErrors),
-                time,
-            )
+            listOf(words) + successfulOutput.values
         } else {
-            measureTimedValue {
-                listOf(
-                    words,
-                    change(
-                        words,
-                        startAt = startAt,
-                        stopBefore = stopBefore,
-                        debugWords = debugWords,
-                        romanize = romanize,
-                        debug = ::debug
-                    )
-                )
+            val successfulOutput = fullOutput.mapValues { (_, outputWords) ->
+                outputWords.map { it.getOrThrow() }
             }
+            val finalOutput = successfulOutput.getValue(null)
+
+            listOf(words, finalOutput)
         }
 
         val finalWords = wordListSequence.last()
@@ -140,7 +134,8 @@ fun SoundChanger.changeFiles(
             } else stageCompare
 
         console(
-            "Applied the changes to ${enpl(words.size, "word")} in ${"%.3f".format(time.toDouble(DurationUnit.SECONDS))} seconds"
+            "Applied the changes to ${enpl(words.size, "word")} in " +
+                    "${"%.3f".format(fullTime.toDouble(DurationUnit.SECONDS))} seconds"
         )
 
         dumpList(wordsPath, finalWords, suffix = outSuffix)
