@@ -7,7 +7,6 @@ import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import java.nio.file.FileSystems
 import java.nio.file.Path
-import java.nio.file.Paths
 import kotlin.time.ExperimentalTime
 
 @Suppress("unused")
@@ -22,69 +21,100 @@ class TestSoundChangerWithFiles : StringSpec({
     fun listTo(words: List<String>, vararg pathComponents: String) =
         dumpList(pathOf(*pathComponents), words)
 
+    fun prepareOutDir(outDir: String): String {
+        val outFolder = pathOf(outDir).toFile()
+        outFolder.deleteRecursively()
+        outFolder.mkdir()
+        return outDir
+    }
+
     val changer = soundChangerFromLscFile(pathOf("muipidan.lsc"))
 
     "A sound changer should be able to process some wordlists" {
-        changer.changeFiles(listOf(pathOf("ptr_test_1.wli"), pathOf("ptr_test_2.wli")))
-        listFrom("ptr_test_1_ev.wli") shouldBe listFrom("ptr_test_1_ev_expected.wli")
-        listFrom("ptr_test_2_ev.wli") shouldBe listFrom("ptr_test_2_ev_expected.wli")
+        val outDir = prepareOutDir("basic")
+        changer.changeFiles(
+            listOf(pathOf("ptr_test_1.wli"), pathOf("ptr_test_2.wli")),
+            outDir = outDir,
+        )
+        listFrom(outDir, "ptr_test_1_ev.wli") shouldBe listFrom("ptr_test_1_ev_expected.wli")
+        listFrom(outDir, "ptr_test_2_ev.wli") shouldBe listFrom("ptr_test_2_ev_expected.wli")
     }
 
     "A sound changer should be able to trace" {
-        changer.changeFiles(listOf(pathOf("ptr_test_1.wli")), debugWords=listOf("cukucaku"))
-        listFrom("ptr_test_1_ev.wli") shouldBe listFrom("ptr_test_1_ev_expected.wli")
-        listFrom("ptr_test_1_trace.wli") shouldBe listFrom("ptr_test_1_trace_expected.wli")
+        val outDir = prepareOutDir("trace")
+        changer.changeFiles(
+            listOf(pathOf("ptr_test_1.wli")), debugWords=listOf("cukucaku"),
+            outDir = outDir,
+        )
+        listFrom(outDir, "ptr_test_1_ev.wli") shouldBe listFrom("ptr_test_1_ev_expected.wli")
+        listFrom(outDir, "ptr_test_1_trace.wli") shouldBe listFrom("ptr_test_1_trace_expected.wli")
     }
 
     "A sound changer should be able to trace syllables" {
+        val outDir = prepareOutDir("trace_syllables")
         val syllabianChanger =  soundChangerFromLscFile(pathOf("syllabian.lsc"))
-        syllabianChanger.changeFiles(listOf(pathOf("proto-syllabian.wli")), debugWords=listOf("karapuna"))
-        listFrom("proto-syllabian_trace.wli") shouldBe listFrom("proto-syllabian_trace_expected.wli")
+        syllabianChanger.changeFiles(
+            listOf(pathOf("proto-syllabian.wli")),
+            outDir = outDir,
+            debugWords=listOf("karapuna"),
+        )
+        listFrom(outDir, "proto-syllabian_trace.wli") shouldBe
+                listFrom("proto-syllabian_trace_expected.wli")
     }
 
     "A sound changer should be able to trace many words" {
+        val outDir = prepareOutDir("trace_many")
         val syllabianChanger =  soundChangerFromLscFile(pathOf("syllabian.lsc"))
-        syllabianChanger.changeFiles(listOf(pathOf("proto-syllabian.wli")), debugWords=listOf("karapuna", "pana"))
-        listFrom("proto-syllabian_trace.wli") shouldBe listFrom("proto-syllabian_trace_many_expected.wli")
+        syllabianChanger.changeFiles(
+            listOf(pathOf("proto-syllabian.wli")),
+            outDir = outDir,
+            debugWords=listOf("karapuna", "pana"),
+        )
+        listFrom(outDir, "proto-syllabian_trace.wli") shouldBe
+                listFrom("proto-syllabian_trace_many_expected.wli")
     }
 
     "A sound changer should not produce a trace file when not tracing" {
-        val syllabianChanger =  soundChangerFromLscFile(pathOf("syllabian.lsc"))
-        val traceFile = pathOf("proto-syllabian_trace.wli").toFile()
+        val outDir = prepareOutDir("no_trace")
+        val syllabianChanger = soundChangerFromLscFile(pathOf("syllabian.lsc"))
 
-        if (traceFile.exists() && traceFile.isFile) {
-            pathOf("proto-syllabian_trace.wli").toFile().delete()
-        }
+        syllabianChanger.changeFiles(
+            listOf(pathOf("proto-syllabian.wli")),
+            outDir = outDir,
+        )
 
-        syllabianChanger.changeFiles(listOf(pathOf("proto-syllabian.wli")))
-
-        pathOf("proto-syllabian_trace.wli").toFile().exists() shouldBe false
+        pathOf(outDir, "proto-syllabian_trace.wli").toFile().exists() shouldBe false
     }
 
     "The --compare-stages setting should print the original in a wlm file" {
+        val outDir = prepareOutDir("compare_stages")
         changer.changeFiles(
             listOf(pathOf("ptr_test_1.wli"), pathOf("ptr_test_2.wli")),
-            compareStages = true
+            outDir = outDir,
+            compareStages = true,
         )
-        listFrom("ptr_test_1_ev.wli") shouldBe listFrom("ptr_test_1_ev_expected.wli")
-        listFrom("ptr_test_1_ev.wlm") shouldBe listFrom("ptr_test_1_ev_stages.wlm")
-        listFrom("ptr_test_2_ev.wli") shouldBe listFrom("ptr_test_2_ev_expected.wli")
-        listFrom("ptr_test_2_ev.wlm") shouldBe listFrom("ptr_test_2_ev_stages.wlm")
+        listFrom(outDir, "ptr_test_1_ev.wli") shouldBe listFrom("ptr_test_1_ev_expected.wli")
+        listFrom(outDir, "ptr_test_1_ev.wlm") shouldBe listFrom("ptr_test_1_ev_stages.wlm")
+        listFrom(outDir, "ptr_test_2_ev.wli") shouldBe listFrom("ptr_test_2_ev_expected.wli")
+        listFrom(outDir, "ptr_test_2_ev.wlm") shouldBe listFrom("ptr_test_2_ev_stages.wlm")
     }
 
     "The --compare-versions setting should print the previous version in the output" {
-        listTo(listFrom("ptr_test_1_ev_previous.wli"), "ptr_test_1_ev.wli")
-        listTo(listFrom("ptr_test_2_ev_previous.wli"), "ptr_test_2_ev.wli")
+        val outDir = prepareOutDir("compare_versions")
+        listTo(listFrom("ptr_test_1_ev_previous.wli"), outDir, "ptr_test_1_ev.wli")
+        listTo(listFrom("ptr_test_2_ev_previous.wli"), outDir, "ptr_test_2_ev.wli")
         changer.changeFiles(
             listOf(pathOf("ptr_test_1.wli"), pathOf("ptr_test_2.wli")),
+            outDir = outDir,
             compareVersions = true,
         )
-        listFrom("ptr_test_1_ev.wlm") shouldBe listFrom("ptr_test_1_ev_versions.wlm")
-        listFrom("ptr_test_2_ev.wlm") shouldBe listFrom("ptr_test_2_ev_versions.wlm")
+        listFrom(outDir, "ptr_test_1_ev.wlm") shouldBe listFrom("ptr_test_1_ev_versions.wlm")
+        listFrom(outDir, "ptr_test_2_ev.wlm") shouldBe listFrom("ptr_test_2_ev_versions.wlm")
 
         shouldThrow<LscFileNotFound> {
             changer.changeFiles(
                 listOf(pathOf("ptr_test_1.wli")),
+                outDir = outDir,
                 outSuffix = "dne",
                 compareVersions = true,
             )
@@ -94,24 +124,29 @@ class TestSoundChangerWithFiles : StringSpec({
     }
 
     "Compare versions and compare stages should work together" {
-        listTo(listFrom("ptr_test_1_ev_previous.wli"), "ptr_test_1_ev.wli")
-        listTo(listFrom("ptr_test_2_ev_previous.wli"), "ptr_test_2_ev.wli")
+        val outDir = prepareOutDir("compare_versions_and_stages")
+        listTo(listFrom("ptr_test_1_ev_previous.wli"), outDir, "ptr_test_1_ev.wli")
+        listTo(listFrom("ptr_test_2_ev_previous.wli"), outDir, "ptr_test_2_ev.wli")
         changer.changeFiles(
             listOf(pathOf("ptr_test_1.wli"), pathOf("ptr_test_2.wli")),
+            outDir = outDir,
             compareStages = true,
-            compareVersions = true
+            compareVersions = true,
         )
-        listFrom("ptr_test_1_ev.wlm") shouldBe listFrom("ptr_test_1_ev_stages_versions.wlm")
-        listFrom("ptr_test_2_ev.wlm") shouldBe listFrom("ptr_test_2_ev_stages_versions.wlm")
+        listFrom(outDir, "ptr_test_1_ev.wlm") shouldBe listFrom("ptr_test_1_ev_stages_versions.wlm")
+        listFrom(outDir, "ptr_test_2_ev.wlm") shouldBe listFrom("ptr_test_2_ev_stages_versions.wlm")
     }
 
     "Compare should correctly align the separators when the words contain IPA diacritics" {
+        val outDir = prepareOutDir("diacritic_alignment")
         val dChanger = SoundChanger.fromLsc("add-d:\n* => d / _ $")
         dChanger.changeFiles(
             listOf(pathOf("test_robust_length.wli")),
-            compareStages = true
+            outDir = outDir,
+            compareStages = true,
         )
-        listFrom("test_robust_length_ev.wlm") shouldBe listFrom("test_robust_length_expected.wlm")
+        listFrom(outDir, "test_robust_length_ev.wlm") shouldBe
+                listFrom("test_robust_length_expected.wlm")
     }
 
     "This sample list of Three Rivers words should evolve into Muipidan words how they did in the old sound changer" {
@@ -136,7 +171,7 @@ class TestSoundChangerWithFiles : StringSpec({
             "k'esas"
         )
 
-        val words = loadList(Paths.get("test", "ptr_test.wli"))
+        val words = listFrom("ptr_test.wli")
         changer.change(words) shouldBe expected
     }
 })

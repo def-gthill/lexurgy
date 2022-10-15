@@ -113,15 +113,10 @@ fabric.properties
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 
-/test/*ev.wli
-/test/*.wlm
-/test/*trace.wli
-/test/*test_all_errors_errors.wli
-/test/*test_all_errors_inter.wli
+/test/*/*
 /doc/build/*
 /doc/build-public/*
 /.idea/artifacts/
 /.idea/compiler.xml
 /.idea/misc.xml
 **/jsMain/**/Meta*
-/test/proto-syllabian_before-*.wli

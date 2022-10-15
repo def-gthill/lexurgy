@@ -46,6 +46,11 @@ class SC : CliktCommand(
                 "E.g. if this is \"new\" and WORDS is \"foo.wli\", Lexurgy will write the changed words to foo_new.wli. " +
                 "Defaults to \"ev\"."
     ).default("ev")
+    val outDir by option(
+        "--out-dir",
+        help = "The directory in which to write output files, relative to the parent directory of the corresponding input file. " +
+                "Defaults to \".\" (i.e. the same directory as the input file)."
+    ).default(".")
     val traceWords by option(
         "-t", "--trace-word",
         help = "A word to trace the evolution of. Can be provided multiple times to specify several words to trace."
@@ -91,6 +96,7 @@ class SC : CliktCommand(
                 stopBefore = stopBefore,
                 inSuffix = inSuffix,
                 outSuffix = outSuffix,
+                outDir = outDir,
                 debugWords = traceWords,
                 allErrors = allErrors,
                 intermediates = intermediates,

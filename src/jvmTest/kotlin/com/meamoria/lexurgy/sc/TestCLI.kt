@@ -19,9 +19,17 @@ class TestCLI : StringSpec({
     fun listFrom(vararg pathComponents: String): List<String> =
         loadList(pathOf(*pathComponents))
 
+    fun prepareOutDir(outDir: String): String {
+        val outFolder = pathOf(outDir).toFile()
+        outFolder.deleteRecursively()
+        outFolder.mkdir()
+        return outDir
+    }
+
     "The CLI can do sound changes on a file" {
-        lexurgyCommand.parse(arrayOf("sc", "test/muipidan.lsc", "test/ptr_test_1.wli"))
-        listFrom("ptr_test_1_ev.wli") shouldBe listFrom("ptr_test_1_ev_expected.wli")
+        val outDir = prepareOutDir("basic_cli")
+        lexurgyCommand.parse(arrayOf("sc", "test/muipidan.lsc", "--out-dir", outDir, "test/ptr_test_1.wli"))
+        listFrom(outDir, "ptr_test_1_ev.wli") shouldBe listFrom("ptr_test_1_ev_expected.wli")
     }
 
     "The CLI throws an error if a rule application fails" {
@@ -31,22 +39,27 @@ class TestCLI : StringSpec({
     }
 
     "In all-errors mode, the CLI outputs successful results and all encountered errors" {
-        lexurgyCommand.parse(arrayOf("sc", "--all-errors", "test/test_all_errors.lsc", "test/test_all_errors.wli"))
-        listFrom("test_all_errors_ev.wli") shouldBe
+        val outDir = prepareOutDir("all_errors")
+        lexurgyCommand.parse(
+            arrayOf("sc", "--all-errors", "--out-dir", outDir, "test/test_all_errors.lsc", "test/test_all_errors.wli")
+        )
+        listFrom(outDir, "test_all_errors_ev.wli") shouldBe
                 listFrom("test_all_errors_ev_expected.wli")
-        listFrom("test_all_errors_errors.wli") shouldBe
+        listFrom(outDir, "test_all_errors_errors.wli") shouldBe
                 listFrom("test_all_errors_errors_expected.wli")
     }
 
     "Intermediates and all-errors mode can be active at the same time" {
+        val outDir = prepareOutDir("all_errors_intermediates")
         lexurgyCommand.parse(
-            arrayOf("sc", "--intermediates", "--all-errors", "test/test_all_errors.lsc", "test/test_all_errors.wli")
+            arrayOf("sc", "--intermediates", "--all-errors", "--out-dir", outDir) +
+                    arrayOf("test/test_all_errors.lsc", "test/test_all_errors.wli")
         )
-        listFrom("test_all_errors_ev.wli") shouldBe
+        listFrom(outDir, "test_all_errors_ev.wli") shouldBe
                 listFrom("test_all_errors_ev_expected.wli")
-        listFrom("test_all_errors_inter.wli") shouldBe
+        listFrom(outDir, "test_all_errors_inter.wli") shouldBe
                 listFrom("test_all_errors_inter_expected.wli")
-        listFrom("test_all_errors_errors.wli") shouldBe
+        listFrom(outDir, "test_all_errors_errors.wli") shouldBe
                 listFrom("test_all_errors_errors_expected.wli")
     }
 })

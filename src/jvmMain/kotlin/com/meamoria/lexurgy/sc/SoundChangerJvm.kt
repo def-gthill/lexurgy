@@ -17,6 +17,7 @@ fun changeFiles(
     stopBefore: String? = null,
     inSuffix: String? = null,
     outSuffix: String = "ev",
+    outDir: String = ".",
     debugWords: List<String> = emptyList(),
     allErrors: Boolean = false,
     intermediates: Boolean = false,
@@ -32,6 +33,7 @@ fun changeFiles(
         stopBefore = stopBefore,
         inSuffix = inSuffix,
         outSuffix = outSuffix,
+        outDir = outDir,
         debugWords = debugWords,
         allErrors = allErrors,
         intermediates = intermediates,
@@ -51,6 +53,7 @@ fun SoundChanger.changeFiles(
     stopBefore: String? = null,
     inSuffix: String? = null,
     outSuffix: String = "ev",
+    outDir: String = ".",
     debugWords: List<String> = emptyList(),
     allErrors: Boolean = false,
     intermediates: Boolean = false,
@@ -59,17 +62,18 @@ fun SoundChanger.changeFiles(
     compareVersions: Boolean = false
 ) {
     for (wordsPath in wordsPaths) {
+        val outPath = wordsPath.resolveSibling(outDir).resolve(wordsPath.fileName)
         console("Applying changes to words in ${suffixPath(wordsPath, inSuffix)}")
 
-        UnicodeLogger.path = suffixPath(wordsPath, "trace")
+        UnicodeLogger.path = suffixPath(outPath, "trace")
 
         val words = loadList(wordsPath, suffix = inSuffix)
 
         val previous = if (compareVersions) {
             try {
-                loadList(wordsPath, suffix = outSuffix)
+                loadList(outPath, suffix = outSuffix)
             } catch (e: FileNotFoundException) {
-                throw LscFileNotFound(suffixPath(wordsPath, outSuffix))
+                throw LscFileNotFound(suffixPath(outPath, outSuffix))
             }
         } else null
 
@@ -88,7 +92,7 @@ fun SoundChanger.changeFiles(
             val errors = words.zip(finalOutput).mapNotNull { (word, output) ->
                 output.exceptionOrNull()?.let { "$word =>\n${it.message}" }
             }
-            dumpList(wordsPath, errors, suffix = "errors")
+            dumpList(outPath, errors, suffix = "errors")
 
             fullOutput.mapValues { (_, outputWords) ->
                 outputWords.map { it.getOrElse { "ERROR" } }
@@ -103,8 +107,8 @@ fun SoundChanger.changeFiles(
             val intermediateStages = newSuccessfulOutput.filterKeys { it != null }
 
             for ((name, stageWords) in intermediateStages) {
-                dumpList(wordsPath, stageWords, suffix = name)
-                console("Wrote the forms at stage $name to ${suffixPath(wordsPath, name)}")
+                dumpList(outPath, stageWords, suffix = name)
+                console("Wrote the forms at stage $name to ${suffixPath(outPath, name)}")
             }
 
             listOf(words) + newSuccessfulOutput.values
@@ -127,11 +131,11 @@ fun SoundChanger.changeFiles(
                     "${"%.3f".format(fullTime.toDouble(DurationUnit.SECONDS))} seconds"
         )
 
-        dumpList(wordsPath, finalWords, suffix = outSuffix)
-        console("Wrote the final forms to ${suffixPath(wordsPath, outSuffix)}")
+        dumpList(outPath, finalWords, suffix = outSuffix)
+        console("Wrote the final forms to ${suffixPath(outPath, outSuffix)}")
 
         if (compareStages || compareVersions) {
-            val markupPath = wordsPath.replaceExtension("wlm")
+            val markupPath = outPath.replaceExtension("wlm")
             dumpList(markupPath, versionCompare, suffix = outSuffix)
             console("Wrote comparison markup to ${suffixPath(markupPath, outSuffix)}")
         }
