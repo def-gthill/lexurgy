@@ -83,14 +83,6 @@ fun SoundChanger.changeFiles(
             ) { it: String -> debug(it) }
         }
 
-        // Now we handle the output in two stages:
-        // - Convert Map<String?, List<Result<String>>> to Map<String?, List<String>>
-        //      - If allErrors, extract successes, convert failures to "ERROR" and emit them to the error file
-        //      - Otherwise, throw the first failure, extract successes if there are no failures
-        // - Convert Map<String?, List<String>> to List<List<String>>
-        //      - If intermediates, use the stage names to dump out intermediate files and return just the lists in order
-        //      - Otherwise, just package the original words and final stage into a two-element list
-
         val newSuccessfulOutput = if (allErrors) {
             val finalOutput = fullOutput.getValue(null)
             val errors = words.zip(finalOutput).mapNotNull { (word, output) ->
