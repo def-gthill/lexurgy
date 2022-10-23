@@ -62,4 +62,14 @@ class TestCLI : StringSpec({
         listFrom(outDir, "test_all_errors_errors.wli") shouldBe
                 listFrom("test_all_errors_errors_expected.wli")
     }
+
+    "Tracing and all-errors mode can be active at the same time" {
+        val outDir = prepareOutDir("all_errors_tracing")
+        lexurgyCommand.parse(
+            arrayOf("sc", "--all-errors", "-t", "bajhowh", "--out-dir", outDir) +
+                    arrayOf("test/test_all_errors.lsc", "test/test_all_errors.wli")
+        )
+        listFrom(outDir, "test_all_errors_trace.wli") shouldBe
+                listFrom("test_all_errors_trace_expected.wli")
+    }
 })

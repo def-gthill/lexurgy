@@ -269,10 +269,11 @@ class SoundChanger(
                 debug("Tracing ${indexToDebugWords.values.joinToString(", ")}")
             }
         }
+
         operator fun invoke(
             name: String,
-            curPhrases: List<Phrase>,
-            newPhrases: List<Phrase>,
+            curPhrases: List<Result<Phrase>>,
+            newPhrases: List<Result<Phrase>>,
         ) {
             for (i in indexToDebugWords.keys) {
                 if (newPhrases[i] != curPhrases[i]) {
@@ -280,6 +281,9 @@ class SoundChanger(
                 }
             }
         }
+
+        private val Result<Phrase>.string: String
+            get() = map { it.string }.getOrElse { "ERROR" }
 
         fun appliedTo(index: Int): String =
             if (indexToDebugWords.size > 1) {
@@ -299,11 +303,7 @@ class SoundChanger(
                 declarations.syllabify(it)
             }
         }.also { newPhrases ->
-            tracer(
-                "syllables",
-                curPhrases.filter { it.isSuccess }.map { it.getOrThrow() },
-                newPhrases.filter { it.isSuccess }.map { it.getOrThrow() },
-            )
+            tracer("syllables", curPhrases, newPhrases)
         }
 
     private fun applyRule(
@@ -322,11 +322,7 @@ class SoundChanger(
                 }
             }
         }.also { newPhrases ->
-            tracer(
-                rule.name,
-                curPhrases.filter { it.isSuccess }.map { it.getOrThrow() },
-                newPhrases.filter { it.isSuccess }.map { it.getOrThrow() },
-            )
+            tracer(rule.name, curPhrases, newPhrases)
         }
 
     data class RuleWithAnchoredSteps(
