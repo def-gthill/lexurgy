@@ -12,6 +12,7 @@ import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.path
 import com.meamoria.lexurgy.sc.LscRuleCrashed
 import com.meamoria.lexurgy.sc.changeFiles
+import com.meamoria.lexurgy.sc.soundChangerFromLscFile
 import java.io.IOException
 import java.io.PrintWriter
 import kotlin.system.exitProcess
@@ -127,7 +128,90 @@ class SC : CliktCommand(
     }
 }
 
-val lexurgyCommand = Lexurgy().subcommands(SC())
+class Server : CliktCommand(
+    help = "Applies sound changes from CHANGES (a .lsc file) to the words in stdin and outputs to stdout. "
+
+) {
+    val changes by argument().path(mustBeReadable = true)
+    val developer by option(
+        "-d", "--developer",
+        help = "Write the full trace when Lexurgy encounters a fatal error. " +
+                "Use this if you want to submit a bug report."
+    ).flag("-u", "--user", default = false)
+
+    @ExperimentalTime
+    override fun run() {
+        console("Loading sound changes from $changes")
+        val changer = soundChangerFromLscFile(changes)
+        try {
+            val words = mutableListOf<String>()
+            val traceWords = mutableListOf<String>()
+            var startAt: String? = null
+            var stopBefore: String? = null
+            var romanize = true
+            while (true) {
+                val line = readLine() ?: break
+
+                if (line.trim() == "; exit") {
+                    break
+                }
+
+                if (line.isBlank()) {
+                    println("start=$startAt stop=$stopBefore romanize=$romanize")
+                    words.forEach {
+                        println("$it trace=${it in traceWords}")
+                    }
+
+                    changer.change(
+                        words, startAt, stopBefore, traceWords, romanize
+                    ).forEach {
+                        println(it)
+                    }
+
+                    words.clear()
+                    traceWords.clear()
+                } else {
+
+                    if (line.startsWith(";b ")) {
+                        stopBefore = line.substring(3)
+                    } else if (line.startsWith(";a ")) {
+                        startAt = line.substring(3)
+                    } else if (line.startsWith(";r ")) {
+                        romanize = line[3] == '1'
+                    } else if (line.startsWith("t ")) {
+                        val word = line.substring(2)
+                        traceWords.add(word)
+                        words.add(word)
+                    } else {
+                        words.add(line)
+                    }
+                }
+
+            }
+        } catch (e: Exception) {
+            val writer = PrintWriter(ConsoleWriter)
+            if (developer) {
+                if (e is LscRuleCrashed) {
+                    console(e.message.toString())
+                    e.reason.printStackTrace(writer)
+                } else {
+                    e.printStackTrace(writer)
+                }
+                writer.flush()
+            } else {
+                if (e is UserError || e is IOException) console(e.message.toString())
+                else console(
+                    "Lexurgy couldn't apply the changes because of an unexpected error. " +
+                            "Rerun with developer mode turned on (-d) and submit a bug report " +
+                            "at https://github.com/def-gthill/lexurgy/issues with the output attached."
+                )
+            }
+            throw ProgramResult(1)
+        }
+    }
+}
+
+val lexurgyCommand = Lexurgy().subcommands(SC(), Server())
 
 fun main(args: Array<String>) {
     val realArgs = getArgs(args)
