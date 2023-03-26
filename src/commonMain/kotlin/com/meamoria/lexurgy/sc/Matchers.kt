@@ -801,6 +801,8 @@ class SymbolMatcher(val declarations: Declarations, text: Word) :
         ) else emptyList()
     }
 
+    override val length = text.length
+
     override fun reversed(): Matcher = SymbolMatcher(declarations, text.reversed())
 
     override fun toString(): String = text.string.ifEmpty { "*" }
@@ -819,6 +821,8 @@ class TextMatcher(text: Word) : AbstractTextMatcher(text) {
             bindings,
         ))
     }
+
+    override val length = text.length
 
     override fun reversed(): Matcher = TextMatcher(text.reversed())
 

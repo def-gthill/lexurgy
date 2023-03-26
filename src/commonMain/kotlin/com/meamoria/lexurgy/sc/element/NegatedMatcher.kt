@@ -1,5 +1,6 @@
 package com.meamoria.lexurgy.sc.element
 
+import com.meamoria.lexurgy.LscUserError
 import com.meamoria.lexurgy.Phrase
 import com.meamoria.lexurgy.PhraseIndex
 import com.meamoria.lexurgy.sc.Bindings
@@ -7,6 +8,8 @@ import com.meamoria.lexurgy.sc.PhraseMatchEnd
 import com.meamoria.lexurgy.sc.SimpleMatcher
 
 class NegatedMatcher(val matcher: Matcher) : SimpleMatcher() {
+    override val length: Int = matcher.length ?: throw IndefiniteLengthNegation(matcher)
+
     override fun claim(
         phrase: Phrase,
         start: PhraseIndex,
@@ -19,6 +22,7 @@ class NegatedMatcher(val matcher: Matcher) : SimpleMatcher() {
             index >= word.length -> emptyList()
             matcher.claim(phrase, start, bindings).isEmpty() ->
                 listOf(PhraseMatchEnd(start.copy(segmentIndex = index + 1), bindings))
+
             else -> emptyList()
         }
     }
@@ -27,3 +31,6 @@ class NegatedMatcher(val matcher: Matcher) : SimpleMatcher() {
 
     override fun toString(): String = "!$matcher"
 }
+
+class IndefiniteLengthNegation(val matcher: Matcher) :
+    LscUserError("Can't negate $matcher because its length can vary")
