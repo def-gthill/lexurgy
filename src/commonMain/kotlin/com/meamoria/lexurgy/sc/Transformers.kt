@@ -2,6 +2,7 @@ package com.meamoria.lexurgy.sc
 
 import com.meamoria.lexurgy.Phrase
 import com.meamoria.lexurgy.PhraseIndex
+import com.meamoria.lexurgy.sc.element.Matcher
 
 interface Transformer {
     fun transform(
