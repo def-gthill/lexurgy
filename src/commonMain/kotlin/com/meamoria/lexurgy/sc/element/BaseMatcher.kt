@@ -29,7 +29,7 @@ abstract class BaseMatcher : Matcher {
                         transformerToIndependent(result as IndependentEmitter, filtered)
                     }
             }
-        } catch (e: LscInvalidTransformation) {
+        } catch (e: InvalidTransformation) {
             if (result.isIndependent()) {
                 when (result) {
                     is SequenceEmitter -> transformerToIndependentSequence(result, filtered)
@@ -93,7 +93,7 @@ abstract class BaseMatcher : Matcher {
         result: Emitter,
         matchElements: List<Matcher>,
         resultElements: List<Emitter>,
-    ): Nothing = throw LscInvalidTransformation(
+    ): Nothing = throw InvalidTransformation(
         match, result,
         "Found ${enpl(matchElements.size, "element")} " +
                 "(${matchElements.joinToString { "\"$it\"" }}) on the left side of the arrow " +

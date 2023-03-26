@@ -1,5 +1,6 @@
 package com.meamoria.lexurgy.sc
 
+import com.meamoria.lexurgy.sc.element.InvalidTransformation
 import com.meamoria.mpp.kotest.StringSpec
 import com.meamoria.mpp.kotest.shouldBe
 import com.meamoria.mpp.kotest.shouldBeInstanceOf
@@ -14,7 +15,7 @@ class TestSoundChangerCombinations : StringSpec({
         shouldThrow<LscInvalidRuleExpression> {
             lsc("bad-alts:\n{p, t, k} => {f, ts}")
         }.also {
-            it.cause.shouldBeInstanceOf<LscInvalidTransformation>()
+            it.cause.shouldBeInstanceOf<InvalidTransformation>()
         }
     }
 
@@ -37,7 +38,7 @@ class TestSoundChangerCombinations : StringSpec({
         shouldThrow<LscInvalidRuleExpression> {
             lsc("bad-sequence-in-alternative:\na {e, o} => {e e, o}")
         }.also {
-            it.cause.shouldBeInstanceOf<LscInvalidTransformation>()
+            it.cause.shouldBeInstanceOf<InvalidTransformation>()
             it.message shouldBe """
                 Error in expression 1 ("a {e, o} => {e e, o}") of rule "bad-sequence-in-alternative"
                 Found 2 elements ("a", "{e, o}") on the left side of the arrow but 1 element ("{(e e), o}") on the right side
@@ -47,7 +48,7 @@ class TestSoundChangerCombinations : StringSpec({
         shouldThrow<LscInvalidRuleExpression> {
             lsc("bad-alternative-in-sequence:\na {e, i, o} => {e e, o o}")
         }.also {
-            it.cause.shouldBeInstanceOf<LscInvalidTransformation>()
+            it.cause.shouldBeInstanceOf<InvalidTransformation>()
             it.message shouldBe """
                 Error in expression 1 ("a {e, i, o} => {e e, o o}") of rule "bad-alternative-in-sequence"
                 Found 2 elements ("a", "{e, i, o}") on the left side of the arrow but 1 element ("{(e e), (o o)}") on the right side

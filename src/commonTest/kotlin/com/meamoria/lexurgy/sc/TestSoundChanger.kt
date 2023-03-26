@@ -1,6 +1,7 @@
 package com.meamoria.lexurgy.sc
 
 import com.meamoria.lexurgy.SyllableStructureViolated
+import com.meamoria.lexurgy.sc.element.InvalidTransformation
 import com.meamoria.mpp.kotest.*
 
 @Suppress("unused")
@@ -202,7 +203,7 @@ class TestSoundChanger : StringSpec({
         shouldThrow<LscInvalidRuleExpression> {
             lsc("Feature bad(mat)\nbadrule:\n   a => b [mat]")
         }.also {
-            it.cause.shouldBeInstanceOf<LscInvalidTransformation>()
+            it.cause.shouldBeInstanceOf<InvalidTransformation>()
             it.message shouldBe """
                 Error in expression 1 ("a => b [mat]") of rule "badrule"
                 Found 1 element ("a") on the left side of the arrow but 2 elements ("b", "[mat]") on the right side

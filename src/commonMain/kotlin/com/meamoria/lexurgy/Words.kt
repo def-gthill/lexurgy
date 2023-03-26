@@ -984,7 +984,7 @@ class PhoneticParser(
                     is SyllableModifier -> when (matchType.position) {
                         ModifierPosition.BEFORE -> {
                             if (core != null) doneSegment()
-                            if (parsedSegments.size != syllableBreaks.lastOrNull() ?: 0)
+                            if (parsedSegments.size != (syllableBreaks.lastOrNull() ?: 0))
                                 throw DanglingDiacritic(string, cursor, matchString)
                             if (matchString.length >= unparsedString.length)
                                 throw DanglingDiacritic(string, cursor, matchString)
@@ -1232,6 +1232,41 @@ class Phrase(val words: List<Word>) : Iterable<Word> {
                         words[end.wordIndex].take(end.segmentIndex)
             )
         }
+
+    /**
+     * Tries to find the specified phrase (``expectedText``) starting
+     * at position ``start`` in this phrase.
+     * If ``segmentExtractor`` is specified, it will be used
+     * to get segments from each word in both ``phrase`` and ``expectedText``
+     * (instead of just accessing the ``segments`` property)
+     */
+    fun matchSubPhrase(
+        start: PhraseIndex,
+        expectedSubPhrase: Phrase,
+        segmentExtractor: (Word) -> List<Segment> = { it.segments },
+    ): PhraseIndex? {
+        val lastExpectedLength = expectedSubPhrase.last().length
+        val subWords = words.drop(start.wordIndex).take(expectedSubPhrase.size).toMutableList()
+        if (subWords.size != expectedSubPhrase.size) {
+            return null
+        }
+        subWords[0] = subWords[0].drop(start.segmentIndex)
+        subWords[subWords.lastIndex] = subWords[subWords.lastIndex].take(
+            lastExpectedLength
+        )
+        for ((subWord, expectedSubWord) in subWords.zip(expectedSubPhrase)) {
+            if (segmentExtractor(subWord) != segmentExtractor(expectedSubWord)) {
+                return null
+            }
+        }
+        val wordIndex = start.wordIndex + expectedSubPhrase.size - 1
+        val segmentIndex = if (expectedSubPhrase.size == 1) {
+            start.segmentIndex + lastExpectedLength
+        } else {
+            lastExpectedLength
+        }
+        return PhraseIndex(wordIndex, segmentIndex)
+    }
 
     fun removeLeadingBreak(): Phrase =
         Phrase(listOf(words.first().removeLeadingBreak()) + words.drop(1))

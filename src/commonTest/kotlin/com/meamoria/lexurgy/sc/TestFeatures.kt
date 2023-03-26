@@ -1,5 +1,6 @@
 package com.meamoria.lexurgy.sc
 
+import com.meamoria.lexurgy.sc.element.LscInvalidOutputMatrix
 import com.meamoria.mpp.kotest.StringSpec
 import com.meamoria.mpp.kotest.shouldBe
 import com.meamoria.mpp.kotest.shouldBeInstanceOf

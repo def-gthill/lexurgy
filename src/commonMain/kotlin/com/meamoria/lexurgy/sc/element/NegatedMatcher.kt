@@ -4,8 +4,6 @@ import com.meamoria.lexurgy.LscUserError
 import com.meamoria.lexurgy.Phrase
 import com.meamoria.lexurgy.PhraseIndex
 import com.meamoria.lexurgy.sc.Bindings
-import com.meamoria.lexurgy.sc.PhraseMatchEnd
-import com.meamoria.lexurgy.sc.SimpleMatcher
 
 class NegatedMatcher(val matcher: Matcher) : SimpleMatcher() {
     override fun claim(

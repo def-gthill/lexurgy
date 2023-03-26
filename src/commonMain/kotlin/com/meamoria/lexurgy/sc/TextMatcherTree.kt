@@ -2,6 +2,7 @@ package com.meamoria.lexurgy.sc
 
 import com.meamoria.lexurgy.Segment
 import com.meamoria.lexurgy.Word
+import com.meamoria.lexurgy.sc.element.AbstractTextMatcher
 
 class TextMatcherTree(val declarations: Declarations, elements: List<AbstractTextMatcher>) {
     private val root = Node()

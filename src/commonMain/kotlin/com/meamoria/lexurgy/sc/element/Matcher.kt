@@ -3,9 +3,6 @@ package com.meamoria.lexurgy.sc.element
 import com.meamoria.lexurgy.Phrase
 import com.meamoria.lexurgy.PhraseIndex
 import com.meamoria.lexurgy.sc.Bindings
-import com.meamoria.lexurgy.sc.Emitter
-import com.meamoria.lexurgy.sc.PhraseMatchEnd
-import com.meamoria.lexurgy.sc.Transformer
 
 interface Matcher {
     /**
@@ -55,5 +52,5 @@ interface Matcher {
     fun prefersIndependentSequenceEmitters(): Boolean
 
     fun <T> List<T>.checkTooManyOptions(): List<T> =
-        com.meamoria.lexurgy.sc.checkTooManyOptions(this@Matcher, this)
+        checkTooManyOptions(this@Matcher, this)
 }

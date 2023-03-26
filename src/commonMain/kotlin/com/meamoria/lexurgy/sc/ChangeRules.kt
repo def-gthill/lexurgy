@@ -1,6 +1,8 @@
 package com.meamoria.lexurgy.sc
 
 import com.meamoria.lexurgy.*
+import com.meamoria.lexurgy.sc.element.Transformation
+import com.meamoria.lexurgy.sc.element.Transformer
 
 interface ChangeRule {
     /**

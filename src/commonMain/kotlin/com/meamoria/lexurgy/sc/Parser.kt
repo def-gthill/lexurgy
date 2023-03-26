@@ -1,6 +1,7 @@
 package com.meamoria.lexurgy.sc
 
 import com.meamoria.lexurgy.*
+import com.meamoria.lexurgy.sc.element.EnvironmentMatcher
 import com.meamoria.lexurgy.sc.parser.*
 import com.meamoria.mpp.antlr.*
 import kotlin.reflect.KClass
