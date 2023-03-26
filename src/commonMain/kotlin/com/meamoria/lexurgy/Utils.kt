@@ -39,13 +39,25 @@ fun <T, R> List<T>.ifNotEmpty(transform: (List<T>) -> R): R? =
     if (isEmpty()) null else transform(this)
 
 /**
- * If this list has exactly one element return it.
+ * If this list has exactly one element, returns it.
  * If it's empty, return null.
  * Otherwise, throw the specified exception.
  */
 fun <T> List<T>.singleOrNullOrThrow(exception: () -> Exception): T? =
     if (size > 1) throw exception()
     else singleOrNull()
+
+/**
+ * If the elements all have the same value for the specified selector,
+ * returns it. Otherwise, returns null.
+ * Also returns null if the list is empty.
+ */
+fun <T, R> List<T>.uniformOrNull(selector: (T) -> R): R? {
+    val transformed = map(selector)
+    return transformed.firstOrNull()?.takeIf { result ->
+        transformed.all { it == result }
+    }
+}
 
 /**
  * Returns all possible subsets of this iterable
@@ -105,6 +117,6 @@ expect fun String.normalizeCompose(): String
  * - ``enpl(3, "box", "boxes")`` correctly yields ``"3 boxes"``.
  */
 fun enpl(number: Int, word: String, plural: String? = null): String {
-    val form = if (number == 1) word else plural ?: word + "s"
+    val form = if (number == 1) word else plural ?: (word + "s")
     return "$number $form"
 }

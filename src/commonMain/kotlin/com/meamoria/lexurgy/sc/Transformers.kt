@@ -27,7 +27,8 @@ class EnvironmentTransformer(
         bindings: Bindings
     ): List<UnboundTransformation> {
         val transformations = element.transform(
-            order, phrase, start, bindings)
+            order, phrase, start, bindings
+        )
         return transformations.mapNotNull { transformation ->
             environment.check(
                 phrase, start,
@@ -244,6 +245,7 @@ class IntersectionTransformer(
 }
 
 class CaptureTransformer(
+    val matcher: Matcher,
     val element: Transformer,
     val number: Int
 ) : Transformer {
@@ -259,8 +261,11 @@ class CaptureTransformer(
             element.transform(order, phrase, start, bindings).filter {
                 it.start.wordIndex == it.end.wordIndex
             }.map { transform ->
-                val capture = phrase.slice(
-                    transform.start, transform.end
+                val capture = Capture(
+                    matcher,
+                    phrase.slice(
+                        transform.start, transform.end
+                    )
                 )
                 transform.replaceBindings(
                     transform.returnBindings.bindCapture(number, capture)

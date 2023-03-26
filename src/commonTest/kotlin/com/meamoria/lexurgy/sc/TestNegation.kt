@@ -1,25 +1,20 @@
 package com.meamoria.lexurgy.sc
 
+import com.meamoria.lexurgy.sc.element.MultipleSegmentNegation
 import com.meamoria.mpp.kotest.StringSpec
 import com.meamoria.mpp.kotest.shouldBe
+import com.meamoria.mpp.kotest.shouldBeInstanceOf
+import com.meamoria.mpp.kotest.shouldThrow
 
 @Suppress("unused")
 class TestNegation : StringSpec({
     val lsc = SoundChanger.Companion::fromLsc
 
-    // In general, negation is allowed:
-    // - if the thing being negated has a definite length (in which case
-    //   the negated element consumes that many segments)
-    // - OR if the negation is on the periphery of a condition (in which case
-    //   it just acts as negative lookahead/lookbehind)
-    // - OR if the negation appears after an & (because the element before the &
-    //   provides a definite length)
-
     "Single-segment plain text can be negated" {
         val ch = lsc(
             """
                 i-before-e:
-                    i => * / !c _ e
+                    i => * / $ !c _ e
             """.trimIndent()
         )
 
@@ -27,21 +22,31 @@ class TestNegation : StringSpec({
         ch("vietu") shouldBe "vetu"
     }
 
-    "Multi-segment plain text can be negated, and consumes the same number of segments" {
+    "Multi-segment plain text CANNOT be negated" {
         val ch = lsc(
             """
                 picky-exception:
                     !ab => xx
             """.trimIndent()
         )
-
-        ch("acac") shouldBe "xxxx"
-        ch("ebeb") shouldBe "xxxx"
-        ch("acababa") shouldBe "xxaxxxx"
+        shouldThrow<LscRuleNotApplicable> {
+            ch("acac")
+        }.also {
+            it.reason.shouldBeInstanceOf<MultipleSegmentNegation>()
+        }
     }
 
     "Exact symbols can be negated" {
-        // TODO
+        val ch = lsc(
+            """
+                Feature +foo
+                Diacritic ́  (floating) [+foo]
+                not-exact:
+                    !a! => x
+            """.trimIndent()
+        )
+
+        ch("fáa") shouldBe "xxa"
     }
 
     "Classes can be negated" {
@@ -50,7 +55,7 @@ class TestNegation : StringSpec({
                 Class stop {p, t, k}
                 Class vowel {a, e, i, o, u}
                 final-vowel-loss:
-                    @vowel => * / !@stop _ $
+                    @vowel => * / [] !@stop _ $
             """.trimIndent()
         )
 
@@ -63,7 +68,20 @@ class TestNegation : StringSpec({
         // Because ![foo bar baz] and [!foo !bar !baz] mean totally different
         // things --- the former means it can't have that *exact combination*
         // of features, while the latter means it can't have *any* of the features.
-        // TODO
+        val ch = lsc(
+            """
+                Feature foo, bar, baz
+                Symbol a [+foo +bar +baz]
+                Symbol b [+foo +bar -baz]
+                Symbol c [+foo -bar +baz]
+                Symbol d [-foo -bar -baz]
+                
+                not-exact-combination:
+                    ![+foo +bar] => x
+            """.trimIndent()
+        )
+
+        ch("abcd") shouldBe "abxx"
     }
 
     "Word boundaries can be negated" {
@@ -131,7 +149,7 @@ class TestNegation : StringSpec({
                 Class vowel {a, e, i, o, u}
                 
                 not-the-same:
-                    {i, u}$1 => {j, w} / _ !$1&@vowel
+                    {i, u}$1 => {j, w} / _ !$1&@vowel {t, $}
             """.trimIndent()
         )
 
@@ -139,11 +157,11 @@ class TestNegation : StringSpec({
         ch("vietuu") shouldBe "vjetuu"
     }
 
-    "Inexact capture references can be negated" {
+    "Inexact references to captures of single segments can be negated" {
         // TODO
     }
 
-    "References to captures of arbitrary elements can be negated" {
+    "References to captures that might have multiple segments CANNOT be negated" {
         // TODO
     }
 

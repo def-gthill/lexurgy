@@ -4,8 +4,7 @@ import com.meamoria.lexurgy.enpl
 import com.meamoria.lexurgy.sc.*
 
 abstract class BaseMatcher : Matcher {
-    override val length: Int?
-        get() = null
+    override fun length(bindings: Bindings): Int? = null
 
     override fun transformerTo(
         result: Emitter,

@@ -319,6 +319,9 @@ class AlternativeMatcher(
             element.claim(phrase, start, bindings, partial)
         }.checkTooManyOptions()
 
+    override fun length(bindings: Bindings): Int? =
+        elements.uniformOrNull { it.length(bindings) }
+
     override fun reversed(): Matcher = AlternativeMatcher(
         declarations,
         elements.map { it.reversed() }
@@ -382,6 +385,9 @@ internal class ClassMatcher(
         tree.tryMatch(phrase[start.wordIndex], start.segmentIndex).flatMap {
             elements[it].claim(phrase, start, bindings, partial)
         }
+
+    override fun length(bindings: Bindings): Int? =
+        elements.uniformOrNull { it.length(bindings) }
 
     override fun reversed(): Matcher = ClassMatcher(
         declarations,
@@ -510,7 +516,10 @@ class CaptureMatcher(
                 end.replaceBindings(
                     end.returnBindings.bindCapture(
                         number,
-                        capture.fullyReversedIf(isReversed)
+                        Capture(
+                            element,
+                            capture.fullyReversedIf(isReversed)
+                        )
                     )
                 )
             }
@@ -525,7 +534,7 @@ class CaptureMatcher(
         result: Emitter,
         filtered: Boolean
     ): Transformer =
-        CaptureTransformer(element.transformerTo(result, filtered), number)
+        CaptureTransformer(element, element.transformerTo(result, filtered), number)
 }
 
 /**
@@ -666,8 +675,8 @@ class CaptureReferenceMatcher(
         bindings: Bindings,
         partial: Boolean,
     ): List<PhraseMatchEnd> {
-        val capturedPhrase = bindings.captures[number]?.fullyReversedIf(isReversed)
-            ?: throw LscUnboundCapture(number)
+        val capturedPhrase =
+            resolve(bindings).matchedPhrase.fullyReversedIf(isReversed)
 
         val matchEnd = matchSubPhrase(
             phrase, start, capturedPhrase,
@@ -675,7 +684,7 @@ class CaptureReferenceMatcher(
                 { it.segments }
             } else {
                 { word ->
-                    with (declarations) {
+                    with(declarations) {
                         word.segments.map { it.withoutFloatingDiacritics() }
                     }
                 }
@@ -683,6 +692,12 @@ class CaptureReferenceMatcher(
         ) ?: return emptyList()
         return listOf(PhraseMatchEnd(matchEnd, bindings))
     }
+
+    override fun length(bindings: Bindings): Int? =
+        resolve(bindings).matcher.length(bindings)
+
+    private fun resolve(bindings: Bindings): Capture =
+        bindings.captures[number] ?: throw LscUnboundCapture(number)
 
     override fun reversed(): Matcher = CaptureReferenceMatcher(
         declarations, number, exact, !isReversed
@@ -707,13 +722,17 @@ class MatrixMatcher(
             val boundMatrix = matrix.bindVariables(bindings)
             if (index < word.length) {
                 word[index].matches(boundMatrix, bindings)?.let {
-                    listOf(PhraseMatchEnd(
-                        start.copy(segmentIndex = index + 1),
-                        it
-                    ))
+                    listOf(
+                        PhraseMatchEnd(
+                            start.copy(segmentIndex = index + 1),
+                            it
+                        )
+                    )
                 } ?: emptyList()
             } else emptyList()
         }
+
+    override fun length(bindings: Bindings): Int = 1
 
     override fun reversed(): Matcher = this
 
@@ -736,10 +755,12 @@ class SyllableMatrixMatcher(
         with(declarations) {
             val boundMatrix = matrix.bindVariables(bindings)
             return word.modifiersAt(index).toMatrix().matches(boundMatrix, bindings)?.let {
-                listOf(PhraseMatchEnd(
-                    start.copy(segmentIndex = index + 1),
-                    it
-                ))
+                listOf(
+                    PhraseMatchEnd(
+                        start.copy(segmentIndex = index + 1),
+                        it
+                    )
+                )
             } ?: emptyList()
         }
     }
@@ -754,7 +775,7 @@ class SyllableMatrixMatcher(
         val word = phrase[start.wordIndex]
         val index = start.segmentIndex
         val expectedEndIsPastCurrentSyllable =
-            word.syllableBreaks.any {it in ((index + 1) until expectedEnd.segmentIndex) }
+            word.syllableBreaks.any { it in ((index + 1) until expectedEnd.segmentIndex) }
         if (expectedEndIsPastCurrentSyllable) return null
         with(declarations) {
             val boundMatrix = matrix.bindVariables(bindings)
@@ -797,11 +818,11 @@ class SymbolMatcher(val declarations: Declarations, text: Word) :
             }.all { it }
         }
         return if (matches) listOf(
-            PhraseMatchEnd(start.copy(segmentIndex =  end), bindings)
+            PhraseMatchEnd(start.copy(segmentIndex = end), bindings)
         ) else emptyList()
     }
 
-    override val length = text.length
+    override fun length(bindings: Bindings): Int = text.length
 
     override fun reversed(): Matcher = SymbolMatcher(declarations, text.reversed())
 
@@ -816,13 +837,15 @@ class TextMatcher(text: Word) : AbstractTextMatcher(text) {
         partial: Boolean,
     ): List<PhraseMatchEnd> {
         val matchResult = matchSubPhrase(phrase, start, Phrase(text)) ?: return emptyList()
-        return listOf(PhraseMatchEnd(
-            matchResult,
-            bindings,
-        ))
+        return listOf(
+            PhraseMatchEnd(
+                matchResult,
+                bindings,
+            )
+        )
     }
 
-    override val length = text.length
+    override fun length(bindings: Bindings): Int = text.length
 
     override fun reversed(): Matcher = TextMatcher(text.reversed())
 

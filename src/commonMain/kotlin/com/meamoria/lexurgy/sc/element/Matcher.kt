@@ -21,11 +21,12 @@ interface Matcher {
     ): List<PhraseMatchEnd>
 
     /**
-     * Returns the number of segments this matcher will match if successful.
+     * Returns the number of segments this matcher will match if successful,
+     * given the specified bindings.
      * Returns null if the length depends on the segments, e.g. the matcher
      * `a+` could match any number of `a`'s in a row.
      */
-    val length: Int?
+    fun length(bindings: Bindings): Int?
 
     fun reversed(): Matcher
 

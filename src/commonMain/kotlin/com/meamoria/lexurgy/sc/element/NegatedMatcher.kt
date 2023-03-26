@@ -8,14 +8,15 @@ import com.meamoria.lexurgy.sc.PhraseMatchEnd
 import com.meamoria.lexurgy.sc.SimpleMatcher
 
 class NegatedMatcher(val matcher: Matcher) : SimpleMatcher() {
-    override val length: Int = matcher.length ?: throw IndefiniteLengthNegation(matcher)
-
     override fun claim(
         phrase: Phrase,
         start: PhraseIndex,
         bindings: Bindings,
         partial: Boolean,
     ): List<PhraseMatchEnd> {
+        if (matcher.length(bindings) != 1) {
+            throw MultipleSegmentNegation(matcher)
+        }
         val word = phrase[start.wordIndex]
         val index = start.segmentIndex
         return when {
@@ -32,5 +33,8 @@ class NegatedMatcher(val matcher: Matcher) : SimpleMatcher() {
     override fun toString(): String = "!$matcher"
 }
 
-class IndefiniteLengthNegation(val matcher: Matcher) :
-    LscUserError("Can't negate $matcher because its length can vary")
+class MultipleSegmentNegation(val matcher: Matcher) :
+    LscUserError(
+        "Can't negate \"$matcher\" because it doesn't necessarily match a single segment. " +
+                "Specify the allowed length of matches using e.g. ([]*)&!($matcher)"
+    )
