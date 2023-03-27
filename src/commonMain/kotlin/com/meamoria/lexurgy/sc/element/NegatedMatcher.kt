@@ -26,6 +26,9 @@ class NegatedMatcher(val matcher: Matcher) : SimpleMatcher() {
         }
     }
 
+    override fun length(bindings: Bindings): Int =
+        if (matcher.length(bindings) == 1) 1 else throw MultipleSegmentNegation(matcher)
+
     override fun reversed(): Matcher = NegatedMatcher(matcher.reversed())
 
     override fun toString(): String = "!$matcher"

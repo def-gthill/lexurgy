@@ -32,6 +32,9 @@ class SequenceMatcher(
         return ends
     }
 
+    override fun length(bindings: Bindings): Int? =
+        elements.sumOf { it.length(bindings) ?: return null }
+
     override fun reversed(): Matcher = SequenceMatcher(
         declarations,
         elements.asReversed().map { it.reversed() }

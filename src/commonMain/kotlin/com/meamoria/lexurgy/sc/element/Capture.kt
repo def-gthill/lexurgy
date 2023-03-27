@@ -32,6 +32,8 @@ class CaptureMatcher(
             }
         }
 
+    override fun length(bindings: Bindings): Int? = element.length(bindings)
+
     override fun reversed(): Matcher =
         CaptureMatcher(element.reversed(), number, !isReversed)
 

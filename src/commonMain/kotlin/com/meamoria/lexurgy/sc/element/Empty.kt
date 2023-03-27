@@ -15,6 +15,8 @@ object EmptyMatcher : SimpleMatcher() {
     ): List<PhraseMatchEnd> =
         listOf(PhraseMatchEnd(start, bindings))
 
+    override fun length(bindings: Bindings): Int = 0
+
     override fun reversed(): Matcher = this
 
     override fun checkValidInFilterIfEmitterIs(result: Emitter) =

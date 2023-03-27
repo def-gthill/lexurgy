@@ -18,6 +18,8 @@ object BetweenWordsMatcher : SimpleMatcher() {
         } else emptyList()
     }
 
+    override fun length(bindings: Bindings): Int = 0
+
     override fun reversed(): Matcher = this
 
     override fun toString(): String = "$$"

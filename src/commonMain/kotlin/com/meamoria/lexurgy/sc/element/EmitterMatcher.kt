@@ -24,5 +24,8 @@ class EmitterMatcher(
         return listOf(PhraseMatchEnd(matchEnd, bindings))
     }
 
+    override fun length(bindings: Bindings): Int =
+        emitter.result().bind(bindings).phrase.words.sumOf { it.length }
+
     override fun reversed(): Matcher = EmitterMatcher(emitter, !isReversed)
 }

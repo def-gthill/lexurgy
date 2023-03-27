@@ -15,6 +15,8 @@ object WordStartMatcher : SimpleMatcher() {
             listOf(PhraseMatchEnd(start, bindings))
         } else emptyList()
 
+    override fun length(bindings: Bindings): Int = 0
+
     override fun reversed(): Matcher = WordEndMatcher
 
     override fun toString(): String = "$"
@@ -30,6 +32,8 @@ object WordEndMatcher : SimpleMatcher() {
         if (start.segmentIndex == phrase[start.wordIndex].length) {
             listOf(PhraseMatchEnd(start, bindings))
         } else emptyList()
+
+    override fun length(bindings: Bindings): Int = 0
 
     override fun reversed(): Matcher = WordStartMatcher
 

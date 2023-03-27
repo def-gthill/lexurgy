@@ -15,6 +15,8 @@ object NeverMatcher : SimpleMatcher() {
         partial: Boolean,
     ): List<PhraseMatchEnd> = emptyList()
 
+    override fun length(bindings: Bindings): Int? = null
+
     override fun reversed(): Matcher = this
 
     override fun toString(): String = "N/A"

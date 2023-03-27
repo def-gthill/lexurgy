@@ -40,6 +40,8 @@ class RepeaterMatcher(
         }
     }
 
+    override fun length(bindings: Bindings): Int? = null
+
     override fun reversed(): Matcher =
         RepeaterMatcher(
             declarations,

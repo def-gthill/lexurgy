@@ -34,6 +34,8 @@ object SyllableMatcher : SimpleMatcher() {
         ).map { PhraseMatchEnd(start.copy(segmentIndex = it), bindings) }
     }
 
+    override fun length(bindings: Bindings): Int? = null
+
     override fun reversed(): Matcher = this
 
     override fun checkValidInFilterIfEmitterIs(result: Emitter) =

@@ -99,6 +99,8 @@ class SyllableMatrixMatcher(
         }
     }
 
+    override fun length(bindings: Bindings): Int = 1
+
     override fun claim(
         phrase: Phrase,
         start: PhraseIndex,

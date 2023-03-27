@@ -27,6 +27,8 @@ class NegatedLookaroundMatcher(val matcher: Matcher) : SimpleMatcher() {
         }
     }
 
+    override fun length(bindings: Bindings): Int = 0
+
     override fun reversed(): Matcher = NegatedLookaroundMatcher(matcher.reversed())
 
     override fun toString(): String = "!$matcher"
