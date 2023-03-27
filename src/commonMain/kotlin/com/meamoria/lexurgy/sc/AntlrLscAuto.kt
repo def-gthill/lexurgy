@@ -540,7 +540,8 @@ expect class InterfixElementContext : ParserRuleContext {
 
 expect class NegatedContext : ParserRuleContext {
     fun NEGATION(): TerminalNode
-    fun simple(): SimpleContext
+    fun bounded(): BoundedContext?
+    fun simple(): SimpleContext?
 }
 
 

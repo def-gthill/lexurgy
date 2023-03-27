@@ -428,7 +428,8 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
 
     class NegatedContext : ParserRuleContext {
         fun NEGATION(): TerminalNode
-        fun simple(): SimpleContext
+        fun bounded(): BoundedContext?
+        fun simple(): SimpleContext?
     }
 
     class PostfixContext : ParserRuleContext {

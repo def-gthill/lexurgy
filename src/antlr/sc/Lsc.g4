@@ -76,7 +76,7 @@ interfixType: INTERSECTION | INTERSECTION_NOT | TRANSFORMING;
 interfixElement: bounded | negated | postfix | simple;
 
 // "Prefix" elements use a prefix operator
-negated: NEGATION simple;
+negated: NEGATION (bounded | simple);
 
 // "Postfix" elements use a postfix operator
 postfix: capture | repeater;

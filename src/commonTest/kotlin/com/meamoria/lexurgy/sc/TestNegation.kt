@@ -1,6 +1,7 @@
 package com.meamoria.lexurgy.sc
 
 import com.meamoria.lexurgy.sc.element.MultipleSegmentNegation
+import com.meamoria.lexurgy.sc.parser.LscInteriorWordBoundary
 import com.meamoria.mpp.kotest.StringSpec
 import com.meamoria.mpp.kotest.shouldBe
 import com.meamoria.mpp.kotest.shouldBeInstanceOf
@@ -9,6 +10,12 @@ import com.meamoria.mpp.kotest.shouldThrow
 @Suppress("unused")
 class TestNegation : StringSpec({
     val lsc = SoundChanger.Companion::fromLsc
+
+    fun shouldReportInvalidNegation(block: () -> Any?) {
+        shouldThrow<LscRuleNotApplicable>(block).also {
+            it.reason.shouldBeInstanceOf<MultipleSegmentNegation>()
+        }
+    }
 
     "Single-segment plain text can be negated" {
         val ch = lsc(
@@ -29,10 +36,8 @@ class TestNegation : StringSpec({
                     !ab => xx
             """.trimIndent()
         )
-        shouldThrow<LscRuleNotApplicable> {
+        shouldReportInvalidNegation {
             ch("acac")
-        }.also {
-            it.reason.shouldBeInstanceOf<MultipleSegmentNegation>()
         }
     }
 
@@ -85,15 +90,40 @@ class TestNegation : StringSpec({
     }
 
     "Word boundaries can be negated" {
-        // TODO
+        val ch = lsc(
+            """
+                not-at-boundary:
+                    t => d / !$ _ !$
+            """.trimIndent()
+        )
+
+        ch("tatat") shouldBe "tadat"
     }
 
     "Negated word boundaries are invalid in the rule input, just like regular word boundaries" {
-        // TODO
+        shouldThrow<LscInvalidRuleExpression> {
+            lsc(
+                """
+                    nonsense:
+                        !$ => x
+                """.trimIndent()
+            )
+        }.also {
+            it.cause.shouldBeInstanceOf<LscIllegalStructureInInput>()
+        }
     }
 
     "Negated word boundaries are invalid away from the periphery, just like regular word boundaries" {
-        // TODO
+        shouldThrow<LscInvalidRuleExpression> {
+            lsc(
+                """
+                    nonsense:
+                        x => z / _ !$ a
+                """.trimIndent()
+            )
+        }.also {
+            it.cause.shouldBeInstanceOf<LscInteriorWordBoundary>()
+        }
     }
 
     "Between words symbols CANNOT be negated" {
@@ -104,10 +134,8 @@ class TestNegation : StringSpec({
             """.trimIndent()
         )
 
-        shouldThrow<LscRuleNotApplicable> {
+        shouldReportInvalidNegation {
             ch("foo bar")
-        }.also {
-            it.reason.shouldBeInstanceOf<MultipleSegmentNegation>()
         }
     }
 
@@ -126,40 +154,138 @@ class TestNegation : StringSpec({
         ch("carba") shouldBe "carba"
     }
 
-    "Sequences with a definite length can be negated" {
-        // TODO
-    }
+    "Sequences CANNOT be negated" {
+        val ch = lsc(
+            """
+                Class foo {f, o}
+                Class bar {b, a, r}
+                not-sequence:
+                    !(@foo @bar) => x
+            """.trimIndent()
+        )
 
-    "Sequences with a variable length CANNOT be negated" {
-        // TODO
+        shouldReportInvalidNegation {
+            ch("faba")
+        }
     }
 
     "Repeaters CANNOT be negated" {
-        // TODO
+        val ch = lsc(
+            """
+                not-repeater:
+                    !(a+) => x
+            """.trimIndent()
+        )
+
+        shouldReportInvalidNegation {
+            ch("aaaaa")
+        }
     }
 
-    "Alternative lists with a definite length can be negated" {
-        // TODO
+    "Alternative lists where every alternative is a single segment can be negated" {
+        val ch = lsc(
+            """
+                Class foo {f, o}
+                Class bar {b, a, r}
+                not-alternative:
+                    !{@foo, @bar} => x
+            """.trimIndent()
+        )
+
+        ch("frogbat") shouldBe "froxbax"
     }
 
-    "Alternative lists with a variable length CANNOT be negated" {
-        // TODO
+    "Alternative lists with a multi-segment alternative CANNOT be negated" {
+        val ch = lsc(
+            """
+                Class foo {f, oo}
+                Class bar {b, a, r}
+                not-alternative:
+                    !{@foo, @bar} => x
+            """.trimIndent()
+        )
+
+        shouldReportInvalidNegation {
+            ch("frogbat")
+        }
+    }
+
+    "Reusable elements can be negated if the expression they reference can be" {
+        val ch = lsc(
+            """
+                Class foo {f, o}
+                Class bar {b, a, r}
+                Element foobar {@foo, @bar}
+                not-alternative:
+                    !@foobar => x
+            """.trimIndent()
+        )
+
+        ch("frogbat") shouldBe "froxbax"
+    }
+
+    "Reusable elements CANNOT be negated if the expression they reference can't be" {
+        val ch = lsc(
+            """
+                Class foo {f, oo}
+                Class bar {b, a, r}
+                Element foobar {@foo, @bar}
+                not-alternative:
+                    !@foobar => x
+            """.trimIndent()
+        )
+
+        shouldReportInvalidNegation {
+            ch("frogbat")
+        }
     }
 
     "Intersections can be negated if the first matcher can be" {
-        // TODO
+        val ch = lsc(
+            """
+                not-intersection:
+                    !({a, b, c}&[]*) => x
+            """.trimIndent()
+        )
+
+        ch("caboose") shouldBe "cabxxxx"
     }
 
     "Intersections CANNOT be negated if the first matcher can't be" {
-        // TODO
+        val ch = lsc(
+            """
+                not-intersection:
+                    !({ca, b}&[]*) => x
+            """.trimIndent()
+        )
+
+        shouldReportInvalidNegation {
+            ch("caboose")
+        }
     }
 
     "Environment elements can be negated if the core can be" {
-        // TODO
+        val ch = lsc(
+            """
+                not-environment:
+                    !(a / _ b) => x
+            """.trimIndent()
+        )
+
+        ch("abacus") shouldBe "axxxxx"
     }
 
     "Environment elements CANNOT be negated if the core can't be" {
-        // TODO
+        val ch = lsc(
+            """
+                not-environment:
+                    !(ab / _ a) => x
+            """.trimIndent()
+        )
+
+        shouldReportInvalidNegation {
+            ch("abacus")
+        }
     }
 
     "References to captures of single segments can be negated" {
@@ -177,15 +303,43 @@ class TestNegation : StringSpec({
     }
 
     "Inexact references to captures of single segments can be negated" {
-        // TODO
+        val ch = lsc(
+            """
+                Feature +hightone
+                Diacritic ́  (floating) [+hightone]
+                Class vowel {a, e, i, o, u}
+                
+                not-the-same:
+                    {i, u}$1 => {j, w} / _ !~$1&@vowel {t, $}
+            """.trimIndent()
+        )
+
+        ch("ciítuá") shouldBe "ciítwá"
+        ch("viétuu") shouldBe "vjétuu"
     }
 
     "References to captures that might have multiple segments CANNOT be negated" {
-        // TODO
+        val ch = lsc(
+            """
+                not-capture:
+                    {a, bc}$1 => x / d !$1 _
+            """.trimIndent()
+        )
+
+        shouldReportInvalidNegation {
+            ch("dbca")
+        }
     }
 
     "Arbitrary elements can be negated on the periphery of an environment" {
-        // TODO
+        val ch = lsc(
+            """
+                use-negation-as-lookaround:
+                    x => z / !ab _ !ab
+            """.trimIndent()
+        )
+
+        ch("abxxxabxab") shouldBe "abxzxabxab"
     }
 
     "Arbitrary elements can be negated as the second part of an intersection" {

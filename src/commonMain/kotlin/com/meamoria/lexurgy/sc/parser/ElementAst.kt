@@ -324,6 +324,8 @@ internal class NegatedElement(
     override fun matcher(context: ElementContext, declarations: ParseTimeDeclarations): Matcher =
         if (element is SyllableBoundaryElement) {
             NegatedSyllableBoundaryMatcher
+        } else if (context.isAtEdgeOfEnvironment) {
+            NegatedLookaroundMatcher(element.matcher(context, declarations))
         } else {
             NegatedMatcher(element.matcher(context, declarations))
         }

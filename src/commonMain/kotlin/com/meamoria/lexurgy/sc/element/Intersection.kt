@@ -22,6 +22,8 @@ class IntersectionMatcher(
         ) { it }
     }
 
+    override fun length(bindings: Bindings): Int? = initialMatcher.length(bindings)
+
     override fun reversed(): Matcher = IntersectionMatcher(
         initialMatcher.reversed(),
         matchVerifiers.map { it.reversed() }
