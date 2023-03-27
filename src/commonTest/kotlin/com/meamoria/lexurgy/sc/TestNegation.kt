@@ -97,14 +97,33 @@ class TestNegation : StringSpec({
     }
 
     "Between words symbols CANNOT be negated" {
-        // Even though the between-words matcher has a definite length of 0,
-        // negating it doesn't make sense, since adjacency doesn't cross word
-        // boundaries by default anyway.
-        // TODO
+        val ch = lsc(
+            """
+                not-between-words:
+                    !$$ => x
+            """.trimIndent()
+        )
+
+        shouldThrow<LscRuleNotApplicable> {
+            ch("foo bar")
+        }.also {
+            it.reason.shouldBeInstanceOf<MultipleSegmentNegation>()
+        }
     }
 
     "Syllable boundaries can be negated, and consume no segments" {
-        // TODO
+        val ch = lsc(
+            """
+                Syllables:
+                    explicit
+                not-across-syllable-boundary:
+                    a !. b => x
+            """.trimIndent()
+        )
+
+        ch("caba") shouldBe "cxa"
+        ch("ca.ba") shouldBe "ca.ba"
+        ch("carba") shouldBe "carba"
     }
 
     "Sequences with a definite length can be negated" {

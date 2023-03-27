@@ -322,7 +322,11 @@ internal class NegatedElement(
     override val publicName: String = "a negated element"
 
     override fun matcher(context: ElementContext, declarations: ParseTimeDeclarations): Matcher =
-        NegatedMatcher(element.matcher(context, declarations))
+        if (element is SyllableBoundaryElement) {
+            NegatedSyllableBoundaryMatcher
+        } else {
+            NegatedMatcher(element.matcher(context, declarations))
+        }
 
     override val subElements: List<Element>
         get() = listOf(element)

@@ -11,17 +11,16 @@ object SyllableBoundaryMatcher : SimpleMatcher() {
         start: PhraseIndex,
         bindings: Bindings,
         partial: Boolean,
-    ): List<PhraseMatchEnd> {
-        val word = phrase[start.wordIndex]
-        val index = start.segmentIndex
-        return if (word.isSyllabified()) {
-            if (index == 0 || index == word.length || index in word.syllableBreaks) {
-                listOf(
-                    PhraseMatchEnd(start, bindings, listOf(start))
-                )
-            } else emptyList()
-        } else emptyList()
-    }
+    ): List<PhraseMatchEnd> =
+        if (phrase.hasSyllableBoundaryAt(start)) {
+            listOf(
+                PhraseMatchEnd(start, bindings, listOf(start))
+            )
+        } else {
+            emptyList()
+        }
+
+    override fun length(bindings: Bindings): Int = 0
 
     override fun reversed(): Matcher = this
 
@@ -39,4 +38,33 @@ object SyllableBoundaryEmitter : IndependentEmitter {
         }
 
     override fun toString(): String = "."
+}
+
+object NegatedSyllableBoundaryMatcher : SimpleMatcher() {
+    override fun claim(
+        phrase: Phrase,
+        start: PhraseIndex,
+        bindings: Bindings,
+        partial: Boolean,
+    ): List<PhraseMatchEnd> =
+        if (phrase.hasSyllableBoundaryAt(start)) {
+            emptyList()
+        } else {
+            listOf(
+                PhraseMatchEnd(start, bindings, listOf(start))
+            )
+        }
+
+    override fun length(bindings: Bindings): Int = 0
+
+    override fun reversed(): Matcher = this
+
+    override fun toString(): String = "!."
+}
+
+private fun Phrase.hasSyllableBoundaryAt(phraseIndex: PhraseIndex): Boolean {
+    val word = this[phraseIndex.wordIndex]
+    val index = phraseIndex.segmentIndex
+    return word.isSyllabified() &&
+            (index == 0 || index == word.length || index in word.syllableBreaks)
 }
