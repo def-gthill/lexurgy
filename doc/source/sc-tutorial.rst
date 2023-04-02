@@ -993,20 +993,37 @@ This rule uses a bare capture variable on the match side of the rule to remove g
 Negation
 ~~~~~~~~~
 
-You can negate some types of rule elements --- match only segments that *don't* fit
+You can negate rule elements --- match only segments that *don't* fit
 the element --- by preceding the element with ``!``, as with matrix features.
 
-Currently you can do this with literal text (``!r`` matches anything but the sound [r]),
-classes (``!@vowel`` matches anything not in the ``vowel`` class), and capture references
-(``!$1`` matches anything except what was captured in the ``$1`` variable).
+You can do this with all sorts of elements. For example:
 
-You can negate *any* element that immediately follows an ``&``. For example,
-``([] [])&!(@consonant @vowel)`` matches any sequence of two sounds *other than*
-a consonant followed by a vowel. You can't just say ``!(@consonant @vowel)`` with
-no context: almost any sequence of sounds is "not a consonant followed by a vowel",
-and it often isn't clear which such sequence should be matched. Having a positive match first
-tells Lexurgy what it should look for first, before filtering out the cases
-you don't want.
+- ``!r`` matches anything but the sound [r] (or its floating-diacritic variants).
+- ``!{a, i, u}`` matches anything except the sounds [a], [i], and [u].
+- ``!@vowel`` matches anything that isn't in the ``vowel`` class.
+- ``![+high +back vowel]`` matches anything except a back high vowel; this is different
+  from ``[!+high !+back vowel]``, which only matches vowels that are neither high *nor* back
+  (e.g. the former matches the high front vowel [i] while the latter doesn't).
+- ``!$`` means "except at a word boundary", e.g.
+  ``/ <stuff> _ <more stuff> !$`` is the same as ``/ <stuff> _ <more stuff> // _ <more stuff> $``.
+- ``!.`` means "but only if there isn't a syllable break here", e.g. ``s !. t`` matches
+  the sequence [st] in ``ban.stu`` but not in ``bas.tu``.
+
+However, negating something that might match more than one sound is only allowed in certain
+situations. Take ``!(@consonant @vowel)``. This is supposed to mean "match anything that isn't
+a consonant followed by a vowel". But what *should* it match? Should it match [k] on its own?
+Should it only match sequences like [kt] and [ap] that consist of two sounds? You might
+want different behaviour in different cases.
+
+So something like ``!(@consonant @vowel)`` is only valid if:
+
+- It's on the edge of a condition: ``a / _ !(@consonant @vowel)`` is the same as
+  ``a // _ @consonant @vowel``,
+- OR it's immediately after ``&``: ``([] [])&!(@consonant @vowel)`` matches any
+  *two segments* except for a consonant followed by a vowel.
+
+In general, if you get errors when trying to negate something, specify exactly what
+kinds of matches are allowed using ``&``.
 
 Nested Environments
 ~~~~~~~~~~~~~~~~~~~~
