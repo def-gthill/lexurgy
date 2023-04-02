@@ -1593,3 +1593,37 @@ the last two syllables are light, otherwise stress the second-last syllable"::
 This turns ``kamina`` into ``ˈka.mi.na``, stressing the first
 syllable, but ``kaːtantu`` into ``kaː².ˈtan².tu``, stressing the second
 syllable.
+
+Capturing Syllable Information
+*******************************
+
+By default, captures (``$1`` etc.) copy only sounds, not syllable information.
+Take this rule::
+
+    Feature (syllable) +stress
+    Diacritic ˈ (before) [+stress]
+    Class cons {p, t, k, s, m, n, l}
+    Class vowel {a, e, i, o, u}
+    Syllables:
+        explicit
+    vowel-swap:
+        @vowel$1 @cons$2 @vowel$3 => $3 $2 $1
+
+If applied to ``ˈma.ku``, this produces ``ˈmu.ka``; the stress stays
+on the first syllable instead of moving with the captured [a] to the second
+syllable.
+
+If you *want* to copy syllable information, you can put a period between
+the ``$`` and the capture number (e.g. ``$.1``). This can be useful if
+you want to move around whole chunks of words::
+
+    Feature (syllable) +stress
+    Diacritic ˈ (before) [+stress]
+    Syllables:
+        explicit
+    swap-and-glom:
+        ([]+)$1 $$ ([]+)$2 => $.2 . $.1
+
+This will turn ``kan ˈko.pu`` into ``ˈko.pu.kan``, preserving both the syllable boundaries
+and stress from the original pieces. Using ordinary captures would yield ``kop.ˈuk.an`` instead,
+as the rule tried to graft the original syllable structure onto the new sounds.
