@@ -419,7 +419,11 @@ internal class CaptureReferenceElement(
     override fun emitter(declarations: ParseTimeDeclarations): Emitter =
         if (!exact) throw LscIllegalStructureInOutput(
             "an inexact capture reference", "~$"
-        ) else CaptureReferenceEmitter(number, captureSyllableStructure)
+        ) else if (captureSyllableStructure) {
+            SyllableCaptureReferenceEmitter(declarations.runtime, number)
+        } else {
+            CaptureReferenceEmitter(number, false)
+        }
 }
 
 internal class MatrixElement(

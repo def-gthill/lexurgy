@@ -63,7 +63,7 @@ class TestSyllabifiedWords : StringSpec({
         endBreak.syllableBreaks shouldBe listOf(2)
     }
 
-    "Syllabified words should have syllable modifiers in the correct places" {
+    "Syllabified words have syllable modifiers in the correct places" {
         banana.syllableModifiers shouldBe emptyMap()
         excellent.syllableModifiers shouldBe mapOf(2 to listOf(stress))
         shine.syllableModifiers shouldBe mapOf(
@@ -73,7 +73,7 @@ class TestSyllabifiedWords : StringSpec({
         endBreak.syllableModifiers shouldBe emptyMap()
     }
 
-    "Syllabified words should return syllable modifiers for any index in the syllable" {
+    "Syllabified words return syllable modifiers for any index in the syllable" {
         banana.modifiersAt(0) shouldBe emptyList()
         banana.modifiersAt(3) shouldBe emptyList()
         banana.modifiersAt(5) shouldBe emptyList()
@@ -86,6 +86,15 @@ class TestSyllabifiedWords : StringSpec({
         shine.modifiersAt(0) shouldBe listOf(h, backquote)
         shine.modifiersAt(1) shouldBe listOf(h, backquote)
         shine.modifiersAt(2) shouldBe listOf(h, backquote)
+    }
+
+    "Syllabified words can return a mapping from each index to the syllable modifiers at that index" {
+        banana.syllableModifiersByIndex() shouldBe emptyMap()
+        excellent.syllableModifiersByIndex() shouldBe mapOf(
+            4 to listOf(stress),
+            5 to listOf(stress),
+            6 to listOf(stress),
+        )
     }
 
     "We should be able to concatenate syllabified words" {

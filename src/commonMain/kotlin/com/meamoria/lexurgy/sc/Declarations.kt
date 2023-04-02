@@ -255,6 +255,13 @@ class Declarations(
     )
 
     /**
+     * A matrix containing the default values of all features
+     * at the specified level
+     */
+    fun defaultMatrix(wordLevel: WordLevel): Matrix =
+        Matrix(features.filter { it.level == wordLevel }.map { it.default })
+
+    /**
      * Returns all of this matrix's values as a list, including feature variables etc.
      * and implicit defaults
      */

@@ -3,6 +3,7 @@ package com.meamoria.lexurgy.sc.element
 import com.meamoria.lexurgy.word.Phrase
 import com.meamoria.lexurgy.word.PhraseIndex
 import com.meamoria.lexurgy.sc.*
+import com.meamoria.lexurgy.word.WordLevel
 
 class CaptureMatcher(
     val element: Matcher,
@@ -124,20 +125,33 @@ class CaptureReferenceEmitter(
     val captureSyllableStructure: Boolean,
 ) : IndependentEmitter {
     override fun result(): UnboundResult =
-        if (captureSyllableStructure) {
-            UnboundResult { bindings ->
-                val capturedPhrase = bindings.captures[number]?.matchedPhrase ?: throw LscUnboundCapture(number)
-                ChangeResult(
-                    capturedPhrase,
-                    emptyList(),
-                    emptyMap(),
-                )
-            }
-        } else {
-            UnboundResult.fromPhraseBinder { bindings ->
-                bindings.captures[number]?.matchedPhrase?.toSimple() ?: throw LscUnboundCapture(number)
-            }
+        UnboundResult.fromPhraseBinder { bindings ->
+            bindings.captures[number]?.matchedPhrase?.toSimple() ?: throw LscUnboundCapture(number)
         }
 
     override fun toString(): String = "$$number"
+}
+
+class SyllableCaptureReferenceEmitter(
+    val declarations: Declarations,
+    val number: Int,
+) : IndependentEmitter {
+    override fun result(): UnboundResult =
+        UnboundResult { bindings ->
+            val capturedPhrase =
+                bindings.captures[number]?.matchedPhrase?.removeBoundingBreaks() ?: throw LscUnboundCapture(number)
+            ChangeResult(
+                capturedPhrase,
+                capturedPhrase.syllableBreaks(),
+                with(declarations) {
+                    capturedPhrase.indices.associateWith { index ->
+                        defaultMatrix(WordLevel.SYLLABLE).update(
+                            capturedPhrase.modifiersAt(index).toMatrix()
+                        )
+                    }
+                },
+            )
+        }
+
+    override fun toString(): String = "$.$number"
 }

@@ -21,7 +21,20 @@ interface Word {
 
     val syllableBreaks: List<Int>
 
+    /**
+     * The syllable modifiers on each of this word's syllables.
+     * The keys are syllable indices, i.e. a key of 0 means
+     * the first syllable, a key of 1 means the second syllable,
+     * etc.
+     */
     val syllableModifiers: Map<Int, List<Modifier>>
+
+    /**
+     * The syllable modifiers on each of this word's segments.
+     * The keys are segment indices.
+     */
+    fun syllableModifiersByIndex(): Map<Int, List<Modifier>> =
+        (0 until length).associateWith(::modifiersAt).filterValues { it.isNotEmpty() }
 
     fun modifiersAt(index: Int): List<Modifier>
 

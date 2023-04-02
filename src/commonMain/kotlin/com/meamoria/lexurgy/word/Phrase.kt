@@ -154,6 +154,21 @@ class Phrase(val words: List<Word>) : Iterable<Word> {
         return nextSegmentIndex == word.length || nextSegmentIndex in word.syllableBreaks
     }
 
+    fun syllableBreaks(): List<PhraseIndex> =
+        flatMapIndexed { wordIndex, word ->
+            word.syllableBreaks.map { segmentIndex ->
+                PhraseIndex(
+                    wordIndex,
+                    segmentIndex
+                )
+            }
+        }
+
+    fun modifiersAt(index: PhraseIndex): List<Modifier> {
+        val word = words[index.wordIndex]
+        return word.modifiersAt(index.segmentIndex)
+    }
+
     /**
      * Concatenates the specified phrase to the end of this phrase.
      * ``syllableModifierCombiner`` specifies how to resolve
