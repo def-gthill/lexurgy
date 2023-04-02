@@ -128,6 +128,38 @@ class TestRomanization : StringSpec({
         ch("k'ak'i") shouldBe "k'hak'hi"
     }
 
+    "Literal deromanizers fix diacritic order when they shift to phonetic" {
+        val ch = lsc(
+            """
+                Feature +aspirated, +labialized
+                Diacritic ʷ [+labialized]
+                Diacritic ʰ [+aspirated]
+                Deromanizer literal:
+                    t => tʰ
+            """.trimIndent()
+        )
+
+        ch("tʷa") shouldBe "tʷʰa"
+    }
+
+    "Literal deromanizers preserve syllable structure" {
+        val ch = lsc(
+            """
+                Feature (syllable) +stress
+                Diacritic ˈ (before) [+stress]
+                Class vowel {a, ə, i, o, u}
+                Deromanizer literal:
+                    e => ə
+                Syllables:
+                    explicit
+                unstressed-intervocalic-lenition:
+                    {p, t, k}&[-stress] => {b, d, g} / @vowel _ @vowel
+            """.trimIndent()
+        )
+
+        ch("e.ˈpa.ke") shouldBe "ə.ˈpa.gə"
+    }
+
     "Literal romanizers ignore declarations after the last Then:" {
         val ch = lsc(
             """

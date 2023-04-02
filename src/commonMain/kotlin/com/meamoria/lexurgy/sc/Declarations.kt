@@ -140,9 +140,20 @@ class Declarations(
     )
 
     fun parsePhonetic(text: String, syllabify: Boolean = true): Word =
-        phoneticParser.parse(text, syllabify).normalize(phoneticParser)
+        phoneticParser.parse(text, syllabify).normalize(phoneticParser).fixDiacriticOrder()
 
     fun parsePhonetic(word: Word): Word = parsePhonetic(word.string)
+
+    private fun Word.fixDiacriticOrder(): Word {
+        val fixed = StandardWord(segments.map { it.toMatrix().toSymbol() })
+        return if (isSyllabified()) {
+            fixed.withSyllabification(
+                syllableBreaks, syllableModifiers
+            )
+        } else {
+            fixed
+        }
+    }
 
     fun syllabify(word: Word): Word =
         syllabifier?.syllabify(word) ?: word.toSimple()

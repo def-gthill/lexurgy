@@ -13,6 +13,9 @@ interface Word {
 
     fun toStandard(): StandardWord
 
+    /**
+     * Convert this word to Unicode decomposed form
+     */
     fun normalize(parser: PhoneticParser): Word
 
     fun isEmpty(): Boolean = segments.isEmpty()
