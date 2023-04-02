@@ -60,17 +60,6 @@ data class TransformationCatching(
     val subs: List<TransformationCatching> = emptyList(),
     val removesSyllableBreaks: List<PhraseIndex> = emptyList(),
 ) {
-    val removesSyllableBreakBefore: Boolean = removesSyllableBreaks.firstOrNull() == start
-    val removesSyllableBreakAfter: Boolean = removesSyllableBreaks.lastOrNull() == end
-
-    val elementalSubs: List<TransformationCatching>
-        get() = if (subs.isEmpty()) listOf(this) else subs.flatMap { it.elementalSubs }
-
-    /**
-     * The result of the transformation, applying explicit changes
-     * (e.g. syllable feature changes)
-     */
-    fun finalResult(declarations: Declarations): Phrase = throwing().finalResult(declarations)
 
     fun throwing(): Transformation {
         val boundResult = result.getOrThrow()
