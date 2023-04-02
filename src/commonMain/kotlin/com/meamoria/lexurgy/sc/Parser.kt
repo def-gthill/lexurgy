@@ -656,6 +656,7 @@ object LscWalker : LscBaseVisitor<AstNode>() {
             ctx.getText(),
             ctx.NUMBER().toInt(),
             ctx.INEXACT() == null,
+            ctx.SYLLABLE_BOUNDARY() != null,
         )
 
     override fun visitFancyMatrix(ctx: FancyMatrixContext): AstNode =
@@ -1161,8 +1162,9 @@ object LscWalker : LscBaseVisitor<AstNode>() {
         text: String,
         number: Int,
         exact: Boolean,
+        captureSyllableStructure: Boolean,
     ): AstNode =
-        CaptureReferenceElement(text, number, exact)
+        CaptureReferenceElement(text, number, exact, captureSyllableStructure)
 
     private fun walkRepeaterType(
         text: String,

@@ -223,4 +223,64 @@ class TestVariables : StringSpec({
         ch("tooːooːo") shouldBe "toː"
         ch("toaoaaeːei") shouldBe "toaoaːeːi"
     }
+
+    "Explicit syllable breaks are ignored by captures" {
+        val ch = lsc(
+            """
+                Class vowel {a, e, i, o, u}
+                Syllables:
+                    explicit
+                vowel-sequence-copy:
+                    * => $1 / (@vowel @vowel)$1 {p, t, k} _
+            """.trimIndent()
+        )
+
+        ch("na.it") shouldBe "na.itai"
+    }
+
+    "Syllable captures preserve internal syllable breaks" {
+        val ch = lsc(
+            """
+                Syllables:
+                    explicit
+                switcheroo:
+                    ([]+)$1 $$ ([]+)$2 => $.2 . $.1
+            """.trimIndent()
+        )
+
+        ch("zi.ka pon") shouldBe "pon.zi.ka"
+    }
+
+    "Syllable-level features are ignored by captures" {
+        val ch = lsc(
+            """
+                Feature (syllable) +stress
+                Diacritic ˈ (before) [+stress]
+                Class vowel {a, e, i, o, u}
+                Syllables:
+                    explicit
+                switcheroo:
+                    @vowel$1 r @vowel$2 => $2 r $1
+            """.trimIndent()
+        )
+
+        ch("ˈma.ri") shouldBe "ˈmi.ra"
+    }
+
+    "Syllable captures preserve syllable-level features" {
+        val ch = lsc(
+            """
+                Feature (syllable) +stress
+                Diacritic ˈ (before) [+stress]
+                Class vowel {a, e, i, o, u}
+                Syllables:
+                    explicit
+                switcheroo:
+                    @vowel$1 r @vowel$2 => $.2 r $.1
+            """.trimIndent()
+        )
+
+        ch("ˈma.ri") shouldBe "mi.ˈra"
+        ch("ˈma.rin") shouldBe "mi.ˈran"
+    }
 })

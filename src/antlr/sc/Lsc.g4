@@ -87,7 +87,7 @@ repeater: (bounded | simple) repeaterType;
 simple: anySyllable | elementRef | captureRef | fancyMatrix | empty | sylBoundary | boundary | betweenWords | text;
 anySyllable: ANY_SYLLABLE;
 elementRef: CLASSREF name;
-captureRef: INEXACT? WORD_BOUNDARY NUMBER;
+captureRef: INEXACT? WORD_BOUNDARY SYLLABLE_BOUNDARY? NUMBER;
 
 fancyMatrix: MATRIX_START fancyValue? (WHITESPACE fancyValue)* MATRIX_END;
 fancyValue: matrixValue | negatedValue | absentFeature | featureVariable;

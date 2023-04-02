@@ -407,16 +407,19 @@ internal class CaptureReferenceElement(
     text: String,
     val number: Int,
     val exact: Boolean,
+    val captureSyllableStructure: Boolean,
 ) : BaseAstNode(text), ResultElement {
     override val publicName: String = "a capture reference"
 
     override fun matcher(context: ElementContext, declarations: ParseTimeDeclarations): Matcher =
-        CaptureReferenceMatcher(declarations.runtime, number, exact)
+        if (captureSyllableStructure) throw LscIllegalStructureInInput(
+            "a syllable capture reference", "$."
+        ) else CaptureReferenceMatcher(declarations.runtime, number, exact)
 
     override fun emitter(declarations: ParseTimeDeclarations): Emitter =
         if (!exact) throw LscIllegalStructureInOutput(
-            "an inexact capture reference", "~"
-        ) else CaptureReferenceEmitter(number)
+            "an inexact capture reference", "~$"
+        ) else CaptureReferenceEmitter(number, captureSyllableStructure)
 }
 
 internal class MatrixElement(

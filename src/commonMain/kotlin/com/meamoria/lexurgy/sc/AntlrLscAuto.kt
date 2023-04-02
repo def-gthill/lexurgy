@@ -593,6 +593,7 @@ expect class ElementRefContext : ParserRuleContext {
 expect class CaptureRefContext : ParserRuleContext {
     fun INEXACT(): TerminalNode?
     fun WORD_BOUNDARY(): TerminalNode
+    fun SYLLABLE_BOUNDARY(): TerminalNode?
     fun NUMBER(): TerminalNode
 }
 

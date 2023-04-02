@@ -19,7 +19,7 @@ class CaptureMatcher(
             throw LscReboundCapture(number)
         } else {
             element.claim(phrase, start, bindings, partial).map { end ->
-                val capture = phrase.slice(start, end.index).toSimple()
+                val capture = phrase.slice(start, end.index)
                 end.replaceBindings(
                     end.returnBindings.bindCapture(
                         number,
@@ -119,10 +119,24 @@ class CaptureReferenceMatcher(
     override fun toString(): String = "$$number"
 }
 
-class CaptureReferenceEmitter(val number: Int) : IndependentEmitter {
+class CaptureReferenceEmitter(
+    val number: Int,
+    val captureSyllableStructure: Boolean,
+) : IndependentEmitter {
     override fun result(): UnboundResult =
-        UnboundResult.fromPhraseBinder { bindings ->
-            bindings.captures[number]?.matchedPhrase ?: throw LscUnboundCapture(number)
+        if (captureSyllableStructure) {
+            UnboundResult { bindings ->
+                val capturedPhrase = bindings.captures[number]?.matchedPhrase ?: throw LscUnboundCapture(number)
+                ChangeResult(
+                    capturedPhrase,
+                    emptyList(),
+                    emptyMap(),
+                )
+            }
+        } else {
+            UnboundResult.fromPhraseBinder { bindings ->
+                bindings.captures[number]?.matchedPhrase?.toSimple() ?: throw LscUnboundCapture(number)
+            }
         }
 
     override fun toString(): String = "$$number"
