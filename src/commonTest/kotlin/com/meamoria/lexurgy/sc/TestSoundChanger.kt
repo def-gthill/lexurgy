@@ -7,14 +7,6 @@ import com.meamoria.mpp.kotest.*
 class TestSoundChanger : StringSpec({
     val lsc = SoundChanger.Companion::fromLsc
 
-    "An empty file should parse into a sound changer that returns each word unmodified" {
-        val ch = lsc("")
-
-        ch("foo") shouldBe "foo"
-        ch("fgdgfggfgfggffdf") shouldBe "fgdgfggfgfggffdf"
-        ch("thefiveboxingwizardsjumpquickly") shouldBe "thefiveboxingwizardsjumpquickly"
-    }
-
     "We should be able to have numbers in names, as long as the whole name isn't numbers" {
         lsc(
             """

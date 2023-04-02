@@ -239,7 +239,7 @@ class TestLscParse : StringSpec({
         shouldThrow<LscNotParsable> {
             parser.parseFile("foo!%~$")
         }.also {
-            it.message should startWith("\"!\" doesn't make sense in the line \"foo!%~$\"")
+            it.message should startWith("\"%\" doesn't make sense in the line \"foo!%~$\"")
         }
     }
 

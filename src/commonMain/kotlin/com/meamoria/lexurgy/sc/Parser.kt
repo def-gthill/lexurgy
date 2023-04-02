@@ -78,6 +78,7 @@ object LscWalker : LscBaseVisitor<AstNode>() {
     override fun visitLscFile(ctx: LscFileContext): AstNode {
         val statementContexts = ctx.allStatements().map { it.getChild(0) as ParserRuleContext }
         validateOrder(statementContexts)
+        validateNoNakedExpressions(statementContexts)
         val rulesWithAnchoredStatements = visitRulesWithAnchoredStatements(statementContexts)
         val deromanizerContext = extractDeromanizerContext(statementContexts)
         val romanizerContext = extractRomanizerContext(statementContexts)
@@ -131,6 +132,13 @@ object LscWalker : LscBaseVisitor<AstNode>() {
         InterRomanizerContext::class to "intermediate romanizers",
         RomanizerContext::class to "final romanizer",
     )
+
+    private fun validateNoNakedExpressions(statements: List<ParserRuleContext>) {
+        val nakedExpression = statements.filterIsInstance<StandardExpressionContext>().firstOrNull()
+        if (nakedExpression != null) {
+            throw ExpressionNotInRule(nakedExpression.getText())
+        }
+    }
 
     private fun visitRulesWithAnchoredStatements(
         contexts: List<ParserRuleContext>
@@ -1906,6 +1914,12 @@ private class LscErrorListener : CommonAntlrErrorListener() {
         )
     }
 }
+
+class ExpressionNotInRule(
+    val expression: String,
+) : LscUserError(
+    "The expression \"${expression}\" isn't in a rule; put it after a line like \"rule-name:\""
+)
 
 class LscInvalidRuleExpression(
     val reason: UserError,

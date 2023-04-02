@@ -105,6 +105,7 @@ actual external class LscParser actual constructor(input: TokenStream) : Parser 
         fun interRomanizer(): InterRomanizerContext?
         fun romanizer(): RomanizerContext?
         fun changeRule(): ChangeRuleContext?
+        fun standardExpression(): StandardExpressionContext?
     }
 
     class ElementDeclContext : ParserRuleContext {

@@ -187,6 +187,7 @@ expect class StatementContext : ParserRuleContext {
     fun interRomanizer(): InterRomanizerContext?
     fun romanizer(): RomanizerContext?
     fun changeRule(): ChangeRuleContext?
+    fun standardExpression(): StandardExpressionContext?
 }
 
 
