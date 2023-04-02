@@ -16,16 +16,17 @@ data class UnboundTransformation(
     val removesSyllableBreakBefore: Boolean = removesSyllableBreaks.firstOrNull() == start
     val removesSyllableBreakAfter: Boolean = removesSyllableBreaks.lastOrNull() == end
 
-    fun bindVariables(bindings: Bindings = returnBindings): Transformation {
-        val boundResult = result.bind(bindings)
-        return Transformation(
+    fun bindVariablesCatching(bindings: Bindings = returnBindings): TransformationCatching {
+        val boundResult = runCatching {
+            result.bind(bindings)
+        }
+        return TransformationCatching(
             order,
             start,
             end,
-            boundResult.phrase,
-            subs.map { it.bindVariables(bindings) },
+            boundResult,
+            subs.map { it.bindVariablesCatching(bindings) },
             removesSyllableBreaks,
-            boundResult.syllableFeatureChanges,
         )
     }
 

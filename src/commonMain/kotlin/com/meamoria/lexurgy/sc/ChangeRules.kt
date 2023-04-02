@@ -2,6 +2,7 @@ package com.meamoria.lexurgy.sc
 
 import com.meamoria.lexurgy.*
 import com.meamoria.lexurgy.sc.element.Transformation
+import com.meamoria.lexurgy.sc.element.TransformationCatching
 import com.meamoria.lexurgy.sc.element.Transformer
 import com.meamoria.lexurgy.word.*
 
@@ -116,7 +117,7 @@ class SimpleChangeRule(
         }
         listOfNotNull(
             expressions.asSequence().mapIndexed { i, expr ->
-                expr.claimAt(i, filteredPhrase, filteredIndex)
+                expr.claimAt(i, filteredPhrase, filteredIndex)?.throwing()
             }.firstNotNullOfOrNull { it }
         )
     } ?: phrase
@@ -200,7 +201,7 @@ class SimpleChangeRule(
 
     // Strips out transformations that would try to change something that's already being changed.
     // Assumes the transformations argument is already sorted in precedence order.
-    private fun filterOverlappingClaims(transformations: List<Transformation>): List<Transformation> {
+    private fun filterOverlappingClaims(transformations: List<TransformationCatching>): List<Transformation> {
         val claimed = mutableListOf<ClosedRange<PhraseIndex>>()
         val result = mutableListOf<Transformation>()
         for (transformation in transformations) {
@@ -214,7 +215,7 @@ class SimpleChangeRule(
             }
             if (foundOverlap) continue
             claimed += thisClaim
-            result += transformation
+            result += transformation.throwing()
         }
         return result
     }
@@ -342,9 +343,9 @@ class RuleExpression(
      * Finds all indices where this expression matches the specified phrase,
      * and returns a Transformation for each match.
      */
-    fun claimAll(expressionNumber: Int, phrase: Phrase): List<Transformation> {
+    fun claimAll(expressionNumber: Int, phrase: Phrase): List<TransformationCatching> {
         var index = PhraseIndex(0, 0)
-        val result = mutableListOf<Transformation>()
+        val result = mutableListOf<TransformationCatching>()
 
         while (true) {
             val transformation = claimNext(expressionNumber, phrase, index) ?: break
@@ -355,7 +356,7 @@ class RuleExpression(
         return result
     }
 
-    private fun claimNext(expressionNumber: Int, phrase: Phrase, start: PhraseIndex): Transformation? {
+    private fun claimNext(expressionNumber: Int, phrase: Phrase, start: PhraseIndex): TransformationCatching? {
         for (matchStart in phrase.iterateFrom(start)) {
             return claimAt(expressionNumber, phrase, matchStart) ?: continue
         }
@@ -366,12 +367,12 @@ class RuleExpression(
      * Tries to match this expression at the specified index in the specified phrase.
      * Returns a Transformation if the expression matched, null otherwise.
      */
-    fun claimAt(expressionNumber: Int, phrase: Phrase, index: PhraseIndex): Transformation? {
+    fun claimAt(expressionNumber: Int, phrase: Phrase, index: PhraseIndex): TransformationCatching? {
         val bindings = Bindings()
         val transformation = transformer.transform(
             expressionNumber, phrase, index, bindings
         ).firstOrNull() ?: return null
-        return transformation.bindVariables()
+        return transformation.bindVariablesCatching()
     }
 
     override fun toString(): String = "$transformer"

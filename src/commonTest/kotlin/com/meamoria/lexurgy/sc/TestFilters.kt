@@ -122,4 +122,17 @@ class TestFilters : StringSpec({
         ch("hapipa") shouldBe "hepepa"
         ch("hipapi") shouldBe "hipepe"
     }
+
+    "Expressions that error out in a filtered rule are ignored if an earlier expression takes precedence" {
+        val ch = lsc(
+            """
+                Class vowel {a, e, i, o, u}
+                bad-second-rule @vowel:
+                    a => e
+                    a => $1
+            """.trimIndent()
+        )
+
+        ch("banana") shouldBe "benene"
+    }
 })

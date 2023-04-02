@@ -153,6 +153,18 @@ class TestPropagation : StringSpec({
         ch("CVCCVCVV") shouldBe "ˈCVC.CV.ˈCV.V"
     }
 
+    "An ltr rule ignores expressions that error out if earlier expressions take precedence" {
+        val ch = lsc(
+            """
+                bad-second-rule ltr:
+                    a => e
+                    a => $1
+            """.trimIndent()
+        )
+
+        ch("banana") shouldBe "benene"
+    }
+
     "We should get a nice error message when we misspell a modifier" {
         shouldThrow<LscInvalidModifier> {
             lsc(

@@ -1269,7 +1269,6 @@ class TestRealExamples : StringSpec({
                 Symbol ʌ̃ [+unround -round -high +middle -low -front +central -back +nasalized vowel]
 
                 vowel-harmony:
-                [-high -middle +low] => [-high +middle -low] / _ i
                 [-front -central +back +round] => [-front +central -back -round] / _ i
             """.trimIndent()
         )
