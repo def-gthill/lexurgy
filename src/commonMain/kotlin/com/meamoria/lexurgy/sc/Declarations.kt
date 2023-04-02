@@ -1,6 +1,8 @@
 package com.meamoria.lexurgy.sc
 
 import com.meamoria.lexurgy.*
+import com.meamoria.lexurgy.word.*
+import com.meamoria.lexurgy.word.modify
 
 class Declarations(
     val features: List<Feature>,

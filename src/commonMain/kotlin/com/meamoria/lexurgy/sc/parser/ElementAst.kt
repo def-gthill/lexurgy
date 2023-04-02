@@ -1,7 +1,7 @@
 package com.meamoria.lexurgy.sc.parser
 
 import com.meamoria.lexurgy.LscUserError
-import com.meamoria.lexurgy.WordLevel
+import com.meamoria.lexurgy.word.WordLevel
 import com.meamoria.lexurgy.sc.*
 import com.meamoria.lexurgy.sc.element.*
 import com.meamoria.lexurgy.zipOrThisNull

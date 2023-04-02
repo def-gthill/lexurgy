@@ -1,6 +1,6 @@
 package com.meamoria.lexurgy.sc
 
-import com.meamoria.lexurgy.DanglingDiacritic
+import com.meamoria.lexurgy.word.DanglingDiacritic
 import com.meamoria.mpp.kotest.StringSpec
 import com.meamoria.mpp.kotest.shouldBe
 import com.meamoria.mpp.kotest.shouldBeInstanceOf

@@ -1,6 +1,7 @@
 package com.meamoria.lexurgy.sc
 
 import com.meamoria.lexurgy.*
+import com.meamoria.lexurgy.word.Phrase
 
 class SoundChanger(
     val initialDeclarations: Declarations,

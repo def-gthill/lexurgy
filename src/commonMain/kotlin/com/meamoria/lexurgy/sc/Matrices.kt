@@ -1,7 +1,7 @@
 package com.meamoria.lexurgy.sc
 
 import com.meamoria.lexurgy.LscUserError
-import com.meamoria.lexurgy.WordLevel
+import com.meamoria.lexurgy.word.WordLevel
 
 class Matrix(val valueList: List<MatrixValue>) {
     private val valueSet = valueList.toSet()

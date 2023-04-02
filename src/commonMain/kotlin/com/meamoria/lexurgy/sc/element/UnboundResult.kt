@@ -1,6 +1,6 @@
 package com.meamoria.lexurgy.sc.element
 
-import com.meamoria.lexurgy.Phrase
+import com.meamoria.lexurgy.word.Phrase
 import com.meamoria.lexurgy.sc.Bindings
 
 data class UnboundResult(val bind: (Bindings) -> ChangeResult) {

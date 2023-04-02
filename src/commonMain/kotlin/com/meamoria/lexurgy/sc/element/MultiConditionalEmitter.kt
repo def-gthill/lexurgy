@@ -1,8 +1,8 @@
 package com.meamoria.lexurgy.sc.element
 
-import com.meamoria.lexurgy.Phrase
-import com.meamoria.lexurgy.PhraseIndex
-import com.meamoria.lexurgy.Word
+import com.meamoria.lexurgy.word.Phrase
+import com.meamoria.lexurgy.word.PhraseIndex
+import com.meamoria.lexurgy.word.Word
 import com.meamoria.lexurgy.sc.Matrix
 
 class MultiConditionalEmitter(

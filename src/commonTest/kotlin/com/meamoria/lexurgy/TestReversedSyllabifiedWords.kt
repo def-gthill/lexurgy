@@ -1,5 +1,9 @@
 package com.meamoria.lexurgy
 
+import com.meamoria.lexurgy.word.Modifier
+import com.meamoria.lexurgy.word.ModifierPosition
+import com.meamoria.lexurgy.word.StandardWord
+import com.meamoria.lexurgy.word.Word
 import com.meamoria.mpp.kotest.StringSpec
 import com.meamoria.mpp.kotest.shouldBe
 

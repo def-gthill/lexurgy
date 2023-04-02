@@ -1,5 +1,6 @@
 package com.meamoria.lexurgy
 
+import com.meamoria.lexurgy.word.*
 import com.meamoria.mpp.kotest.StringSpec
 import com.meamoria.mpp.kotest.shouldBe
 

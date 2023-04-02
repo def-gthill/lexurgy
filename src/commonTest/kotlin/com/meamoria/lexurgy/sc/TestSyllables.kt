@@ -1,8 +1,6 @@
 package com.meamoria.lexurgy.sc
 
-import com.meamoria.lexurgy.SyllableStructureViolated
 import com.meamoria.mpp.kotest.StringSpec
-import com.meamoria.mpp.kotest.fail
 import com.meamoria.mpp.kotest.shouldBe
 import com.meamoria.mpp.kotest.shouldThrow
 

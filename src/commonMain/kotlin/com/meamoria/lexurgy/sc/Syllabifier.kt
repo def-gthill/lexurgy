@@ -2,6 +2,7 @@ package com.meamoria.lexurgy.sc
 
 import com.meamoria.lexurgy.*
 import com.meamoria.lexurgy.sc.element.Matcher
+import com.meamoria.lexurgy.word.*
 
 class Syllabifier(
     val declarations: Declarations,
@@ -152,3 +153,26 @@ class Syllabifier(
             PatternMatchSequence(patternMatches + patternMatch)
     }
 }
+
+class SyllableStructureViolated(
+    word: Word,
+    lastSyllableBreak: Int,
+    invalidSymbolPosition: Int
+) :
+    UserError(
+        if(invalidSymbolPosition < word.length) {
+            "The segment \"${word[invalidSymbolPosition].string}\" in " +
+                    "\"${word.highlightSegment(invalidSymbolPosition)}\" " +
+                    "doesn't fit the syllable structure; " +
+                    if (lastSyllableBreak == invalidSymbolPosition) {
+                        "no syllable pattern can start with \"${word[invalidSymbolPosition].string}\""
+                    } else {
+                        "no syllable pattern that starts with " +
+                                "\"${word.slice(lastSyllableBreak until invalidSymbolPosition).toSimple().string}\" " +
+                                "can continue with \"${word[invalidSymbolPosition].string}\""
+                    }
+        } else {
+            "The word \"${word.string}\" doesn't fit the syllable structure; " +
+                    "the last syllable \"${word.drop(lastSyllableBreak).string}\" is incomplete"
+        }
+    )

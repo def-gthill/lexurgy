@@ -1,6 +1,5 @@
 package com.meamoria.lexurgy.sc
 
-import com.meamoria.lexurgy.SyllableStructureViolated
 import com.meamoria.lexurgy.sc.element.InvalidTransformation
 import com.meamoria.mpp.kotest.*
 
