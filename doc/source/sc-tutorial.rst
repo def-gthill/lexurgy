@@ -1625,5 +1625,5 @@ you want to move around whole chunks of words::
         ([]+)$1 $$ ([]+)$2 => $.2 . $.1
 
 This will turn ``kan ˈko.pu`` into ``ˈko.pu.kan``, preserving both the syllable boundaries
-and stress from the original pieces. Using ordinary captures would yield ``kop.ˈuk.an`` instead,
+and stress from the original pieces. Using ordinary captures would yield ``kopu.ˈka.n`` instead,
 as the rule tried to graft the original syllable structure onto the new sounds.
