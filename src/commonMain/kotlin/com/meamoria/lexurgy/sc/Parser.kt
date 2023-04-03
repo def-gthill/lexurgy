@@ -96,7 +96,7 @@ object LscWalker : LscBaseVisitor<AstNode>() {
     }
 
     private fun validateOrder(statements: List<ParserRuleContext>) {
-        for ((prev, next) in statements.zipWithNext()) {
+        for ((prev, next) in statements.filter { it::class in allowedStatementPositions }.zipWithNext()) {
             if (allowedStatementPositions.getValue(prev::class) > allowedStatementPositions.getValue(next::class)) {
                 throw LscNotParsable(
                     prev.getStartLine(), 0, prev.getText(),

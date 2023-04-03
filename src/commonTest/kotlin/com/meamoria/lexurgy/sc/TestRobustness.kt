@@ -24,4 +24,15 @@ class TestRobustness : StringSpec({
         }
     }
 
+    "A more complex naked expression yields a helpful error message" {
+        shouldThrow<ExpressionNotInRule> {
+            lsc(
+                """
+                    Feature (syllable) +stress
+                    Diacritic ˈ (before) [+stress]
+                    ([]+)${'$'}1 ${'$'}${'$'} ([]+)${'$'}2 => ${'$'}2 . ${'$'}1
+                """.trimIndent()
+            )
+        }
+    }
 })
