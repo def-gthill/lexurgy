@@ -44,7 +44,7 @@ class Phrase(val words: List<Word>) : Iterable<Word> {
             private var cursor: PhraseIndex = start
 
             override fun hasNext(): Boolean =
-                cursor.wordIndex > 0 || cursor.segmentIndex > 0
+                cursor.wordIndex >= 0 && cursor.segmentIndex >= 0
 
             override fun next(): PhraseIndex = cursor.also { cursor = stepBack(it) }
         }

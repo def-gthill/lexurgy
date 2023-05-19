@@ -138,6 +138,7 @@ class SimpleChangeRule(
     private fun applyTransformations(phrase: Phrase, transformations: List<Transformation>): Phrase {
         var result = Phrase()
         var previousTransformation: Transformation? = null
+        var previousTransformation_NEW: Pair<Transformation, Phrase>? = null
 
         fun addExistingSlice(start: PhraseIndex, end: PhraseIndex? = null) {
             var existingSlice = end?.let { phrase.slice(start, it) } ?: phrase.dropUntil(start)
@@ -146,14 +147,14 @@ class SimpleChangeRule(
             result = result.concat(
                 existingSlice
             ) { left, right ->
-                previousTransformation?.let {
+                previousTransformation_NEW?.let { (transformation, previousNewBit) ->
                     with (declarations) {
                         var matrix = right.toMatrix().update(left.toMatrix())
-                        for (index in result.iterateBackFrom(result.lastIndex)) {
+                        for (index in previousNewBit.iterateBackFrom(previousNewBit.lastIndex)) {
                             matrix = matrix.update(
-                                it.syllableFeatureChanges[index] ?: Matrix.EMPTY
+                                transformation.syllableFeatureChanges[index] ?: Matrix.EMPTY
                             )
-                            if (result.hasSyllableBreakBefore(index)) {
+                            if (previousNewBit.hasSyllableBreakBefore(index)) {
                                 break
                             }
                         }
@@ -177,7 +178,7 @@ class SimpleChangeRule(
             ) { left, right ->
                 with (declarations) {
                     var matrix = left.toMatrix().update(right.toMatrix())
-                    for (index in result.iterateFrom(result.firstIndex)) {
+                    for (index in newBit.iterateFrom(newBit.firstIndex)) {
                         matrix = matrix.update(
                             transformation.syllableFeatureChanges[index] ?: Matrix.EMPTY
                         )
@@ -189,6 +190,7 @@ class SimpleChangeRule(
                 }
             }
             previousTransformation = transformation
+            previousTransformation_NEW = transformation to newBit
         }
         addExistingSlice(cursor())
         return result

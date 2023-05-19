@@ -584,6 +584,26 @@ class TestSyllables : StringSpec({
         ch("ˈtest^") shouldBe "test^"
     }
 
+    "We can return syllable-level features to their default values by changing one segment" {
+        val ch = lsc(
+            """
+                Feature (syllable) +stress, (syllable) +test
+                Diacritic ˈ (before) [+stress]
+                Diacritic ^ [+test]
+                Class vowel {a, e, i, o, u}
+                Syllables:
+                    explicit
+                remove-stress:
+                    @vowel&[+stress] => [-stress]
+            """.trimIndent()
+        )
+
+        ch("ˈfu.ba") shouldBe "fu.ba"
+        ch("ka.lu.ˈma") shouldBe "ka.lu.ma"
+        ch("con.ˈtest^") shouldBe "con.test^"
+        ch("ˈtest^") shouldBe "test^"
+    }
+
     "We can copy syllable-level features with a feature variable" {
         val ch = lsc(
             """
