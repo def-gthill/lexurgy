@@ -137,17 +137,16 @@ class SimpleChangeRule(
 
     private fun applyTransformations(phrase: Phrase, transformations: List<Transformation>): Phrase {
         var result = Phrase()
-        var previousTransformation: Transformation? = null
-        var previousTransformation_NEW: Pair<Transformation, Phrase>? = null
+        var previousTransformation: Pair<Transformation, Phrase>? = null
 
         fun addExistingSlice(start: PhraseIndex, end: PhraseIndex? = null) {
             var existingSlice = end?.let { phrase.slice(start, it) } ?: phrase.dropUntil(start)
-            if (previousTransformation?.removesSyllableBreakAfter == true)
+            if (previousTransformation?.first?.removesSyllableBreakAfter == true)
                 existingSlice = existingSlice.removeLeadingBreak()
             result = result.concat(
                 existingSlice
             ) { left, right ->
-                previousTransformation_NEW?.let { (transformation, previousNewBit) ->
+                previousTransformation?.let { (transformation, previousNewBit) ->
                     with (declarations) {
                         var matrix = right.toMatrix().update(left.toMatrix())
                         for (index in previousNewBit.iterateBackFrom(previousNewBit.lastIndex)) {
@@ -164,7 +163,7 @@ class SimpleChangeRule(
             }
         }
 
-        fun cursor() = previousTransformation?.end ?: PhraseIndex(0, 0)
+        fun cursor() = previousTransformation?.first?.end ?: PhraseIndex(0, 0)
 
         for (transformation in transformations.sortedBy { it.start }) {
             if (cursor() > transformation.start) continue
@@ -189,8 +188,7 @@ class SimpleChangeRule(
                     matrix.toModifiers()
                 }
             }
-            previousTransformation = transformation
-            previousTransformation_NEW = transformation to newBit
+            previousTransformation = transformation to newBit
         }
         addExistingSlice(cursor())
         return result
