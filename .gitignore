@@ -114,6 +114,7 @@ fabric.properties
 hs_err_pid*
 
 /test/*_ev.*
+/test/*_trace.*
 /test/*/*
 /doc/build/*
 /doc/build-public/*
