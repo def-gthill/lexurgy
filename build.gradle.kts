@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     id("java")
     id("org.jetbrains.kotlin.jvm") version "1.8.21"
@@ -16,13 +18,15 @@ tasks.compileJava {
     targetCompatibility = "1.8"
 }
 
+tasks.compileKotlin {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_1_8)
+    }
+}
+
 tasks.test {
     useJUnitPlatform()
     outputs.upToDateWhen { false }
-}
-
-kotlin {
-    jvmToolchain(8)
 }
 
 application {
