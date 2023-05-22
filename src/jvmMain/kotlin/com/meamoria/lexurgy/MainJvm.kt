@@ -15,7 +15,6 @@ import com.meamoria.lexurgy.sc.changeFiles
 import com.meamoria.lexurgy.sc.soundChangerFromLscFile
 import java.io.IOException
 import java.io.PrintWriter
-import kotlin.system.exitProcess
 import kotlin.time.ExperimentalTime
 
 class Lexurgy : CliktCommand() {
@@ -141,7 +140,7 @@ class Server : CliktCommand(
 
     @ExperimentalTime
     override fun run() {
-        console("Loading sound changes from $changes")
+        console("; Loading sound changes from $changes")
         val changer = soundChangerFromLscFile(changes)
         try {
             val words = mutableListOf<String>()
@@ -150,16 +149,16 @@ class Server : CliktCommand(
             var stopBefore: String? = null
             var romanize = true
             while (true) {
-                val line = readLine() ?: break
+                val line = readlnOrNull() ?: break
 
                 if (line.trim() == "; exit") {
                     break
                 }
 
                 if (line.isBlank()) {
-                    println("start=$startAt stop=$stopBefore romanize=$romanize")
+                    println("; start=$startAt stop=$stopBefore romanize=$romanize")
                     words.forEach {
-                        println("$it trace=${it in traceWords}")
+                        println("; $it trace=${it in traceWords}")
                     }
 
                     changer.change(
@@ -167,6 +166,8 @@ class Server : CliktCommand(
                     ).forEach {
                         println(it)
                     }
+
+                    println("; done")
 
                     words.clear()
                     traceWords.clear()
