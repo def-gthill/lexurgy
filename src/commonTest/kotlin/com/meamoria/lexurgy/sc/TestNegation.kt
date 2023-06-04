@@ -357,4 +357,25 @@ class TestNegation : StringSpec({
         ch("smakla") shouldBe "makla"
         ch("sprakti") shouldBe "sprati"
     }
+
+    "Negated elements with length one consume one segment even on the periphery" {
+        val ch = lsc(
+            """
+                Feature place (alveolar, velar)
+                Feature manner (stop)
+                Feature voiced
+                
+                Symbol t [-voiced alveolar stop]
+                Symbol d [+voiced alveolar stop]
+                Symbol k [-voiced velar stop]
+                Symbol g [+voiced velar stop]
+                Element consonant ![*place]
+                
+                voicing-assimilation:
+                 [stop] => [${'$'}voiced] / _ @consonant&[${'$'}voiced]
+            """.trimIndent()
+        )
+
+        ch("agta") shouldBe "akta"
+    }
 })
