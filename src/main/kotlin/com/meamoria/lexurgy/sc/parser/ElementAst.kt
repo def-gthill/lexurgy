@@ -146,11 +146,14 @@ internal class IntersectionElement(
 ) : BaseAstNode(text), Element {
     override val publicName: String = "an intersection"
 
-    override fun matcher(context: ElementContext, declarations: ParseTimeDeclarations): Matcher =
-        IntersectionMatcher(
-            initialElement.matcher(context, declarations),
-            matchVerifierElements.map { it.matcher(context, declarations) }
+    override fun matcher(context: ElementContext, declarations: ParseTimeDeclarations): Matcher {
+        // Things inside an intersection have to consume what they match!
+        val intersectionContext = ElementContext.aloneInMain()
+        return IntersectionMatcher(
+            initialElement.matcher(intersectionContext, declarations),
+            matchVerifierElements.map { it.matcher(intersectionContext, declarations) }
         )
+    }
 
     override val subElements: List<Element>
         get() = listOf(initialElement) + matchVerifierElements.map { it.element }
