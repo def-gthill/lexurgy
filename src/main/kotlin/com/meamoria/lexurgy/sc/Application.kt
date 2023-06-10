@@ -83,7 +83,8 @@ fun SoundChanger.changeFiles(
                 stopBefore = stopBefore,
                 debugWords = debugWords,
                 romanize = romanize,
-            ) { it: String -> debug(it) }
+                debug = ::debug
+            )
         }
 
         val newSuccessfulOutput = if (allErrors) {

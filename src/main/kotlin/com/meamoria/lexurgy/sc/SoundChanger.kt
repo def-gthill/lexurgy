@@ -38,6 +38,7 @@ class SoundChanger(
         debugWords: List<String> = emptyList(),
         romanize: Boolean = true,
         debug: (String) -> Unit = ::println,
+        trace: (String, String, String) -> Unit = { _, _, _ -> },
     ): List<String> = changeWithIntermediates(
         words,
         startAt = startAt,
@@ -45,6 +46,7 @@ class SoundChanger(
         debugWords = debugWords,
         romanize = romanize,
         debug = debug,
+        trace = trace,
     ).getValue(null)
 
     /**
@@ -61,6 +63,7 @@ class SoundChanger(
         debugWords: List<String> = emptyList(),
         romanize: Boolean = true,
         debug: (String) -> Unit = ::println,
+        trace: (String, String, String) -> Unit = { _, _, _ -> },
     ): List<Result<String>> = changeWithIntermediatesAndIndividualErrors(
         words,
         startAt = startAt,
@@ -68,6 +71,7 @@ class SoundChanger(
         debugWords = debugWords,
         romanize = romanize,
         debug = debug,
+        trace = trace,
     ).getValue(null)
 
     /**
@@ -87,6 +91,7 @@ class SoundChanger(
         debugWords: List<String> = emptyList(),
         romanize: Boolean = true,
         debug: (String) -> Unit = ::println,
+        trace: (String, String, String) -> Unit = { _, _, _ -> },
     ): Map<String?, List<String>> {
         val fullResult = changeWithIntermediatesAndIndividualErrors(
             words = words,
@@ -95,6 +100,7 @@ class SoundChanger(
             debugWords = debugWords,
             romanize = romanize,
             debug = debug,
+            trace = trace,
         )
         return fullResult.mapValues { (_, outputWords) ->
             outputWords.map { it.getOrThrow() }
@@ -115,11 +121,12 @@ class SoundChanger(
         debugWords: List<String> = emptyList(),
         romanize: Boolean = true,
         debug: (String) -> Unit = ::println,
+        trace: (String, String, String) -> Unit = { _, _, _ -> },
     ): Map<String?, List<Result<String>>> {
         val tracer = words.withIndex()
             .filter { it.value in debugWords }
             .associate { it.index to it.value }
-            .let { Tracer(debug, it) }
+            .let { Tracer(debug, trace, it) }
         val persistentEffects = PersistentEffects()
         val startPhrases = words.map {
             Phrase(
@@ -264,6 +271,7 @@ class SoundChanger(
 
     private class Tracer(
         val debug: (String) -> Unit,
+        val tracer: (String, String, String) -> Unit,
         val indexToDebugWords: Map<Int, String>,
     ) {
         init {
@@ -280,6 +288,7 @@ class SoundChanger(
             for (i in indexToDebugWords.keys) {
                 if (newPhrases[i] != curPhrases[i]) {
                     debug("Applied ${name}${appliedTo(i)}: ${curPhrases[i].string} -> ${newPhrases[i].string}")
+                    tracer(indexToDebugWords[i]!!, name, newPhrases[i].string)
                 }
             }
         }
