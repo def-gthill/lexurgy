@@ -17,6 +17,26 @@ class SoundChanger(
         }
     }
 
+    /**
+     * The list of rule names that will be used in any tracing
+     * output, in the order that the rules get applied.
+     */
+    val ruleNames: List<String>
+        get() {
+            return rules.flatMap {
+                val ruleName = it.rule?.name
+                val anchoredStepNames = it.anchoredSteps.mapNotNull { step ->
+                    when (step) {
+                        is IntermediateRomanizerStep -> step.romanizer.name
+                        is CleanupStep -> step.cleanupRule.name
+                        is SyllabificationStep -> "syllables"
+                        else -> null
+                    }
+                }
+                anchoredStepNames + listOfNotNull(ruleName)
+            }
+        }
+
     operator fun invoke(word: String): String = change(listOf(word)).single()
 
     /**
