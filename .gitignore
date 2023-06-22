@@ -115,6 +115,7 @@ hs_err_pid*
 
 /test/*_ev.*
 /test/*/*
+!/test/sound_changes/*
 /doc/build/*
 /doc/build-public/*
 /.idea/artifacts/
