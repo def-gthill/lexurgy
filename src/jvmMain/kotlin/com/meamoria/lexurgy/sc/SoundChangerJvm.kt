@@ -6,7 +6,6 @@ import java.nio.file.Path
 import kotlin.streams.toList
 import kotlin.time.DurationUnit
 import kotlin.time.ExperimentalTime
-import kotlin.time.TimedValue
 import kotlin.time.measureTimedValue
 
 @ExperimentalTime
@@ -44,7 +43,9 @@ fun changeFiles(
 }
 
 fun soundChangerFromLscFile(path: Path): SoundChanger =
-    SoundChanger.fromLsc(path.toFile().readLines().joinToString("\n"))
+    SoundChanger.fromLsc(SoundChangesFileLoader().load(path).joinToString("\n"))
+
+
 
 @ExperimentalTime
 fun SoundChanger.changeFiles(
