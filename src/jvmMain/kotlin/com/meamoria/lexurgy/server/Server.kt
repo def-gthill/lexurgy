@@ -1,16 +1,10 @@
 package com.meamoria.lexurgy.server
 
-import com.meamoria.lexurgy.ConsoleWriter
-import com.meamoria.lexurgy.console
-import com.meamoria.lexurgy.sc.LscRuleCrashed
 import com.meamoria.lexurgy.sc.soundChangerFromLscFile
-import kotlinx.serialization.Contextual
 import java.nio.file.Path
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import java.io.PrintWriter
-import java.io.StringWriter
 
 @Serializable
 data class ServerRequest(
@@ -23,7 +17,9 @@ data class ServerRequest(
 
 @Serializable
 data class ServerResponse(
-    val words: List<String>, val traceLines: List<String>
+    val words: List<String>,
+    val intermediates: Map<String, List<String>>,
+    val traceLines: List<String>
 )
 
 @Serializable
@@ -45,10 +41,13 @@ fun runServer(changes: Path) {
         val query = Json.decodeFromString<ServerRequest>(line)
         val collector = StringCollector()
         try {
-            val words = changer.change(
+            val intermediates = changer.changeWithIntermediates(
                 query.words, query.startAt, query.stopBefore, query.debugWords, query.romanize, collector
             )
-            println(Json.encodeToString(ServerResponse(words, collector.strings)))
+            val words = intermediates[null]!!
+
+            val trueIntermediates: Map<String, List<String>> = intermediates.filterKeys { it != null }.mapKeys { it.key!! }
+            println(Json.encodeToString(ServerResponse(words, trueIntermediates, collector.strings)))
         } catch (e: Exception) {
             val message = e.message.toString()
             val stackTrace = e.stackTrace.map { it.toString() }
