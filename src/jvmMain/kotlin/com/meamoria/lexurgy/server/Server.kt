@@ -11,7 +11,7 @@ data class ServerRequest(
     val words: List<String>,
     val startAt: String? = null,
     val stopBefore: String? = null,
-    val debugWords: List<String> = emptyList(),
+    val traceWords: List<String> = emptyList(),
     val romanize: Boolean = true
 )
 
@@ -42,7 +42,7 @@ fun runServer(changes: Path) {
         val collector = StringCollector()
         try {
             val intermediates = changer.changeWithIntermediates(
-                query.words, query.startAt, query.stopBefore, query.debugWords, query.romanize, collector
+                query.words, query.startAt, query.stopBefore, query.traceWords, query.romanize, collector
             )
             val words = intermediates[null]!!
 

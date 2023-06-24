@@ -12,7 +12,6 @@ import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.path
 import com.meamoria.lexurgy.sc.LscRuleCrashed
 import com.meamoria.lexurgy.sc.changeFiles
-import com.meamoria.lexurgy.sc.soundChangerFromLscFile
 import com.meamoria.lexurgy.server.runServer
 import java.io.IOException
 import java.io.PrintWriter
@@ -135,7 +134,7 @@ class SC : CliktCommand(
 }
 
 class Server : CliktCommand(
-    help = "Applies sound changes from CHANGES (a .lsc file) to the words in stdin and outputs to stdout. "
+    help = "Applies sound changes from CHANGES (a .lsc file) to the words in stdin and outputs to stdout."
 ) {
     val changes by argument().path(mustBeReadable = true)
 
