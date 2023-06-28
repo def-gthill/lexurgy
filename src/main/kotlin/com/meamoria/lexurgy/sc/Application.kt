@@ -43,7 +43,9 @@ fun changeFiles(
 }
 
 fun soundChangerFromLscFile(path: Path): SoundChanger =
-    SoundChanger.fromLsc(path.toFile().readLines().joinToString("\n"))
+    SoundChanger.fromLsc(SoundChangesFileLoader().load(path).joinToString("\n"))
+
+
 
 @ExperimentalTime
 fun SoundChanger.changeFiles(
