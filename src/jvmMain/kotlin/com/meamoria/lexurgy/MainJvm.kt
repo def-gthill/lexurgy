@@ -134,7 +134,11 @@ class SC : CliktCommand(
 }
 
 class Server : CliktCommand(
-    help = "Applies sound changes from CHANGES (a .lsc file) to the words in stdin and outputs to stdout."
+    help = "Applies sound changes from CHANGES (a .lsc file) to the words in stdin and outputs to stdout. " +
+            "To apply sound changes, input a " +
+            "{\"type\": \"changes\", \"words\": [\"<WORD 1>\", \"<WORD 2>\", ...]} " +
+            "request. " +
+            "See documentation for full overview."
 ) {
     val changes by argument().path(mustBeReadable = true)
 
