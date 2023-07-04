@@ -1,8 +1,8 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="ConsoleTest" type="JetRunConfigurationType">
+  <configuration default="false" name="Console SC Test" type="JetRunConfigurationType" folderName="Console Tests">
     <option name="MAIN_CLASS_NAME" value="com.meamoria.lexurgy.MainJvmKt" />
     <module name="lexurgy.jvmMain" />
-    <option name="PROGRAM_PARAMETERS" value="sc test/nitherwe.lsc test/pn_finite_verbs.wli -t yuldi" />
+    <option name="PROGRAM_PARAMETERS" value="server test/nitherwe.lsc test/pn_finite_verbs.wli -t yuldi" />
     <shortenClasspath name="NONE" />
     <method v="2">
       <option name="Make" enabled="true" />

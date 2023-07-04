@@ -12,7 +12,7 @@ import kotlin.time.ExperimentalTime
 
 @Suppress("unused")
 @ExperimentalTime
-class TestCLI : StringSpec({
+class TestSCModeCLI : StringSpec({
     fun pathOf(vararg pathComponents: String): Path =
         FileSystems.getDefault().getPath("test", *pathComponents)
 

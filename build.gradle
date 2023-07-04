@@ -1,6 +1,7 @@
 plugins {
     id 'java'
     id 'org.jetbrains.kotlin.multiplatform' version '1.7.20'
+    id 'org.jetbrains.kotlin.plugin.serialization' version '1.7.20'
     id 'application'
 }
 
@@ -90,6 +91,7 @@ kotlin {
                 implementation "com.github.ajalt:clikt:2.7.0"
                 implementation "net.java.dev.jna:jna:5.5.0"
                 implementation "net.java.dev.jna:jna-platform:5.5.0"
+                implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1"
             }
         }
         jvmTest {
