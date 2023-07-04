@@ -6,8 +6,10 @@ plugins {
     id("application")
 }
 
+val versionNumber = "1.3.0"
+
 group = "com.meamoria"
-version = "1.3.0"
+version = versionNumber
 
 repositories {
     mavenCentral()
@@ -27,6 +29,12 @@ tasks.compileKotlin {
 tasks.test {
     useJUnitPlatform()
     outputs.upToDateWhen { false }
+}
+
+tasks.jar {
+    manifest {
+        attributes("Implementation-Version" to versionNumber)
+    }
 }
 
 application {
