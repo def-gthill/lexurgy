@@ -2,6 +2,7 @@ package com.meamoria.lexurgy.sc
 
 import com.meamoria.lexurgy.LscUserError
 import java.nio.file.Path
+import kotlin.io.path.Path
 
 
 class CircularInclusion(path: Path) : LscUserError(
@@ -14,6 +15,10 @@ class SoundChangesFileLoader {
     }
 
     val pathsVisited: MutableSet<Path> = mutableSetOf()
+
+    fun Path.nonNullParent(): Path {
+        return this.parent ?: Path(".")
+    }
 
     fun load(path: Path): Sequence<String> {
         if (path in pathsVisited) {
@@ -29,7 +34,7 @@ class SoundChangesFileLoader {
                     continue
                 }
                 val includedPath = match.groupValues[1]
-                yieldAll(load(path.parent.resolve(includedPath)))
+                yieldAll(load(path.nonNullParent().resolve(includedPath)))
             }
         }
     }
