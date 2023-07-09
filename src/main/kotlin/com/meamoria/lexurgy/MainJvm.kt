@@ -12,10 +12,35 @@ import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.path
 import com.meamoria.lexurgy.sc.LscRuleCrashed
 import com.meamoria.lexurgy.sc.changeFiles
+import com.meamoria.lexurgy.server.runServer
 import java.io.IOException
 import java.io.PrintWriter
-import kotlin.system.exitProcess
 import kotlin.time.ExperimentalTime
+
+fun runErrorProne(developer: Boolean, block: () -> Unit) {
+    try {
+        block()
+    } catch (e: Exception) {
+        val writer = PrintWriter(ConsoleWriter)
+        if (developer) {
+            if (e is LscRuleCrashed) {
+                console(e.message.toString())
+                e.reason.printStackTrace(writer)
+            } else {
+                e.printStackTrace(writer)
+            }
+            writer.flush()
+        } else {
+            if (e is UserError || e is IOException) console(e.message.toString())
+            else console(
+                "Lexurgy couldn't apply the changes because of an unexpected error. " +
+                        "Rerun with developer mode turned on (-d) and submit a bug report " +
+                        "at https://github.com/def-gthill/lexurgy/issues with the output attached."
+            )
+        }
+        throw ProgramResult(1)
+    }
+}
 
 class Lexurgy : CliktCommand() {
     override fun run() = Unit
@@ -88,7 +113,7 @@ class SC : CliktCommand(
 
     @ExperimentalTime
     override fun run() {
-        try {
+        runErrorProne(developer) {
             changeFiles(
                 changes,
                 words,
@@ -104,30 +129,28 @@ class SC : CliktCommand(
                 compareStages = compareStages,
                 compareVersions = compareVersions && romanize
             )
-        } catch (e: Exception) {
-            val writer = PrintWriter(ConsoleWriter)
-            if (developer) {
-                if (e is LscRuleCrashed) {
-                    console(e.message.toString())
-                    e.reason.printStackTrace(writer)
-                } else {
-                    e.printStackTrace(writer)
-                }
-                writer.flush()
-            } else {
-                if (e is UserError || e is IOException) console(e.message.toString())
-                else console(
-                    "Lexurgy couldn't apply the changes because of an unexpected error. " +
-                            "Rerun with developer mode turned on (-d) and submit a bug report " +
-                            "at https://github.com/def-gthill/lexurgy/issues with the output attached."
-                )
-            }
-            throw ProgramResult(1)
         }
     }
 }
 
-val lexurgyCommand = Lexurgy().subcommands(SC())
+class Server : CliktCommand(
+    help = "Applies sound changes from CHANGES (a .lsc file) to the words in stdin and outputs to stdout. " +
+            "To apply sound changes, input a " +
+            "{\"type\": \"changes\", \"words\": [\"<WORD 1>\", \"<WORD 2>\", ...]} " +
+            "request. " +
+            "See documentation for full overview."
+) {
+    val changes by argument().path(mustBeReadable = true)
+
+    @ExperimentalTime
+    override fun run() {
+        runErrorProne(true) {
+            runServer(changes)
+        }
+    }
+}
+
+val lexurgyCommand = Lexurgy().subcommands(SC(), Server())
 
 fun main(args: Array<String>) {
     val realArgs = getArgs(args)
