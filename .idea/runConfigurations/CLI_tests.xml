@@ -10,9 +10,11 @@
       </option>
       <option name="taskNames">
         <list>
-          <option value="jvmTest" />
+          <option value="test" />
           <option value="--tests" />
-          <option value="TestCLI" />
+          <option value="TestSCModeCLI" />
+          <option value="--tests" />
+          <option value="TestServerModeCLI" />
           <option value="--tests" />
           <option value="TestSoundChangerWithFiles" />
           <option value="--tests" />
