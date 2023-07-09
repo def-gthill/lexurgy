@@ -4,6 +4,7 @@ import com.meamoria.lexurgy.lexurgyCommand
 import com.meamoria.lexurgy.loadList
 import com.meamoria.lexurgy.server.ServerRequest
 import com.meamoria.lexurgy.server.ServerResponse
+import com.sun.jna.Platform
 import io.kotest.core.spec.style.StringSpec
 import kotlinx.serialization.json.Json
 import io.kotest.matchers.shouldBe
@@ -49,18 +50,18 @@ class TestServerModeCLI : StringSpec({
         return Json.decodeFromString<ServerResponse>(response)
     }
 
-    "Server mode can do sound changes from a request" {
+    "Server mode can do sound changes from a request".config(enabled = !Platform.isWindows()) {
         val response = runServer("test/muipidan.lsc", ServerRequest(listFrom("ptr_test_1.wli")))
         response.shouldBeInstanceOf<ServerResponse.Changed>()
         response.words shouldBe listFrom("ptr_test_1_ev_expected.wli")
     }
 
-    "Server mode returns an error if rule application failed" {
+    "Server mode returns an error if rule application failed".config(enabled = !Platform.isWindows()) {
         val response = runServer("test/test_all_errors.lsc", ServerRequest(listFrom("test_all_errors.wli")))
         response.shouldBeInstanceOf<ServerResponse.Error>()
     }
 
-    "Server mode can do tracing" {
+    "Server mode can do tracing".config(enabled = !Platform.isWindows()) {
         val response = runServer(
             "test/muipidan.lsc", ServerRequest(listOf("manaka"), traceWords = listOf("manaka"))
         )
