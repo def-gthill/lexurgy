@@ -29,7 +29,7 @@ class SoundChangesFileLoader {
                     continue
                 }
                 val includedPath = match.groupValues[1]
-                yieldAll(load(path.parent.resolve(includedPath)))
+                yieldAll(load(path.toAbsolutePath().parent.resolve(includedPath)))
             }
         }
     }
