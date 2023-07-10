@@ -2,6 +2,9 @@ package com.meamoria.lexurgy.sc
 
 import com.meamoria.lexurgy.*
 import com.meamoria.lexurgy.word.Phrase
+import java.util.concurrent.Callable
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.ForkJoinPool
 import kotlin.streams.toList
 
 class SoundChanger(
@@ -59,6 +62,7 @@ class SoundChanger(
         romanize: Boolean = true,
         debug: (String) -> Unit = ::println,
         trace: (String, String, String) -> Unit = { _, _, _ -> },
+        timeoutSeconds: Double? = null,
     ): List<String> = changeWithIntermediates(
         words,
         startAt = startAt,
@@ -67,6 +71,7 @@ class SoundChanger(
         romanize = romanize,
         debug = debug,
         trace = trace,
+        timeoutSeconds = timeoutSeconds,
     ).getValue(null)
 
     /**
@@ -112,6 +117,7 @@ class SoundChanger(
         romanize: Boolean = true,
         debug: (String) -> Unit = ::println,
         trace: (String, String, String) -> Unit = { _, _, _ -> },
+        timeoutSeconds: Double? = null,
     ): Map<String?, List<String>> {
         val fullResult = changeWithIntermediatesAndIndividualErrors(
             words = words,
@@ -121,6 +127,7 @@ class SoundChanger(
             romanize = romanize,
             debug = debug,
             trace = trace,
+            timeoutSeconds = timeoutSeconds,
         )
         return fullResult.mapValues { (_, outputWords) ->
             outputWords.map { it.getOrThrow() }
@@ -142,7 +149,10 @@ class SoundChanger(
         romanize: Boolean = true,
         debug: (String) -> Unit = ::println,
         trace: (String, String, String) -> Unit = { _, _, _ -> },
+        timeoutSeconds: Double? = null,
     ): Map<String?, List<Result<String>>> {
+        val executor = ForkJoinPool()
+
         val tracer = words.withIndex()
             .filter { it.value in debugWords }
             .associate { it.index to it.value }
@@ -175,7 +185,7 @@ class SoundChanger(
                     }
                     val rom = anchoredStep.romanizer
                     result[rom.name] = applyRule(
-                        maybeReplace(rom), words, curPhrases, tracer
+                        maybeReplace(rom), words, curPhrases, tracer, executor
                     ).map { res -> res.map { it.string } }
                 }
 
@@ -184,7 +194,7 @@ class SoundChanger(
                         return
                     }
                     curPhrases = applyRule(
-                        anchoredStep.cleanupRule, words, curPhrases, tracer
+                        anchoredStep.cleanupRule, words, curPhrases, tracer, executor
                     )
                 }
 
@@ -250,7 +260,7 @@ class SoundChanger(
             if (started) {
                 if (rule != null && (romanize || rule.ruleType != RuleType.ROMANIZER)) {
                     curPhrases = applyRule(
-                        rule, words, curPhrases, tracer
+                        rule, words, curPhrases, tracer, executor
                     )
                 }
             }
@@ -342,19 +352,23 @@ class SoundChanger(
         origPhrases: List<String>,
         curPhrases: List<Result<Phrase>>,
         tracer: Tracer,
+        executor: ExecutorService,
     ): List<Result<Phrase>> =
-        curPhrases.fastZipMap(origPhrases) { curResult, phrase ->
-            curResult.mapCatching { curPhrase ->
-                try {
-                    rule(curPhrase).removeBoundingBreaks()
-                } catch (e: Exception) {
-                    if (e is UserError) throw LscRuleNotApplicable(e, rule.name, phrase, curPhrase.string)
-                    else throw LscRuleCrashed(e, rule.name, phrase, curPhrase.string)
+        executor.submit(Callable {
+            val foo = curPhrases.zip(origPhrases).parallelStream().map {
+                it.first.mapCatching { curPhrase ->
+                    try {
+                        rule(curPhrase).removeBoundingBreaks()
+                    } catch (e: Exception) {
+                        if (e is UserError) throw LscRuleNotApplicable(e, rule.name, it.second, curPhrase.string)
+                        else throw LscRuleCrashed(e, rule.name, it.second, curPhrase.string)
+                    }
                 }
+            }.toList().also { newPhrases ->
+                tracer(rule.name, curPhrases, newPhrases)
             }
-        }.also { newPhrases ->
-            tracer(rule.name, curPhrases, newPhrases)
-        }
+            foo
+        }).get()
 
     data class RuleWithAnchoredSteps(
         val rule: NamedRule?,
@@ -407,9 +421,6 @@ class SoundChanger(
 
 internal fun Iterable<String>.maxLength(): Int = maxOfOrNull { it.lengthCombining() } ?: 0
 
-fun <T, U, R> Iterable<T>.fastZipMap(other: Iterable<U>, function: (T, U) -> R): List<R> =
-    zip(other).parallelStream().map { function(it.first, it.second) }.toList()
-
 class LscRuleNotApplicable(
     val reason: UserError,
     val rule: String,
@@ -433,3 +444,6 @@ class LscRuleCrashed(
 
 class LscRuleNotFound(val ruleName: String, val attemptedAction: String) :
     LscUserError("Can't $attemptedAction rule $ruleName; there is no rule with that name")
+
+
+class RunTimedOut(val reason: Exception) : Exception("Run timed out: $reason")
