@@ -58,7 +58,7 @@ class SoundChanger(
         debugWords: List<String> = emptyList(),
         romanize: Boolean = true,
         debug: (String) -> Unit = ::println,
-        trace: (String, String, String) -> Unit = { _, _, _ -> },
+        trace: (TraceInfo) -> Unit = { },
     ): List<String> = changeWithIntermediates(
         words,
         startAt = startAt,
@@ -83,7 +83,7 @@ class SoundChanger(
         debugWords: List<String> = emptyList(),
         romanize: Boolean = true,
         debug: (String) -> Unit = ::println,
-        trace: (String, String, String) -> Unit = { _, _, _ -> },
+        trace: (TraceInfo) -> Unit = { },
     ): List<Result<String>> = changeWithIntermediatesAndIndividualErrors(
         words,
         startAt = startAt,
@@ -111,7 +111,7 @@ class SoundChanger(
         debugWords: List<String> = emptyList(),
         romanize: Boolean = true,
         debug: (String) -> Unit = ::println,
-        trace: (String, String, String) -> Unit = { _, _, _ -> },
+        trace: (TraceInfo) -> Unit = { },
     ): Map<String?, List<String>> {
         val fullResult = changeWithIntermediatesAndIndividualErrors(
             words = words,
@@ -141,7 +141,7 @@ class SoundChanger(
         debugWords: List<String> = emptyList(),
         romanize: Boolean = true,
         debug: (String) -> Unit = ::println,
-        trace: (String, String, String) -> Unit = { _, _, _ -> },
+        trace: (TraceInfo) -> Unit = { },
     ): Map<String?, List<Result<String>>> {
         val tracer = words.withIndex()
             .filter { it.value in debugWords }
@@ -291,7 +291,7 @@ class SoundChanger(
 
     private class Tracer(
         val debug: (String) -> Unit,
-        val tracer: (String, String, String) -> Unit,
+        val tracer: (TraceInfo) -> Unit,
         val indexToDebugWords: Map<Int, String>,
     ) {
         init {
@@ -308,7 +308,14 @@ class SoundChanger(
             for (i in indexToDebugWords.keys) {
                 if (newPhrases[i] != curPhrases[i]) {
                     debug("Applied ${name}${appliedTo(i)}: ${curPhrases[i].string} -> ${newPhrases[i].string}")
-                    tracer(indexToDebugWords[i]!!, name, newPhrases[i].string)
+                    tracer(
+                        TraceInfo(
+                            indexToDebugWords[i]!!,
+                            name,
+                            curPhrases[i].string,
+                            newPhrases[i].string,
+                        )
+                    )
                 }
             }
         }
@@ -323,6 +330,13 @@ class SoundChanger(
                 ""
             }
     }
+
+    data class TraceInfo(
+        val ruleName: String,
+        val originalWord: String,
+        val wordBeforeChange: String,
+        val wordAfterChange: String,
+    )
 
     private fun applySyllables(
         declarations: Declarations,
