@@ -1,7 +1,7 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Debug Meamoria" type="JetRunConfigurationType">
-    <option name="MAIN_CLASS_NAME" value="com.meamoria.lexurgy.MainJvmKt" />
-    <module name="lexurgy.jvmMain" />
+    <option name="MAIN_CLASS_NAME" value="com.meamoria.lexurgy.MainKt" />
+    <module name="lexurgy.main" />
     <option name="PROGRAM_PARAMETERS" value="sc Caidoris/caidorian.lsc Caidoris/pnw_test.wli" />
     <shortenClasspath name="NONE" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/../Meamoria" />
