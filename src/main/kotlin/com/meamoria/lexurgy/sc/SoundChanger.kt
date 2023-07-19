@@ -24,21 +24,20 @@ class SoundChanger(
      * The list of rule names that will be used in any tracing
      * output, in the order that the rules get applied.
      */
-    val ruleNames: List<String>
-        get() {
-            return rules.flatMap {
-                val ruleName = it.rule?.name
-                val anchoredStepNames = it.anchoredSteps.mapNotNull { step ->
-                    when (step) {
-                        is IntermediateRomanizerStep -> step.romanizer.name
-                        is CleanupStep -> step.cleanupRule.name
-                        is SyllabificationStep -> "syllables"
-                        else -> null
-                    }
+    val ruleNames: List<String> by lazy {
+        rules.flatMap {
+            val ruleName = it.rule?.name
+            val anchoredStepNames = it.anchoredSteps.mapNotNull { step ->
+                when (step) {
+                    is IntermediateRomanizerStep -> step.romanizer.name
+                    is CleanupStep -> step.cleanupRule.name
+                    is SyllabificationStep -> "syllables"
+                    else -> null
                 }
-                anchoredStepNames + listOfNotNull(ruleName)
             }
+            anchoredStepNames + listOfNotNull(ruleName)
         }
+    }
 
     operator fun invoke(word: String): String = change(listOf(word)).single()
 
@@ -61,7 +60,7 @@ class SoundChanger(
         debugWords: List<String> = emptyList(),
         romanize: Boolean = true,
         debug: (String) -> Unit = ::println,
-        trace: (String, String, String) -> Unit = { _, _, _ -> },
+        trace: (TraceInfo) -> Unit = { },
         timeoutSeconds: Double? = null,
     ): List<String> = changeWithIntermediates(
         words,
@@ -88,7 +87,7 @@ class SoundChanger(
         debugWords: List<String> = emptyList(),
         romanize: Boolean = true,
         debug: (String) -> Unit = ::println,
-        trace: (String, String, String) -> Unit = { _, _, _ -> },
+        trace: (TraceInfo) -> Unit = { },
     ): List<Result<String>> = changeWithIntermediatesAndIndividualErrors(
         words,
         startAt = startAt,
@@ -116,7 +115,7 @@ class SoundChanger(
         debugWords: List<String> = emptyList(),
         romanize: Boolean = true,
         debug: (String) -> Unit = ::println,
-        trace: (String, String, String) -> Unit = { _, _, _ -> },
+        trace: (TraceInfo) -> Unit = { },
         timeoutSeconds: Double? = null,
     ): Map<String?, List<String>> {
         val fullResult = changeWithIntermediatesAndIndividualErrors(
@@ -148,7 +147,7 @@ class SoundChanger(
         debugWords: List<String> = emptyList(),
         romanize: Boolean = true,
         debug: (String) -> Unit = ::println,
-        trace: (String, String, String) -> Unit = { _, _, _ -> },
+        trace: (TraceInfo) -> Unit = { },
         timeoutSeconds: Double? = null,
     ): Map<String?, List<Result<String>>> {
         val executor = ForkJoinPool()
@@ -301,7 +300,7 @@ class SoundChanger(
 
     private class Tracer(
         val debug: (String) -> Unit,
-        val tracer: (String, String, String) -> Unit,
+        val tracer: (TraceInfo) -> Unit,
         val indexToDebugWords: Map<Int, String>,
     ) {
         init {
@@ -318,7 +317,14 @@ class SoundChanger(
             for (i in indexToDebugWords.keys) {
                 if (newPhrases[i] != curPhrases[i]) {
                     debug("Applied ${name}${appliedTo(i)}: ${curPhrases[i].string} -> ${newPhrases[i].string}")
-                    tracer(indexToDebugWords[i]!!, name, newPhrases[i].string)
+                    tracer(
+                        TraceInfo(
+                            indexToDebugWords[i]!!,
+                            name,
+                            curPhrases[i].string,
+                            newPhrases[i].string,
+                        )
+                    )
                 }
             }
         }
@@ -333,6 +339,13 @@ class SoundChanger(
                 ""
             }
     }
+
+    data class TraceInfo(
+        val ruleName: String,
+        val originalWord: String,
+        val wordBeforeChange: String,
+        val wordAfterChange: String,
+    )
 
     private fun applySyllables(
         declarations: Declarations,
