@@ -309,8 +309,8 @@ class SoundChanger(
                     debug("Applied ${name}${appliedTo(i)}: ${curPhrases[i].string} -> ${newPhrases[i].string}")
                     tracer(
                         TraceInfo(
-                            indexToDebugWords[i]!!,
                             name,
+                            indexToDebugWords[i]!!,
                             curPhrases[i].string,
                             newPhrases[i].string,
                         )
