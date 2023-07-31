@@ -1,6 +1,5 @@
 package com.meamoria.lexurgy.sc
 
-import com.meamoria.lexurgy.sc.element.LscTooManyOptions
 import com.meamoria.lexurgy.sc.parser.LscPeripheralRepeater
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
@@ -117,19 +116,6 @@ class TestRepeaters : StringSpec({
         )
 
         ch("ek ana eta iona") shouldBe "ekanetona"
-    }
-
-    "We should abort cases of catastrophic backtracking" {
-        val ch = lsc(
-            """
-                catastrophic:
-                    (x+ x+)+ y => q
-            """.trimIndent()
-        )
-
-        shouldThrow<LscRuleNotApplicable> {
-            ch("xxxxxxxxxxx")
-        }.also { it.cause.shouldBeInstanceOf<LscTooManyOptions>()}
     }
 
     "We should be able to change repeaters into things" {

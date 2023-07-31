@@ -10,7 +10,7 @@
       </option>
       <option name="taskNames">
         <list>
-          <option value="jvmTest" />
+          <option value="test" />
           <option value="--tests" />
           <option value="TestRepeaters" />
         </list>
@@ -20,6 +20,7 @@
     <ExternalSystemDebugServerProcess>true</ExternalSystemDebugServerProcess>
     <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
     <DebugAllEnabled>false</DebugAllEnabled>
+    <ForceTestExec>false</ForceTestExec>
     <method v="2" />
   </configuration>
 </component>
