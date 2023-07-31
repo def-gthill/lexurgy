@@ -324,14 +324,19 @@ class PropagateBlock(
     override fun invoke(phrase: Phrase): Phrase? {
         var curPhrase = phrase
         val steps = mutableSetOf(curPhrase)
+
+        fun diverged(): LscDivergingPropagation =
+            LscDivergingPropagation(this, phrase.string, steps.map { it.string }.takeLast(5))
+
         for (i in 1..maxPropagateSteps) {
             val newPhrase = subrule(curPhrase) ?: return if (i == 1) null else curPhrase
             if (newPhrase == curPhrase) return newPhrase
-            if (newPhrase in steps) throw LscDivergingPropagation(this, phrase.string, steps.map { it.string })
+            if (newPhrase in steps) throw diverged()
+            if (Thread.currentThread().isInterrupted) throw diverged()
             steps += newPhrase
             curPhrase = newPhrase
         }
-        throw LscDivergingPropagation(this, phrase.string, steps.map { it.string }.takeLast(5))
+        throw diverged()
     }
 }
 
