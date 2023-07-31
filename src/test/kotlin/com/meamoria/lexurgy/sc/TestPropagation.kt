@@ -9,7 +9,7 @@ import io.kotest.matchers.types.shouldBeInstanceOf
 class TestPropagation : StringSpec({
     val lsc = SoundChanger.Companion::fromLsc
 
-    "A propagating rule should be applied repeatedly until the word stabilizes" {
+    "A propagating rule is applied repeatedly until the word stabilizes" {
         val ch1 = lsc(
             """
                 Feature Height(low, high)
@@ -33,8 +33,10 @@ class TestPropagation : StringSpec({
 
         ch1("enotahu") shouldBe "ønøtøhy"
         ch1("ypatoka") shouldBe "ipeteke"
+    }
 
-        val ch2 = lsc(
+    "If a propagating rule is going in circles, it errors out" {
+        val ch = lsc(
             """
                 bouncing propagate:
                 a => e / b _
@@ -42,8 +44,26 @@ class TestPropagation : StringSpec({
             """.trimIndent()
         )
 
-        val ex = shouldThrow<LscRuleNotApplicable> { ch2("bed") }
+        val ex = shouldThrow<LscRuleNotApplicable> { ch("bed") }
         ex.cause.shouldBeInstanceOf<LscDivergingPropagation>()
+    }
+
+    "A propagating rule can run a large number of iterations if they're fast enough" {
+        val ch = lsc(
+            """
+                count-binary propagate:
+                    \0 => \1 / _ ${'$'}
+                    \1 => '\0 / _ ${'$'}
+                    Then propagate:
+                    \0' => \1
+                    \1' => '\0
+                    ' => \1 / ${'$'} _
+                    Then:
+                    \10000000000 => madeit
+            """.trimIndent()
+        )
+
+        ch("1") shouldBe "madeit"
     }
 
     "We should be able to propagate parts of a sequential block" {

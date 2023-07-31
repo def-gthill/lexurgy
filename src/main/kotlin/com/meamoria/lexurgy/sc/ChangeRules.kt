@@ -319,8 +319,6 @@ class WithinWordBlock(
 class PropagateBlock(
     val subrule: ChangeRule
 ) : ChangeRule {
-    private val maxPropagateSteps = 100
-
     override fun invoke(phrase: Phrase): Phrase? {
         var curPhrase = phrase
         val steps = mutableSetOf(curPhrase)
@@ -328,15 +326,17 @@ class PropagateBlock(
         fun diverged(): LscDivergingPropagation =
             LscDivergingPropagation(this, phrase.string, steps.map { it.string }.takeLast(5))
 
-        for (i in 1..maxPropagateSteps) {
-            val newPhrase = subrule(curPhrase) ?: return if (i == 1) null else curPhrase
+        var thisIsTheFirstStep = true
+
+        while (true) {
+            val newPhrase = subrule(curPhrase) ?: return if (thisIsTheFirstStep) null else curPhrase
             if (newPhrase == curPhrase) return newPhrase
             if (newPhrase in steps) throw diverged()
             if (Thread.currentThread().isInterrupted) throw diverged()
             steps += newPhrase
             curPhrase = newPhrase
+            thisIsTheFirstStep = false
         }
-        throw diverged()
     }
 }
 
@@ -385,6 +385,6 @@ class RuleExpression(
 
 class LscDivergingPropagation(val rule: ChangeRule, val initialWord: String, val wordsAtAbort: List<String>) :
     LscUserError(
-        "Propagating rule $rule applied to rule $initialWord appears " +
+        "Propagating rule $rule applied to word $initialWord appears " +
                 "not to settle on a result; the last few versions of the word were ${wordsAtAbort.joinToString(" -> ")}"
     )
