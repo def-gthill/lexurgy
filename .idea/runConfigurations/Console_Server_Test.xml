@@ -1,9 +1,10 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Console Server Test" type="JetRunConfigurationType" folderName="Console Tests">
     <option name="MAIN_CLASS_NAME" value="com.meamoria.lexurgy.MainKt" />
-    <module name="lexurgy.main" />
+    <module name="lexurgy.core.main" />
     <option name="PROGRAM_PARAMETERS" value="server test/nitherwe.lsc" />
     <shortenClasspath name="NONE" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/core" />
     <method v="2">
       <option name="Make" enabled="true" />
     </method>
