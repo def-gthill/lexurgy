@@ -3,6 +3,7 @@
 .gradle
 /build/
 /core/build
+/api/build
 
 # Ignore Gradle GUI config
 gradle-app.setting

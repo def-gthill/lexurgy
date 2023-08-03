@@ -1,2 +1,2 @@
 rootProject.name = "lexurgy"
-include("core")
+include("core", "api")
