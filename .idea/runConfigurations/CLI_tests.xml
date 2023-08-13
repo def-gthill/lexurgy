@@ -1,8 +1,8 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="CLI tests" type="GradleRunConfiguration" factoryName="Gradle" folderName="Granular Tests">
+  <configuration default="false" name="CLI Tests" type="GradleRunConfiguration" factoryName="Gradle">
     <ExternalSystemSettings>
       <option name="executionName" />
-      <option name="externalProjectPath" value="$PROJECT_DIR$" />
+      <option name="externalProjectPath" value="$PROJECT_DIR$/cli" />
       <option name="externalSystemIdString" value="GRADLE" />
       <option name="scriptParameters" value="" />
       <option name="taskDescriptions">
@@ -11,14 +11,6 @@
       <option name="taskNames">
         <list>
           <option value="test" />
-          <option value="--tests" />
-          <option value="TestSCModeCLI" />
-          <option value="--tests" />
-          <option value="TestServerModeCLI" />
-          <option value="--tests" />
-          <option value="TestSoundChangerWithFiles" />
-          <option value="--tests" />
-          <option value="TestSoundChangerWithIncludedFiles" />
         </list>
       </option>
       <option name="vmOptions" value="" />

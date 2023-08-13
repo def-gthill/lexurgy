@@ -3,6 +3,7 @@
 .gradle
 /build/
 /core/build
+/cli/build
 /api/build
 
 # Ignore Gradle GUI config
