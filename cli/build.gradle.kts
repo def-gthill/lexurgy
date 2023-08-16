@@ -32,6 +32,7 @@ tasks.test {
 
 application {
     mainClass.set("com.meamoria.lexurgy.cli.MainKt")
+    applicationName = "lexurgy"
 }
 
 dependencies {
