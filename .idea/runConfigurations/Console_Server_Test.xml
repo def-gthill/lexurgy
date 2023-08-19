@@ -4,7 +4,7 @@
     <module name="lexurgy.cli.main" />
     <option name="PROGRAM_PARAMETERS" value="server test/nitherwe.lsc" />
     <shortenClasspath name="NONE" />
-    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/core" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/cli" />
     <method v="2">
       <option name="Make" enabled="true" />
     </method>

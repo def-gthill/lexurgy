@@ -4,7 +4,7 @@
     <module name="lexurgy.cli.main" />
     <option name="PROGRAM_PARAMETERS" value="sc test/syllabian.lsc test/proto-syllabian.wli -m -t karapuna" />
     <shortenClasspath name="NONE" />
-    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/core" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/cli" />
     <method v="2">
       <option name="Make" enabled="true" />
     </method>
