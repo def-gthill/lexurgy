@@ -39,6 +39,10 @@ tasks.compileKotlin {
     }
 }
 
+tasks.test {
+    outputs.upToDateWhen { false }
+}
+
 dependencies {
     implementation("io.ktor:ktor-server-core-jvm:$ktorVersion")
     implementation("io.ktor:ktor-server-netty-jvm:$ktorVersion")
