@@ -1,4 +1,4 @@
-package com.meamoria.lexurgy.services
+package com.meamoria.lexurgy.api
 
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*

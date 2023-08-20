@@ -1,4 +1,4 @@
-package com.meamoria.lexurgy.services
+package com.meamoria.lexurgy.api
 
 import io.ktor.http.*
 import io.ktor.server.application.*

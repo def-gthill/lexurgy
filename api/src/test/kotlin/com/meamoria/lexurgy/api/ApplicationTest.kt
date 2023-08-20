@@ -1,9 +1,7 @@
-package com.meamoria.lexurgy.services
+package com.meamoria.lexurgy.api
 
 import io.ktor.client.request.*
 import io.ktor.http.*
-import io.ktor.server.application.*
-import io.ktor.server.testing.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

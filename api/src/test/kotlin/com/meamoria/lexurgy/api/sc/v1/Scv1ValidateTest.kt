@@ -1,5 +1,7 @@
-package com.meamoria.lexurgy.services
+package com.meamoria.lexurgy.api.sc.v1
 
+import com.meamoria.lexurgy.api.postJson
+import com.meamoria.lexurgy.api.testApi
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import kotlinx.serialization.json.Json

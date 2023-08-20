@@ -1,4 +1,4 @@
-package com.meamoria.lexurgy.services
+package com.meamoria.lexurgy.api.sc.v1
 
 import com.meamoria.lexurgy.LscUserError
 import com.meamoria.lexurgy.sc.LscInvalidRuleExpression

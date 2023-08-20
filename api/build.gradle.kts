@@ -13,7 +13,7 @@ plugins {
 group = "com.meamoria"
 version = "0.0.1"
 application {
-    mainClass.set("com.meamoria.lexurgy.services.ApplicationKt")
+    mainClass.set("com.meamoria.lexurgy.api.ApplicationKt")
 
     val isDevelopment: Boolean = project.ext.has("development")
     applicationDefaultJvmArgs = listOf(

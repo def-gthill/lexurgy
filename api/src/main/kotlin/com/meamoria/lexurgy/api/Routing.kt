@@ -1,5 +1,6 @@
-package com.meamoria.lexurgy.services
+package com.meamoria.lexurgy.api
 
+import com.meamoria.lexurgy.api.sc.v1.*
 import com.meamoria.lexurgy.sc.SoundChanger
 import io.ktor.http.*
 import io.ktor.server.routing.*

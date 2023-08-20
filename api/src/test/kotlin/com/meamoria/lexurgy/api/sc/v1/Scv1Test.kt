@@ -1,5 +1,9 @@
-package com.meamoria.lexurgy.services
+package com.meamoria.lexurgy.api.sc.v1
 
+import com.meamoria.lexurgy.api.assertOkResponseIsJson
+import com.meamoria.lexurgy.api.postJson
+import com.meamoria.lexurgy.api.testApi
+import com.meamoria.lexurgy.api.testApiWithKey
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
