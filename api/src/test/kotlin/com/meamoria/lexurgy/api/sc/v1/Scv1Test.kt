@@ -12,6 +12,7 @@ import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
 
+@Suppress("SameParameterValue")
 class Scv1Test {
     @Test
     fun canApplyOneSoundChange() = testApi {
