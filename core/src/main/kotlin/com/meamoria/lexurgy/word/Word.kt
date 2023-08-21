@@ -136,6 +136,10 @@ interface Word {
     }
 
     companion object {
+        operator fun invoke(string: String): StandardWord {
+            return StandardWord.fromString(string)
+        }
+
         fun join(words: List<Word>): Word =
             if (words.isEmpty()) StandardWord.EMPTY
             else {
