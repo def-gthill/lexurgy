@@ -1,8 +1,8 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Core tests" type="GradleRunConfiguration" factoryName="Gradle" folderName="Granular Tests">
+  <configuration default="false" name="Core Tests" type="GradleRunConfiguration" factoryName="Gradle">
     <ExternalSystemSettings>
       <option name="executionName" />
-      <option name="externalProjectPath" value="$PROJECT_DIR$" />
+      <option name="externalProjectPath" value="$PROJECT_DIR$/core" />
       <option name="externalSystemIdString" value="GRADLE" />
       <option name="scriptParameters" value="" />
       <option name="taskDescriptions">
@@ -10,9 +10,7 @@
       </option>
       <option name="taskNames">
         <list>
-          <option value="jvmTest" />
-          <option value="--tests" />
-          <option value="TestCore" />
+          <option value="test" />
         </list>
       </option>
       <option name="vmOptions" value="" />
@@ -20,6 +18,7 @@
     <ExternalSystemDebugServerProcess>true</ExternalSystemDebugServerProcess>
     <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
     <DebugAllEnabled>false</DebugAllEnabled>
+    <ForceTestExec>false</ForceTestExec>
     <method v="2" />
   </configuration>
 </component>

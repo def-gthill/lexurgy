@@ -1,9 +1,10 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Multiple Trace Test" type="JetRunConfigurationType">
-    <option name="MAIN_CLASS_NAME" value="com.meamoria.lexurgy.MainKt" />
-    <module name="lexurgy.main" />
+    <option name="MAIN_CLASS_NAME" value="com.meamoria.lexurgy.cli.MainKt" />
+    <module name="lexurgy.cli.main" />
     <option name="PROGRAM_PARAMETERS" value="sc test/nitherwe.lsc test/pn_finite_verbs.wli -t yuldi -t noyei" />
     <shortenClasspath name="NONE" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/cli" />
     <method v="2">
       <option name="Make" enabled="true" />
     </method>

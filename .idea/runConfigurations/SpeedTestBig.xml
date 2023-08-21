@@ -1,10 +1,11 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="SpeedTestBig" type="JetRunConfigurationType">
-    <option name="MAIN_CLASS_NAME" value="com.meamoria.lexurgy.MainKt" />
-    <module name="lexurgy.main" />
+    <option name="MAIN_CLASS_NAME" value="com.meamoria.lexurgy.cli.MainKt" />
+    <module name="lexurgy.cli.main" />
     <option name="PROGRAM_PARAMETERS" value="sc test/kharulian.lsc test/pk_full_conjugated_verbs.wli" />
     <shortenClasspath name="NONE" />
     <option name="VM_PARAMETERS" value="-XX:+FlightRecorder" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/cli" />
     <method v="2">
       <option name="Make" enabled="true" />
     </method>

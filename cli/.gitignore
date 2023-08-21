@@ -1,0 +1,8 @@
+/test/*_ev.*
+/test/*_trace.*
+/test/*_before*
+/test/*/*
+!/test/sound_changes/*
+/.idea/artifacts/
+/.idea/compiler.xml
+/.idea/misc.xml
