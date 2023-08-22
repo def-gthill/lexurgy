@@ -1,10 +1,7 @@
 package com.meamoria.lexurgy.api
 
+import com.meamoria.lexurgy.api.inflect.v1.runInflectV1
 import com.meamoria.lexurgy.api.sc.v1.*
-import com.meamoria.lexurgy.api.inflect.v1.Request as InflectV1Request
-import com.meamoria.lexurgy.api.inflect.v1.runInflect as runInflectV1
-import com.meamoria.lexurgy.api.inflect.v1.SuccessResponse as InflectV1SuccessResponse
-import com.meamoria.lexurgy.api.inflect.v1.ErrorResponse as InflectV1ErrorResponse
 import com.meamoria.lexurgy.sc.SoundChanger
 import io.ktor.http.*
 import io.ktor.server.routing.*
@@ -41,14 +38,7 @@ fun Application.configureRouting() {
             }
         }
         post("/inflectv1") {
-            val request = call.receive<InflectV1Request>()
-            when (val response = runInflectV1(request)) {
-                is InflectV1SuccessResponse -> call.respond(response)
-                is InflectV1ErrorResponse -> {
-                    call.response.status(HttpStatusCode.BadRequest)
-                    call.respond(response)
-                }
-            }
+            call.runInflectV1()
         }
     }
 }
