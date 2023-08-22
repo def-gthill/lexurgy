@@ -3,35 +3,35 @@ package com.meamoria.lexurgy.api.sc.v1
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-sealed interface Scv1ValidateResponse
+sealed interface ValidateResponse
 
 @Serializable
-data class Scv1ValidateSuccessResponse(
+data class ValidateSuccessResponse(
     val ruleNames: List<String>
-) : Scv1ValidateResponse
+) : ValidateResponse
 
 @Serializable
-sealed interface Scv1ValidateErrorResponse : Scv1ValidateResponse
+sealed interface ValidateErrorResponse : ValidateResponse
 
 @Serializable
 @SerialName("parseError")
-data class Scv1ValidateParseErrorResponse(
+data class ValidateParseErrorResponse(
     val message: String,
     val lineNumber: Int,
     val columnNumber: Int,
-) : Scv1ValidateErrorResponse
+) : ValidateErrorResponse
 
 @Serializable
 @SerialName("invalidExpression")
-data class Scv1ValidateInvalidExpressionResponse(
+data class ValidateInvalidExpressionResponse(
     val message: String?,
     val rule: String,
     val expression: String,
     val expressionNumber: Int,
-) : Scv1ValidateErrorResponse
+) : ValidateErrorResponse
 
 @Serializable
 @SerialName("analysisError")
-data class Scv1ValidateAnalysisErrorResponse(
+data class ValidateAnalysisErrorResponse(
     val message: String
-) : Scv1ValidateErrorResponse
+) : ValidateErrorResponse

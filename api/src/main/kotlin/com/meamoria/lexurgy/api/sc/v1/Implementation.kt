@@ -6,21 +6,21 @@ import com.meamoria.lexurgy.sc.LscNotParsable
 import com.meamoria.lexurgy.sc.LscRuleNotApplicable
 import com.meamoria.lexurgy.sc.SoundChanger
 
-fun runScv1(request: Scv1Request): Scv1Response {
+fun runScv1(request: Request): Response {
     val soundChanger = try {
         SoundChanger.fromLsc(request.changes)
     } catch (e: LscNotParsable) {
-        return Scv1ParseErrorResponse(e.customMessage, e.line, e.column)
+        return ParseErrorResponse(e.customMessage, e.line, e.column)
     } catch (e: LscInvalidRuleExpression) {
-        return Scv1InvalidExpressionResponse(e.reason.message, e.rule, e.expression, e.expressionNumber)
+        return InvalidExpressionResponse(e.reason.message, e.rule, e.expression, e.expressionNumber)
     } catch (e: LscUserError) {
-        return Scv1AnalysisErrorResponse(e.message ?: "An unknown error occurred")
+        return AnalysisErrorResponse(e.message ?: "An unknown error occurred")
     }
 
     return runScv1Using(soundChanger, request)
 }
 
-private fun runScv1Using(soundChanger: SoundChanger, request: Scv1Request): Scv1Response {
+private fun runScv1Using(soundChanger: SoundChanger, request: Request): Response {
     val traces = mutableMapOf<String, MutableList<TraceStep>>()
 
     fun trace(traceInfo: SoundChanger.TraceInfo) {
@@ -38,7 +38,7 @@ private fun runScv1Using(soundChanger: SoundChanger, request: Scv1Request): Scv1
             trace = ::trace,
             timeoutSeconds = System.getenv("TIMEOUT")?.toDouble() ?: 0.5,
         )
-    return Scv1SuccessResponse(
+    return SuccessResponse(
         ruleNames = soundChanger.ruleNames,
         outputWords = result.outputWords,
         intermediateWords = result.intermediateWords,
@@ -84,16 +84,16 @@ private val ScResult.ruleFailures: List<RuleFailure>
                 }
             }
 
-fun runScv1Validate(request: Scv1ValidateRequest): Scv1ValidateResponse {
+fun runScv1Validate(request: ValidateRequest): ValidateResponse {
     val soundChanger = try {
         SoundChanger.fromLsc(request.changes)
     } catch (e: LscNotParsable) {
-        return Scv1ValidateParseErrorResponse(e.customMessage, e.line, e.column)
+        return ValidateParseErrorResponse(e.customMessage, e.line, e.column)
     } catch (e: LscInvalidRuleExpression) {
-        return Scv1ValidateInvalidExpressionResponse(e.reason.message, e.rule, e.expression, e.expressionNumber)
+        return ValidateInvalidExpressionResponse(e.reason.message, e.rule, e.expression, e.expressionNumber)
     } catch (e: LscUserError) {
-        return Scv1ValidateAnalysisErrorResponse(e.message ?: "An unknown error occurred")
+        return ValidateAnalysisErrorResponse(e.message ?: "An unknown error occurred")
     }
 
-    return Scv1ValidateSuccessResponse(soundChanger.ruleNames)
+    return ValidateSuccessResponse(soundChanger.ruleNames)
 }
