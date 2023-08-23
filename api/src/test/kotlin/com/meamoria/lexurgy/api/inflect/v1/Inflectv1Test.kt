@@ -11,21 +11,42 @@ class Inflectv1Test {
     fun canInflectWithOneForm() = testApi {
         client.postJson(
             "/inflectv1",
-            inflectv1Request(
-                rules = "foo",
+            request(
+                rules = form("foo"),
                 stemsAndCategories = listOf(
                     "bar" to emptyList()
                 )
             )
         ).assertOkResponseIsJson(
-            inflectv1Response(
+            response(
                 listOf("foo")
             )
         )
     }
 
-    private fun inflectv1Request(
-        rules: String,
+    @Test
+    fun canInflectWithCategories() = testApi {
+        client.postJson(
+            "/inflectv1",
+            request(
+                rules = categorySplit(
+                    "present" to form("foo"),
+                    "past" to form("fid"),
+                ),
+                stemsAndCategories = listOf(
+                    "bar" to listOf("past"),
+                    "bar" to listOf("present"),
+                )
+            )
+        ).assertOkResponseIsJson(
+            response(
+                listOf("fid", "foo")
+            )
+        )
+    }
+
+    private fun request(
+        rules: JsonElement,
         stemsAndCategories: List<Pair<String, List<String>>>,
     ): String = buildJsonObject {
         put("rules", rules)
@@ -43,7 +64,27 @@ class Inflectv1Test {
         }
     }.toString()
 
-    private fun inflectv1Response(
+    private fun form(form: String): JsonElement {
+        return buildJsonObject {
+            put("type", "form")
+            put("form", form)
+        }
+    }
+
+    private fun categorySplit(
+        vararg branches: Pair<String, JsonElement>
+    ): JsonElement {
+        return buildJsonObject {
+            put("type", "split")
+            putJsonObject("branches") {
+                for ((category, branch) in branches) {
+                    put(category, branch)
+                }
+            }
+        }
+    }
+
+    private fun response(
         inflectedForms: List<String>
     ): String = buildJsonObject {
         putJsonArray("inflectedForms") {

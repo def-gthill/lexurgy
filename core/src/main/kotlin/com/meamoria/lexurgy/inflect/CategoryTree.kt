@@ -24,6 +24,10 @@ class CategorySplit(
     vararg val branches: Pair<String, CategoryTree>
 ) : CategoryTree {
 
+    constructor(branches: Map<String, CategoryTree>) : this(
+        *branches.entries.map { it.key to it.value }.toTypedArray()
+    )
+
     override fun inflect(stem: Word, categories: Set<String>): Word {
         return branches
             .firstOrNull {it.first in categories }

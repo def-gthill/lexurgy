@@ -1,7 +1,9 @@
 package com.meamoria.lexurgy.api.inflect.v1
 
+import com.meamoria.lexurgy.inflect.CategorySplit
 import com.meamoria.lexurgy.inflect.CategoryTree
 import com.meamoria.lexurgy.inflect.Form
+import com.meamoria.lexurgy.inflect.StemAndCategories
 import com.meamoria.lexurgy.word.Word
 
 fun runInflect(request: Request): Response {
@@ -12,20 +14,27 @@ fun runInflect(request: Request): Response {
     return SuccessResponse(formsToResponse(result))
 }
 
-private fun rulesFromRequest(requestRules: String): CategoryTree {
-    return Form(requestRules)
+private fun rulesFromRequest(requestRules: RequestCategoryTree): CategoryTree {
+    return when (requestRules) {
+        is RequestForm -> Form(requestRules.form)
+        is RequestCategorySplit -> CategorySplit(
+            requestRules.branches.mapValues {
+                rulesFromRequest(it.value)
+            }
+        )
+    }
 }
 
 private fun stemsAndCategoriesFromRequest(
-    requestStemsAndCategories: List<StemAndCategories>
-): Array<Pair<Word, Set<String>>> {
+    requestStemsAndCategories: List<RequestStemAndCategories>
+): Array<StemAndCategories> {
     return requestStemsAndCategories
         .map(::stemAndCategoriesFromRequest)
         .toTypedArray()
 }
 
 private fun stemAndCategoriesFromRequest(
-    requestStemAndCategories: StemAndCategories
+    requestStemAndCategories: RequestStemAndCategories
 ): Pair<Word, Set<String>> {
     val (stem, categories) = requestStemAndCategories
     return Word(stem) to categories.toSet()
