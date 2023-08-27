@@ -3,7 +3,9 @@ package com.meamoria.lexurgy.sc
 import com.meamoria.lexurgy.sc.element.LscInvalidOutputMatrix
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.beInstanceOf
 import io.kotest.matchers.types.shouldBeInstanceOf
 
 @Suppress("unused")
@@ -141,15 +143,15 @@ class TestFeatures : StringSpec({
     "We can alter matrix features with a rule" {
         val ch = lsc(
             """
-               |Feature Voicing(unvcd, vcd)
-               |Feature Manner(stop, nonstop)
-               |Symbol p [unvcd stop]
-               |Symbol b [vcd stop]
-               |Symbol f [unvcd nonstop]
-               |Symbol v [vcd nonstop]
-               |devoice-all:
-               |    [vcd] => [unvcd]
-            """.trimMargin()
+                Feature Voicing(unvcd, vcd)
+                Feature Manner(stop, nonstop)
+                Symbol p [unvcd stop]
+                Symbol b [vcd stop]
+                Symbol f [unvcd nonstop]
+                Symbol v [vcd nonstop]
+                devoice-all:
+                    [vcd] => [unvcd]
+            """.trimIndent()
         )
 
         ch("bivalve") shouldBe "pifalfe"
@@ -165,6 +167,25 @@ class TestFeatures : StringSpec({
         )
 
         ch("tati") shouldBe "tati"
+    }
+
+    "A matrix with multiple values of the same feature triggers an error" {
+        shouldThrow<LscInvalidRuleExpression> {
+            lsc(
+                """
+                Feature Voicing(unvcd, vcd)
+                Feature Manner(stop, nonstop)
+                Symbol p [unvcd stop]
+                Symbol b [vcd stop]
+                Symbol f [unvcd nonstop]
+                Symbol v [vcd nonstop]
+                confused-voicing:
+                    [] => [unvcd vcd]
+            """.trimIndent()
+            )
+        }.also {
+            it.cause should beInstanceOf<RepeatedFeature>()
+        }
     }
 
     "We should be able to name the \"absent\" value of a feature" {

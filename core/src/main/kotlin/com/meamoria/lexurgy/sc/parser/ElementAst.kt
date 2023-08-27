@@ -193,6 +193,7 @@ internal class TransformingElement(
                         matcher(declarations, subElement as ResultElement?, subEmitter)
                     },
                 )
+
             is SequenceEmitter ->
                 SequenceMatcher(
                     declarations.runtime,
@@ -202,6 +203,7 @@ internal class TransformingElement(
                         matcher(declarations, subElement as ResultElement, subEmitter)
                     }
                 )
+
             else -> singleMatcher(
                 declarations,
                 element,
@@ -246,12 +248,14 @@ internal class TransformingElement(
                         emitter(declarations, it)
                     }
                 )
+
             is SequenceEmitter ->
                 SequenceEmitter(
                     emitter.elements.map {
                         emitter(declarations, it)
                     },
                 )
+
             else -> singleEmitter(declarations, emitter)
         }
 
@@ -437,6 +441,7 @@ internal class MatrixElement(
 
     override fun matcher(context: ElementContext, declarations: ParseTimeDeclarations): Matcher =
         with(declarations.runtime) {
+            matrix.checkRepeatedFeatures()
             val split = matrix.splitByLevel()
             val segmentMatcher = split[WordLevel.SEGMENT]?.let {
                 MatrixMatcher(this, it)
@@ -446,20 +451,19 @@ internal class MatrixElement(
             }
             if (syllableMatcher == null) {
                 segmentMatcher ?: MatrixMatcher(this, Matrix.EMPTY)
+            } else if (segmentMatcher == null) {
+                syllableMatcher
             } else {
-                if (segmentMatcher == null) {
-                    syllableMatcher
-                } else {
-                    IntersectionMatcher(
-                        segmentMatcher,
-                        listOf(MatchVerifier(syllableMatcher, false))
-                    )
-                }
+                IntersectionMatcher(
+                    segmentMatcher,
+                    listOf(MatchVerifier(syllableMatcher, false))
+                )
             }
         }
 
     override fun emitter(declarations: ParseTimeDeclarations): Emitter =
         with(declarations.runtime) {
+            matrix.checkRepeatedFeatures()
             val split = matrix.splitByLevel()
             val segmentEmitter = split[WordLevel.SEGMENT]?.let {
                 MatrixEmitter(this, it)
@@ -469,14 +473,12 @@ internal class MatrixElement(
             }
             if (syllableEmitter == null) {
                 segmentEmitter ?: MatrixEmitter(this, Matrix.EMPTY)
+            } else if (segmentEmitter == null) {
+                syllableEmitter
             } else {
-                if (segmentEmitter == null) {
-                    syllableEmitter
-                } else {
-                    MultiConditionalEmitter(
-                        listOf(segmentEmitter, syllableEmitter)
-                    )
-                }
+                MultiConditionalEmitter(
+                    listOf(segmentEmitter, syllableEmitter)
+                )
             }
         }
 }

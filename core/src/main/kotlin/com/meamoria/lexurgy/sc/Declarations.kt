@@ -15,7 +15,7 @@ class Declarations private constructor(
     private val featureNameToFeatureMap = features.associateBy { it.name }
     private val defaults = defaults(features)
     private val absents = absents(features)
-    private val valueToFeature = features.associateByAll { it.allValues }
+    private val valueToFeature = valueToFeature(features)
     private val allFeatureValues = features.flatMap { it.allValues }
     private val valueNameToSimpleValue = allFeatureValues.associate {
         it.name to normalizeAbsent(it)
@@ -265,6 +265,14 @@ class Declarations private constructor(
         return matchingSymbol?.diacritics ?: throw LscInvalidMatrix(matrix)
     }
 
+    /**
+     * Throws a RepeatedFeatures error if this matrix contains
+     * multiple values from the same feature.
+     */
+    fun Matrix.checkRepeatedFeatures() {
+        checkRepeatedFeatures(this, features)
+    }
+
     private fun findSymbolWithDiacriticsMatching(matrix: Matrix): ComplexSymbol? {
         val startingCandidates = if (matrix.hasUndeclaredSymbol()) {
             listOf(complexSymbol(matrix.undeclaredSymbol()))
@@ -484,12 +492,6 @@ class Declarations private constructor(
             return Matrix(valueList.filterNot { it in defaults || it in absents })
         }
 
-        private fun defaults(features: List<Feature>): List<SimpleValue> =
-            features.map { it.default }
-
-        private fun absents(features: List<Feature>): List<SimpleValue> =
-            features.map { it.absent }
-
         private fun checkNonSegmentFeatures(symbols: List<Symbol>, features: List<Feature>) {
             val matrices = symbols.map { it.matrix }
             val valueToFeature = features.associateByAll { it.allValues }
@@ -517,7 +519,7 @@ class Declarations private constructor(
         }
 
         private fun checkRepeatedFeatures(matrix: Matrix, features: List<Feature>) {
-            val valueToFeature = features.associateByAll { it.allValues }
+            val valueToFeature = valueToFeature(features)
             matrix.explicitSimpleValues.checkDuplicates(
                 { listOf(valueToFeature.getValue(it)) },
                 { feature, new, existing -> throw RepeatedFeature(matrix, feature.name, listOf(existing.name, new.name))}
@@ -540,6 +542,15 @@ class Declarations private constructor(
                 }
             }
         }
+
+        private fun defaults(features: List<Feature>): List<SimpleValue> =
+            features.map { it.default }
+
+        private fun absents(features: List<Feature>): List<SimpleValue> =
+            features.map { it.absent }
+
+        private fun valueToFeature(features: List<Feature>): Map<SimpleValue, Feature> =
+            features.associateByAll { it.allValues }
     }
 }
 
