@@ -10,7 +10,7 @@ import io.kotest.matchers.types.shouldBeInstanceOf
 class TestFeatures : StringSpec({
     val lsc = SoundChanger.Companion::fromLsc
 
-    "We should be able to match sounds against a simple feature matrix" {
+    "We can match sounds against a simple feature matrix" {
         val ch = lsc(
             """
                 Feature Manner(stop, nonstop)
@@ -28,7 +28,7 @@ class TestFeatures : StringSpec({
         ch("fniftikuf") shouldBe "fnifiuf"
     }
 
-    "Duplicate feature declarations should produce an LscDuplicateName" {
+    "Duplicate feature declarations produce an LscDuplicateName" {
         shouldThrow<LscDuplicateName> {
             lsc(
                 """
@@ -41,7 +41,7 @@ class TestFeatures : StringSpec({
         }
     }
 
-    "Duplicate feature value declarations should produce an LscDuplicateName" {
+    "Duplicate feature value declarations produce an LscDuplicateName" {
         shouldThrow<LscDuplicateName> {
             lsc(
                 """
@@ -63,7 +63,7 @@ class TestFeatures : StringSpec({
         }
     }
 
-    "References to undefined features should produce an LscUndefinedName" {
+    "References to undefined features produce an LscUndefinedName" {
         shouldThrow<LscUndefinedName> {
             lsc(
                 """
@@ -84,20 +84,9 @@ class TestFeatures : StringSpec({
         }.also {
             it.message shouldBe "The feature value \"+bar\" is not defined"
         }
-//        shouldThrow<LscUndefinedName> {
-//            lsc(
-//                """
-//                    Feature foo(baz, qux)
-//                    silly:
-//                     [bar] => [qux]
-//                """.trimIndent()
-//            )
-//        }.also {
-//            it.message shouldBe "The feature value \"bar\" is not defined"
-//        }
     }
 
-    "Duplicate symbol declarations should produce an LscDuplicateName" {
+    "Duplicate symbol declarations produce an LscDuplicateName" {
         shouldThrow<LscDuplicateName> {
             lsc(
                 """
@@ -122,7 +111,7 @@ class TestFeatures : StringSpec({
         }
     }
 
-    "Multiple symbols with the same feature matrix should produce an LscDuplicateMatrices" {
+    "Multiple symbols with the same feature matrix produce an LscDuplicateMatrices" {
         shouldThrow<LscDuplicateMatrices> {
             lsc(
                 """
@@ -136,7 +125,20 @@ class TestFeatures : StringSpec({
         }
     }
 
-    "We should be able to alter matrix features with a rule" {
+    "A symbol declared with multiple values of the same feature produces a RepeatedFeature error" {
+        shouldThrow<RepeatedFeature> {
+            lsc(
+                """
+                    Feature bad (foo, bar)
+                    Symbol x [foo bar]
+                """.trimIndent()
+            )
+        }.also {
+            it.message shouldBe "The matrix [foo bar] has multiple values of the feature \"bad\" (\"foo\", \"bar\"); remove all but one."
+        }
+    }
+
+    "We can alter matrix features with a rule" {
         val ch = lsc(
             """
                |Feature Voicing(unvcd, vcd)

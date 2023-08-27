@@ -389,11 +389,13 @@ class Declarations private constructor(
             checkDuplicateFeatureValues(features)
 
             checkUndefinedFeaturesInDiacritics(diacritics, features)
+            checkRepeatedFeaturesInDiacritics(diacritics, features)
             val normalizedDiacritics = diacritics.map { it.normalize() }
             checkDuplicateDiacritics(normalizedDiacritics)
             checkDiacriticsWithSameMatrix(normalizedDiacritics)
 
             checkUndefinedFeaturesInSymbols(symbols, features)
+            checkRepeatedFeaturesInSymbols(symbols, features)
             val normalizedSymbols = symbols.map { it.normalize() }
             checkDuplicateSymbols(normalizedSymbols)
             checkSymbolsWithSameMatrix(normalizedSymbols, features)
@@ -424,6 +426,14 @@ class Declarations private constructor(
             checkUndefinedFeatures(diacritics.map { it.matrix }, features)
         }
 
+        private fun checkRepeatedFeaturesInDiacritics(
+            diacritics: List<Diacritic>, features: List<Feature>
+        ) {
+            for (diacritic in diacritics) {
+                checkRepeatedFeatures(diacritic.matrix, features)
+            }
+        }
+
         private fun checkDuplicateDiacritics(diacritics: List<Diacritic>) {
             diacritics.checkDuplicates(
                 { listOf(it.name) },
@@ -442,6 +452,14 @@ class Declarations private constructor(
             symbols: List<Symbol>, features: List<Feature>
         ) {
             checkUndefinedFeatures(symbols.map { it.matrix }, features)
+        }
+
+        private fun checkRepeatedFeaturesInSymbols(
+            symbols: List<Symbol>, features: List<Feature>
+        ) {
+            for (symbol in symbols) {
+                checkRepeatedFeatures(symbol.matrix, features)
+            }
         }
 
         private fun checkDuplicateSymbols(symbols: List<Symbol>) {
@@ -496,6 +514,14 @@ class Declarations private constructor(
                     throw LscUndefinedName("feature value", value.name)
                 }
             }
+        }
+
+        private fun checkRepeatedFeatures(matrix: Matrix, features: List<Feature>) {
+            val valueToFeature = features.associateByAll { it.allValues }
+            matrix.explicitSimpleValues.checkDuplicates(
+                { listOf(valueToFeature.getValue(it)) },
+                { feature, new, existing -> throw RepeatedFeature(matrix, feature.name, listOf(existing.name, new.name))}
+            )
         }
 
         // Checks if any elements of this iterable are mapped to equal

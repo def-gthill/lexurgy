@@ -201,7 +201,7 @@ class TestDiacritics : StringSpec({
         ch("tˈuitui") shouldBe "tˈútú"
     }
 
-    "Duplicate diacritic declarations should produce an LscDuplicateName" {
+    "Duplicate diacritic declarations produce an LscDuplicateName" {
         shouldThrow<LscDuplicateName> {
             lsc(
                 """
@@ -215,7 +215,7 @@ class TestDiacritics : StringSpec({
         }
     }
 
-    "Multiple diacritics with the same feature matrix should produce an LscDuplicateMatrices" {
+    "Multiple diacritics with the same feature matrix produce an LscDuplicateMatrices" {
         shouldThrow<LscDuplicateMatrices> {
             lsc(
                 """
@@ -227,6 +227,19 @@ class TestDiacritics : StringSpec({
         }.also {
             it.message shouldBe
                     "The diacritics ʰ and ʼ both have the matrix [aspir]; add features to make them distinct."
+        }
+    }
+
+    "A diacritic declared with multiple values of the same feature produces a RepeatedFeature error" {
+        shouldThrow<RepeatedFeature> {
+            lsc(
+                """
+                    Feature bad (foo, bar)
+                    Diacritic x [foo bar]
+                """.trimIndent()
+            )
+        }.also {
+            it.message shouldBe "The matrix [foo bar] has multiple values of the feature \"bad\" (\"foo\", \"bar\"); remove all but one."
         }
     }
 

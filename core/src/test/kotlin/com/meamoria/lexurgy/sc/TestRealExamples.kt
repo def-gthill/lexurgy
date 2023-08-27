@@ -1026,7 +1026,7 @@ class TestRealExamples : StringSpec({
             Symbol ɾ [alveolar rhotic]
             Symbol l [alveolar liquid]
             Symbol ɭ [postalveolar liquid]
-            Symbol w [labial velar approximant]
+            Symbol w [velar approximant]
             Symbol j [palatal approximant]
             
             Class consonant {m, n, ŋ, p, t, c, k, ʔ, ɸ, s, ʃ, ç, x, h, ɾ, l, ɭ, w, j}
