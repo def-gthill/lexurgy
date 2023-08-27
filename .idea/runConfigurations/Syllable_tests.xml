@@ -2,7 +2,7 @@
   <configuration default="false" name="Syllable tests" type="GradleRunConfiguration" factoryName="Gradle" folderName="SC Tests">
     <ExternalSystemSettings>
       <option name="executionName" />
-      <option name="externalProjectPath" value="$PROJECT_DIR$" />
+      <option name="externalProjectPath" value="$PROJECT_DIR$/core" />
       <option name="externalSystemIdString" value="GRADLE" />
       <option name="scriptParameters" value="" />
       <option name="taskDescriptions">
@@ -10,7 +10,7 @@
       </option>
       <option name="taskNames">
         <list>
-          <option value="jvmTest" />
+          <option value="test" />
           <option value="--tests" />
           <option value="TestSyllables" />
         </list>

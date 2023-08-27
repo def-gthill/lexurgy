@@ -819,6 +819,24 @@ class TestSyllables : StringSpec({
         ch2("ˈi.tə.ti") shouldBe "ˈit.ti"
     }
 
+    "Syllable-level features persist when coalescing sounds across a syllable break" {
+        val ch = lsc(
+            """
+                Feature +long, (syllable) +stress
+                Diacritic ˈ (before) [+stress]
+                Diacritic ː (floating) [+long]
+                
+                Syllables:
+                 explicit
+                
+                vowel-coalesce:
+                 aa => aː
+            """.trimIndent()
+        )
+
+        ch("a.ˈa.ti") shouldBe "ˈaː.ti"
+    }
+
     "We can explicitly override syllable-level features while manually merging syllables" {
         val ch = lsc(
             """

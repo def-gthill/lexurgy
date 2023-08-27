@@ -217,21 +217,24 @@ class Syllabification(
         if (other.isSyllabified() || other.isEmpty()) other
         else {
             val syllableBreaksToTransfer = syllableBreaks.filter { it !in exceptSyllableBreaks }
-            val iHaveSyllableBreaksAfterOtherEnd =
-                length >= other.length && syllableBreaksToTransfer.any { it >= other.length}
-            val iHaveFinalSyllableBreakBeforeOtherEnd =
-                length < other.length && length in syllableBreaksToTransfer
             val newSyllableBreaks = syllableBreaksToTransfer.filter {
                 it < length && it < other.length
-            } + if (iHaveSyllableBreaksAfterOtherEnd || iHaveFinalSyllableBreakBeforeOtherEnd) {
+            } + if (length in syllableBreaksToTransfer) {
                 listOf(other.length)
             } else emptyList()
             val newSyllableCount =
                 newSyllableBreaks.size + 1 -
-                        (if (newSyllableBreaks.firstOrNull() == 0) 1 else 0)
+                        (if (newSyllableBreaks.firstOrNull() == 0) 1 else 0) -
+                        (if (length in syllableBreaksToTransfer) 1 else 0)
+            val newSyllableModifiers = mutableMapOf<Int, MutableList<Modifier>>()
+            for ((syllableNumber, modifiers) in syllableModifiers) {
+                val newSyllableNumber =
+                    if (syllableNumber >= newSyllableCount) newSyllableCount - 1 else syllableNumber
+                newSyllableModifiers.getOrPut(newSyllableNumber) { mutableListOf() }.addAll(modifiers)
+            }
             StandardWord(other.segments).withSyllabification(
                 newSyllableBreaks,
-                syllableModifiers.filterKeys { it < newSyllableCount }
+                newSyllableModifiers,
             )
         }
 

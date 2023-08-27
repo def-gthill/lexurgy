@@ -1,12 +1,14 @@
 package com.meamoria.lexurgy
 
 import com.meamoria.lexurgy.word.*
-import io.kotest.core.spec.style.StringSpec
+import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 
 @Suppress("unused")
-class TestSyllabifiedWords : StringSpec({
+class TestSyllabifiedWords : FreeSpec({
     fun word(schematic: String): Word = StandardWord.fromSchematic(schematic)
+
+    fun phrase(schematic: String): Phrase = Phrase(word(schematic))
 
     val banana = word("b/a//n/a//n/a")
     val excellent = word("e/k//s/e//ˈ((l/e/n//t/e")
@@ -123,10 +125,10 @@ class TestSyllabifiedWords : StringSpec({
     }
 
     "We should be able to slice syllabified words" {
-        banana.slice(0 .. 2).string shouldBe "ba.n"
-        banana.slice(2 .. 4).string shouldBe ".na.n"
-        excellent.slice(5 .. 6).string shouldBe "ˈen."
-        shine.slice(0 .. 1).string shouldBe "sʰcei`"
+        banana.slice(0..2).string shouldBe "ba.n"
+        banana.slice(2..4).string shouldBe ".na.n"
+        excellent.slice(5..6).string shouldBe "ˈen."
+        shine.slice(0..1).string shouldBe "sʰcei`"
     }
 
     "We should be able to drop segments from syllabified words" {
@@ -143,27 +145,75 @@ class TestSyllabifiedWords : StringSpec({
         excellent.filterSegments { it.string in "kt" }.toString() shouldBe "k//t [1, 7]"
     }
 
-    "We should be able to recover structures in phrases" {
-        val plainWord = Phrase(StandardWord.fromSchematic("b/a/n/a/n/a"))
-        val plainPhrase = Phrase(
-            listOf(
-                StandardWord.fromSchematic("b/a/n/a/n/a"),
-                StandardWord.fromSchematic("sch/ei/n"),
-                StandardWord.fromSchematic("p)ʰ/ou|́/ⁿ(t/ei|̀/t/o")
-            )
-        )
+    "recoverStructure" - {
+        "copies syllable breaks exactly if the words are the same length" {
+            val result = phrase("a//b/a//k/l/a").recoverStructure(phrase("e/v/e/x/l/e"))
+            result.string shouldBe "e.ve.xle"
+        }
 
-        Phrase(banana).recoverStructure(plainWord).string shouldBe "ba.na.na"
-        Phrase(excellent).recoverStructure(plainWord).string shouldBe "ba.na.ˈna."
-        Phrase(shine).recoverStructure(plainWord).string shouldBe "bʰanana`"
-        Phrase(endBreak).recoverStructure(plainWord).string shouldBe "banana."
-        Phrase(listOf(startBreak, banana)).recoverStructure(plainWord).string shouldBe ".ba.na.na."
-        Phrase(endBreak).recoverStructure(
-            plainWord.slice(PhraseIndex(0, 0), PhraseIndex(0, 2))
-        ).string shouldBe "ba."
-        Phrase(banana).recoverStructure(plainPhrase).string shouldBe "ba.na.na schein pʰóuⁿtèito"
-        Phrase(excellent).recoverStructure(plainPhrase).string shouldBe "ba.na.ˈna ˈsch.ein pʰóuⁿtèito"
-        Phrase(shine).recoverStructure(plainPhrase).string shouldBe "bʰanana` sʰchein` pʰʰóuⁿtèito`"
-        Phrase(listOf(startBreak, banana, shine)).recoverStructure(plainPhrase).string shouldBe ".ba.na.na schei.nʰ` pʰʰóuⁿtèito`"
+        "copies syllable breaks by relative position from the start if the new word is longer" {
+            val result = phrase("a//b/a").recoverStructure(phrase("e/v/e/a/i"))
+            result.string shouldBe "e.veai"
+        }
+
+        "copies only syllable breaks within the new word if the new word is shorter" {
+            val result = phrase("a//b/a//k/l/a").recoverStructure(phrase("e/v/e"))
+            result.string shouldBe "e.ve"
+        }
+
+        "preserves an initial syllable break" {
+            val result = phrase("//a").recoverStructure(phrase("e/a/i"))
+            result.string shouldBe ".eai"
+        }
+
+        "preserves a final syllable break if the new word is longer" {
+            val result = phrase("a//").recoverStructure(phrase("e/a/i"))
+            result.string shouldBe "eai."
+        }
+
+        "preserves a final syllable break if the new word is shorter" {
+            val result = phrase("a//b/a//").recoverStructure(phrase("e/a"))
+            result.string shouldBe "e.a."
+        }
+
+        "preserves both initial and final syllable breaks" {
+            val result = phrase("//a//").recoverStructure(phrase("e/a/i"))
+            result.string shouldBe ".eai."
+        }
+
+        "copies syllable-level features exactly if the words are the same length" {
+            val result = phrase("a//ˈ((b/a//k/l/a").recoverStructure(phrase("e/v/e/x/l/e"))
+            result.string shouldBe "e.ˈve.xle"
+        }
+
+        "copies syllable-level features by relative position from the start if the new word is longer" {
+            val result = phrase("a//ˈ((b/a").recoverStructure(phrase("e/v/e/a/i"))
+            result.string shouldBe "e.ˈveai"
+        }
+
+        "coalesces syllable-level features from excess syllables if the new word is shorter" {
+            val result = phrase("a//ˈ((b/a//k/l/a))`").recoverStructure(phrase("e/v/e"))
+            result.string shouldBe "e.ˈve`"
+        }
+
+        "coalesces syllable-level features from excess syllables even if there's a final syllable break" {
+            val result = phrase("a//ˈ((b/a//k/l/a))`//").recoverStructure(phrase("e/v/e"))
+            result.string shouldBe "e.ˈve`."
+        }
+
+        "can be applied to entire phrases" {
+            val plainPhrase = Phrase(
+                listOf(
+                    StandardWord.fromSchematic("b/a/n/a/n/a"),
+                    StandardWord.fromSchematic("sch/ei/n"),
+                    StandardWord.fromSchematic("p)ʰ/ou|́/ⁿ(t/ei|̀/t/o")
+                )
+            )
+
+            Phrase(banana).recoverStructure(plainPhrase).string shouldBe "ba.na.na schein pʰóuⁿtèito"
+            Phrase(excellent).recoverStructure(plainPhrase).string shouldBe "ba.na.ˈna ˈsch.ein pʰóuⁿtèito"
+            Phrase(shine).recoverStructure(plainPhrase).string shouldBe "bʰanana` sʰchein` pʰʰóuⁿtèito`"
+            Phrase(listOf(startBreak, banana, shine)).recoverStructure(plainPhrase).string shouldBe ".ba.na.na schei.nʰ` pʰʰóuⁿtèito`"
+        }
     }
 })
