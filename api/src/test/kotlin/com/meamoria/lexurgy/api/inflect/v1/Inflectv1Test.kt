@@ -3,8 +3,12 @@ package com.meamoria.lexurgy.api.inflect.v1
 import com.meamoria.lexurgy.api.assertOkResponseIsJson
 import com.meamoria.lexurgy.api.postJson
 import com.meamoria.lexurgy.api.testApi
+import io.ktor.client.statement.*
+import io.ktor.http.*
 import kotlinx.serialization.json.*
 import kotlin.test.Test
+import kotlin.test.assertContains
+import kotlin.test.assertEquals
 
 class Inflectv1Test {
     @Test
@@ -43,6 +47,25 @@ class Inflectv1Test {
                 listOf("fid", "foo")
             )
         )
+    }
+
+    @Test
+    fun onUndeclaredCategory_ReturnsBadRequest() = testApi {
+        client.postJson(
+            "/inflectv1",
+            request(
+                rules = categorySplit(
+                    "present" to form("foo"),
+                ),
+                stemsAndCategories = listOf(
+                    "bar" to listOf("past"),
+                )
+            )
+        ).apply {
+            assertEquals(HttpStatusCode.BadRequest, status)
+            val responseJson = Json.parseToJsonElement(bodyAsText()) as JsonObject
+            assertContains(responseJson, "message")
+        }
     }
 
     private fun request(

@@ -1,16 +1,18 @@
 package com.meamoria.lexurgy.api.inflect.v1
 
-import com.meamoria.lexurgy.inflect.CategorySplit
-import com.meamoria.lexurgy.inflect.CategoryTree
-import com.meamoria.lexurgy.inflect.Form
-import com.meamoria.lexurgy.inflect.StemAndCategories
+import com.meamoria.lexurgy.inflect.*
 import com.meamoria.lexurgy.word.Word
 
 fun runInflect(request: Request): Response {
     val rules = rulesFromRequest(request.rules)
-    val result = rules.inflectAll(
-        *stemsAndCategoriesFromRequest(request.stemsAndCategories)
-    )
+    val result = try {
+        rules.inflectAll(
+            *stemsAndCategoriesFromRequest(request.stemsAndCategories)
+        )
+    } catch (e: InflectUserError) {
+        return ErrorResponse(e.message ?: "An unknown error occurred")
+    }
+
     return SuccessResponse(formsToResponse(result))
 }
 

@@ -10,4 +10,4 @@ data class SuccessResponse(
 ) : Response
 
 @Serializable
-data class ErrorResponse(val value: String) : Response
+data class ErrorResponse(val message: String) : Response
