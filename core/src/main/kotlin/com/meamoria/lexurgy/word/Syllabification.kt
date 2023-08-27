@@ -86,7 +86,7 @@ class Syllabification(
             }.map { it - indices.first },
             syllableModifiers.filterKeys {
                 it >= syllableNumberAt(indices.first) &&
-                        it <= syllableNumberAt(indices.last + 1)
+                        it <= syllableNumberAt(indices.last)
             }.mapKeys { it.key - syllableNumberAt(indices.first) },
         )
 

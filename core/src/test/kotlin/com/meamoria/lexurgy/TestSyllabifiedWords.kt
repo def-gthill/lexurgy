@@ -2,6 +2,7 @@ package com.meamoria.lexurgy
 
 import com.meamoria.lexurgy.word.*
 import io.kotest.core.spec.style.FreeSpec
+import io.kotest.matchers.maps.shouldBeEmpty
 import io.kotest.matchers.shouldBe
 
 @Suppress("unused")
@@ -124,11 +125,32 @@ class TestSyllabifiedWords : FreeSpec({
         word("f/o/o").concat(shine) { _, b -> b }.string shouldBe "fʰooscein`"
     }
 
-    "We should be able to slice syllabified words" {
-        banana.slice(0..2).string shouldBe "ba.n"
-        banana.slice(2..4).string shouldBe ".na.n"
-        excellent.slice(5..6).string shouldBe "ˈen."
-        shine.slice(0..1).string shouldBe "sʰcei`"
+    "slice" - {
+        "includes syllable breaks from within the slice" {
+            val result = word("b/a//n/a").slice(0 until 3)
+            result.string shouldBe "ba.n"
+        }
+
+        "yields a word with an initial syllable break if the slice starts at a syllable break" {
+            val result = word("a//n/a").slice(1 until 3)
+            result.string shouldBe ".na"
+        }
+
+        "yields a word with a final syllable break if the slice ends at a syllable break" {
+            val result = word("b/a//n/a").slice(0 until 2)
+            result.string shouldBe "ba."
+        }
+
+        "includes syllable-level features from syllables that overlap the slice" {
+            val result = word("ˈ((b/a//n/a//n/a))`").slice(1 until 5)
+            result.string shouldBe "ˈa.na.n`"
+        }
+
+        "doesn't include syllable-level features from syllables that stop at the boundary of the slice" {
+            val result = word("ˈ((b/a//n/a//n/a))`").slice(2 until 4)
+            result.string shouldBe ".na."
+            result.syllableModifiers.shouldBeEmpty()
+        }
     }
 
     "We should be able to drop segments from syllabified words" {
@@ -200,6 +222,10 @@ class TestSyllabifiedWords : FreeSpec({
             val result = phrase("a//ˈ((b/a//k/l/a))`//").recoverStructure(phrase("e/v/e"))
             result.string shouldBe "e.ˈve`."
         }
+
+//        "doesn't copy syllable-level features from subsequent syllables if the new word is longer" {
+//            val result = phrase("a//ˈ((b/a").recoverStructure(phrase("e/v/e/a/i"))
+//        }
 
         "can be applied to entire phrases" {
             val plainPhrase = Phrase(
