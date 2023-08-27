@@ -34,6 +34,25 @@ fun <T, R, V> Iterable<T>?.zipOrThisNull(
     this?.zip(other, transform) ?: other.map { transform(null, it) }
 
 /**
+ * Returns a Map containing the elements from the given collection
+ * indexed by all of the keys returned from the `keySelector` function
+ * applied to each element.
+ */
+fun <T, K> Iterable<T>.associateByAll(
+    keySelector: (T) -> Iterable<K>
+): Map<K, T> = flatMap { value -> keySelector(value).map { it to value } }.toMap()
+
+/**
+ * Returns a Map containing the elements from the given collection
+ * indexed by the key returned from the `keySelector` function
+ * applied to each element, ignoring any elements where the function
+ * returns null.
+ */
+fun <T, K> Iterable<T>.associateByNotNull(
+    keySelector: (T) -> K?
+): Map<K, T> = mapNotNull { value -> keySelector(value)?.let { it to value } }.toMap()
+
+/**
  * Applies the specified function to this list if it isn't empty,
  * returns null otherwise
  */

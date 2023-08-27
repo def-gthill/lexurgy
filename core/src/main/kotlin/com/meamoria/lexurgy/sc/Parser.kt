@@ -1243,7 +1243,7 @@ object LscWalker : LscBaseVisitor<AstNode>() {
 
         override val soundChanger: SoundChanger
             get() {
-                val initialDeclarations = Declarations(
+                val initialDeclarations = Declarations.create(
                     featureDeclarations.flatMap { sublist ->
                         (sublist as AstNodeList).elements.map { (it as FeatureDeclarationNode).feature }
                     },

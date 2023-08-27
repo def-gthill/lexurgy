@@ -5,101 +5,41 @@ import com.meamoria.lexurgy.word.*
 import com.meamoria.lexurgy.word.modify
 import java.util.concurrent.ConcurrentHashMap
 
-class Declarations(
+class Declarations private constructor(
     val features: List<Feature>,
     val diacritics: List<Diacritic>,
     val symbols: List<Symbol>,
     val syllabifier: Syllabifier? = null,
 ) {
-    private val featureNameToFeatureMap = features.associateByCheckingDuplicates(
-        { listOf(it.name) },
-        { name, _, _ -> throw LscDuplicateName("feature", name) }
-    )
-    private val defaults = features.map { it.default }
-    private val absents = features.map { it.absent }
-    private val valueToFeature = features.associateByCheckingDuplicates(
-        { it.allValues },
-        { value, _, _ -> throw LscDuplicateName("feature value", value.name) },
-    )
-    private val valueNameToSimpleValue = features.flatMap { it.allValues }.associate {
-        it.name to (if (it in absents) valueToFeature.getValue(it).default else it)
+    // Features
+    private val featureNameToFeatureMap = features.associateBy { it.name }
+    private val defaults = defaults(features)
+    private val absents = absents(features)
+    private val valueToFeature = features.associateByAll { it.allValues }
+    private val allFeatureValues = features.flatMap { it.allValues }
+    private val valueNameToSimpleValue = allFeatureValues.associate {
+        it.name to normalizeAbsent(it)
     }
 
-    init {
-        checkUndefinedFeatures(diacritics.map { it.matrix })
-    }
+    // Diacritics
     private val normalizedDiacritics = diacritics.map { it.normalize() }
-    private val diacriticNameToDiacritic = normalizedDiacritics.associateByCheckingDuplicates(
-        { listOf(it.name) },
-        { name, _, _ -> throw LscDuplicateName("diacritic", name) }
-    )
+    private val diacriticNameToDiacritic = normalizedDiacritics.associateBy { it.name }
     private val floatingDiacritics = normalizedDiacritics.filter { it.floating }
-    init {
-        normalizedDiacritics.associateByCheckingDuplicates(
-            { listOf(it.matrix) },
-            { matrix, new, existing -> throw LscDuplicateMatrices(matrix, "diacritics", new.name, existing.name) },
-        )
-    }
 
-    init {
-        checkUndefinedFeatures(symbols.map { it.matrix })
-    }
     private val normalizedSymbols = symbols.map { it.normalize() }
     private val symbolsAsComplexSymbols = normalizedSymbols.map { complexSymbol(it) }
-    private val symbolNameToSymbol = normalizedSymbols.associateByCheckingDuplicates(
-        { listOf(it.name) },
-        { name, _, _ -> throw LscDuplicateName("symbol", name) },
-    )
-    private val matrixToSimpleSymbol = normalizedSymbols.associateByCheckingDuplicates(
-        { listOfNotNull(it.declaredMatrix?.removeExplicitDefaults()) },
-        { matrix, new, existing -> throw LscDuplicateMatrices(matrix, "symbols", new.name, existing.name) },
-    )
+    private val symbolNameToSymbol = normalizedSymbols.associateBy { it.name }
+    private val matrixToSimpleSymbol = normalizedSymbols.associateByNotNull {
+        it.declaredMatrix?.removeExplicitDefaults()
+    }
 
+    // Symbols
     private val matrixFullValueSetCache = ConcurrentHashMap<Matrix, Set<MatrixValue>>()
     private val matrixSimpleValueCache = ConcurrentHashMap<Matrix, Set<SimpleValue>>()
     private val matrixToSymbolCache = ConcurrentHashMap<Matrix, Segment>()
     private val phoneticSegmentToComplexSymbolCache = ConcurrentHashMap<Segment, ComplexSymbol>()
     private val phoneticSegmentMatchCache = ConcurrentHashMap<Pair<Segment, Segment>, Boolean>()
     private val undeclaredSymbolCache = ConcurrentHashMap<String, Symbol>()
-
-    private fun checkUndefinedFeatures(matrices: List<Matrix>) {
-        for (value in matrices.flatMap { it.explicitSimpleValues }) {
-            value.name.toSimpleValue()
-        }
-    }
-
-    private fun checkNonSegmentFeatures(matrices: List<Matrix>) {
-        for (value in matrices.flatMap { it.explicitSimpleValues }) {
-            if (value.wordLevel(this) != WordLevel.SEGMENT) {
-                throw LscInvalidFeatureLevel(
-                    value.name,
-                    "a symbol",
-                    value.wordLevel(this),
-                    listOf(WordLevel.SEGMENT),
-                )
-            }
-        }
-    }
-
-    private fun <T, K> Iterable<T>.associateByCheckingDuplicates(
-        keySelector: (T) -> List<K>,
-        onDuplicate: (K, T, T) -> Nothing,
-    ): Map<K, T> {
-        val result = mutableMapOf<K, T>()
-        for (element in this) {
-            for (key in keySelector(element)) {
-                if (key in result) {
-                    onDuplicate(key, element, result.getValue(key))
-                }
-                result[key] = element
-            }
-        }
-        return result
-    }
-
-    init {
-        checkNonSegmentFeatures(symbols.map { it.matrix })
-    }
 
     private val diacriticsByLevel = diacritics.groupBy { diacritic ->
             val values = diacritic.matrix.explicitSimpleValues
@@ -125,6 +65,9 @@ class Declarations(
         } ?: emptyList()
     )
 
+    private fun normalizeAbsent(value: SimpleValue): SimpleValue =
+        if (value in absents) valueToFeature.getValue(value).default else value
+
     fun withSyllabifier(syllabifier: Syllabifier?): Declarations =
         copy(syllabifier = syllabifier)
 
@@ -133,7 +76,7 @@ class Declarations(
         diacritics: List<Diacritic>? = null,
         symbols: List<Symbol>? = null,
         syllabifier: Syllabifier? = null,
-    ): Declarations = Declarations(
+    ): Declarations = create(
         features ?: this.features,
         diacritics ?: this.diacritics,
         symbols ?: this.symbols,
@@ -199,10 +142,6 @@ class Declarations(
     fun Segment.matches(matrix: Matrix, bindings: Bindings): Bindings? =
         toMatrix().matches(matrix, bindings)
 
-    private fun MatrixValue.isDefault(): Boolean = this in defaults
-
-    private fun MatrixValue.isAbsent(): Boolean = this in absents
-
     fun Segment.withFloatingDiacriticsFrom(
         other: Segment, excluding: Segment? = null
     ): Segment {
@@ -240,9 +179,6 @@ class Declarations(
     fun Segment.toMatrix(): Matrix = toComplexSymbol().toMatrix()
 
     fun Symbol.toSegment(): Segment = Segment(name)
-
-    val Symbol.matrix: Matrix
-        get() = declaredMatrix ?: Matrix(listOf(UndeclaredSymbolValue(name)))
 
     /**
      * Creates a ``ComplexSymbol`` with the specified core and diacritics. This
@@ -384,7 +320,7 @@ class Declarations(
     }
 
     private fun Matrix.removeExplicitDefaults(): Matrix =
-        Matrix(valueList.filterNot { it.isDefault() || it.isAbsent() })
+        removeExplicitDefaults(features)
 
     /**
      * Compute a matrix with all the feature values in this matrix,
@@ -397,7 +333,7 @@ class Declarations(
         for (value in updateMatrix.valueList) {
             val updateFeature = (value as SimpleValue).toFeature()
             oldMatrixFeatures[updateFeature]?.let { newMatrixValues.remove(it) }
-            if (!value.isDefault())
+            if (value !in defaults)
                 newMatrixValues += value
         }
         return Matrix(newMatrixValues)
@@ -442,10 +378,144 @@ class Declarations(
 
     companion object {
         val empty: Declarations = Declarations(emptyList(), emptyList(), emptyList())
+
+        fun create(
+            features: List<Feature>,
+            diacritics: List<Diacritic>,
+            symbols: List<Symbol>,
+            syllabifier: Syllabifier? = null,
+        ): Declarations {
+            checkDuplicateFeatures(features)
+            checkDuplicateFeatureValues(features)
+
+            checkUndefinedFeaturesInDiacritics(diacritics, features)
+            val normalizedDiacritics = diacritics.map { it.normalize() }
+            checkDuplicateDiacritics(normalizedDiacritics)
+            checkDiacriticsWithSameMatrix(normalizedDiacritics)
+
+            checkUndefinedFeaturesInSymbols(symbols, features)
+            val normalizedSymbols = symbols.map { it.normalize() }
+            checkDuplicateSymbols(normalizedSymbols)
+            checkSymbolsWithSameMatrix(normalizedSymbols, features)
+            checkNonSegmentFeatures(symbols, features)
+
+            return Declarations(
+                features, diacritics, symbols, syllabifier
+            )
+        }
+
+        private fun checkDuplicateFeatures(features: List<Feature>) {
+            features.checkDuplicates(
+                { listOf(it.name) },
+                { name, _, _ -> throw LscDuplicateName("feature", name) }
+            )
+        }
+
+        private fun checkDuplicateFeatureValues(features: List<Feature>) {
+            features.checkDuplicates(
+                { it.allValues },
+                { value, _, _ -> throw LscDuplicateName("feature value", value.name) },
+            )
+        }
+
+        private fun checkUndefinedFeaturesInDiacritics(
+            diacritics: List<Diacritic>, features: List<Feature>
+        ) {
+            checkUndefinedFeatures(diacritics.map { it.matrix }, features)
+        }
+
+        private fun checkDuplicateDiacritics(diacritics: List<Diacritic>) {
+            diacritics.checkDuplicates(
+                { listOf(it.name) },
+                { name, _, _ -> throw LscDuplicateName("diacritic", name) }
+            )
+        }
+
+        private fun checkDiacriticsWithSameMatrix(diacritics: List<Diacritic>) {
+            diacritics.checkDuplicates(
+                { listOf(it.matrix) },
+                { matrix, new, existing -> throw LscDuplicateMatrices(matrix, "diacritics", new.name, existing.name) },
+            )
+        }
+
+        private fun checkUndefinedFeaturesInSymbols(
+            symbols: List<Symbol>, features: List<Feature>
+        ) {
+            checkUndefinedFeatures(symbols.map { it.matrix }, features)
+        }
+
+        private fun checkDuplicateSymbols(symbols: List<Symbol>) {
+            symbols.checkDuplicates(
+                { listOf(it.name) },
+                { name, _, _ -> throw LscDuplicateName("symbol", name) },
+            )
+        }
+
+        private fun checkSymbolsWithSameMatrix(symbols: List<Symbol>, features: List<Feature>) {
+            symbols.checkDuplicates(
+                { listOfNotNull(it.declaredMatrix?.removeExplicitDefaults(features)) },
+                { matrix, new, existing -> throw LscDuplicateMatrices(matrix, "symbols", new.name, existing.name) },
+            )
+        }
+
+        private fun Matrix.removeExplicitDefaults(
+            features: List<Feature>
+        ): Matrix {
+            val defaults = defaults(features)
+            val absents = absents(features)
+            return Matrix(valueList.filterNot { it in defaults || it in absents })
+        }
+
+        private fun defaults(features: List<Feature>): List<SimpleValue> =
+            features.map { it.default }
+
+        private fun absents(features: List<Feature>): List<SimpleValue> =
+            features.map { it.absent }
+
+        private fun checkNonSegmentFeatures(symbols: List<Symbol>, features: List<Feature>) {
+            val matrices = symbols.map { it.matrix }
+            val valueToFeature = features.associateByAll { it.allValues }
+
+            for (value in matrices.flatMap { it.explicitSimpleValues }) {
+                val level = valueToFeature.getValue(value).level
+                if (level != WordLevel.SEGMENT) {
+                    throw LscInvalidFeatureLevel(
+                        value.name,
+                        "a symbol",
+                        level,
+                        listOf(WordLevel.SEGMENT),
+                    )
+                }
+            }
+        }
+
+        private fun checkUndefinedFeatures(matrices: List<Matrix>, features: List<Feature>) {
+            val valueNames = features.flatMap { it.allValues }.map { it.name }.toSet()
+            for (value in matrices.flatMap { it.explicitSimpleValues }) {
+                if (value.name !in valueNames) {
+                    throw LscUndefinedName("feature value", value.name)
+                }
+            }
+        }
+
+        // Checks if any elements of this iterable are mapped to equal
+        // values by the selector.
+        private fun <T, K> Iterable<T>.checkDuplicates(
+            selector: (T) -> List<K>,
+            onDuplicate: (K, T, T) -> Nothing,
+        ) {
+            val seenMappings = mutableMapOf<K, T>()
+            for (element in this) {
+                for (key in selector(element)) {
+                    if (key in seenMappings) {
+                        onDuplicate(key, element, seenMappings.getValue(key))
+                    }
+                    seenMappings[key] = element
+                }
+            }
+        }
     }
 }
-
-data class SegmentClass(val name: String, val sounds: List<String>)
 
 class Feature(
     val name: String,
@@ -464,6 +534,9 @@ data class Symbol(val name: String, val declaredMatrix: Matrix?) {
     override fun toString(): String = name + if (declaredMatrix == null) "" else " $declaredMatrix"
 
     fun normalize() = Symbol(name.normalizeDecompose(), declaredMatrix)
+
+    val matrix: Matrix
+        get() = declaredMatrix ?: Matrix(listOf(UndeclaredSymbolValue(name)))
 }
 
 /**
@@ -523,4 +596,13 @@ class LscDuplicateMatrices(
 ) : LscUserError(
     "The $declarationType $existingDeclaration and $newDeclaration both have " +
             "the matrix $matrix; add features to make them distinct."
+)
+
+class RepeatedFeature(
+    val matrix: Matrix,
+    val feature: String,
+    val values: List<String>,
+) : LscUserError(
+    "The matrix $matrix has multiple values of the feature " +
+            "\"$feature\" (${values.joinToString { "\"$it\"" }}); remove all but one."
 )
