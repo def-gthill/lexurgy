@@ -441,6 +441,7 @@ internal class MatrixElement(
 
     override fun matcher(context: ElementContext, declarations: ParseTimeDeclarations): Matcher =
         with(declarations.runtime) {
+            matrix.checkUndefinedFeatures()
             matrix.checkRepeatedFeatures()
             val split = matrix.splitByLevel()
             val segmentMatcher = split[WordLevel.SEGMENT]?.let {
@@ -463,6 +464,7 @@ internal class MatrixElement(
 
     override fun emitter(declarations: ParseTimeDeclarations): Emitter =
         with(declarations.runtime) {
+            matrix.checkUndefinedFeatures()
             matrix.checkRepeatedFeatures()
             val split = matrix.splitByLevel()
             val segmentEmitter = split[WordLevel.SEGMENT]?.let {

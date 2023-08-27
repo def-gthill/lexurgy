@@ -65,7 +65,7 @@ class TestFeatures : StringSpec({
         }
     }
 
-    "References to undefined features produce an LscUndefinedName" {
+    "Symbols that referenece undefined features produce an LscUndefinedName" {
         shouldThrow<LscUndefinedName> {
             lsc(
                 """
@@ -76,6 +76,9 @@ class TestFeatures : StringSpec({
         }.also {
             it.message shouldBe "The feature value \"bar\" is not defined"
         }
+    }
+
+    "Diacritics that reference undefined features produce an LscUndefinedName" {
         shouldThrow<LscUndefinedName> {
             lsc(
                 """
@@ -167,6 +170,19 @@ class TestFeatures : StringSpec({
         )
 
         ch("tati") shouldBe "tati"
+    }
+
+    "A matrix containing an undefined feature value triggers an error" {
+        shouldThrow<LscInvalidRuleExpression> {
+            lsc(
+                """
+                    foo:
+                        [+foo] => *
+                """.trimIndent()
+            )
+        }.also {
+            it.cause should beInstanceOf<LscUndefinedName>()
+        }
     }
 
     "A matrix with multiple values of the same feature triggers an error" {

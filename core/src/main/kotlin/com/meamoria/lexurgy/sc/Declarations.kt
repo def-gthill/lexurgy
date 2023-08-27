@@ -266,6 +266,14 @@ class Declarations private constructor(
     }
 
     /**
+     * Throws an UndefinedName error if this matrix references
+     * non-existent feature values.
+     */
+    fun Matrix.checkUndefinedFeatures() {
+        checkUndefinedFeatures(this, features)
+    }
+
+    /**
      * Throws a RepeatedFeatures error if this matrix contains
      * multiple values from the same feature.
      */
@@ -431,7 +439,9 @@ class Declarations private constructor(
         private fun checkUndefinedFeaturesInDiacritics(
             diacritics: List<Diacritic>, features: List<Feature>
         ) {
-            checkUndefinedFeatures(diacritics.map { it.matrix }, features)
+            for (diacritic in diacritics) {
+                checkUndefinedFeatures(diacritic.matrix, features)
+            }
         }
 
         private fun checkRepeatedFeaturesInDiacritics(
@@ -459,7 +469,9 @@ class Declarations private constructor(
         private fun checkUndefinedFeaturesInSymbols(
             symbols: List<Symbol>, features: List<Feature>
         ) {
-            checkUndefinedFeatures(symbols.map { it.matrix }, features)
+            for (symbol in symbols) {
+                checkUndefinedFeatures(symbol.matrix, features)
+            }
         }
 
         private fun checkRepeatedFeaturesInSymbols(
@@ -509,9 +521,9 @@ class Declarations private constructor(
             }
         }
 
-        private fun checkUndefinedFeatures(matrices: List<Matrix>, features: List<Feature>) {
+        private fun checkUndefinedFeatures(matrix: Matrix, features: List<Feature>) {
             val valueNames = features.flatMap { it.allValues }.map { it.name }.toSet()
-            for (value in matrices.flatMap { it.explicitSimpleValues }) {
+            for (value in matrix.explicitSimpleValues) {
                 if (value.name !in valueNames) {
                     throw LscUndefinedName("feature value", value.name)
                 }
