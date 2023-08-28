@@ -162,7 +162,7 @@ class Syllabification(
         if (syllableBreakAtEnd() && other.syllableBreakAtStart()) {
             otherSyllableBreaks = otherSyllableBreaks.drop(1)
         }
-        val thisSyllableModifiers = syllableModifiersNoHanging()
+        val thisSyllableModifiers = syllableModifiers
         val combinedSyllableModifiers =
             if (syllableBreakAtEnd() || other.syllableBreakAtStart()) {
                 thisSyllableModifiers + other.syllableModifiers.mapKeys {
@@ -205,13 +205,6 @@ class Syllabification(
             newModifiers,
         )
     }
-
-    /**
-     * Syllable modifiers excluding "hanging" modifiers, i.e.
-     * modifiers for the syllable after the last.
-     */
-    private fun syllableModifiersNoHanging(): Map<Int, List<Modifier>> =
-        syllableModifiers.filterKeys { it < numSyllables }
 
     fun recoverStructure(other: Word, exceptSyllableBreaks: List<Int>): Word =
         if (other.isSyllabified() || other.isEmpty()) other
