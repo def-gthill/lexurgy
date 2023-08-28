@@ -210,26 +210,36 @@ class Syllabification(
         if (other.isSyllabified() || other.isEmpty()) other
         else {
             val syllableBreaksToTransfer = syllableBreaks.filter { it !in exceptSyllableBreaks }
-            val newSyllableBreaks = syllableBreaksToTransfer.filter {
-                it < length && it < other.length
-            } + if (length in syllableBreaksToTransfer) {
-                listOf(other.length)
-            } else emptyList()
-            val newSyllableCount =
-                newSyllableBreaks.size + 1 -
-                        (if (newSyllableBreaks.firstOrNull() == 0) 1 else 0) -
-                        (if (length in syllableBreaksToTransfer) 1 else 0)
-            val newSyllableModifiers = mutableMapOf<Int, MutableList<Modifier>>()
-            for ((syllableNumber, modifiers) in syllableModifiers) {
-                val newSyllableNumber =
-                    if (syllableNumber >= newSyllableCount) newSyllableCount - 1 else syllableNumber
-                newSyllableModifiers.getOrPut(newSyllableNumber) { mutableListOf() }.addAll(modifiers)
-            }
+            val newSyllableBreaks = recoverSyllableBreaks(other, syllableBreaksToTransfer)
+            val newSyllableCount = newSyllableCount(other, newSyllableBreaks)
+            val newSyllableModifiers = recoverSyllableModifiers(newSyllableCount)
             StandardWord(other.segments).withSyllabification(
                 newSyllableBreaks,
                 newSyllableModifiers,
             )
         }
+
+    private fun recoverSyllableBreaks(other: Word, syllableBreaks: List<Int>) =
+        syllableBreaks.filter {
+            it < length && it < other.length
+        } + if (length in syllableBreaks) {
+            listOf(other.length)
+        } else emptyList()
+
+    private fun newSyllableCount(other: Word, newSyllableBreaks: List<Int>) =
+        newSyllableBreaks.size + 1 -
+                (if (newSyllableBreaks.firstOrNull() == 0) 1 else 0) -
+                (if (newSyllableBreaks.lastOrNull() == other.length) 1 else 0)
+
+    private fun recoverSyllableModifiers(newSyllableCount: Int): Map<Int, List<Modifier>> {
+        val newSyllableModifiers = mutableMapOf<Int, MutableList<Modifier>>()
+        for ((syllableNumber, modifiers) in syllableModifiers) {
+            val newSyllableNumber =
+                if (syllableNumber >= newSyllableCount) newSyllableCount - 1 else syllableNumber
+            newSyllableModifiers.getOrPut(newSyllableNumber) { mutableListOf() }.addAll(modifiers)
+        }
+        return newSyllableModifiers
+    }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
