@@ -5,7 +5,7 @@ plugins {
     id("org.jetbrains.kotlin.jvm")
 }
 
-val versionNumber = "1.3.0"
+val versionNumber = "1.3.1"
 
 group = "com.meamoria"
 version = versionNumber
