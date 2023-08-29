@@ -19,6 +19,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            build/distributions/lexurgy-${VERSION}.tar
-            build/distributions/lexurgy-${VERSION}.zip
+            build/distributions/lexurgy-${{ env.VERSION }}.tar
+            build/distributions/lexurgy-${{ env.VERSION }}.zip
           draft: true
+          fail_on_unmatched_files: true
