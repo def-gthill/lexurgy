@@ -11,10 +11,14 @@ jobs:
         uses: actions/checkout@v3
       - name: Build distributions
         run: ./gradlew :cli:assembleDist
+      - name: Get version number
+        run: |
+          TAG=${{ github.ref_name }}
+          echo "VERSION=${TAG#v}" >> $GITHUB_ENV
       - name: Create release
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            build/distributions/lexurgy-${{ github.ref_name }}.tar
-            build/distributions/lexurgy-${{ github.ref_name }}.zip
+            build/distributions/lexurgy-${VERSION}.tar
+            build/distributions/lexurgy-${VERSION}.zip
           draft: true
