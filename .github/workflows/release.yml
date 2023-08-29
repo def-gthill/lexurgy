@@ -1,0 +1,20 @@
+name: Release
+on:
+  push:
+    tags:
+      - "v*.*.*"
+jobs:
+  release-cli:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Build distributions
+        run: ./gradlew :cli:assembleDist
+      - name: Create release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            build/distributions/lexurgy-${{ github.ref_name }}.tar
+            build/distributions/lexurgy-${{ github.ref_name }}.zip
+          draft: true

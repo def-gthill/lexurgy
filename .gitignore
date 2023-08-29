@@ -6,6 +6,9 @@
 /cli/build
 /api/build
 
+# Platform noise
+.DS_Store
+
 # Ignore Gradle GUI config
 gradle-app.setting
 
