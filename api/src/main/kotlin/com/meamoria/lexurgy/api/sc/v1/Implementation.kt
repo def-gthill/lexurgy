@@ -35,6 +35,7 @@ private fun runScv1Using(soundChanger: SoundChanger, request: Request): Response
             startAt = request.startAt,
             stopBefore = request.stopBefore,
             debugWords = request.traceWords,
+            debug = { },
             trace = ::trace,
             timeoutSeconds = System.getenv("TIMEOUT")?.toDouble() ?: 0.5,
         )
