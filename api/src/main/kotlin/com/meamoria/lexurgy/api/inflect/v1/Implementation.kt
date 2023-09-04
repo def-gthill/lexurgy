@@ -19,6 +19,7 @@ fun runInflect(request: Request): Response {
 private fun rulesFromRequest(requestRules: RequestCategoryTree): CategoryTree {
     return when (requestRules) {
         is RequestForm -> Form(requestRules.form)
+        is RequestFormulaForm -> Form(formulaFromRequest(requestRules.formula))
         is RequestCategorySplit -> CategorySplit(
             requestRules.branches.mapValues {
                 rulesFromRequest(it.value)
@@ -41,6 +42,13 @@ private fun stemAndCategoriesFromRequest(
     val (stem, categories) = requestStemAndCategories
     return Word(stem) to categories.toSet()
 }
+
+private fun formulaFromRequest(formula: RequestFormula): Formula =
+    when (formula) {
+        is RequestStem -> Stem
+        is RequestForm -> Fixed(formula.form)
+        is RequestConcat -> Concat(formula.parts.map(::formulaFromRequest))
+    }
 
 
 private fun formsToResponse(forms: List<Word>): List<String> {

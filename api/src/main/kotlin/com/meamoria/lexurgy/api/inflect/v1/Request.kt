@@ -14,7 +14,13 @@ sealed interface RequestCategoryTree
 
 @Serializable
 @SerialName("form")
-data class RequestForm(val form: String) : RequestCategoryTree
+data class RequestForm(val form: String) : RequestCategoryTree, RequestFormula
+
+@Serializable
+@SerialName("formula")
+data class RequestFormulaForm(
+    val formula: RequestFormula
+) : RequestCategoryTree
 
 @Serializable
 @SerialName("split")
@@ -27,3 +33,16 @@ data class RequestStemAndCategories(
     val stem: String,
     val categories: List<String>
 )
+
+@Serializable
+sealed interface RequestFormula
+
+@Serializable
+@SerialName("stem")
+object RequestStem : RequestFormula
+
+@Serializable
+@SerialName("concat")
+data class RequestConcat(
+    val parts: List<RequestFormula>
+) : RequestFormula
