@@ -82,4 +82,46 @@ class TestInflect : FreeSpec({
             }
         }
     }
+
+    "The stem variable" - {
+        "resolves to the current stem" {
+            val stem = Stem
+
+            val result = stem.inflect(Word("foo"))
+
+            result.string shouldBe "foo"
+        }
+
+        "can be used as a branch in a category tree" {
+            val tree = CategorySplit(
+                "stem" to Form(Stem),
+                "fixed" to Form("fixed"),
+            )
+
+            val result = tree.inflectAll(
+                Word("foo") to setOf("fixed"),
+                Word("foo") to setOf("stem"),
+            )
+
+            result.map { it.string } shouldBe listOf("fixed", "foo")
+        }
+    }
+
+    "The concatenation operator" - {
+        "joins fixed arguments together" {
+            val formula = Concat(Fixed("foo"), Fixed("bar"))
+
+            val result = formula.inflect(Word("bar"))
+
+            result.string shouldBe "foobar"
+        }
+
+        "can join fixed arguments to the stem variable" {
+            val formula = Concat(Fixed("pre"), Stem, Fixed("suf"))
+
+            val result = formula.inflect(Word("bar"))
+
+            result.string shouldBe "prebarsuf"
+        }
+    }
 })

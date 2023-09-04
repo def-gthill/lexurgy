@@ -12,11 +12,11 @@ sealed interface CategoryTree {
     }
 }
 
-class Form(val form: Word) : CategoryTree {
-    constructor(form: String) : this(Word(form))
+class Form(val formula: Formula) : CategoryTree {
+    constructor(form: String) : this(Fixed(form))
 
     override fun inflect(stem: Word, categories: Set<String>): Word {
-        return form
+        return formula.inflect(stem)
     }
 }
 
