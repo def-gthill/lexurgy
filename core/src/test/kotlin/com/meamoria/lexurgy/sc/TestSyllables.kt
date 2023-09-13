@@ -478,7 +478,7 @@ class TestSyllables : StringSpec({
         ch("tuk.ar") shouldBe "tʰu.a"
     }
 
-    "We should be able to declare and reference syllable-level features" {
+    "We can declare and reference syllable-level features" {
         val ch = lsc(
             """
                 Feature (syllable) +stress
@@ -500,19 +500,52 @@ class TestSyllables : StringSpec({
         ch("salamanka") shouldBe "sa.la.ˈmæn.ka"
     }
 
-    "We should get an error if we try to mix features from different levels on a diacritic" {
+    "We get an error if we try to mix features from different levels on a diacritic" {
         shouldThrow<LscInvalidFeatureLevel> {
             lsc("Feature (syllable) +stress\nFeature +long\nDiacritic ˈː [+stress +long]")
         }
     }
 
-    "We should get an error if we try to give symbols syllable-level diacritics" {
+    "We get an error if we try to give symbols syllable-level diacritics" {
         shouldThrow<LscInvalidFeatureLevel> {
             lsc("Feature (syllable) +stress\nSymbol o [+stress]")
         }
     }
 
-    "We should be able to assign syllable-level features in the syllabification rules" {
+    "We can assign syllable-level features using their diacritics" {
+        val ch = lsc(
+            """
+                Feature (syllable) +stress
+                Diacritic ˈ (before) [+stress]
+                Symbol ai
+                Syllables:
+                    explicit
+                stress-diphthong:
+                    ai => ˈai
+            """.trimIndent()
+        )
+
+        ch("fai.do") shouldBe "ˈfai.do"
+        ch("do.mai") shouldBe "do.ˈmai"
+    }
+
+    "We can match syllable-level features using their diacritics" {
+        val ch = lsc(
+            """
+                Feature (syllable) +stress
+                Diacritic ˈ (before) [+stress]
+                Syllables:
+                    explicit
+                stress-breaking:
+                    ˈe => ˈie
+            """.trimIndent()
+        )
+
+        ch("ˈme.de") shouldBe "ˈmie.de"
+        ch("me.ˈde") shouldBe "me.ˈdie"
+    }
+
+    "We can assign syllable-level features in the syllabification rules" {
         val ch = lsc(
             """
                 Feature (syllable) +stress

@@ -15,8 +15,7 @@ class PhoneticParser(
 
     private val tree = SegmentTree(fullDict)
 
-    fun parse(string: String, syllabify: Boolean = true): Word {
-        val reallySyllabify = (syllableSeparator != null) && syllabify
+    fun parse(string: String): Word {
         var unparsedString = string
 
         var core: String? = null
@@ -46,15 +45,15 @@ class PhoneticParser(
         while (unparsedString.isNotEmpty()) {
             val cursor = string.length - unparsedString.length
             val match = tree.tryMatch(unparsedString)
-            if (reallySyllabify) {
-                if (unparsedString.startsWith(syllableSeparator!!)) {
+            if (syllableSeparator != null) {
+                if (unparsedString.startsWith(syllableSeparator)) {
                     if (core != null) doneSegment()
                     doneSyllable()
                     unparsedString = unparsedString.drop(syllableSeparator.length)
                     continue
                 } else if (
                     syllableDiacritics.any { it.position == ModifierPosition.AFTER } &&
-                            match?.second != SyllableModifier(ModifierPosition.AFTER)
+                    match?.second != SyllableModifier(ModifierPosition.AFTER)
                 ) throw DanglingDiacritic(
                     string, cursor, match?.first ?: unparsedString.first().toString()
                 )
@@ -71,6 +70,7 @@ class PhoneticParser(
                         core = matchString
                         unparsedString = unparsedString.drop(matchString.length)
                     }
+
                     is SegmentModifier -> when (matchType.position) {
                         ModifierPosition.BEFORE -> {
                             if (core != null) doneSegment()
@@ -82,6 +82,7 @@ class PhoneticParser(
                             )
                             unparsedString = unparsedString.drop(matchString.length)
                         }
+
                         ModifierPosition.FIRST -> {
                             if (core != null && core!!.length == 1) {
                                 unparsedString = core!! + unparsedString.drop(matchString.length)
@@ -89,6 +90,7 @@ class PhoneticParser(
                                 diacritics += Modifier(matchString, ModifierPosition.FIRST)
                             } else throw DanglingDiacritic(string, cursor, matchString)
                         }
+
                         ModifierPosition.NUCLEUS -> throw AssertionError()
                         ModifierPosition.AFTER -> {
                             if (core != null) {
@@ -100,6 +102,7 @@ class PhoneticParser(
                             } else throw DanglingDiacritic(string, cursor, matchString)
                         }
                     }
+
                     is SyllableModifier -> when (matchType.position) {
                         ModifierPosition.BEFORE -> {
                             if (core != null) doneSegment()
@@ -113,6 +116,7 @@ class PhoneticParser(
                             )
                             unparsedString = unparsedString.drop(matchString.length)
                         }
+
                         ModifierPosition.FIRST -> {
                             if (core != null && core!!.length == 1) {
                                 unparsedString = core!! + unparsedString.drop(matchString.length)
@@ -120,6 +124,7 @@ class PhoneticParser(
                                 syllableDiacritics += Modifier(matchString, ModifierPosition.FIRST)
                             } else throw DanglingDiacritic(string, cursor, matchString)
                         }
+
                         ModifierPosition.NUCLEUS -> throw AssertionError()
                         ModifierPosition.AFTER -> {
                             if (core != null) {
@@ -138,7 +143,7 @@ class PhoneticParser(
         if (core != null) doneSegment()
         doneSyllable(addSyllableBreak = false)
 
-        return if (reallySyllabify) {
+        return if (syllableSeparator != null) {
             StandardWord(parsedSegments).withSyllabification(
                 syllableBreaks,
                 finalSyllableModifiers,

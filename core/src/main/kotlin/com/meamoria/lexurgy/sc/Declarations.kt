@@ -83,8 +83,8 @@ class Declarations private constructor(
         syllabifier ?: this.syllabifier,
     )
 
-    fun parsePhonetic(text: String, syllabify: Boolean = true): Word =
-        phoneticParser.parse(text, syllabify).normalize(phoneticParser).fixDiacriticOrder()
+    fun parsePhonetic(text: String): Word =
+        phoneticParser.parse(text).normalize(phoneticParser).fixDiacriticOrder()
 
     fun parsePhonetic(word: Word): Word = parsePhonetic(word.string)
 

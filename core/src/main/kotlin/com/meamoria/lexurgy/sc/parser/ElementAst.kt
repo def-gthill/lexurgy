@@ -538,12 +538,12 @@ internal class TextElement(
     override val publicName: String = "literal text"
 
     override fun matcher(context: ElementContext, declarations: ParseTimeDeclarations): Matcher =
-        declarations.runtime.parsePhonetic(literalText, syllabify = false).let {
+        declarations.runtime.parsePhonetic(literalText).let {
             if (exact) TextMatcher(it) else SymbolMatcher(declarations.runtime, it)
         }
 
     override fun emitter(declarations: ParseTimeDeclarations): Emitter =
-        declarations.runtime.parsePhonetic(literalText, syllabify = false).let {
+        declarations.runtime.parsePhonetic(literalText).let {
             if (exact) TextEmitter(it) else SymbolEmitter(declarations.runtime, it)
         }
 }
