@@ -846,16 +846,13 @@ object LscWalker : LscBaseVisitor<AstNode>() {
         level: AstNode?,
     ): AstNode {
         val name = (featureName as NameNode).name
-        return FeatureDeclarationNode(
-            text,
-            Feature(
-                name,
-                listOf(SimpleValue("+$name")) +
-                        if (!plusOnly) listOf(SimpleValue("-$name")) else emptyList(),
-                if (plusOnly) SimpleValue("-$name") else null,
-                (level as FeatureLevelNode?)?.level ?: WordLevel.SEGMENT,
-            )
-        )
+        val featureLevel = (level as FeatureLevelNode?)?.level ?: WordLevel.SEGMENT
+        val feature = if (plusOnly) {
+            Feature.plusOnly(name, featureLevel)
+        } else {
+            Feature.plusMinus(name, featureLevel)
+        }
+        return FeatureDeclarationNode(text, feature)
     }
 
     private fun walkDiacriticDeclaration(

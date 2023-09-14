@@ -30,11 +30,13 @@ class SymbolMatcher(val declarations: Declarations, text: Word) :
         val index = start.segmentIndex
         val end = index + text.length
         if (end > word.length) return emptyList()
+        val target = word.slice(index until end)
         val wordSegments = word.sliceSegments(index until end)
         val matches = with(declarations) {
             wordSegments.zip(text.segments) { wordSegment, textSegment ->
                 wordSegment.matches(textSegment)
-            }.all { it }
+            }.all { it } &&
+                    target.syllableMatrix.matches(text.syllableMatrix, bindings) != null
         }
         return if (matches) listOf(
             PhraseMatchEnd(start.copy(segmentIndex = end), bindings)
@@ -58,22 +60,24 @@ class SymbolEmitter(val declarations: Declarations, val text: Word) :
         matcher: SimpleMatcher, original: Word
     ): UnboundResult =
         UnboundResult {
-            val phrase = Phrase(
-                original.recoverStructure(
-                    when (matcher) {
-                        is SymbolMatcher -> resultFromSymbolMatcher(matcher, original)
-                        is MatrixMatcher -> resultFromMatrixMatcher(original)
-                        else -> text
-                    }
-                )
-            )
-            var matrix = Matrix.EMPTY
-            with(declarations) {
-                for (modifiers in text.syllableModifiers.values) {
-                    matrix = matrix.update(modifiers.toMatrix())
-                }
+            val resultWord = when (matcher) {
+                is SymbolMatcher -> resultFromSymbolMatcher(matcher, original)
+                is MatrixMatcher -> resultFromMatrixMatcher(original)
+                else -> text
             }
-            ChangeResult(phrase, emptyList(), phrase.indices.associateWith { matrix })
+            val resultWordWithStructure = original.recoverStructure(resultWord)
+            val phrase = Phrase(resultWordWithStructure)
+
+            val syllableFeatureChanges = syllableFeatureChanges(matcher)
+            val allSyllableFeatureChanges = phrase.indices.associateWith { syllableFeatureChanges }
+            val phraseWithSyllableFeatureChanges = with(declarations) {
+                phrase.updateSyllableModifiers(allSyllableFeatureChanges)
+            }
+            ChangeResult(
+                phraseWithSyllableFeatureChanges,
+                emptyList(),
+                allSyllableFeatureChanges,
+            )
         }
 
     private fun resultFromSymbolMatcher(
@@ -112,6 +116,21 @@ class SymbolEmitter(val declarations: Declarations, val text: Word) :
         }
         return StandardWord(result)
     }
+
+    private fun syllableFeatureChanges(matcher: Matcher): Matrix =
+        with(declarations) {
+            val addedSyllableFeatures = text.syllableMatrix
+            val removedSyllableFeatures = when (matcher) {
+                is SymbolMatcher -> matcher.text.syllableMatrix
+                else -> Matrix.EMPTY
+            }
+            val removalMatrix = Matrix(
+                removedSyllableFeatures.explicitSimpleValues.map {
+                    it.toFeature().default
+                }
+            )
+            removalMatrix.update(addedSyllableFeatures)
+        }
 
     override fun toString(): String = text.string.ifEmpty { "*" }
 

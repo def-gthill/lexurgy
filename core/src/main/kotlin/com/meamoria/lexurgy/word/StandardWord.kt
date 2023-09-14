@@ -136,6 +136,9 @@ class StandardWord private constructor(
 
     override fun toSimple(): Word = StandardWord(segments)
 
+    override fun toSyllabified(): Word =
+        if (isSyllabified()) this else withSyllabification(emptyList())
+
     override fun toString(): String =
         syllabification?.toString() ?: segments.joinToString(separator = "/")
 

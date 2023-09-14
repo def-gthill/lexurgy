@@ -108,6 +108,8 @@ internal class ReversedWord(val inner: Word) : Word {
 
     override fun toSimple(): Word = ReversedWord(inner.toSimple())
 
+    override fun toSyllabified(): Word = ReversedWord(inner.toSyllabified())
+
     override fun toString(): String =
         force().toString() + " (reversed)"
 

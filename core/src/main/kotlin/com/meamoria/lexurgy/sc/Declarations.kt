@@ -370,6 +370,12 @@ class Declarations private constructor(
             it.wordLevel(this@Declarations)
         }.mapValues { (_, v) -> Matrix(v) }
 
+    /**
+     * Tests whether this matrix matches (i.e. has at least the values in)
+     * the specificed matrix, given the specified bindings.
+     * Returns an updated set of bindings if the matrix matches; returns
+     * null if the matrix doesn't match.
+     */
     fun Matrix.matches(matrix: Matrix, bindings: Bindings): Bindings? {
         var result = bindings
         for (value in matrix.valueList) {
@@ -391,6 +397,24 @@ class Declarations private constructor(
 
     fun List<Modifier>.toMatrix(): Matrix =
         ComplexSymbol(null, map { it.toDiacritic() }).toMatrix()
+
+    val Word.syllableMatrix: Matrix
+        get() {
+            var matrix = Matrix.EMPTY
+            for (modifiers in syllableModifiers.values) {
+                matrix = matrix.update(modifiers.toMatrix())
+            }
+            return matrix
+        }
+
+    /**
+     * Updates the syllable modifiers on this phrase by adding and removing
+     * syllable-level features according to the specified matrices.
+     */
+    fun Phrase.updateSyllableModifiers(changes: Map<PhraseIndex, Matrix>): Phrase =
+        updateSyllableModifiers(changes) { existing, new ->
+            existing.toMatrix().update(new).toModifiers()
+        }
 
     companion object {
         val empty: Declarations = Declarations(emptyList(), emptyList(), emptyList())
@@ -577,6 +601,23 @@ class Feature(
     val allValues: List<SimpleValue> = listOf(absent) + listOfNotNull(explicitDefault) + values
 
     override fun toString(): String = values.joinToString(prefix = "$name(", postfix = ")")
+
+    companion object {
+        fun plusOnly(name: String, level: WordLevel = WordLevel.SEGMENT): Feature =
+            Feature(
+                name,
+                listOf(SimpleValue("+$name")),
+                explicitDefault = SimpleValue("-$name"),
+                level = level,
+            )
+
+        fun plusMinus(name: String, level: WordLevel = WordLevel.SEGMENT): Feature =
+            Feature(
+                name,
+                listOf(SimpleValue("+$name"), SimpleValue("-$name")),
+                level = level,
+            )
+    }
 }
 
 data class Symbol(val name: String, val declaredMatrix: Matrix?) {

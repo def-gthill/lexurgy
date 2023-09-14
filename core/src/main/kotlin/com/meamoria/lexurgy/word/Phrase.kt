@@ -272,7 +272,16 @@ class Phrase(val words: List<Word>) : Iterable<Word> {
         return Phrase(resultWords)
     }
 
+    /**
+     * Returns a phrase with just this phrase's segments (no structure)
+     */
     fun toSimple(): Phrase = Phrase(words.map { it.toSimple() })
+
+    /**
+     * Returns this phrase as a syllabified phrase, i.e. it has a
+     * syllabification but it's empty.
+     */
+    fun toSyllabified(): Phrase = Phrase(words.map { it.toSyllabified() })
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

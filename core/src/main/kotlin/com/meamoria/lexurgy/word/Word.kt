@@ -122,6 +122,12 @@ interface Word {
     fun toSimple(): Word
 
     /**
+     * Returns this word as a syllabified word, i.e. it has a
+     * syllabification but it's empty.
+     */
+    fun toSyllabified(): Word
+
+    /**
      * Returns the word represented by this ``Word`` as
      * a plain string (as per ``string``) but with the
      * specified segment made prominent

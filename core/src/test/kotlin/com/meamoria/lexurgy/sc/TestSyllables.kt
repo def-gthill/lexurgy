@@ -545,6 +545,22 @@ class TestSyllables : StringSpec({
         ch("me.ˈde") shouldBe "me.ˈdie"
     }
 
+    "We can remove syllable-level features using their diacritics" {
+        val ch = lsc(
+            """
+                Feature (syllable) +stress
+                Diacritic ˈ (before) [+stress]
+                Syllables:
+                    explicit
+                stress-breaking:
+                    ˈe => ie
+            """.trimIndent()
+        )
+
+        ch("ˈme.de") shouldBe "mie.de"
+        ch("me.ˈde") shouldBe "me.die"
+    }
+
     "We can assign syllable-level features in the syllabification rules" {
         val ch = lsc(
             """

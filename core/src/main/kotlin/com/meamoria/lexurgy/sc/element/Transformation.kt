@@ -35,10 +35,8 @@ data class Transformation(
      * (e.g. syllable feature changes)
      */
     fun finalResult(declarations: Declarations): Phrase =
-        result.updateSyllableModifiers(syllableFeatureChanges) { existing, new ->
-            with(declarations) {
-                existing.toMatrix().update(new).toModifiers()
-            }
+        with(declarations) {
+            result.updateSyllableModifiers(syllableFeatureChanges)
         }
 }
 
