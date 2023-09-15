@@ -37,7 +37,7 @@ private fun runScv1Using(soundChanger: SoundChanger, request: Request): Response
             debugWords = request.traceWords,
             debug = { },
             trace = ::trace,
-            timeoutSeconds = System.getenv("TIMEOUT")?.toDouble() ?: 0.5,
+            totalTimeoutSeconds = System.getenv("TIMEOUT")?.toDouble() ?: 0.5,
         )
     return SuccessResponse(
         ruleNames = soundChanger.ruleNames,

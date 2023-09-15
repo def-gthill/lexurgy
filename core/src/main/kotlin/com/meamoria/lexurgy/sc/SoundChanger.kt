@@ -4,6 +4,7 @@ import com.meamoria.lexurgy.*
 import com.meamoria.lexurgy.word.Phrase
 import java.util.*
 import java.util.concurrent.Callable
+import java.util.concurrent.ExecutionException
 import java.util.concurrent.ForkJoinPool
 import kotlin.concurrent.schedule
 import kotlin.streams.toList
@@ -53,6 +54,9 @@ class SoundChanger(
      * @param debugWords Words to trace the evolution of
      * @param romanize True to run the romanizer (if any), false to ignore it
      * @param debug Function to call with tracing output
+     * @param trace Function to call with structured tracing output
+     * @param singleStepTimeoutSeconds Maximum allowed time in seconds to apply one rule to one word
+     * @param totalTimeoutSeconds Maximum allowed time in seconds to complete the entire run
      */
     fun change(
         words: List<String>,
@@ -62,7 +66,8 @@ class SoundChanger(
         romanize: Boolean = true,
         debug: (String) -> Unit = ::println,
         trace: (TraceInfo) -> Unit = { },
-        timeoutSeconds: Double? = null,
+        singleStepTimeoutSeconds: Double? = null,
+        totalTimeoutSeconds: Double? = null,
     ): List<String> = changeWithIntermediates(
         words,
         startAt = startAt,
@@ -71,7 +76,8 @@ class SoundChanger(
         romanize = romanize,
         debug = debug,
         trace = trace,
-        timeoutSeconds = timeoutSeconds,
+        singleStepTimeoutSeconds = singleStepTimeoutSeconds,
+        totalTimeoutSeconds = totalTimeoutSeconds,
     ).getValue(null)
 
     /**
@@ -89,6 +95,8 @@ class SoundChanger(
         romanize: Boolean = true,
         debug: (String) -> Unit = ::println,
         trace: (TraceInfo) -> Unit = { },
+        singleStepTimeoutSeconds: Double? = null,
+        totalTimeoutSeconds: Double? = null,
     ): List<Result<String>> = changeWithIntermediatesAndIndividualErrors(
         words,
         startAt = startAt,
@@ -97,6 +105,8 @@ class SoundChanger(
         romanize = romanize,
         debug = debug,
         trace = trace,
+        singleStepTimeoutSeconds = singleStepTimeoutSeconds,
+        totalTimeoutSeconds = totalTimeoutSeconds,
     ).getValue(null)
 
     /**
@@ -117,7 +127,8 @@ class SoundChanger(
         romanize: Boolean = true,
         debug: (String) -> Unit = ::println,
         trace: (TraceInfo) -> Unit = { },
-        timeoutSeconds: Double? = null,
+        singleStepTimeoutSeconds: Double? = null,
+        totalTimeoutSeconds: Double? = null,
     ): Map<String?, List<String>> {
         val fullResult = changeWithIntermediatesAndIndividualErrors(
             words = words,
@@ -127,7 +138,8 @@ class SoundChanger(
             romanize = romanize,
             debug = debug,
             trace = trace,
-            timeoutSeconds = timeoutSeconds,
+            singleStepTimeoutSeconds = singleStepTimeoutSeconds,
+            totalTimeoutSeconds = totalTimeoutSeconds,
         )
         return fullResult.mapValues { (_, outputWords) ->
             outputWords.map { it.getOrThrow() }
@@ -149,7 +161,8 @@ class SoundChanger(
         romanize: Boolean = true,
         debug: (String) -> Unit = ::println,
         trace: (TraceInfo) -> Unit = { },
-        timeoutSeconds: Double? = null,
+        singleStepTimeoutSeconds: Double? = null,
+        totalTimeoutSeconds: Double? = null,
     ): Map<String?, List<Result<String>>> {
         val executor = ForkJoinPool()
 
@@ -186,7 +199,11 @@ class SoundChanger(
                         }
                         val rom = anchoredStep.romanizer
                         result[rom.name] = applyRule(
-                            maybeReplace(rom), words, curPhrases, tracer
+                            maybeReplace(rom),
+                            words,
+                            curPhrases,
+                            tracer,
+                            singleStepTimeoutSeconds,
                         ).map { res -> res.map { it.string } }
                     }
 
@@ -195,7 +212,11 @@ class SoundChanger(
                             return
                         }
                         curPhrases = applyRule(
-                            anchoredStep.cleanupRule, words, curPhrases, tracer
+                            anchoredStep.cleanupRule,
+                            words,
+                            curPhrases,
+                            tracer,
+                            singleStepTimeoutSeconds,
                         )
                     }
 
@@ -261,7 +282,11 @@ class SoundChanger(
                 if (started) {
                     if (rule != null && (romanize || rule.ruleType != RuleType.ROMANIZER)) {
                         curPhrases = applyRule(
-                            rule, words, curPhrases, tracer
+                            rule,
+                            words,
+                            curPhrases,
+                            tracer,
+                            singleStepTimeoutSeconds,
                         )
                     }
                 }
@@ -285,8 +310,8 @@ class SoundChanger(
 
         val timer = Timer()
         var timedOut = false
-        if (timeoutSeconds != null) {
-            timer.schedule((timeoutSeconds * 1000).toLong()) {
+        if (totalTimeoutSeconds != null) {
+            timer.schedule((totalTimeoutSeconds * 1000).toLong()) {
                 executor.shutdownNow()
                 timedOut = true
             }
@@ -309,6 +334,13 @@ class SoundChanger(
             } else {
                 result
             }
+        }
+        catch (e: ExecutionException) {
+            var reason: Throwable = e
+            while (reason !is RunTimedOut) {
+                reason = reason.cause ?: throw reason
+            }
+            throw reason
         } finally {
             timer.cancel()
             executor.shutdown()
@@ -399,16 +431,34 @@ class SoundChanger(
         origPhrases: List<String>,
         curPhrases: List<Result<Phrase>>,
         tracer: Tracer,
+        singleStepTimeoutSeconds: Double?,
     ): List<Result<Phrase>> =
         curPhrases.zip(origPhrases).parallelStream().map {
-            it.first.mapCatching { curPhrase ->
+            if (Thread.currentThread().isInterrupted) throw RunTimedOut(TooManyWords())
+            val timer = Timer()
+            var timedOut = false
+            if (singleStepTimeoutSeconds != null) {
+                val thisThread = Thread.currentThread()
+                timer.schedule((singleStepTimeoutSeconds * 1000).toLong()) {
+                    thisThread.interrupt()
+                    timedOut = true
+                }
+            }
+            val result = it.first.mapCatching { curPhrase ->
                 try {
                     rule(curPhrase).removeBoundingBreaks()
                 } catch (e: Exception) {
-                    if (e is UserError) throw LscRuleNotApplicable(e, rule.name, it.second, curPhrase.string)
-                    else throw LscRuleCrashed(e, rule.name, it.second, curPhrase.string)
+                    if (timedOut) {
+                        throw RunTimedOut(e)
+                    } else if (e is UserError) {
+                        throw LscRuleNotApplicable(e, rule.name, it.second, curPhrase.string)
+                    } else {
+                        throw LscRuleCrashed(e, rule.name, it.second, curPhrase.string)
+                    }
                 }
             }
+            timer.cancel()
+            result
         }.toList().also { newPhrases ->
             tracer(rule.name, curPhrases, newPhrases)
         }
@@ -462,8 +512,6 @@ class SoundChanger(
     )
 }
 
-internal fun Iterable<String>.maxLength(): Int = maxOfOrNull { it.lengthCombining() } ?: 0
-
 class LscRuleNotApplicable(
     val reason: UserError,
     val rule: String,
@@ -489,4 +537,8 @@ class LscRuleNotFound(val ruleName: String, val attemptedAction: String) :
     LscUserError("Can't $attemptedAction rule $ruleName; there is no rule with that name")
 
 
-class RunTimedOut(val reason: Exception) : Exception("Run timed out: $reason")
+class RunTimedOut(
+    val reason: Exception
+) : Exception("Run timed out: ${reason.message}")
+
+class TooManyWords : Exception("Too many input words")
