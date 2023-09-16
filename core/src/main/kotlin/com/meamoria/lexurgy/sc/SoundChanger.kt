@@ -41,6 +41,7 @@ class SoundChanger(
         }
     }
 
+    val timer = Timer()
     @Volatile
     var timedOut = false
 
@@ -311,10 +312,10 @@ class SoundChanger(
             result
         })
 
-        val timer = Timer()
+        var timerTask: TimerTask? = null
         timedOut = false
         if (totalTimeoutSeconds != null) {
-            timer.schedule((totalTimeoutSeconds * 1000).toLong()) {
+            timerTask = timer.schedule((totalTimeoutSeconds * 1000).toLong()) {
                 executor.shutdownNow()
                 timedOut = true
             }
@@ -345,7 +346,7 @@ class SoundChanger(
             }
             throw reason
         } finally {
-            timer.cancel()
+            timerTask?.cancel()
             executor.shutdown()
         }
     }
@@ -438,11 +439,11 @@ class SoundChanger(
     ): List<Result<Phrase>> =
         curPhrases.zip(origPhrases).parallelStream().map {
             if (this.timedOut) throw RunTimedOut(TooManyWords())
-            val timer = Timer()
+            var timerTask: TimerTask? = null
             var timedOut = false
             if (singleStepTimeoutSeconds != null) {
                 val thisThread = Thread.currentThread()
-                timer.schedule((singleStepTimeoutSeconds * 1000).toLong()) {
+                timerTask = timer.schedule((singleStepTimeoutSeconds * 1000).toLong()) {
                     thisThread.interrupt()
                     timedOut = true
                 }
@@ -460,7 +461,7 @@ class SoundChanger(
                     }
                 }
             }
-            timer.cancel()
+            timerTask?.cancel()
             result
         }.toList().also { newPhrases ->
             tracer(rule.name, curPhrases, newPhrases)

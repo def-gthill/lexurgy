@@ -250,9 +250,10 @@ class Scv1Test {
             "/scv1",
             scv1Request(
                 changes = "mini-explode:\n(a+ a+)+ b => x",
-                inputWords = generateSequence { "aaaaaaaaaaaaa" }.take(100).toList()
+                inputWords = generateSequence { "aaaaaaaa" }.take(10000).toList()
             )
         ).apply {
+            println(bodyAsText())
             assertEquals(HttpStatusCode.BadRequest, status)
         }
     }
