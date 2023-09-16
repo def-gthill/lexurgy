@@ -1,10 +1,7 @@
 package com.meamoria.lexurgy.api.sc.v1
 
 import com.meamoria.lexurgy.LscUserError
-import com.meamoria.lexurgy.sc.LscInvalidRuleExpression
-import com.meamoria.lexurgy.sc.LscNotParsable
-import com.meamoria.lexurgy.sc.LscRuleNotApplicable
-import com.meamoria.lexurgy.sc.SoundChanger
+import com.meamoria.lexurgy.sc.*
 
 fun runScv1(request: Request): Response {
     val soundChanger = try {
@@ -17,7 +14,11 @@ fun runScv1(request: Request): Response {
         return AnalysisErrorResponse(e.message ?: "An unknown error occurred")
     }
 
-    return runScv1Using(soundChanger, request)
+    return try {
+        runScv1Using(soundChanger, request)
+    } catch (e: RunTimedOut) {
+        TimeoutResponse(e.message ?: "Run timed out")
+    }
 }
 
 private fun runScv1Using(soundChanger: SoundChanger, request: Request): Response {
@@ -37,6 +38,7 @@ private fun runScv1Using(soundChanger: SoundChanger, request: Request): Response
             debugWords = request.traceWords,
             debug = { },
             trace = ::trace,
+            singleStepTimeoutSeconds = System.getenv("SINGLE_STEP_TIMEOUT")?.toDouble() ?: 0.1,
             totalTimeoutSeconds = System.getenv("TIMEOUT")?.toDouble() ?: 0.5,
         )
     return SuccessResponse(

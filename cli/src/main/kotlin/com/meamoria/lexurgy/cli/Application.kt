@@ -86,7 +86,8 @@ fun SoundChanger.changeFiles(
                 stopBefore = stopBefore,
                 debugWords = debugWords,
                 romanize = romanize,
-                debug = ::debug
+                debug = ::debug,
+                singleStepTimeoutSeconds = 1.0,
             )
         }
 

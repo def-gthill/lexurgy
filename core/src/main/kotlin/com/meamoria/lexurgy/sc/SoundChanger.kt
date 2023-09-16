@@ -41,6 +41,9 @@ class SoundChanger(
         }
     }
 
+    @Volatile
+    var timedOut = false
+
     operator fun invoke(word: String): String = change(listOf(word)).single()
 
     /**
@@ -309,7 +312,7 @@ class SoundChanger(
         })
 
         val timer = Timer()
-        var timedOut = false
+        timedOut = false
         if (totalTimeoutSeconds != null) {
             timer.schedule((totalTimeoutSeconds * 1000).toLong()) {
                 executor.shutdownNow()
@@ -434,7 +437,7 @@ class SoundChanger(
         singleStepTimeoutSeconds: Double?,
     ): List<Result<Phrase>> =
         curPhrases.zip(origPhrases).parallelStream().map {
-            if (Thread.currentThread().isInterrupted) throw RunTimedOut(TooManyWords())
+            if (this.timedOut) throw RunTimedOut(TooManyWords())
             val timer = Timer()
             var timedOut = false
             if (singleStepTimeoutSeconds != null) {

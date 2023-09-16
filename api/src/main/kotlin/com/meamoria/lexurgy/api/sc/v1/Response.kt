@@ -53,3 +53,9 @@ data class InvalidExpressionResponse(
 data class AnalysisErrorResponse(
     val message: String
 ) : ErrorResponse
+
+@Serializable
+@SerialName("timeout")
+data class TimeoutResponse(
+    val message: String
+) : ErrorResponse

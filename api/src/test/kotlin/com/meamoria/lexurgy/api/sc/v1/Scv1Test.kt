@@ -236,7 +236,24 @@ class Scv1Test {
                 inputWords = listOf("foo", "bar"),
             ),
         ).apply {
-            assertEquals(1, 1)
+            assertEquals(HttpStatusCode.OK, status)
+            assertEquals(
+                1,
+                Json.parseToJsonElement(bodyAsText()).jsonObject["errors"]?.jsonArray?.size
+            )
+        }
+    }
+
+    @Test
+    fun onTooManyWords_TimesOut() = testApi {
+        client.postJson(
+            "/scv1",
+            scv1Request(
+                changes = "mini-explode:\n(a+ a+)+ b => x",
+                inputWords = generateSequence { "aaaaaaaaaaaaa" }.take(100).toList()
+            )
+        ).apply {
+            assertEquals(HttpStatusCode.BadRequest, status)
         }
     }
 
