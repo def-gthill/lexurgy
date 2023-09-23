@@ -13,13 +13,11 @@ class SoundChangesFileLoader {
         val INCLUDE_LINE = Regex("^\\s*#include\\s+\"(.+?)\"\\s*$")
     }
 
-    val pathsVisited: MutableSet<Path> = mutableSetOf()
-
-    fun load(path: Path): Sequence<String> {
+    fun load(path: Path, pathsVisited: Set<Path> = setOf()): Sequence<String> {
         if (path in pathsVisited) {
             throw CircularInclusion(path)
         }
-        pathsVisited.add(path)
+        val nextPathsVisited = pathsVisited + setOf(path)
 
         return sequence {
             for (line in path.toFile().readLines()) {
@@ -29,7 +27,10 @@ class SoundChangesFileLoader {
                     continue
                 }
                 val includedPath = match.groupValues[1]
-                yieldAll(load(path.toAbsolutePath().parent.resolve(includedPath)))
+                yieldAll(load(
+                    path.toAbsolutePath().parent.resolve(includedPath),
+                    nextPathsVisited
+                ))
             }
         }
     }

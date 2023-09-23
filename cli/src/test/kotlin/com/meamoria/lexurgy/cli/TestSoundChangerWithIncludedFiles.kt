@@ -1,5 +1,6 @@
 package com.meamoria.lexurgy.cli
 
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import java.io.File
@@ -90,5 +91,15 @@ class TestSoundChangerWithIncludedFiles : StringSpec({
         } finally {
             deleteFromCwd(filenames + "ptr_test_1_ev.wli")
         }
+    }
+
+    "A sound changer should detect circular inclusions" {
+        shouldThrow<CircularInclusion> {
+            soundChangerFromLscFile(pathOf("circular_a.lsc"))
+        }
+    }
+
+    "A sound changer should allow the same file to be included multiple times if there are no circular inclusions" {
+        soundChangerFromLscFile(pathOf("non_circular_includer.lsc"))
     }
 })

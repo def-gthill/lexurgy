@@ -1,0 +1,4 @@
+rule1:
+    a => b
+
+#include "circular_b.lsc"
