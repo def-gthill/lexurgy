@@ -1,0 +1,5 @@
+test1:
+#include "non_circular_included.lsc"
+
+test2:
+#include "non_circular_included.lsc"
