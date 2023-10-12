@@ -5,7 +5,7 @@ import com.meamoria.lexurgy.sc.*
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
-fun runScv1(request: Request, totalTimeoutSeconds: Double): Response {
+fun runScv1(request: Request, requestTimeoutSeconds: Double): Response {
     val soundChanger = try {
         SoundChanger.fromLsc(request.changes)
     } catch (e: LscNotParsable) {
@@ -16,10 +16,8 @@ fun runScv1(request: Request, totalTimeoutSeconds: Double): Response {
         return AnalysisErrorResponse(e.message ?: "An unknown error occurred")
     }
 
-//    val totalTimeoutSeconds = System.getenv("TIMEOUT")?.toDouble() ?: 0.5
-
     return if (request.allowPolling) {
-        val job = SoundChangerJob(soundChanger, request, totalTimeoutSeconds)
+        val job = SoundChangerJob(soundChanger, request, requestTimeoutSeconds)
         val result = job.start()
         if (result == null) {
             val jobId = UUID.randomUUID()
@@ -30,7 +28,7 @@ fun runScv1(request: Request, totalTimeoutSeconds: Double): Response {
         }
     } else {
         try {
-            runScv1Using(soundChanger, request, totalTimeoutSeconds)
+            runScv1Using(soundChanger, request, requestTimeoutSeconds)
         } catch (e: RunTimedOut) {
             TimeoutResponse(e.message ?: "Run timed out")
         }
@@ -53,7 +51,7 @@ private val soundChangerJobs: MutableMap<UUID, SoundChangerJob> = ConcurrentHash
 private class SoundChangerJob(
     val soundChanger: SoundChanger,
     val request: Request,
-    val totalTimeoutSeconds: Double,
+    val requestTimeoutSeconds: Double,
 ) {
     @Volatile
     private var _result: SuccessResponse? = null
@@ -63,7 +61,7 @@ private class SoundChangerJob(
             _result = runScv1Using(soundChanger, request)
         }
         thread.start()
-        Thread.sleep((totalTimeoutSeconds * 1000).toLong())
+        Thread.sleep((requestTimeoutSeconds * 1000).toLong())
         return _result
     }
 
@@ -74,7 +72,7 @@ private class SoundChangerJob(
 private fun runScv1Using(
     soundChanger: SoundChanger,
     request: Request,
-    totalTimeoutSeconds: Double? = null,
+    requestTimeoutSeconds: Double? = null,
 ): SuccessResponse {
     val traces = mutableMapOf<String, MutableList<TraceStep>>()
 
@@ -93,7 +91,7 @@ private fun runScv1Using(
             debug = { },
             trace = ::trace,
             singleStepTimeoutSeconds = System.getenv("SINGLE_STEP_TIMEOUT")?.toDouble() ?: 0.1,
-            totalTimeoutSeconds = totalTimeoutSeconds,
+            totalTimeoutSeconds = requestTimeoutSeconds,
         )
     return SuccessResponse(
         ruleNames = soundChanger.ruleNames,

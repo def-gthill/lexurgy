@@ -19,8 +19,8 @@ fun testApi(block: suspend ApplicationTestBuilder.() -> Unit) {
     }
 }
 
-fun testApiWithTotalTimeout(
-    totalTimeoutSeconds: Double,
+fun testApiWithRequestTimeout(
+    requestTimeoutSeconds: Double,
     block: suspend ApplicationTestBuilder.() -> Unit,
 ) {
     testApplication {
@@ -28,7 +28,7 @@ fun testApiWithTotalTimeout(
             configureSerialization()
             configureRouting()
             install(Timeouts) {
-                this.totalTimeoutSeconds = totalTimeoutSeconds
+                this.requestTimeoutSeconds = requestTimeoutSeconds
             }
         }
         block()

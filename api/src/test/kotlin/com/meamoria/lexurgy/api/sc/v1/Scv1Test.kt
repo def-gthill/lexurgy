@@ -289,7 +289,7 @@ class Scv1Test {
     @Test
     fun onTooManyWordsWithPollingEnabled_CanGetResultsByPolling() =
         // Force polling with a ridiculously short timeot
-        testApiWithTotalTimeout(1e-9) {
+        testApiWithRequestTimeout(1e-9) {
             var pollingUrl: String
             client.postJson(
                 "/scv1",
