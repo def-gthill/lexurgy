@@ -29,6 +29,9 @@ data class TraceStep(
 )
 
 @Serializable
+data class RunningInBackgroundResponse(val url: String) : Response
+
+@Serializable
 sealed interface ErrorResponse : Response
 
 @Serializable

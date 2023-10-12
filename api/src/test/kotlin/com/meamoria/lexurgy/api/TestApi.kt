@@ -13,6 +13,23 @@ fun testApi(block: suspend ApplicationTestBuilder.() -> Unit) {
         application {
             configureSerialization()
             configureRouting()
+            install(Timeouts)
+        }
+        block()
+    }
+}
+
+fun testApiWithTotalTimeout(
+    totalTimeoutSeconds: Double,
+    block: suspend ApplicationTestBuilder.() -> Unit,
+) {
+    testApplication {
+        application {
+            configureSerialization()
+            configureRouting()
+            install(Timeouts) {
+                this.totalTimeoutSeconds = totalTimeoutSeconds
+            }
         }
         block()
     }

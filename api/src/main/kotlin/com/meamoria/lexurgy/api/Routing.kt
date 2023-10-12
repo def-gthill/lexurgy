@@ -1,6 +1,7 @@
 package com.meamoria.lexurgy.api
 
 import com.meamoria.lexurgy.api.inflect.v1.runInflectV1
+import com.meamoria.lexurgy.api.sc.v1.pollScV1
 import com.meamoria.lexurgy.api.sc.v1.runScV1
 import com.meamoria.lexurgy.api.sc.v1.runScV1Validate
 import com.meamoria.lexurgy.sc.SoundChanger
@@ -51,6 +52,9 @@ fun Application.configureRouting() {
         }
         post("/scv1") {
             call.runScV1()
+        }
+        get("/scv1/poll/{jobId}") {
+            call.pollScV1(call.parameters["jobId"]!!)
         }
         post("/scv1/validate") {
             call.runScV1Validate()

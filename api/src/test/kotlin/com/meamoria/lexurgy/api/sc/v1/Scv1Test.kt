@@ -1,12 +1,10 @@
 package com.meamoria.lexurgy.api.sc.v1
 
-import com.meamoria.lexurgy.api.assertOkResponseIsJson
-import com.meamoria.lexurgy.api.postJson
-import com.meamoria.lexurgy.api.testApi
-import com.meamoria.lexurgy.api.testApiWithKey
+import com.meamoria.lexurgy.api.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.*
 import kotlin.test.Test
 import kotlin.test.assertContains
@@ -253,10 +251,76 @@ class Scv1Test {
                 inputWords = generateSequence { "aaaaaaaa" }.take(10000).toList()
             )
         ).apply {
-            println(bodyAsText())
             assertEquals(HttpStatusCode.BadRequest, status)
         }
     }
+
+    @Test
+    fun withPollingEnabled_AppliesChanges() = testApi {
+        client.postJson(
+            "/scv1",
+            scv1Request(
+                changes = "rule:\no => a",
+                inputWords = listOf("foo", "oboe"),
+                allowPolling = true,
+            )
+        ).assertOkResponseIsJson(
+            scv1Response(
+                ruleNames = listOf("rule"),
+                outputWords = listOf("faa", "abae")
+            )
+        )
+    }
+
+    @Test
+    fun onTooManyWordsWithPollingEnabled_RunsInTheBackground() = testApi {
+        client.postJson(
+            "/scv1",
+            scv1Request(
+                changes = "mini-explode:\n(a+ a+)+ b => x",
+                inputWords = generateSequence { "aaaaaaaa" }.take(10000).toList(),
+                allowPolling = true,
+            )
+        ).apply {
+            assertEquals(HttpStatusCode.Accepted, status)
+        }
+    }
+
+    @Test
+    fun onTooManyWordsWithPollingEnabled_CanGetResultsByPolling() =
+        // Force polling with a ridiculously short timeot
+        testApiWithTotalTimeout(1e-9) {
+            var pollingUrl: String
+            client.postJson(
+                "/scv1",
+                scv1Request(
+                    changes = "rule:\no => a",
+                    inputWords = listOf("foo", "oboe"),
+                    allowPolling = true,
+                )
+            ).apply {
+                assertEquals(HttpStatusCode.Accepted, status)
+                pollingUrl = bodyAsJson().getValue("url").jsonPrimitive.content
+            }
+            var done = false
+            while (!done) {
+                client.get(pollingUrl).apply {
+                    assertEquals(HttpStatusCode.OK, status)
+                    val status = bodyAsJson().getValue("status").jsonPrimitive.content
+                    if (status == "done") {
+                        done = true
+                        val result = bodyAsJson().getValue("result")
+                        assertEquals(
+                            result,
+                            scv1ResponseObject(
+                                ruleNames = listOf("rule"),
+                                outputWords = listOf("faa", "abae")
+                            )
+                        )
+                    }
+                }
+            }
+        }
 
     @Test
     fun withApiKeyCheckingAndNoApiKey_ReturnsUnauthorized() = testApiWithKey {
@@ -303,6 +367,7 @@ class Scv1Test {
         traceWords: List<String> = emptyList(),
         startAt: String? = null,
         stopBefore: String? = null,
+        allowPolling: Boolean = false,
     ): String = buildJsonObject {
         put("changes", changes)
         putJsonArray("inputWords") {
@@ -323,6 +388,9 @@ class Scv1Test {
         if (stopBefore != null) {
             put("stopBefore", stopBefore)
         }
+        if (allowPolling) {
+            put("allowPolling", true)
+        }
     }.toString()
 
     private fun scv1Response(
@@ -331,7 +399,21 @@ class Scv1Test {
         intermediateWords: Map<String, List<String>> = emptyMap(),
         traces: Map<String, List<Pair<String, String>>> = emptyMap(),
         errors: List<JsonObject> = emptyList(),
-    ): String = buildJsonObject {
+    ): String = scv1ResponseObject(
+        ruleNames = ruleNames,
+        outputWords = outputWords,
+        intermediateWords = intermediateWords,
+        traces = traces,
+        errors = errors,
+    ).toString()
+
+    private fun scv1ResponseObject(
+        ruleNames: List<String>,
+        outputWords: List<String>,
+        intermediateWords: Map<String, List<String>> = emptyMap(),
+        traces: Map<String, List<Pair<String, String>>> = emptyMap(),
+        errors: List<JsonObject> = emptyList(),
+    ): JsonObject = buildJsonObject {
         putJsonArray("ruleNames") {
             for (name in ruleNames) {
                 add(name)
@@ -374,7 +456,7 @@ class Scv1Test {
                 }
             }
         }
-    }.toString()
+    }
 
     private fun ruleFailure(
         message: String,
@@ -387,4 +469,7 @@ class Scv1Test {
         put("originalWord", originalWord)
         put("currentWord", currentWord)
     }
+
+    private suspend fun HttpResponse.bodyAsJson(): JsonObject =
+        Json.decodeFromString<JsonObject>(bodyAsText())
 }

@@ -2,8 +2,10 @@ package com.meamoria.lexurgy.api.sc.v1
 
 import com.meamoria.lexurgy.LscUserError
 import com.meamoria.lexurgy.sc.*
+import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 
-fun runScv1(request: Request): Response {
+fun runScv1(request: Request, totalTimeoutSeconds: Double): Response {
     val soundChanger = try {
         SoundChanger.fromLsc(request.changes)
     } catch (e: LscNotParsable) {
@@ -14,14 +16,66 @@ fun runScv1(request: Request): Response {
         return AnalysisErrorResponse(e.message ?: "An unknown error occurred")
     }
 
-    return try {
-        runScv1Using(soundChanger, request)
-    } catch (e: RunTimedOut) {
-        TimeoutResponse(e.message ?: "Run timed out")
+//    val totalTimeoutSeconds = System.getenv("TIMEOUT")?.toDouble() ?: 0.5
+
+    return if (request.allowPolling) {
+        val job = SoundChangerJob(soundChanger, request, totalTimeoutSeconds)
+        val result = job.start()
+        if (result == null) {
+            val jobId = UUID.randomUUID()
+            soundChangerJobs[jobId] = job
+            RunningInBackgroundResponse("/scv1/poll/${jobId}")
+        } else {
+            return result
+        }
+    } else {
+        try {
+            runScv1Using(soundChanger, request, totalTimeoutSeconds)
+        } catch (e: RunTimedOut) {
+            TimeoutResponse(e.message ?: "Run timed out")
+        }
     }
 }
 
-private fun runScv1Using(soundChanger: SoundChanger, request: Request): Response {
+fun pollScv1(jobId: String): PollResponse {
+    val uuid = UUID.fromString(jobId)
+    val job = soundChangerJobs.getValue(uuid)
+    val result = job.result
+    return if (result == null) {
+        WorkingResponse
+    } else {
+        DoneResponse(result)
+    }
+}
+
+private val soundChangerJobs: MutableMap<UUID, SoundChangerJob> = ConcurrentHashMap()
+
+private class SoundChangerJob(
+    val soundChanger: SoundChanger,
+    val request: Request,
+    val totalTimeoutSeconds: Double,
+) {
+    @Volatile
+    private var _result: SuccessResponse? = null
+
+    fun start(): SuccessResponse? {
+        val thread = Thread {
+            _result = runScv1Using(soundChanger, request)
+        }
+        thread.start()
+        Thread.sleep((totalTimeoutSeconds * 1000).toLong())
+        return _result
+    }
+
+    val result
+        get() = _result
+}
+
+private fun runScv1Using(
+    soundChanger: SoundChanger,
+    request: Request,
+    totalTimeoutSeconds: Double? = null,
+): SuccessResponse {
     val traces = mutableMapOf<String, MutableList<TraceStep>>()
 
     fun trace(traceInfo: SoundChanger.TraceInfo) {
@@ -39,7 +93,7 @@ private fun runScv1Using(soundChanger: SoundChanger, request: Request): Response
             debug = { },
             trace = ::trace,
             singleStepTimeoutSeconds = System.getenv("SINGLE_STEP_TIMEOUT")?.toDouble() ?: 0.1,
-            totalTimeoutSeconds = System.getenv("TIMEOUT")?.toDouble() ?: 0.5,
+            totalTimeoutSeconds = totalTimeoutSeconds,
         )
     return SuccessResponse(
         ruleNames = soundChanger.ruleNames,

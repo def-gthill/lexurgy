@@ -9,4 +9,5 @@ data class Request(
     val traceWords: List<String> = emptyList(),
     val startAt: String? = null,
     val stopBefore: String? = null,
+    val allowPolling: Boolean = false,
 )
