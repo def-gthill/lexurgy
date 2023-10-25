@@ -1,6 +1,7 @@
 package com.meamoria.lexurgy.api.sc.v1
 
 import com.meamoria.lexurgy.LscUserError
+import com.meamoria.lexurgy.UserError
 import com.meamoria.lexurgy.sc.*
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
@@ -45,6 +46,8 @@ fun runScv1(
                 singleStepTimeoutSeconds,
                 requestTimeoutSeconds,
             )
+        } catch (e: UserError) {
+            return RuntimeErrorResponse(e.message ?: "An unknown error occurred")
         } catch (e: RunTimedOut) {
             TimeoutResponse(e.message ?: "Run timed out")
         }

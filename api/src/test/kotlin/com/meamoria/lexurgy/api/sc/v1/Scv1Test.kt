@@ -227,6 +227,32 @@ class Scv1Test {
     }
 
     @Test
+    fun onDanglingDiacriticInRules_ReturnsBadRequest() = testApi {
+        client.postJson(
+            "/scv1",
+            scv1Request(
+                changes = "Feature +foo\nDiacritic ' [+foo]\nfoo:\n'o => a",
+                inputWords = listOf("foo", "bor"),
+            ),
+        ).apply {
+            assertEquals(HttpStatusCode.BadRequest, status)
+        }
+    }
+
+    @Test
+    fun onDanglingDiacriticInInputWord_ReturnsBadRequest() = testApi {
+        client.postJson(
+            "/scv1",
+            scv1Request(
+                changes = "Feature +foo\nDiacritic ' [+foo]\nfoo:\no => a",
+                inputWords = listOf("'foo", "bor"),
+            ),
+        ).apply {
+            assertEquals(HttpStatusCode.BadRequest, status)
+        }
+    }
+
+    @Test
     fun onExplodingRule_TimesOut() = testApi {
         client.postJson(
             "/scv1",
