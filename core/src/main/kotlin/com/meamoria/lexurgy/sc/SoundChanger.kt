@@ -41,7 +41,7 @@ class SoundChanger(
         }
     }
 
-    val timer = Timer()
+    val timer = Timer(true)
     @Volatile
     var timedOut = false
 
