@@ -55,6 +55,12 @@ data class AnalysisErrorResponse(
 ) : ErrorResponse
 
 @Serializable
+@SerialName("runtimeError")
+data class RuntimeErrorResponse(
+    val message: String
+) : ErrorResponse
+
+@Serializable
 @SerialName("timeout")
 data class TimeoutResponse(
     val message: String
