@@ -1,6 +1,8 @@
 package com.meamoria.lexurgy.api.sc.v1
 
 import com.meamoria.lexurgy.api.requestTimeoutKey
+import com.meamoria.lexurgy.api.singleStepTimeoutSeconds
+import com.meamoria.lexurgy.api.totalTimeoutSeconds
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
@@ -8,8 +10,10 @@ import io.ktor.server.response.*
 
 suspend fun ApplicationCall.runScV1() {
     val request = receive<Request>()
+    val totalTimeoutSeconds = this.attributes[totalTimeoutSeconds]
     val requestTimeoutSeconds = this.attributes[requestTimeoutKey]
-    when (val response = runScv1(request, requestTimeoutSeconds)) {
+    val singleStepTimeoutSeconds = this.attributes[singleStepTimeoutSeconds]
+    when (val response = runScv1(request, totalTimeoutSeconds, requestTimeoutSeconds, singleStepTimeoutSeconds)) {
         is SuccessResponse -> respond(response)
         is RunningInBackgroundResponse -> {
             this.response.status(HttpStatusCode.Accepted)

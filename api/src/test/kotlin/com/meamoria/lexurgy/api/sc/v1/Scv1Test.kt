@@ -9,6 +9,7 @@ import kotlinx.serialization.json.*
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 @Suppress("SameParameterValue")
 class Scv1Test {
@@ -303,7 +304,7 @@ class Scv1Test {
                 pollingUrl = bodyAsJson().getValue("url").jsonPrimitive.content
             }
             var done = false
-            while (!done) {
+            for (i in 1..10) {
                 client.get(pollingUrl).apply {
                     assertEquals(HttpStatusCode.OK, status)
                     val status = bodyAsJson().getValue("status").jsonPrimitive.content
@@ -320,6 +321,36 @@ class Scv1Test {
                     }
                 }
             }
+            assertTrue(done)
+        }
+
+    @Test
+    fun onTooManyWordsForTotalTimeout_TimesOutEvenWithPolling() =
+        testApiWithRequestTimeout(1e-9) {
+            var pollingUrl: String
+            client.postJson(
+                "/scv1",
+                scv1Request(
+                    changes = "mini-explode:\n(a+ a+)+ b => x",
+                    inputWords = generateSequence { "aaaaaaaa" }.take(10000).toList(),
+                    allowPolling = true,
+                )
+            ).apply {
+                assertEquals(HttpStatusCode.Accepted, status)
+                pollingUrl = bodyAsJson().getValue("url").jsonPrimitive.content
+            }
+            var done = false
+            for (i in 1..10) {
+                client.get(pollingUrl).apply {
+                    assertEquals(HttpStatusCode.OK, status)
+                    val status = bodyAsJson().getValue("status").jsonPrimitive.content
+                    if (status == "done") {
+                        done = true
+                        assertEquals(HttpStatusCode.BadRequest, this.status)
+                    }
+                }
+            }
+            assertTrue(done)
         }
 
     @Test
