@@ -4,6 +4,7 @@ import com.meamoria.lexurgy.api.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
+import kotlinx.coroutines.delay
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.*
 import kotlin.test.Test
@@ -309,6 +310,7 @@ class Scv1Test {
                 allowPolling = true,
             )
         ).apply {
+            println(bodyAsJson())
             assertEquals(HttpStatusCode.Accepted, status)
         }
     }
@@ -334,7 +336,7 @@ class Scv1Test {
                 client.get(pollingUrl).apply {
                     assertEquals(HttpStatusCode.OK, status)
                     val status = bodyAsJson().getValue("status").jsonPrimitive.content
-                    if (status == "done") {
+                    if (status != "working") {
                         done = true
                         val result = bodyAsJson().getValue("result")
                         assertEquals(
@@ -346,6 +348,7 @@ class Scv1Test {
                         )
                     }
                 }
+                delay(50)
             }
             assertTrue(done)
         }
@@ -368,13 +371,13 @@ class Scv1Test {
             var done = false
             for (i in 1..10) {
                 client.get(pollingUrl).apply {
-                    assertEquals(HttpStatusCode.OK, status)
                     val status = bodyAsJson().getValue("status").jsonPrimitive.content
-                    if (status == "done") {
+                    if (status != "working") {
                         done = true
                         assertEquals(HttpStatusCode.BadRequest, this.status)
                     }
                 }
+                delay(50)
             }
             assertTrue(done)
         }

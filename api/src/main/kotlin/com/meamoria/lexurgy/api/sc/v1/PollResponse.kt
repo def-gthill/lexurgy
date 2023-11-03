@@ -17,3 +17,7 @@ object WorkingResponse : PollResponse
 @Serializable
 @SerialName("done")
 data class DoneResponse(val result: SuccessResponse) : PollResponse
+
+@Serializable
+@SerialName("error")
+data class DoneWithErrorResponse(val result: ErrorResponse): PollResponse

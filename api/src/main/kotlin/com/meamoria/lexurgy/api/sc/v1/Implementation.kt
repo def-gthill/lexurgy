@@ -26,9 +26,9 @@ fun runScv1(
         val job = SoundChangerJob(
             soundChanger,
             request,
-            singleStepTimeoutSeconds,
-            requestTimeoutSeconds,
-            totalTimeoutSeconds,
+            singleStepTimeoutSeconds = singleStepTimeoutSeconds,
+            requestTimeoutSeconds = requestTimeoutSeconds,
+            totalTimeoutSeconds = totalTimeoutSeconds,
         )
         val result = job.start()
         if (result == null) {
@@ -36,7 +36,7 @@ fun runScv1(
             soundChangerJobs[jobId] = job
             RunningInBackgroundResponse("/scv1/poll/${jobId}")
         } else {
-            return result
+            result
         }
     } else {
         try {
@@ -47,7 +47,7 @@ fun runScv1(
                 requestTimeoutSeconds,
             )
         } catch (e: UserError) {
-            return RuntimeErrorResponse(e.message ?: "An unknown error occurred")
+            RuntimeErrorResponse(e.message ?: "An unknown error occurred")
         } catch (e: RunTimedOut) {
             TimeoutResponse(e.message ?: "Run timed out")
         }
@@ -57,11 +57,11 @@ fun runScv1(
 fun pollScv1(jobId: String): PollResponse {
     val uuid = UUID.fromString(jobId)
     val job = soundChangerJobs.getValue(uuid)
-    val result = job.result
-    return if (result == null) {
-        WorkingResponse
-    } else {
-        DoneResponse(result)
+    return when (val result = job.result) {
+        null -> WorkingResponse
+        is SuccessResponse -> DoneResponse(result)
+        is ErrorResponse -> DoneWithErrorResponse(result)
+        else -> throw AssertionError("Can't start polling within polling")
     }
 }
 
@@ -75,16 +75,24 @@ private class SoundChangerJob(
     val totalTimeoutSeconds: Double,
 ) {
     @Volatile
-    private var _result: SuccessResponse? = null
+    private var _result: Response? = null
 
-    fun start(): SuccessResponse? {
+    fun start(): Response? {
+        println("Request timeout seconds: $requestTimeoutSeconds")
+        println("Total timeout seconds: $totalTimeoutSeconds")
         val thread = Thread {
-            _result = runScv1Using(
-                soundChanger,
-                request,
-                singleStepTimeoutSeconds,
-                totalTimeoutSeconds,
-            )
+            _result = try {
+                runScv1Using(
+                    soundChanger,
+                    request,
+                    singleStepTimeoutSeconds,
+                    totalTimeoutSeconds,
+                )
+            } catch (e: UserError) {
+                RuntimeErrorResponse(e.message ?: "An unknown error occurred")
+            } catch (e: RunTimedOut) {
+                TimeoutResponse(e.message ?: "Run timed out")
+            }
         }
         thread.start()
         Thread.sleep((requestTimeoutSeconds * 1000).toLong())

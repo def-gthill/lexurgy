@@ -13,7 +13,13 @@ suspend fun ApplicationCall.runScV1() {
     val totalTimeoutSeconds = this.attributes[totalTimeoutSeconds]
     val requestTimeoutSeconds = this.attributes[requestTimeoutKey]
     val singleStepTimeoutSeconds = this.attributes[singleStepTimeoutSeconds]
-    when (val response = runScv1(request, totalTimeoutSeconds, requestTimeoutSeconds, singleStepTimeoutSeconds)) {
+    val response = runScv1(
+        request,
+        totalTimeoutSeconds = totalTimeoutSeconds,
+        requestTimeoutSeconds = requestTimeoutSeconds,
+        singleStepTimeoutSeconds = singleStepTimeoutSeconds,
+    )
+    when (response) {
         is SuccessResponse -> respond(response)
         is RunningInBackgroundResponse -> {
             this.response.status(HttpStatusCode.Accepted)
@@ -28,6 +34,9 @@ suspend fun ApplicationCall.runScV1() {
 
 suspend fun ApplicationCall.pollScV1(jobId: String) {
     val response = pollScv1(jobId)
+    if (response is DoneWithErrorResponse) {
+        this.response.status(HttpStatusCode.BadRequest)
+    }
     respond(response)
 }
 
