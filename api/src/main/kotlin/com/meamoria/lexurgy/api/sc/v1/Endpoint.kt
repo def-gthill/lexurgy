@@ -15,9 +15,11 @@ suspend fun ApplicationCall.runScV1() {
     val singleStepTimeoutSeconds = this.attributes[singleStepTimeoutSeconds]
     val response = runScv1(
         request,
-        totalTimeoutSeconds = totalTimeoutSeconds,
-        requestTimeoutSeconds = requestTimeoutSeconds,
-        singleStepTimeoutSeconds = singleStepTimeoutSeconds,
+        timeoutSettings = TimeoutSettings(
+            totalTimeoutSeconds = totalTimeoutSeconds,
+            requestTimeoutSeconds = requestTimeoutSeconds,
+            singleStepTimeoutSeconds = singleStepTimeoutSeconds,
+        )
     )
     when (response) {
         is SuccessResponse -> respond(response)

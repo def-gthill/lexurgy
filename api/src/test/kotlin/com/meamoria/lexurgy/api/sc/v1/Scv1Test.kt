@@ -310,7 +310,6 @@ class Scv1Test {
                 allowPolling = true,
             )
         ).apply {
-            println(bodyAsJson())
             assertEquals(HttpStatusCode.Accepted, status)
         }
     }

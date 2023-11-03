@@ -8,9 +8,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 fun runScv1(
     request: Request,
-    singleStepTimeoutSeconds: Double,
-    requestTimeoutSeconds: Double,
-    totalTimeoutSeconds: Double,
+    timeoutSettings: TimeoutSettings,
 ): Response {
     val soundChanger = try {
         SoundChanger.fromLsc(request.changes)
@@ -26,9 +24,7 @@ fun runScv1(
         val job = SoundChangerJob(
             soundChanger,
             request,
-            singleStepTimeoutSeconds = singleStepTimeoutSeconds,
-            requestTimeoutSeconds = requestTimeoutSeconds,
-            totalTimeoutSeconds = totalTimeoutSeconds,
+            timeoutSettings,
         )
         val result = job.start()
         if (result == null) {
@@ -43,8 +39,8 @@ fun runScv1(
             runScv1Using(
                 soundChanger,
                 request,
-                singleStepTimeoutSeconds,
-                requestTimeoutSeconds,
+                singleStepTimeoutSeconds = timeoutSettings.singleStepTimeoutSeconds,
+                totalTimeoutSeconds = timeoutSettings.requestTimeoutSeconds,
             )
         } catch (e: UserError) {
             RuntimeErrorResponse(e.message ?: "An unknown error occurred")
@@ -70,23 +66,19 @@ private val soundChangerJobs: MutableMap<UUID, SoundChangerJob> = ConcurrentHash
 private class SoundChangerJob(
     val soundChanger: SoundChanger,
     val request: Request,
-    val singleStepTimeoutSeconds: Double,
-    val requestTimeoutSeconds: Double,
-    val totalTimeoutSeconds: Double,
+    val timeoutSettings: TimeoutSettings,
 ) {
     @Volatile
     private var _result: Response? = null
 
     fun start(): Response? {
-        println("Request timeout seconds: $requestTimeoutSeconds")
-        println("Total timeout seconds: $totalTimeoutSeconds")
         val thread = Thread {
             _result = try {
                 runScv1Using(
                     soundChanger,
                     request,
-                    singleStepTimeoutSeconds,
-                    totalTimeoutSeconds,
+                    singleStepTimeoutSeconds = timeoutSettings.singleStepTimeoutSeconds,
+                    totalTimeoutSeconds = timeoutSettings.totalTimeoutSeconds,
                 )
             } catch (e: UserError) {
                 RuntimeErrorResponse(e.message ?: "An unknown error occurred")
@@ -95,7 +87,7 @@ private class SoundChangerJob(
             }
         }
         thread.start()
-        Thread.sleep((requestTimeoutSeconds * 1000).toLong())
+        Thread.sleep((timeoutSettings.requestTimeoutSeconds * 1000).toLong())
         return _result
     }
 
@@ -107,7 +99,7 @@ private fun runScv1Using(
     soundChanger: SoundChanger,
     request: Request,
     singleStepTimeoutSeconds: Double,
-    requestTimeoutSeconds: Double? = null,
+    totalTimeoutSeconds: Double? = null,
 ): SuccessResponse {
     val traces = mutableMapOf<String, MutableList<TraceStep>>()
 
@@ -126,7 +118,7 @@ private fun runScv1Using(
             debug = { },
             trace = ::trace,
             singleStepTimeoutSeconds = singleStepTimeoutSeconds,
-            totalTimeoutSeconds = requestTimeoutSeconds,
+            totalTimeoutSeconds = totalTimeoutSeconds,
         )
     return SuccessResponse(
         ruleNames = soundChanger.ruleNames,
@@ -136,6 +128,12 @@ private fun runScv1Using(
         errors = result.ruleFailures
     )
 }
+
+data class TimeoutSettings(
+    val singleStepTimeoutSeconds: Double,
+    val requestTimeoutSeconds: Double,
+    val totalTimeoutSeconds: Double,
+)
 
 private typealias ScResult = Map<String?, List<Result<String>>>
 
