@@ -19,4 +19,9 @@ fun Application.module() {
     }
     configureSerialization()
     configureRouting()
+    install(Timeouts) {
+        this.singleStepTimeoutSeconds = System.getenv("SINGLE_STEP_TIMEOUT").toDouble()
+        this.requestTimeoutSeconds = System.getenv("REQUEST_TIMEOUT").toDouble()
+        this.totalTimeoutSeconds = System.getenv("TOTAL_TIMEOUT").toDouble()
+    }
 }
