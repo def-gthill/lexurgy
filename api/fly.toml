@@ -1,0 +1,22 @@
+# fly.toml app configuration file generated for lexurgy-fly on 2023-09-18T18:55:42-06:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = "lexurgy-fly"
+primary_region = "sea"
+
+[build]
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+[env]
+ SINGLE_STEP_TIMEOUT = "1"
+ REQUEST_TIMEOUT = "5"
+ TOTAL_TIMEOUT = "60"
