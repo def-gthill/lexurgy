@@ -53,7 +53,7 @@ private class PhoneticParseRun(
     }
 
     fun parseNext() {
-        if (parseSyllableLevelSymbol()) {
+        if (parseSyllableBreak()) {
             return
         }
         val match = tree.tryMatch(unparsedString)
@@ -77,23 +77,12 @@ private class PhoneticParseRun(
         }
     }
 
-    fun parseSyllableLevelSymbol(): Boolean {
-        val cursor = string.length - unparsedString.length
-        val match = tree.tryMatch(unparsedString)
-
-        if (syllableSeparator != null) {
-            if (unparsedString.startsWith(syllableSeparator)) {
-                if (core != null) doneSegment()
-                doneSyllable()
-                unparsedString = unparsedString.drop(syllableSeparator.length)
-                return true
-            } else if (
-                syllableDiacritics.any { it.position == ModifierPosition.AFTER } &&
-                match?.second != SyllableModifier(ModifierPosition.AFTER)
-            ) throw DanglingDiacritic(
-                string, cursor, match?.first ?: unparsedString.first().toString()
-            )
-            return false
+    fun parseSyllableBreak(): Boolean {
+        if (syllableSeparator != null && unparsedString.startsWith(syllableSeparator)) {
+            if (core != null) doneSegment()
+            doneSyllable()
+            unparsedString = unparsedString.drop(syllableSeparator.length)
+            return true
         }
         return false
     }
@@ -138,34 +127,36 @@ private class PhoneticParseRun(
         when (position) {
             ModifierPosition.BEFORE -> {
                 if (core != null) doneSegment()
-                if (parsedSegments.size != (syllableBreaks.lastOrNull() ?: 0))
-                    throw DanglingDiacritic(string, cursor, matchString)
+                if (parsedSegments.size != (syllableBreaks.lastOrNull() ?: 0)) {
+                    doneSyllable()
+                }
                 if (matchString.length >= unparsedString.length)
                     throw DanglingDiacritic(string, cursor, matchString)
-                syllableDiacritics += Modifier(
-                    matchString,
-                    ModifierPosition.BEFORE,
-                )
+                syllableDiacritics += Modifier(matchString, ModifierPosition.BEFORE)
                 unparsedString = unparsedString.drop(matchString.length)
             }
 
             ModifierPosition.FIRST -> {
-                if (core != null && core!!.length == 1) {
-                    unparsedString = core!! + unparsedString.drop(matchString.length)
-                    core = null
-                    syllableDiacritics += Modifier(matchString, ModifierPosition.FIRST)
-                } else throw DanglingDiacritic(string, cursor, matchString)
+                if (core != null) doneSegment()
+                if (parsedSegments.size == 0) {
+                    throw DanglingDiacritic(string, cursor, matchString)
+                }
+                if (parsedSegments.size != (syllableBreaks.lastOrNull() ?: 0) + 1) {
+                    doneSyllable(addSyllableBreak = false)
+                    syllableBreaks.add(parsedSegments.size - 1)
+                }
+                syllableDiacritics += Modifier(matchString, ModifierPosition.FIRST)
+                unparsedString = unparsedString.drop(matchString.length)
             }
 
             ModifierPosition.NUCLEUS -> throw AssertionError()
             ModifierPosition.AFTER -> {
-                if (core != null) {
-                    syllableDiacritics += Modifier(
-                        matchString,
-                        ModifierPosition.AFTER,
-                    )
-                    unparsedString = unparsedString.drop(matchString.length)
-                } else throw DanglingDiacritic(string, cursor, matchString)
+                if (core != null) doneSegment()
+                syllableDiacritics += Modifier(matchString, ModifierPosition.AFTER)
+                unparsedString = unparsedString.drop(matchString.length)
+                if (syllableSeparator != null && unparsedString.isNotEmpty() && !unparsedString.startsWith(syllableSeparator)) {
+                    doneSyllable()
+                }
             }
         }
     }

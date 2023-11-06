@@ -87,8 +87,6 @@ class TestCore : StringSpec({
 
         parser.parse("ⁿda.pʰi") shouldBe StandardWord.fromSchematic("ⁿ(d/a//p/i||ʰ")
         parser.parse("ˈtʼou.n̥ʲaˠ") shouldBe StandardWord.fromSchematic("ˈ((t)ʼ/o/u//nʲ|̥/a))ˠ")
-        shouldThrow<DanglingDiacritic> { parser.parse("aˈn") }
         shouldThrow<DanglingDiacritic> { parser.parse("ʰan") }
-        shouldThrow<DanglingDiacritic> { parser.parse("aˠn") }
     }
 })

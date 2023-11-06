@@ -594,7 +594,7 @@ class TestSyllables : StringSpec({
         ch("wideːre") shouldBe "wi¹.ˈdeː².re¹"
     }
 
-    "We can assign syllable-level features explicitly in the input words" {
+    "We can assign \"before\" syllable-level features in the input words without explicit syllable breaks" {
         val ch = lsc(
             """
                 Feature (syllable) +stress
@@ -608,6 +608,39 @@ class TestSyllables : StringSpec({
 
         ch("ˈkita") shouldBe "ˈki.ta"
         ch("kiˈta") shouldBe "ki.ˈta"
+        ch("ˈkiˈta") shouldBe "ˈki.ˈta"
+    }
+
+    "We can assign \"first\" syllable-level features in the input words without explicit syllable brekas" {
+        val ch = lsc(
+            """
+                Feature (syllable) +stress
+                Diacritic ˈ (first) [+stress]
+                Class vowel {a, u, i}
+                Class cons {p, t, k}
+                Syllables:
+                    @cons? @vowel
+            """.trimIndent()
+        )
+
+        ch("kˈita") shouldBe "kˈi.ta"
+        ch("kitˈa") shouldBe "ki.tˈa"
+        ch("kˈitˈa") shouldBe "kˈi.tˈa"
+    }
+
+    "We can assign \"after\" syllable-level features in the input words without explicit syllable brekas" {
+        val ch = lsc(
+            """
+                Feature (syllable) +stress
+                Diacritic ˈ [+stress]
+                Class vowel {a, u, i}
+                Class cons {p, t, k}
+                Syllables:
+                    @cons? @vowel
+            """.trimIndent()
+        )
+
+        ch("kiˈta") shouldBe "kiˈ.ta"
     }
 
     "We should be able to use propagate when assigning stress" {
