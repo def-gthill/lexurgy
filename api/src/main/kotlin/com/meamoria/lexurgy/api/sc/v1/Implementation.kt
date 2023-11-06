@@ -3,8 +3,10 @@ package com.meamoria.lexurgy.api.sc.v1
 import com.meamoria.lexurgy.LscUserError
 import com.meamoria.lexurgy.UserError
 import com.meamoria.lexurgy.sc.*
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CountDownLatch
+import kotlin.concurrent.schedule
 
 fun runScv1(
     request: Request,
@@ -63,6 +65,8 @@ fun pollScv1(jobId: String): PollResponse {
 
 private val soundChangerJobs: MutableMap<UUID, SoundChangerJob> = ConcurrentHashMap()
 
+private val timer = Timer(true)
+
 private class SoundChangerJob(
     val soundChanger: SoundChanger,
     val request: Request,
@@ -72,6 +76,7 @@ private class SoundChangerJob(
     private var _result: Response? = null
 
     fun start(): Response? {
+        val latch = CountDownLatch(1)
         val thread = Thread {
             _result = try {
                 runScv1Using(
@@ -85,9 +90,14 @@ private class SoundChangerJob(
             } catch (e: RunTimedOut) {
                 TimeoutResponse(e.message ?: "Run timed out")
             }
+            latch.countDown()
         }
         thread.start()
-        Thread.sleep((timeoutSettings.requestTimeoutSeconds * 1000).toLong())
+
+       timer.schedule((timeoutSettings.requestTimeoutSeconds * 1000).toLong()) {
+            latch.countDown()
+        }
+        latch.await()
         return _result
     }
 

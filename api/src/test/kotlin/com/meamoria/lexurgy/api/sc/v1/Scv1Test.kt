@@ -7,6 +7,7 @@ import io.ktor.http.*
 import kotlinx.coroutines.delay
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.*
+import kotlin.system.measureNanoTime
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
@@ -299,6 +300,27 @@ class Scv1Test {
             )
         )
     }
+
+    @Test
+    fun withPollingEnabled_ReturnsAsSoonAsChangesFinish() =
+        testApiWithRequestTimeout(5.0) {
+            val time = measureNanoTime {
+                client.postJson(
+                    "/scv1",
+                    scv1Request(
+                        changes = "rule:\no => a",
+                        inputWords = listOf("foo", "oboe"),
+                        allowPolling = true,
+                    )
+                ).assertOkResponseIsJson(
+                    scv1Response(
+                        ruleNames = listOf("rule"),
+                        outputWords = listOf("faa", "abae")
+                    )
+                )
+            }
+            assertTrue(time < 1e9)
+        }
 
     @Test
     fun onTooManyWordsWithPollingEnabled_RunsInTheBackground() = testApi {
