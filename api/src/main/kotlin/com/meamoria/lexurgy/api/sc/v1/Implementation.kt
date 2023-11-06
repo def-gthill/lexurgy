@@ -94,7 +94,7 @@ private class SoundChangerJob(
         }
         thread.start()
 
-       timer.schedule((timeoutSettings.requestTimeoutSeconds * 1000).toLong()) {
+        timer.schedule((timeoutSettings.requestTimeoutSeconds * 1000).toLong()) {
             latch.countDown()
         }
         latch.await()
