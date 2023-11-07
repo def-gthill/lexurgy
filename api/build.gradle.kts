@@ -18,7 +18,7 @@ application {
     val isDevelopment: Boolean = project.ext.has("development")
     applicationDefaultJvmArgs = listOf(
         "-Dio.ktor.development=$isDevelopment",
-        "-Xmx300m",
+        "-Xmx500m",
         "-Xss512k",
         "-XX:CICompilerCount=2",
     )

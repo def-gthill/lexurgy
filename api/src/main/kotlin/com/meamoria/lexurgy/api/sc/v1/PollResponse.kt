@@ -21,3 +21,7 @@ data class DoneResponse(val result: SuccessResponse) : PollResponse
 @Serializable
 @SerialName("error")
 data class DoneWithErrorResponse(val result: ErrorResponse): PollResponse
+
+@Serializable
+@SerialName("expired")
+object ExpiredResponse : PollResponse

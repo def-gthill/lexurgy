@@ -54,7 +54,12 @@ fun runScv1(
 
 fun pollScv1(jobId: String): PollResponse {
     val uuid = UUID.fromString(jobId)
-    val job = soundChangerJobs.getValue(uuid)
+    val job = soundChangerJobs[uuid] ?: return ExpiredResponse
+    if (job.result != null) {
+        timer.schedule(60000) {
+            soundChangerJobs.remove(uuid)
+        }
+    }
     return when (val result = job.result) {
         null -> WorkingResponse
         is SuccessResponse -> DoneResponse(result)
