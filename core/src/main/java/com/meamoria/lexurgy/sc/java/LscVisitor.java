@@ -1,4 +1,4 @@
-// Generated from Lsc.g4 by ANTLR 4.7.2
+// Generated from /Users/gthill/projects/lexurgy/core/src/antlr/sc/Lsc.g4 by ANTLR 4.13.1
 package com.meamoria.lexurgy.sc.java;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 

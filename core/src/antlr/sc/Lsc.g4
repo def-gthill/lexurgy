@@ -25,7 +25,7 @@ symbolName: text;
 
 syllableDecl:
     SYLLABLE_DECL RULE_START (NEWLINE+ (EXPLICIT_SYLLABLES | CLEAR_SYLLABLES) | (NEWLINE+ syllablePattern)+);
-syllablePattern: unconditionalRuleElement (CHANGE matrix)? compoundEnvironment?;
+syllablePattern: ruleElement (CHANGE matrix)? compoundEnvironment?;
 
 deromanizer: DEROMANIZER (WHITESPACE LITERAL)? RULE_START NEWLINE+ block;
 romanizer: ROMANIZER (WHITESPACE LITERAL)? RULE_START NEWLINE+ block;

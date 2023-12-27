@@ -309,7 +309,7 @@ object LscWalker : LscBaseVisitor<AstNode>() {
     override fun visitSyllablePattern(ctx: LscParser.SyllablePatternContext): AstNode =
         walkSyllablePattern(
             ctx.text,
-            visit(ctx.unconditionalRuleElement()),
+            visit(ctx.ruleElement()),
             optionalVisit(ctx.compoundEnvironment()),
             optionalVisit(ctx.matrix()),
         )

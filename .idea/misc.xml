@@ -1,5 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="ANTLRGenerationPreferences">
+    <option name="perGrammarGenerationSettings">
+      <list>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="*" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="$PROJECT_DIR$/core/src/main/java/com/meamoria/lexurgy/sc/java" />
+          <option name="libDir" value="$PROJECT_DIR$/core/src/antlr/sc" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="com.meamoria.lexurgy.sc.java" />
+          <option name="language" value="Java" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/core/src/antlr/sc/Lsc.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="$PROJECT_DIR$/core/src/main/java" />
+          <option name="libDir" value="$PROJECT_DIR$/core/src/antlr/sc" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="com.meamoria.lexurgy.sc.java" />
+          <option name="language" value="Java" />
+          <option name="generateListener" value="false" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+      </list>
+    </option>
+  </component>
   <component name="EntryPointsManager">
     <list size="1">
       <item index="0" class="java.lang.String" itemvalue="kotlinx.serialization.Serializable" />
