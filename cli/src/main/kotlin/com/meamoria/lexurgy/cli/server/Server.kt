@@ -1,20 +1,42 @@
 package com.meamoria.lexurgy.cli.server
 
 import com.meamoria.lexurgy.cli.soundChangerFromLscFile
+import com.meamoria.lexurgy.cli.soundChangerFromString
+import com.meamoria.lexurgy.sc.SoundChanger
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
 import java.nio.file.Path
-
+import java.nio.file.Paths
 
 @Serializable
-data class ServerRequest(
+sealed class ServerRequest {
+    fun encode() = Json.encodeToString(this)
+}
+
+@Serializable
+@SerialName("apply")
+data class ApplyChangesRequest(
     val words: List<String>,
     val startAt: String? = null,
     val stopBefore: String? = null,
     val traceWords: List<String> = emptyList(),
     val romanize: Boolean = true
-)
+) : ServerRequest()
+
+@Serializable
+@SerialName("load_file")
+data class LoadChangesFromFileRequest(
+    val path: String
+) : ServerRequest()
+
+@Serializable
+@SerialName("load_string")
+data class LoadChangesFromStringRequest(
+    val changes: String
+) : ServerRequest()
 
 @Serializable
 sealed class ServerResponse {
@@ -30,7 +52,9 @@ sealed class ServerResponse {
         val message: String, val stackTrace: List<String>
     ) : ServerResponse()
 
-
+    @Serializable
+    @SerialName("ok")
+    object Ok : ServerResponse()
 }
 
 data class StringCollector(val strings: MutableList<String> = mutableListOf()) : (String) -> Unit {
@@ -39,36 +63,64 @@ data class StringCollector(val strings: MutableList<String> = mutableListOf()) :
     }
 }
 
-fun runServer(changes: Path) {
-    val changer = soundChangerFromLscFile(changes)
+fun applyChanges(changer: SoundChanger?, request: ApplyChangesRequest) {
+    if (changer == null) throw Exception("No sound changer loaded.")
+    val collector = StringCollector()
+    val intermediates = changer.changeWithIntermediates(
+        request.words,
+        request.startAt,
+        request.stopBefore,
+        request.traceWords,
+        request.romanize,
+        collector
+    )
 
+    val words = intermediates[null]!!
+    val trueIntermediates: Map<String, List<String>> =
+        intermediates.filterKeys { it != null }.mapKeys { it.key!! }
+
+    printResponse(ServerResponse.Changed(words, trueIntermediates, collector.strings))
+}
+
+fun printResponse(response: ServerResponse) {
+    println(Json.encodeToString(ServerResponse.serializer(), response))
+}
+
+fun runServer(changes: Path?) {
+    var changer = changes?.let { soundChangerFromLscFile(it) }
     while (true) {
         try {
             val line = readlnOrNull() ?: break
-            val request = Json.decodeFromString<ServerRequest>(line)
-            val collector = StringCollector()
-            val intermediates = changer.changeWithIntermediates(
-                request.words,
-                request.startAt,
-                request.stopBefore,
-                request.traceWords,
-                request.romanize,
-                collector
-            )
-            val words = intermediates[null]!!
+            val request = Json.parseToJsonElement(line)
 
-            val trueIntermediates: Map<String, List<String>> =
-                intermediates.filterKeys { it != null }.mapKeys { it.key!! }
-            println(
-                Json.encodeToString(
-                    ServerResponse.serializer(),
-                    ServerResponse.Changed(words, trueIntermediates, collector.strings)
+            // For backwards-compatibility, allow the request type to be omitted. We
+            // default to a request type of APPLY_CHANGES in that case.
+            // TODO: Consider emitting a deprecation warning for this?
+            if (request.jsonObject["type"] == null) {
+                applyChanges(
+                    changer,
+                    Json.decodeFromJsonElement(ApplyChangesRequest.serializer(), request)
                 )
-            )
+                continue
+            }
+
+            when (val req = Json.decodeFromJsonElement(ServerRequest.serializer(), request)) {
+                is ApplyChangesRequest -> applyChanges(changer, req)
+
+                is LoadChangesFromFileRequest -> {
+                    changer = soundChangerFromLscFile(Paths.get(req.path))
+                    printResponse(ServerResponse.Ok)
+                }
+
+                is LoadChangesFromStringRequest -> {
+                    changer = soundChangerFromString(req.changes)
+                    printResponse(ServerResponse.Ok)
+                }
+            }
         } catch (e: Exception) {
             val message = e.message.toString()
             val stackTrace = e.stackTrace.map { it.toString() }
-            println(Json.encodeToString(ServerResponse.serializer(), ServerResponse.Error(message, stackTrace)))
+            printResponse(ServerResponse.Error(message, stackTrace))
         }
     }
 }

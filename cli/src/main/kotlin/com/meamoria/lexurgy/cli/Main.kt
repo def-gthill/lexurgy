@@ -4,6 +4,7 @@ import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.ProgramResult
 import com.github.ajalt.clikt.core.subcommands
 import com.github.ajalt.clikt.parameters.arguments.argument
+import com.github.ajalt.clikt.parameters.arguments.default
 import com.github.ajalt.clikt.parameters.arguments.multiple
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
@@ -11,10 +12,14 @@ import com.github.ajalt.clikt.parameters.options.multiple
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.path
 import com.meamoria.lexurgy.UserError
-import com.meamoria.lexurgy.sc.LscRuleCrashed
+import com.meamoria.lexurgy.cli.server.ApplyChangesRequest
+import com.meamoria.lexurgy.cli.server.LoadChangesFromFileRequest
+import com.meamoria.lexurgy.cli.server.LoadChangesFromStringRequest
 import com.meamoria.lexurgy.cli.server.runServer
+import com.meamoria.lexurgy.sc.LscRuleCrashed
 import java.io.IOException
 import java.io.PrintWriter
+import java.nio.file.Paths
 import kotlin.time.ExperimentalTime
 
 fun runErrorProne(developer: Boolean, block: () -> Unit) {
@@ -134,18 +139,34 @@ class SC : CliktCommand(
 }
 
 class Server : CliktCommand(
-    help = "Applies sound changes from CHANGES (a .lsc file) to the words in stdin and outputs to stdout. " +
-            "To apply sound changes, input a " +
-            "{\"type\": \"changes\", \"words\": [\"<WORD 1>\", \"<WORD 2>\", ...]} " +
-            "request. " +
-            "See documentation for full overview."
+    // Preformatted because the JSON is rather unreadable otherwise.
+    help = """
+        Applies sound changes to the words in stdin and outputs to stdout. Run with --help for more information.
+
+        If provided, sound changes are loaded from CHANGES (a .lsc file). To apply
+        sound changes, input a 
+
+        ${ApplyChangesRequest(listOf("<WORD 1>", "<WORD 2>", "<WORD 3>")).encode()}
+
+        request. You can also load a new set of sound changes from a file using
+
+        ${LoadChangesFromFileRequest("<PATH>").encode()}
+
+        or set the changes directly from text using
+
+        ${LoadChangesFromStringRequest("<SOUND CHANGES>").encode()}
+
+        Each request must be on a single line. See documentation for full overview.
+    """
 ) {
-    val changes by argument().path(mustBeReadable = true)
+    val changes by argument().path(mustBeReadable = true).default(Paths.get(""))
 
     @ExperimentalTime
     override fun run() {
         runErrorProne(true) {
-            runServer(changes)
+            // This is somewhat janky, but I don't think we can specify an optional
+            // *positional* argument, otherwise do that instead.
+            runServer(if (changes.toString() == "") null else changes)
         }
     }
 }

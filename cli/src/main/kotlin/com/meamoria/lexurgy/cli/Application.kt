@@ -8,6 +8,9 @@ import kotlin.time.DurationUnit
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTimedValue
 
+class LscUnsupportedDirective() : LscUserError(
+    "Include directives are not supported in load_string requests"
+)
 
 @ExperimentalTime
 fun changeFiles(
@@ -46,7 +49,10 @@ fun changeFiles(
 fun soundChangerFromLscFile(path: Path): SoundChanger =
     SoundChanger.fromLsc(SoundChangesFileLoader().load(path).joinToString("\n"))
 
-
+fun soundChangerFromString(string: String): SoundChanger {
+    SoundChangesFileLoader.INCLUDE_LINE.containsMatchIn(string) && throw LscUnsupportedDirective()
+    return SoundChanger.fromLsc(string)
+}
 
 @ExperimentalTime
 fun SoundChanger.changeFiles(
