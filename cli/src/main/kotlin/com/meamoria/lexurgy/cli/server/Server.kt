@@ -1,5 +1,6 @@
 package com.meamoria.lexurgy.cli.server
 
+import com.meamoria.lexurgy.LscUserError
 import com.meamoria.lexurgy.cli.soundChangerFromLscFile
 import com.meamoria.lexurgy.cli.soundChangerFromString
 import com.meamoria.lexurgy.sc.SoundChanger
@@ -10,6 +11,8 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import java.nio.file.Path
 import java.nio.file.Paths
+
+class LscNoSoundChangesLoaded : LscUserError("No sound changer loaded.")
 
 @Serializable
 sealed class ServerRequest {
@@ -64,7 +67,7 @@ data class StringCollector(val strings: MutableList<String> = mutableListOf()) :
 }
 
 fun applyChanges(changer: SoundChanger?, request: ApplyChangesRequest) {
-    if (changer == null) throw Exception("No sound changer loaded.")
+    if (changer == null) throw LscNoSoundChangesLoaded()
     val collector = StringCollector()
     val intermediates = changer.changeWithIntermediates(
         request.words,
@@ -95,7 +98,6 @@ fun runServer(changes: Path?) {
 
             // For backwards-compatibility, allow the request type to be omitted. We
             // default to a request type of APPLY_CHANGES in that case.
-            // TODO: Consider emitting a deprecation warning for this?
             if (request.jsonObject["type"] == null) {
                 applyChanges(
                     changer,

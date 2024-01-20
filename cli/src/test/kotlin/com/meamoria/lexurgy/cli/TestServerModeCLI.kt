@@ -130,6 +130,12 @@ class TestServerModeCLI : StringSpec({
         response.shouldBeInstanceOf<ServerResponse.Error>()
     }
 
+    "Server mode errors if asked to apply changes when none are loaded".config(enabled = !Platform.isWindows()) {
+        val responses = runRequests(ApplyChangesRequest(listOf("foo")))
+        val err = responses[0].shouldBeInstanceOf<ServerResponse.Error>()
+        err.message shouldBe LscNoSoundChangesLoaded().message
+    }
+
     "Server mode errors on #include directives in a load_string request".config(enabled = !Platform.isWindows()) {
         val responses = runRequests(LoadChangesFromStringRequest("#include \"empty.lsc\""))
         val err = responses[0].shouldBeInstanceOf<ServerResponse.Error>()

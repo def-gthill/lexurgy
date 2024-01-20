@@ -164,8 +164,8 @@ class Server : CliktCommand(
     @ExperimentalTime
     override fun run() {
         runErrorProne(true) {
-            // This is somewhat janky, but I don't think we can specify an optional
-            // *positional* argument, otherwise do that instead.
+            // An empty string wouldn’t be a valid path anyway and is thus used
+            // to indicate that no `CHANGES` argument was supplied.
             runServer(if (changes.toString() == "") null else changes)
         }
     }
