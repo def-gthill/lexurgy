@@ -19,7 +19,7 @@ class TestTimeout : StringSpec({
         )
 
         shouldThrow<RunTimedOut> {
-            ch.change(listOf("a", "a", "a", "a"), totalTimeoutSeconds = 0.1)
+            ch.change(listOf("a", "a", "a", "a"), SoundChangeOptions(totalTimeoutSeconds = 0.1))
         }.also { it.reason.shouldBeInstanceOf<LscDivergingPropagation>() }
     }
 
@@ -32,7 +32,7 @@ class TestTimeout : StringSpec({
         )
 
         shouldThrow<RunTimedOut> {
-            ch.change(listOf("a", "a", "a", "a"), singleStepTimeoutSeconds = 0.1)
+            ch.change(listOf("a", "a", "a", "a"), SoundChangeOptions(singleStepTimeoutSeconds = 0.1))
         }.also { it.reason.shouldBeInstanceOf<LscDivergingPropagation>() }
     }
 
@@ -45,7 +45,7 @@ class TestTimeout : StringSpec({
         )
 
         shouldThrow<RunTimedOut> {
-            ch.change(listOf("x".repeat(30)), totalTimeoutSeconds = 0.1)
+            ch.change(listOf("x".repeat(30)), SoundChangeOptions(totalTimeoutSeconds = 0.1))
         }.also { it.reason.shouldBeInstanceOf<LscTooManyOptions>()}
     }
 
@@ -58,7 +58,7 @@ class TestTimeout : StringSpec({
         )
 
         shouldThrow<RunTimedOut> {
-            ch.change(listOf("x".repeat(30)), singleStepTimeoutSeconds = 0.1)
+            ch.change(listOf("x".repeat(30)), SoundChangeOptions(singleStepTimeoutSeconds = 0.1))
         }.also { it.reason.shouldBeInstanceOf<LscTooManyOptions>()}
     }
 
@@ -73,7 +73,7 @@ class TestTimeout : StringSpec({
         shouldThrow<RunTimedOut> {
             ch.change(
                 generateSequence { "a" }.take(10000).toList(),
-                totalTimeoutSeconds = 0.01,
+                SoundChangeOptions(totalTimeoutSeconds = 0.01),
             )
         }.also { it.reason.shouldBeInstanceOf<TooManyWords>()}
     }
@@ -88,7 +88,7 @@ class TestTimeout : StringSpec({
 
         ch.change(
             generateSequence { "a" }.take(10000).toList(),
-            singleStepTimeoutSeconds = 0.01
+            SoundChangeOptions(singleStepTimeoutSeconds = 0.01)
         ).size shouldBe 10000
     }
 })

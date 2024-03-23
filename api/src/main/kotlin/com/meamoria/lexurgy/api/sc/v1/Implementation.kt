@@ -118,7 +118,7 @@ private fun runScv1Using(
 ): SuccessResponse {
     val traces = mutableMapOf<String, MutableList<TraceStep>>()
 
-    fun trace(traceInfo: SoundChanger.TraceInfo) {
+    fun trace(traceInfo: TraceInfo) {
         traces
             .getOrPut(traceInfo.originalWord) { mutableListOf() }
             .add(TraceStep(traceInfo.ruleName, traceInfo.wordAfterChange))
@@ -127,13 +127,15 @@ private fun runScv1Using(
     val result = soundChanger
         .changeWithIntermediatesAndIndividualErrors(
             words = request.inputWords,
-            startAt = request.startAt,
-            stopBefore = request.stopBefore,
-            debugWords = request.traceWords,
-            debug = { },
-            trace = ::trace,
-            singleStepTimeoutSeconds = singleStepTimeoutSeconds,
-            totalTimeoutSeconds = totalTimeoutSeconds,
+            SoundChangeOptions(
+                startAt = request.startAt,
+                stopBefore = request.stopBefore,
+                debugWords = request.traceWords,
+                debug = { },
+                trace = ::trace,
+                singleStepTimeoutSeconds = singleStepTimeoutSeconds,
+                totalTimeoutSeconds = totalTimeoutSeconds,
+            )
         )
     return SuccessResponse(
         ruleNames = soundChanger.ruleNames,

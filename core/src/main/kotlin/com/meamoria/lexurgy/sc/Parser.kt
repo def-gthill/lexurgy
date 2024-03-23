@@ -1293,26 +1293,26 @@ object LscWalker : LscBaseVisitor<AstNode>() {
                 val linkedRules = realChangeRules.map { rule ->
                     val anchoredSteps = rule.statements.map { anchoredStatement ->
                         when (anchoredStatement) {
-                            is UnlinkedRomanizer -> SoundChanger.IntermediateRomanizerStep(
+                            is UnlinkedRomanizer -> IntermediateRomanizerStep(
                                 anchoredStatement.link(
                                     1, declarations.withElements(), InheritedRuleProperties.none
                                 ) as NamedRule
                             )
                             is UnlinkedStandardRule -> {
-                                SoundChanger.CleanupStep(
+                                CleanupStep(
                                     anchoredStatement.link(
                                         1, declarations.withElements(), InheritedRuleProperties.none
                                     ) as NamedRule
                                 )
                             }
                             is UnlinkedCleanupOffStep -> {
-                                SoundChanger.CleanupOffStep(anchoredStatement.ruleName)
+                                CleanupOffStep(anchoredStatement.ruleName)
                             }
                             is SyllableStructureNode -> {
                                 declarations = initialDeclarations.withSyllabifier(
                                     anchoredStatement.syllabifier(initialDeclarations.withElements())
                                 )
-                                SoundChanger.SyllabificationStep(declarations)
+                                SyllabificationStep(declarations)
                             }
                             else -> throw AssertionError("Unrecognized anchored statement $anchoredStatement")
                         }
@@ -1320,7 +1320,7 @@ object LscWalker : LscBaseVisitor<AstNode>() {
                     val linkedRule = (rule.rule as UnlinkedRule?)?.link(
                         1, declarations.withElements(), InheritedRuleProperties.none
                     ) as NamedRule?
-                    SoundChanger.RuleWithAnchoredSteps(linkedRule, anchoredSteps)
+                    RuleWithAnchoredSteps(linkedRule, anchoredSteps)
                 }
 
                 val linkedRomanizer = (romanizer as UnlinkedRomanizer?)?.let {

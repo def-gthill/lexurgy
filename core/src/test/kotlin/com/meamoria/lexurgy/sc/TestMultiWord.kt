@@ -7,7 +7,7 @@ import io.kotest.matchers.shouldBe
 class TestMultiWord : StringSpec({
     val lsc = SoundChanger.Companion::fromLsc
 
-    "Spaces in a line should delimit separate words" {
+    "Spaces in a line delimit separate words" {
         val ch = lsc(
             """
                 drop-final-t:
@@ -18,7 +18,7 @@ class TestMultiWord : StringSpec({
         ch("sit amet") shouldBe "si ame"
     }
 
-    "We should be able to delete the $$ token to join words together" {
+    "We can delete the $$ token to join words together" {
         val ch = lsc(
             """
                 Feature Stress(*unstressed, stressed)
@@ -49,7 +49,7 @@ class TestMultiWord : StringSpec({
         ch("mate kupo tonumeka") shouldBe "maˈɾegubodunumega"
     }
 
-    "We should be able to join words conditionally" {
+    "We can join words conditionally" {
         val ch = lsc(
             """
                 selective-glomination:
@@ -62,7 +62,7 @@ class TestMultiWord : StringSpec({
         ch("cogito ergo sum") shouldBe "cogito ergosum"
     }
 
-    "We should be able to implement sandhi rules by using $$ in the environment" {
+    "We can implement sandhi rules by using $$ in the environment" {
         val ch = lsc(
             """
                 Class vowel {a, e, i, o, u}
@@ -88,7 +88,7 @@ class TestMultiWord : StringSpec({
         ch2("an head") shouldBe "an head"
     }
 
-    "We should be able to implement rules that apply within words *and* across word boundaries" {
+    "We can implement rules that apply within words *and* across word boundaries" {
         val ch = lsc(
             """
                 Class vowel {a, e, i, o, u}
@@ -102,7 +102,7 @@ class TestMultiWord : StringSpec({
         ch("skupi tupi tu") shouldBe "skubi dubi du"
     }
 
-    "We should be able to split words by turning elements into $$" {
+    "We can split words by turning elements into $$" {
         val ch = lsc(
             """
                 Feature height(high, mid, low)
@@ -130,7 +130,7 @@ class TestMultiWord : StringSpec({
         ch2("knaan aardvark") shouldBe "kna an a ardvark"
     }
 
-    "We should be able to use $$ in alternative lists" {
+    "We can use $$ in alternative lists" {
         val ch = lsc(
             """
                 Class vowel {a, e, i, o, u}
@@ -144,7 +144,7 @@ class TestMultiWord : StringSpec({
         ch("skupi tupi tu") shouldBe "skubi tubi tu"
     }
 
-    "We should be able to transform sequences including word boundaries" {
+    "We can transform sequences including word boundaries" {
         val ch = lsc(
             """
                 Class vowel {a, e, i, o, u}
@@ -155,6 +155,19 @@ class TestMultiWord : StringSpec({
         )
 
         ch("ek ana eta hona") shouldBe "ekanetona"
+    }
+
+    "Tab characters separate columns" {
+        val ch = lsc(
+            """
+                make-b:
+                    a => b / $ _
+                delete-boundaries:
+                    $$ => *
+            """.trimIndent()
+        )
+
+        ch("aaa\taaa aaa") shouldBe "baa\tbaabaa"
     }
 
 //    "We should be able to capture sequences containing word boundaries" {

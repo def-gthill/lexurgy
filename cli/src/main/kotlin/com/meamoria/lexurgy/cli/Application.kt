@@ -1,6 +1,7 @@
 package com.meamoria.lexurgy.cli
 
 import com.meamoria.lexurgy.*
+import com.meamoria.lexurgy.sc.SoundChangeOptions
 import com.meamoria.lexurgy.sc.SoundChanger
 import java.io.FileNotFoundException
 import java.nio.file.Path
@@ -88,12 +89,14 @@ fun SoundChanger.changeFiles(
         val (fullOutput, fullTime) = measureTimedValue {
             changeWithIntermediatesAndIndividualErrors(
                 words = words,
-                startAt = startAt,
-                stopBefore = stopBefore,
-                debugWords = debugWords,
-                romanize = romanize,
-                debug = ::debug,
-                singleStepTimeoutSeconds = 1.0,
+                SoundChangeOptions(
+                    startAt = startAt,
+                    stopBefore = stopBefore,
+                    debugWords = debugWords,
+                    romanize = romanize,
+                    debug = ::debug,
+                    singleStepTimeoutSeconds = 1.0,
+                )
             )
         }
 

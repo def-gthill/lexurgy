@@ -42,7 +42,7 @@ class TestPartialRuns : StringSpec({
         )
 
         ch.change(listOf("CVCVV")) shouldBe listOf("CV.CV")
-        ch.change(listOf("CCVCV"), startAt = "rule2") shouldBe listOf("CCV.CV")
+        ch.change(listOf("CCVCV"), SoundChangeOptions(startAt = "rule2")) shouldBe listOf("CCV.CV")
     }
 
     "Start-at ignores all anchored steps before the start rule, including immediately before" {
@@ -77,7 +77,7 @@ class TestPartialRuns : StringSpec({
         )
 
         ch.change(listOf("CVCVV")) shouldBe listOf("CV.CV")
-        ch.change(listOf("CCVCV"), startAt = "rule2") shouldBe listOf("CCV.CV")
+        ch.change(listOf("CCVCV"), SoundChangeOptions(startAt = "rule2")) shouldBe listOf("CCV.CV")
     }
 
     "Stop-before runs cleanup rules and syllabification anchored to the stop rule" {
@@ -112,6 +112,6 @@ class TestPartialRuns : StringSpec({
         )
 
         ch.change(listOf("CVCVV")) shouldBe listOf("CCV.CCV")
-        ch.change(listOf("CVCVV"), stopBefore = "rule2") shouldBe listOf("CV.CV")
+        ch.change(listOf("CVCVV"), SoundChangeOptions(stopBefore = "rule2")) shouldBe listOf("CV.CV")
     }
 })

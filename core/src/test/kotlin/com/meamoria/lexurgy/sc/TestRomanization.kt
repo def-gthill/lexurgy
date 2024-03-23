@@ -268,7 +268,12 @@ class TestRomanization : StringSpec({
             """.trimIndent()
         )
 
-        ch.changeWithIntermediates(listOf("chachi", "vanechak"), romanize = false) shouldBe mapOf(
+        val result = ch.changeWithIntermediates(
+            listOf("chachi", "vanechak"),
+            SoundChangeOptions(romanize = false)
+        )
+
+        result shouldBe mapOf(
             "a" to listOf("ʃaʃi", "vaneʃak"),
             "b" to listOf("ʃaʃi", "vaneʃak"),
             null to listOf("ʃaʃi", "vaneʃak"),

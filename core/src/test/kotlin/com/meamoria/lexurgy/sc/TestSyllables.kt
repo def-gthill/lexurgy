@@ -1225,7 +1225,12 @@ class TestSyllables : StringSpec({
             """.trimIndent()
         )
 
-        ch.changeWithIntermediates(listOf("bab.a"), stopBefore = "my-rule") shouldBe mapOf(
+        val result = ch.changeWithIntermediates(
+            listOf("bab.a"),
+            SoundChangeOptions(stopBefore = "my-rule"),
+        )
+
+        result shouldBe mapOf(
             "inter" to listOf("bab.a"),
             null to listOf("ba.ba"),
         )

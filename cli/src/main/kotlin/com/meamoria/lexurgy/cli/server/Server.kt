@@ -3,6 +3,7 @@ package com.meamoria.lexurgy.cli.server
 import com.meamoria.lexurgy.LscUserError
 import com.meamoria.lexurgy.cli.soundChangerFromLscFile
 import com.meamoria.lexurgy.cli.soundChangerFromString
+import com.meamoria.lexurgy.sc.SoundChangeOptions
 import com.meamoria.lexurgy.sc.SoundChanger
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -71,11 +72,13 @@ fun applyChanges(changer: SoundChanger?, request: ApplyChangesRequest) {
     val collector = StringCollector()
     val intermediates = changer.changeWithIntermediates(
         request.words,
-        request.startAt,
-        request.stopBefore,
-        request.traceWords,
-        request.romanize,
-        collector
+        SoundChangeOptions(
+            request.startAt,
+            request.stopBefore,
+            request.traceWords,
+            request.romanize,
+            collector,
+        )
     )
 
     val words = intermediates[null]!!
