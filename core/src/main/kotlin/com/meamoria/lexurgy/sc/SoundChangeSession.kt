@@ -30,17 +30,19 @@ class SoundChangeSession(
                 .associate { it.index to it.value }
                 .let { Tracer(options.debug, options.trace, it) }
             val persistentEffects = PersistentEffects()
-            val startPhrases = words.map {
-                Phrase(
-                    it.split(" ").map(
-                        initialDeclarations::parsePhonetic
+            val startPhrases = words.map { row ->
+                row.split("\t").map { cell ->
+                    Phrase(
+                        cell.trim().split(" ").map(
+                            initialDeclarations::parsePhonetic
+                        )
                     )
-                )
+                }
             }
 
             val result = mutableMapOf<String?, List<Result<String>>>()
 
-            var curPhrases = startPhrases.map { Result.success(it) }
+            var curPhrases = startPhrases.map { row -> row.map { Result.success(it) } }
             var started = false
             var stopped = false
 
@@ -62,7 +64,13 @@ class SoundChangeSession(
                             curPhrases,
                             tracer,
                             options.singleStepTimeoutSeconds,
-                        ).map { res -> res.map { it.string } }
+                        ).map { row ->
+                            runCatching {
+                                row.joinToString("\t") { res ->
+                                    res.getOrThrow().string
+                                }
+                            }
+                        }
                     }
 
                     is CleanupStep -> {
@@ -157,9 +165,11 @@ class SoundChangeSession(
                 throw LscRuleNotFound(options.startAt, "start at")
             }
 
-            result[null] = curPhrases.map { phrase ->
-                phrase.map {
-                    it.string.normalizeCompose()
+            result[null] = curPhrases.map { row ->
+                runCatching {
+                    row.joinToString("\t") { phrase ->
+                        phrase.getOrThrow().string.normalizeCompose()
+                    }
                 }
             }
 
@@ -235,18 +245,20 @@ class SoundChangeSession(
 
         operator fun invoke(
             name: String,
-            curPhrases: List<Result<Phrase>>,
-            newPhrases: List<Result<Phrase>>,
+            curPhrases: List<List<Result<Phrase>>>,
+            newPhrases: List<List<Result<Phrase>>>,
         ) {
             for (i in indexToDebugWords.keys) {
-                if (newPhrases[i] != curPhrases[i]) {
-                    debug("Applied ${name}${appliedTo(i)}: ${curPhrases[i].string} -> ${newPhrases[i].string}")
+                val curPhrase = curPhrases[i].joinToString("\t") { it.string }
+                val newPhrase = newPhrases[i].joinToString("\t") { it.string }
+                if (newPhrase != curPhrase) {
+                    debug("Applied ${name}${appliedTo(i)}: $curPhrase -> $newPhrase")
                     tracer(
                         TraceInfo(
                             name,
                             indexToDebugWords[i]!!,
-                            curPhrases[i].string,
-                            newPhrases[i].string,
+                            curPhrase,
+                            newPhrase,
                         )
                     )
                 }
@@ -266,12 +278,14 @@ class SoundChangeSession(
 
     private fun applySyllables(
         declarations: Declarations,
-        curPhrases: List<Result<Phrase>>,
+        curPhrases: List<List<Result<Phrase>>>,
         tracer: Tracer,
-    ): List<Result<Phrase>> =
-        curPhrases.map { curResult ->
-            curResult.mapCatching {
-                declarations.syllabify(it)
+    ): List<List<Result<Phrase>>> =
+        curPhrases.map { row ->
+            row.map { curResult ->
+                curResult.mapCatching {
+                    declarations.syllabify(it)
+                }
             }
         }.also { newPhrases ->
             tracer("syllables", curPhrases, newPhrases)
@@ -280,11 +294,11 @@ class SoundChangeSession(
     private fun applyRule(
         rule: NamedRule,
         origPhrases: List<String>,
-        curPhrases: List<Result<Phrase>>,
+        curPhrases: List<List<Result<Phrase>>>,
         tracer: Tracer,
         singleStepTimeoutSeconds: Double?,
-    ): List<Result<Phrase>> =
-        curPhrases.zip(origPhrases).parallelStream().map {
+    ): List<List<Result<Phrase>>> =
+        curPhrases.zip(origPhrases).parallelStream().map { (cur, orig) ->
             if (this.timedOut) throw RunTimedOut(TooManyWords())
             var timerTask: TimerTask? = null
             var timedOut = false
@@ -295,19 +309,21 @@ class SoundChangeSession(
                     timedOut = true
                 }
             }
-            val result = it.first.mapCatching { curPhrase ->
+            val result = cur.map { row ->
+                row.mapCatching { curPhrase ->
                 try {
                     rule(curPhrase).removeBoundingBreaks()
                 } catch (e: Exception) {
                     if (timedOut) {
                         throw RunTimedOut(e)
                     } else if (e is UserError) {
-                        throw LscRuleNotApplicable(e, rule.name, it.second, curPhrase.string)
+                        throw LscRuleNotApplicable(e, rule.name, orig, curPhrase.string)
                     } else {
-                        throw LscRuleCrashed(e, rule.name, it.second, curPhrase.string)
+                        throw LscRuleCrashed(e, rule.name, orig, curPhrase.string)
                     }
                 }
             }
+                }
             timerTask?.cancel()
             result
         }.toList().also { newPhrases ->
