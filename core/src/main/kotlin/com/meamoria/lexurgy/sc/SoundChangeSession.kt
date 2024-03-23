@@ -11,194 +11,46 @@ import java.util.concurrent.ForkJoinPool
 import kotlin.concurrent.schedule
 import kotlin.streams.toList
 
-class SoundChangeSession(
+class SoundChangeSession private constructor (
     val initialDeclarations: Declarations,
     val rules: List<RuleWithAnchoredSteps>,
     val words: List<String>,
     val options: SoundChangeOptions = SoundChangeOptions(),
 ) {
-    val timer = Timer(true)
+    private val executor = ForkJoinPool()
+    private val timer = Timer(true)
     @Volatile
-    var timedOut = false
+    private var timedOut = false
 
-    fun run(): Map<String?, List<Result<String>>> {
-        val executor = ForkJoinPool()
+    private val indexToDebugWords = words.withIndex()
+        .filter { it.value in options.debugWords }
+        .associate { it.index to it.value }
 
+    private var curPhrases = words.map { row ->
+        row.split("\t").map { cell ->
+            val phoneticWords = cell.trim().split(" ").map(
+                initialDeclarations::parsePhonetic
+            )
+            val phrase = Phrase(phoneticWords)
+            Result.success(phrase)
+        }
+    }
+    private var started = false
+    private var stopped = false
+    private val persistentEffects = PersistentEffects()
+    private val result = mutableMapOf<String?, List<Result<String>>>()
+
+    private fun run(): Map<String?, List<Result<String>>> {
         val resultTask = executor.submit(Callable {
-            val tracer = words.withIndex()
-                .filter { it.value in options.debugWords }
-                .associate { it.index to it.value }
-                .let { Tracer(options.debug, options.trace, it) }
-            val persistentEffects = PersistentEffects()
-            val startPhrases = words.map { row ->
-                row.split("\t").map { cell ->
-                    Phrase(
-                        cell.trim().split(" ").map(
-                            initialDeclarations::parsePhonetic
-                        )
-                    )
-                }
-            }
-
-            val result = mutableMapOf<String?, List<Result<String>>>()
-
-            var curPhrases = startPhrases.map { row -> row.map { Result.success(it) } }
-            var started = false
-            var stopped = false
-
-            fun maybeReplace(realRomanizer: NamedRule): NamedRule =
-                if (options.romanize) realRomanizer else StandardNamedRule(
-                    "fake-romanizer", initialDeclarations, EmptyRule
-                )
-
-            fun runAnchoredStep(anchoredStep: AnchoredStep) {
-                when (anchoredStep) {
-                    is IntermediateRomanizerStep -> {
-                        if (!started) {
-                            return
-                        }
-                        val rom = anchoredStep.romanizer
-                        result[rom.name] = applyRule(
-                            maybeReplace(rom),
-                            words,
-                            curPhrases,
-                            tracer,
-                            options.singleStepTimeoutSeconds,
-                        ).map { row ->
-                            runCatching {
-                                row.joinToString("\t") { res ->
-                                    res.getOrThrow().string
-                                }
-                            }
-                        }
-                    }
-
-                    is CleanupStep -> {
-                        if (!started) {
-                            return
-                        }
-                        curPhrases = applyRule(
-                            anchoredStep.cleanupRule,
-                            words,
-                            curPhrases,
-                            tracer,
-                            options.singleStepTimeoutSeconds,
-                        )
-                    }
-
-                    is CleanupOffStep -> {
-                        persistentEffects.removeCleanupRule(anchoredStep.ruleName)
-                    }
-
-                    is SyllabificationStep -> {
-                        if (!started) {
-                            return
-                        }
-                        curPhrases = applySyllables(
-                            anchoredStep.declarations, curPhrases, tracer
-                        )
-                    }
-                }
-            }
-
-            for (ruleWithAnchoredSteps in rules) {
-                val rule = ruleWithAnchoredSteps.rule
-
-                for (anchoredStep in persistentEffects.cleanupRules) {
-                    // Always run persistent cleanup rules first.
-                    // They have to run before any syllabification rules,
-                    // and if they're about to be cancelled, they need one
-                    // last chance to run.
-                    runAnchoredStep(anchoredStep)
-                }
-
-                if (!started && (options.startAt == null || rule?.name == options.startAt)) {
-                    started = true
-                }
-
-                val stepsToRunBeforeSyllabification =
-                    if (ruleWithAnchoredSteps.anchoredSteps.firstOrNull() is IntermediateRomanizerStep)
-                        0 else 1
-
-                for (anchoredStep in ruleWithAnchoredSteps.anchoredSteps.take(stepsToRunBeforeSyllabification)) {
-                    // Then run the *first* new anchored step (if it isn't a romanizer).
-                    // The first step is considered "more tightly bound" to the preceding
-                    // rule, and can intervene before persistent syllabification
-                    // rules.
-                    runAnchoredStep(anchoredStep)
-                    persistentEffects += anchoredStep
-                }
-
-                persistentEffects.syllabificationStep?.let {
-                    // Now run the persistent syllabification rule, if any.
-                    runAnchoredStep(it)
-                }
-
-                for (anchoredStep in ruleWithAnchoredSteps.anchoredSteps.drop(stepsToRunBeforeSyllabification)) {
-                    // Now run the remaining anchored steps, in declaration order.
-                    runAnchoredStep(anchoredStep)
-                    persistentEffects += anchoredStep
-                }
-
-                if (options.stopBefore != null && rule?.name == options.stopBefore) {
-                    stopped = true
-                    break
-                }
-
-                if (started) {
-                    if (rule != null && (options.romanize || rule.ruleType != RuleType.ROMANIZER)) {
-                        curPhrases = applyRule(
-                            rule,
-                            words,
-                            curPhrases,
-                            tracer,
-                            options.singleStepTimeoutSeconds,
-                        )
-                    }
-                }
-            }
-
-            if (options.stopBefore != null && !stopped) {
-                throw LscRuleNotFound(options.stopBefore, "stop before")
-            }
-            if (options.startAt != null && !started) {
-                throw LscRuleNotFound(options.startAt, "start at")
-            }
-
-            result[null] = curPhrases.map { row ->
-                runCatching {
-                    row.joinToString("\t") { phrase ->
-                        phrase.getOrThrow().string.normalizeCompose()
-                    }
-                }
-            }
-
-            result
+            runInThread()
         })
 
-        var timerTask: TimerTask? = null
-        timedOut = false
-        if (options.totalTimeoutSeconds != null) {
-            timerTask = timer.schedule((options.totalTimeoutSeconds * 1000).toLong()) {
-                executor.shutdownNow()
-                timedOut = true
-            }
-        }
+        val timerTask = startTimer()
 
         try {
             val result = resultTask.get()
             return if (timedOut) {
-                result.mapValues { (_, wordResults) ->
-                    wordResults.map { wordResult ->
-                        wordResult.recoverCatching { e ->
-                            if (e is LscRuleNotApplicable) {
-                                throw RunTimedOut(e.reason)
-                            } else {
-                                throw e
-                            }
-                        }
-                    }
-                }
+                injectRunTimedOutException(result)
             } else {
                 result
             }
@@ -214,6 +66,162 @@ class SoundChangeSession(
         }
     }
 
+    private fun startTimer(): TimerTask? {
+        var timerTask: TimerTask? = null
+        timedOut = false
+        if (options.totalTimeoutSeconds != null) {
+            timerTask = timer.schedule((options.totalTimeoutSeconds * 1000).toLong()) {
+                executor.shutdownNow()
+                timedOut = true
+            }
+        }
+        return timerTask
+    }
+
+    private fun injectRunTimedOutException(
+        result: Map<String?, List<Result<String>>>
+    ): Map<String?, List<Result<String>>> =
+        result.mapValues { (_, wordResults) ->
+            wordResults.map { wordResult ->
+                wordResult.recoverCatching { e ->
+                    if (e is LscRuleNotApplicable) {
+                        throw RunTimedOut(e.reason)
+                    } else {
+                        throw e
+                    }
+                }
+            }
+        }
+
+    private fun runInThread(): Map<String?, List<Result<String>>> {
+        startTracing()
+
+        for (ruleWithAnchoredSteps in rules) {
+            val rule = ruleWithAnchoredSteps.rule
+
+            for (anchoredStep in persistentEffects.cleanupRules) {
+                // Always run persistent cleanup rules first.
+                // They have to run before any syllabification rules,
+                // and if they're about to be cancelled, they need one
+                // last chance to run.
+                runAnchoredStep(anchoredStep)
+            }
+
+            if (!started && (options.startAt == null || rule?.name == options.startAt)) {
+                started = true
+            }
+
+            val stepsToRunBeforeSyllabification =
+                if (ruleWithAnchoredSteps.anchoredSteps.firstOrNull() is IntermediateRomanizerStep)
+                    0 else 1
+
+            for (anchoredStep in ruleWithAnchoredSteps.anchoredSteps.take(stepsToRunBeforeSyllabification)) {
+                // Then run the *first* new anchored step (if it isn't a romanizer).
+                // The first step is considered "more tightly bound" to the preceding
+                // rule, and can intervene before persistent syllabification
+                // rules.
+                runAnchoredStep(anchoredStep)
+                persistentEffects += anchoredStep
+            }
+
+            persistentEffects.syllabificationStep?.let {
+                // Now run the persistent syllabification rule, if any.
+                runAnchoredStep(it)
+            }
+
+            for (anchoredStep in ruleWithAnchoredSteps.anchoredSteps.drop(stepsToRunBeforeSyllabification)) {
+                // Now run the remaining anchored steps, in declaration order.
+                runAnchoredStep(anchoredStep)
+                persistentEffects += anchoredStep
+            }
+
+            if (options.stopBefore != null && rule?.name == options.stopBefore) {
+                stopped = true
+                break
+            }
+
+            if (started) {
+                if (rule != null && (options.romanize || rule.ruleType != RuleType.ROMANIZER)) {
+                    curPhrases = applyRule(
+                        rule,
+                        words,
+                        curPhrases,
+                        options.singleStepTimeoutSeconds,
+                    )
+                }
+            }
+        }
+
+        if (options.stopBefore != null && !stopped) {
+            throw LscRuleNotFound(options.stopBefore, "stop before")
+        }
+        if (options.startAt != null && !started) {
+            throw LscRuleNotFound(options.startAt, "start at")
+        }
+
+        result[null] = curPhrases.map { row ->
+            runCatching {
+                row.joinToString("\t") { phrase ->
+                    phrase.getOrThrow().string.normalizeCompose()
+                }
+            }
+        }
+
+        return result
+    }
+
+    fun runAnchoredStep(anchoredStep: AnchoredStep) {
+        when (anchoredStep) {
+            is IntermediateRomanizerStep -> {
+                if (!started) {
+                    return
+                }
+                val rom = anchoredStep.romanizer
+                result[rom.name] = applyRule(
+                    maybeReplace(rom),
+                    words,
+                    curPhrases,
+                    options.singleStepTimeoutSeconds,
+                ).map { row ->
+                    runCatching {
+                        row.joinToString("\t") { res ->
+                            res.getOrThrow().string
+                        }
+                    }
+                }
+            }
+
+            is CleanupStep -> {
+                if (!started) {
+                    return
+                }
+                curPhrases = applyRule(
+                    anchoredStep.cleanupRule,
+                    words,
+                    curPhrases,
+                    options.singleStepTimeoutSeconds,
+                )
+            }
+
+            is CleanupOffStep -> {
+                persistentEffects.removeCleanupRule(anchoredStep.ruleName)
+            }
+
+            is SyllabificationStep -> {
+                if (!started) {
+                    return
+                }
+                curPhrases = applySyllables(
+                    anchoredStep.declarations, curPhrases
+                )
+            }
+        }
+    }
+
+    fun maybeReplace(realRomanizer: NamedRule): NamedRule =
+        if (options.romanize) realRomanizer else StandardNamedRule(
+            "fake-romanizer", initialDeclarations, EmptyRule
+        )
 
     private class PersistentEffects(
         var syllabificationStep: SyllabificationStep? = null,
@@ -232,54 +240,47 @@ class SoundChangeSession(
         }
     }
 
-    private class Tracer(
-        val debug: (String) -> Unit,
-        val tracer: (TraceInfo) -> Unit,
-        val indexToDebugWords: Map<Int, String>,
-    ) {
-        init {
-            if (indexToDebugWords.isNotEmpty()) {
-                debug("Tracing ${indexToDebugWords.values.joinToString(", ")}")
-            }
+    private fun startTracing() {
+        if (indexToDebugWords.isNotEmpty()) {
+            options.debug("Tracing ${indexToDebugWords.values.joinToString(", ")}")
         }
-
-        operator fun invoke(
-            name: String,
-            curPhrases: List<List<Result<Phrase>>>,
-            newPhrases: List<List<Result<Phrase>>>,
-        ) {
-            for (i in indexToDebugWords.keys) {
-                val curPhrase = curPhrases[i].joinToString("\t") { it.string }
-                val newPhrase = newPhrases[i].joinToString("\t") { it.string }
-                if (newPhrase != curPhrase) {
-                    debug("Applied ${name}${appliedTo(i)}: $curPhrase -> $newPhrase")
-                    tracer(
-                        TraceInfo(
-                            name,
-                            indexToDebugWords[i]!!,
-                            curPhrase,
-                            newPhrase,
-                        )
-                    )
-                }
-            }
-        }
-
-        private val Result<Phrase>.string: String
-            get() = map { it.string }.getOrElse { "ERROR" }
-
-        fun appliedTo(index: Int): String =
-            if (indexToDebugWords.size > 1) {
-                " to ${indexToDebugWords[index]}"
-            } else {
-                ""
-            }
     }
+
+    private fun trace(
+        name: String,
+        curPhrases: List<List<Result<Phrase>>>,
+        newPhrases: List<List<Result<Phrase>>>,
+    ) {
+        for (i in indexToDebugWords.keys) {
+            val curPhrase = curPhrases[i].joinToString("\t") { it.string }
+            val newPhrase = newPhrases[i].joinToString("\t") { it.string }
+            if (newPhrase != curPhrase) {
+                options.debug("Applied ${name}${appliedTo(i)}: $curPhrase -> $newPhrase")
+                options.trace(
+                    TraceInfo(
+                        name,
+                        indexToDebugWords[i]!!,
+                        curPhrase,
+                        newPhrase,
+                    )
+                )
+            }
+        }
+    }
+
+    private val Result<Phrase>.string: String
+        get() = map { it.string }.getOrElse { "ERROR" }
+
+    private fun appliedTo(index: Int): String =
+        if (indexToDebugWords.size > 1) {
+            " to ${indexToDebugWords[index]}"
+        } else {
+            ""
+        }
 
     private fun applySyllables(
         declarations: Declarations,
         curPhrases: List<List<Result<Phrase>>>,
-        tracer: Tracer,
     ): List<List<Result<Phrase>>> =
         curPhrases.map { row ->
             row.map { curResult ->
@@ -288,14 +289,13 @@ class SoundChangeSession(
                 }
             }
         }.also { newPhrases ->
-            tracer("syllables", curPhrases, newPhrases)
+            trace("syllables", curPhrases, newPhrases)
         }
 
     private fun applyRule(
         rule: NamedRule,
         origPhrases: List<String>,
         curPhrases: List<List<Result<Phrase>>>,
-        tracer: Tracer,
         singleStepTimeoutSeconds: Double?,
     ): List<List<Result<Phrase>>> =
         curPhrases.zip(origPhrases).parallelStream().map { (cur, orig) ->
@@ -327,8 +327,25 @@ class SoundChangeSession(
             timerTask?.cancel()
             result
         }.toList().also { newPhrases ->
-            tracer(rule.name, curPhrases, newPhrases)
+            trace(rule.name, curPhrases, newPhrases)
         }
+
+    companion object {
+        fun run(
+            initialDeclarations: Declarations,
+            rules: List<RuleWithAnchoredSteps>,
+            words: List<String>,
+            options: SoundChangeOptions = SoundChangeOptions(),
+        ): Map<String?, List<Result<String>>> {
+            val session = SoundChangeSession(
+                initialDeclarations = initialDeclarations,
+                rules = rules,
+                words = words,
+                options,
+            )
+            return session.run()
+        }
+    }
 }
 
 class LscRuleNotApplicable(

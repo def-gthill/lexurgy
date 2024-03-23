@@ -101,15 +101,12 @@ class SoundChanger(
     fun changeWithIntermediatesAndIndividualErrors(
         words: List<String>,
         options: SoundChangeOptions = SoundChangeOptions(),
-    ): Map<String?, List<Result<String>>> {
-        val session = SoundChangeSession(
-            initialDeclarations = initialDeclarations,
-            rules = rules,
-            words = words,
-            options,
-        )
-        return session.run()
-    }
+    ): Map<String?, List<Result<String>>> = SoundChangeSession.run(
+        initialDeclarations = initialDeclarations,
+        rules = rules,
+        words = words,
+        options,
+    )
 
     companion object {
         fun change(
