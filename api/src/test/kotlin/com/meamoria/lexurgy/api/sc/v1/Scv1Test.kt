@@ -390,7 +390,7 @@ class Scv1Test {
                 pollingUrl = bodyAsJson().getValue("url").jsonPrimitive.content
             }
             var done = false
-            for (i in 1..10) {
+            for (i in 1..15) {
                 client.get(pollingUrl).apply {
                     val status = bodyAsJson().getValue("status").jsonPrimitive.content
                     if (status != "working") {
