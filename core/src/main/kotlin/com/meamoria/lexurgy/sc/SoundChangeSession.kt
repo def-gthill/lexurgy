@@ -147,6 +147,7 @@ class SoundChangeSession private constructor (
                         words,
                         curPhrases,
                         options.singleStepTimeoutSeconds,
+                        tracingRuleNameOverride = "<cleanup>/$lastRuleName/${sequencedRule.rule.name}"
                     )
                 }
             }
@@ -173,6 +174,9 @@ class SoundChangeSession private constructor (
             options.debug("Tracing ${indexToDebugWords.values.joinToString(", ")}")
         }
     }
+
+    private val lastRuleName: String
+        get() = lastRule?.name ?: "<initial>"
 
     private fun trace(
         name: String,
@@ -218,7 +222,7 @@ class SoundChangeSession private constructor (
             }
         }.also { newPhrases ->
             syllableRulesRunAfterLastRule += 1
-            val syllableRuleName = "<syllables>/${lastRule?.name ?: "<initial>"}/$syllableRulesRunAfterLastRule"
+            val syllableRuleName = "<syllables>/$lastRuleName/$syllableRulesRunAfterLastRule"
             trace(syllableRuleName, curPhrases, newPhrases)
         }
 
@@ -227,6 +231,7 @@ class SoundChangeSession private constructor (
         origPhrases: List<String>,
         curPhrases: List<List<Result<Phrase>>>,
         singleStepTimeoutSeconds: Double?,
+        tracingRuleNameOverride: String? = null,
     ): List<List<Result<Phrase>>> =
         curPhrases.zip(origPhrases).parallelStream().map { (cur, orig) ->
             if (this.timedOut) throw RunTimedOut(TooManyWords())
@@ -257,7 +262,7 @@ class SoundChangeSession private constructor (
             timerTask?.cancel()
             result
         }.toList().also { newPhrases ->
-            trace(rule.name, curPhrases, newPhrases)
+            trace(tracingRuleNameOverride ?: rule.name, curPhrases, newPhrases)
         }
 
     companion object {
