@@ -1,10 +1,10 @@
 Tracing karapuna
-Applied syllables: karapuna -> ka.ra.pu.na
+Applied <syllables>/<deromanizer>/1: karapuna -> ka.ra.pu.na
 Applied stress: ka.ra.pu.na -> ka.ˈra.pu.na
 Applied make-primary-stress-heavy: ka.ˈra.pu.na -> ka.ˈraː.pu.na
-Applied syllables: ka.ˈraː.pu.na -> ka.ˈraː².pu.na
+Applied <syllables>/make-primary-stress-heavy/1: ka.ˈraː.pu.na -> ka.ˈraː².pu.na
 Applied syncope: ka.ˈraː².pu.na -> k.ˈraː².p.n
-Applied syllables: k.ˈraː².p.n -> ˈkraːpn²
+Applied <syllables>/syncope/1: k.ˈraː².p.n -> ˈkraːpn²
 Applied drop-syllable-features: ˈkraːpn² -> ˈkraːpn
 Applied shorten: ˈkraːpn -> ˈkrapn
-Applied syllables: ˈkrapn -> krapn
+Applied <syllables>/stress-shift/1: ˈkrapn -> krapn

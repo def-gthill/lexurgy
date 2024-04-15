@@ -155,7 +155,7 @@ class TestServerModeCLI : StringSpec({
             "Applied syncope: mˈanaka -> mˈanka",
             "Applied remove-stress: mˈanka -> manka",
             "Applied consonant-coalescence: manka -> maᵑga",
-            "Applied Romanizer: maᵑga -> manga"
+            "Applied <romanizer>: maᵑga -> manga"
         )
     }
 })

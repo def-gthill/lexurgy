@@ -41,7 +41,7 @@ class Scv1Test {
             )
         ).assertOkResponseIsJson(
             scv1Response(
-                ruleNames = listOf("rule-1", "intermediate", "rule-2"),
+                ruleNames = listOf("rule-1", "<romanizer>-intermediate", "rule-2"),
                 outputWords = listOf("faa", "adae"),
                 intermediateWords = mapOf(
                     "intermediate" to listOf("faa", "abae")
