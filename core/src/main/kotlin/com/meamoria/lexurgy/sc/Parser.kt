@@ -218,12 +218,12 @@ object LscWalker : LscBaseVisitor<AstNode>() {
 
     private fun extractDeromanizerContext(statements: List<ParserRuleContext>): LscParser.DeromanizerContext? =
         statements.filterIsInstance<LscParser.DeromanizerContext>().singleOrNullOrThrow {
-            LscDuplicateName("rule", "Deromanizer")
+            LscDuplicateName("rule", "<deromanizer>")
         }
 
     private fun extractRomanizerContext(statements: List<ParserRuleContext>): LscParser.RomanizerContext? =
         statements.filterIsInstance<LscParser.RomanizerContext>().singleOrNullOrThrow {
-            LscDuplicateName("rule", "Romanizer")
+            LscDuplicateName("rule", "<romanizer>")
         }
 
     override fun visitElementDecl(ctx: LscParser.ElementDeclContext): AstNode = walkElementDeclaration(
@@ -929,7 +929,7 @@ object LscWalker : LscBaseVisitor<AstNode>() {
             text,
             subRules.map { it as UnlinkedRule },
             literal,
-            name = ruleName,
+            stageName = ruleName,
         )
 
     private fun walkChangeRule(
@@ -1296,7 +1296,7 @@ object LscWalker : LscBaseVisitor<AstNode>() {
                             is UnlinkedRomanizer -> IntermediateRomanizerStep(
                                 anchoredStatement.link(
                                     1, declarations.withElements(), InheritedRuleProperties.none
-                                ) as NamedRule
+                                ) as IntermediateRomanizer
                             )
                             is UnlinkedStandardRule -> {
                                 CleanupStep(
@@ -1643,8 +1643,9 @@ object LscWalker : LscBaseVisitor<AstNode>() {
         text: String,
         subRules: List<UnlinkedRule>,
         val literal: Boolean,
-        val name: String = "Deromanizer",
     ) : BaseUnlinkedRule(text, subRules) {
+
+        val name: String = "<deromanizer>"
 
         override fun link(
             firstExpressionNumber: Int,
@@ -1684,8 +1685,10 @@ object LscWalker : LscBaseVisitor<AstNode>() {
         text: String,
         subRules: List<UnlinkedRule>,
         val literal: Boolean,
-        val name: String = "Romanizer",
+        val stageName: String? = null,
     ) : BaseUnlinkedRule(text, subRules) {
+
+        val name: String = stageName?.let { "<romanizer>-$it" } ?: "<romanizer>"
 
         override fun link(
             firstExpressionNumber: Int,
@@ -1701,20 +1704,26 @@ object LscWalker : LscBaseVisitor<AstNode>() {
                     subRule.link(subFirstExpressionNumber, declarations, inherited.copy(name = name))
                 }
             }
-            return if (literal) {
+            val block = if (literal) {
                 val subRulesWithRedeclaration =
                     linkedSubRules.dropLast(1) + Redeclaration(Declarations.empty) + linkedSubRules.last()
-                return StandardNamedRule(
-                    name,
-                    declarations.runtime,
-                    SequentialBlock(subRulesWithRedeclaration),
-                    ruleType = RuleType.ROMANIZER
-                )
+                SequentialBlock(subRulesWithRedeclaration)
             } else {
+                SequentialBlock(linkedSubRules)
+            }
+            return if (stageName == null) {
                 StandardNamedRule(
                     name,
                     declarations.runtime,
-                    SequentialBlock(linkedSubRules),
+                    block,
+                    ruleType = RuleType.ROMANIZER
+                )
+            } else {
+                IntermediateRomanizer(
+                    name,
+                    stageName,
+                    declarations.runtime,
+                    block,
                     ruleType = RuleType.ROMANIZER
                 )
             }

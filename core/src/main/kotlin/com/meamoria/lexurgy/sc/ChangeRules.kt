@@ -52,6 +52,20 @@ class StandardNamedRule(
     override fun toString(): String = "Rule $name: $mainBlock"
 }
 
+class IntermediateRomanizer(
+    override val name: String,
+    val stageName: String,
+    override val declarations: Declarations,
+    val mainBlock: ChangeRule,
+    override val ruleType: RuleType = RuleType.NORMAL,
+    val filter: ((Segment) -> Boolean)? = null,
+) : NamedRule {
+    override operator fun invoke(phrase: Phrase): Phrase =
+        mainBlock(phrase) ?: phrase
+
+    override fun toString(): String = "Romanizer $stageName: $mainBlock"
+}
+
 /**
  * A rule that never matches its input.
  */

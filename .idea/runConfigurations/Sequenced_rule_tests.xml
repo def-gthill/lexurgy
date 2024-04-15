@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Reusable tests" type="GradleRunConfiguration" factoryName="Gradle" folderName="SC Tests">
+  <configuration default="false" name="Sequenced rule tests" type="GradleRunConfiguration" factoryName="Gradle" folderName="SC Tests">
     <ExternalSystemSettings>
       <option name="executionName" />
       <option name="externalProjectPath" value="$PROJECT_DIR$/core" />
@@ -12,7 +12,7 @@
         <list>
           <option value="test" />
           <option value="--tests" />
-          <option value="TestReusable" />
+          <option value="TestSequencedRule" />
         </list>
       </option>
       <option name="vmOptions" value="" />

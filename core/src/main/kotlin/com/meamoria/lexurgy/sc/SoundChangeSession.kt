@@ -22,6 +22,11 @@ class SoundChangeSession private constructor (
     @Volatile
     private var timedOut = false
 
+    private val sequencedRules = applyStartAndStop(
+        sequenceRules(rules),
+        options.startAt,
+        options.stopBefore,
+    )
     private val indexToDebugWords = words.withIndex()
         .filter { it.value in options.debugWords }
         .associate { it.index to it.value }
@@ -35,9 +40,8 @@ class SoundChangeSession private constructor (
             Result.success(phrase)
         }
     }
-    private var started = false
-    private var stopped = false
-    private val persistentEffects = PersistentEffects()
+    private var lastRule: NamedRule? = null
+    private var syllableRulesRunAfterLastRule = 0
     private val result = mutableMapOf<String?, List<Result<String>>>()
 
     private fun run(): Map<String?, List<Result<String>>> {
@@ -96,67 +100,56 @@ class SoundChangeSession private constructor (
     private fun runInThread(): Map<String?, List<Result<String>>> {
         startTracing()
 
-        for (ruleWithAnchoredSteps in rules) {
-            val rule = ruleWithAnchoredSteps.rule
+        for (sequencedRule in sequencedRules) {
+            when (sequencedRule) {
+                is ApplyRule -> {
+                    val rule = sequencedRule.rule
 
-            for (anchoredStep in persistentEffects.cleanupRules) {
-                // Always run persistent cleanup rules first.
-                // They have to run before any syllabification rules,
-                // and if they're about to be cancelled, they need one
-                // last chance to run.
-                runAnchoredStep(anchoredStep)
-            }
+                    if (options.romanize || rule.ruleType != RuleType.ROMANIZER) {
+                        curPhrases = applyRule(
+                            rule,
+                            words,
+                            curPhrases,
+                            options.singleStepTimeoutSeconds,
+                        )
+                    }
 
-            if (!started && (options.startAt == null || rule?.name == options.startAt)) {
-                started = true
-            }
+                    lastRule = rule
+                    syllableRulesRunAfterLastRule = 0
+                }
 
-            val stepsToRunBeforeSyllabification =
-                if (ruleWithAnchoredSteps.anchoredSteps.firstOrNull() is IntermediateRomanizerStep)
-                    0 else 1
+                is IntermediateRomanize -> {
+                    val romanizer = sequencedRule.rule
 
-            for (anchoredStep in ruleWithAnchoredSteps.anchoredSteps.take(stepsToRunBeforeSyllabification)) {
-                // Then run the *first* new anchored step (if it isn't a romanizer).
-                // The first step is considered "more tightly bound" to the preceding
-                // rule, and can intervene before persistent syllabification
-                // rules.
-                runAnchoredStep(anchoredStep)
-                persistentEffects += anchoredStep
-            }
+                    result[romanizer.stageName] = applyRule(
+                        maybeReplace(romanizer),
+                        words,
+                        curPhrases,
+                        options.singleStepTimeoutSeconds,
+                    ).map { row ->
+                        runCatching {
+                            row.joinToString("\t") { res ->
+                                res.getOrThrow().string
+                            }
+                        }
+                    }
+                }
 
-            persistentEffects.syllabificationStep?.let {
-                // Now run the persistent syllabification rule, if any.
-                runAnchoredStep(it)
-            }
+                is Syllabify -> {
+                    curPhrases = applySyllables(
+                        sequencedRule.declarations, curPhrases
+                    )
+                }
 
-            for (anchoredStep in ruleWithAnchoredSteps.anchoredSteps.drop(stepsToRunBeforeSyllabification)) {
-                // Now run the remaining anchored steps, in declaration order.
-                runAnchoredStep(anchoredStep)
-                persistentEffects += anchoredStep
-            }
-
-            if (options.stopBefore != null && rule?.name == options.stopBefore) {
-                stopped = true
-                break
-            }
-
-            if (started) {
-                if (rule != null && (options.romanize || rule.ruleType != RuleType.ROMANIZER)) {
+                is CleanUp -> {
                     curPhrases = applyRule(
-                        rule,
+                        sequencedRule.rule,
                         words,
                         curPhrases,
                         options.singleStepTimeoutSeconds,
                     )
                 }
             }
-        }
-
-        if (options.stopBefore != null && !stopped) {
-            throw LscRuleNotFound(options.stopBefore, "stop before")
-        }
-        if (options.startAt != null && !started) {
-            throw LscRuleNotFound(options.startAt, "start at")
         }
 
         result[null] = curPhrases.map { row ->
@@ -170,75 +163,10 @@ class SoundChangeSession private constructor (
         return result
     }
 
-    fun runAnchoredStep(anchoredStep: AnchoredStep) {
-        when (anchoredStep) {
-            is IntermediateRomanizerStep -> {
-                if (!started) {
-                    return
-                }
-                val rom = anchoredStep.romanizer
-                result[rom.name] = applyRule(
-                    maybeReplace(rom),
-                    words,
-                    curPhrases,
-                    options.singleStepTimeoutSeconds,
-                ).map { row ->
-                    runCatching {
-                        row.joinToString("\t") { res ->
-                            res.getOrThrow().string
-                        }
-                    }
-                }
-            }
-
-            is CleanupStep -> {
-                if (!started) {
-                    return
-                }
-                curPhrases = applyRule(
-                    anchoredStep.cleanupRule,
-                    words,
-                    curPhrases,
-                    options.singleStepTimeoutSeconds,
-                )
-            }
-
-            is CleanupOffStep -> {
-                persistentEffects.removeCleanupRule(anchoredStep.ruleName)
-            }
-
-            is SyllabificationStep -> {
-                if (!started) {
-                    return
-                }
-                curPhrases = applySyllables(
-                    anchoredStep.declarations, curPhrases
-                )
-            }
-        }
-    }
-
     fun maybeReplace(realRomanizer: NamedRule): NamedRule =
         if (options.romanize) realRomanizer else StandardNamedRule(
             "fake-romanizer", initialDeclarations, EmptyRule
         )
-
-    private class PersistentEffects(
-        var syllabificationStep: SyllabificationStep? = null,
-        val cleanupRules: MutableList<CleanupStep> = mutableListOf(),
-    ) {
-        operator fun plusAssign(effect: AnchoredStep) {
-            when (effect) {
-                is SyllabificationStep -> syllabificationStep = effect
-                is CleanupStep -> cleanupRules += effect
-                else -> Unit // No persistent effect
-            }
-        }
-
-        fun removeCleanupRule(ruleName: String) {
-            cleanupRules.removeAll { it.cleanupRule.name == ruleName }
-        }
-    }
 
     private fun startTracing() {
         if (indexToDebugWords.isNotEmpty()) {
@@ -289,7 +217,9 @@ class SoundChangeSession private constructor (
                 }
             }
         }.also { newPhrases ->
-            trace("syllables", curPhrases, newPhrases)
+            syllableRulesRunAfterLastRule += 1
+            val syllableRuleName = "<syllables>/${lastRule?.name ?: "<initial>"}/$syllableRulesRunAfterLastRule"
+            trace(syllableRuleName, curPhrases, newPhrases)
         }
 
     private fun applyRule(

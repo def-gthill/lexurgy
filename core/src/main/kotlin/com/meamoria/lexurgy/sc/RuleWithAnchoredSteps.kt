@@ -7,7 +7,7 @@ data class RuleWithAnchoredSteps(
 
 sealed interface AnchoredStep
 
-data class IntermediateRomanizerStep(val romanizer: NamedRule) : AnchoredStep
+data class IntermediateRomanizerStep(val romanizer: IntermediateRomanizer) : AnchoredStep
 
 data class CleanupStep(val cleanupRule: NamedRule) : AnchoredStep
 
