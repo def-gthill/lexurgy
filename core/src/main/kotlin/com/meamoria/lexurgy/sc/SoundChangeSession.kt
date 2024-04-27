@@ -13,7 +13,7 @@ import kotlin.streams.toList
 
 class SoundChangeSession private constructor (
     val initialDeclarations: Declarations,
-    val rules: List<RuleWithAnchoredSteps>,
+    val sequencedRules: List<SequencedRule>,
     val words: List<String>,
     val options: SoundChangeOptions = SoundChangeOptions(),
 ) {
@@ -22,8 +22,8 @@ class SoundChangeSession private constructor (
     @Volatile
     private var timedOut = false
 
-    private val sequencedRules = applyStartAndStop(
-        sequenceRules(rules),
+    private val activeRules = applyStartAndStop(
+        sequencedRules,
         options.startAt,
         options.stopBefore,
     )
@@ -100,7 +100,7 @@ class SoundChangeSession private constructor (
     private fun runInThread(): Map<String?, List<Result<String>>> {
         startTracing()
 
-        for (sequencedRule in sequencedRules) {
+        for (sequencedRule in activeRules) {
             when (sequencedRule) {
                 is ApplyRule -> {
                     val rule = sequencedRule.rule
@@ -268,13 +268,13 @@ class SoundChangeSession private constructor (
     companion object {
         fun run(
             initialDeclarations: Declarations,
-            rules: List<RuleWithAnchoredSteps>,
+            sequencedRules: List<SequencedRule>,
             words: List<String>,
             options: SoundChangeOptions = SoundChangeOptions(),
         ): Map<String?, List<Result<String>>> {
             val session = SoundChangeSession(
                 initialDeclarations = initialDeclarations,
-                rules = rules,
+                sequencedRules = sequencedRules,
                 words = words,
                 options,
             )

@@ -39,7 +39,9 @@ fun sequenceRules(rulesWithAnchoredSteps: List<RuleWithAnchoredSteps>): List<Seq
         }
     }
 
-    val fullRules = rulesWithAnchoredSteps + listOf(RuleWithAnchoredSteps(null, emptyList()))
+    val fullRules = rulesWithAnchoredSteps + if (rulesWithAnchoredSteps.lastOrNull()?.rule == null) {
+        emptyList()
+    } else listOf(RuleWithAnchoredSteps(null, emptyList()))
 
     for (rule in fullRules) {
         // Always run persistent cleanup rules first.

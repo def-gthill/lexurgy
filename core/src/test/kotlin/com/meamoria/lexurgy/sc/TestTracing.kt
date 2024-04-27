@@ -1,6 +1,8 @@
 package com.meamoria.lexurgy.sc
 
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.collections.haveSize
+import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 
 @Suppress("unused")
@@ -33,6 +35,7 @@ class TestTracing: StringSpec({
 
         runTracing(ch, "aaa", tracer)
 
+        tracer.traces should haveSize(2)
         tracer.traces[0].ruleName shouldBe "<deromanizer>"
         tracer.traces[0].wordBeforeChange shouldBe "aaa"
         tracer.traces[0].wordAfterChange shouldBe "bbb"
@@ -53,6 +56,7 @@ class TestTracing: StringSpec({
 
         runTracing(ch, "aaa", tracer)
 
+        tracer.traces should haveSize(2)
         tracer.traces[0].ruleName shouldBe "foo"
         tracer.traces[1].ruleName shouldBe "<romanizer>"
         tracer.traces[1].wordBeforeChange shouldBe "bbb"
@@ -73,6 +77,7 @@ class TestTracing: StringSpec({
 
         runTracing(ch, "aaa", tracer)
 
+        tracer.traces should haveSize(2)
         tracer.traces[0].ruleName shouldBe "<romanizer>-foo"
         tracer.traces[0].wordBeforeChange shouldBe "aaa"
         tracer.traces[0].wordAfterChange shouldBe "bbb"
@@ -99,6 +104,7 @@ class TestTracing: StringSpec({
 
         runTracing(ch, "banana", tracer)
 
+        tracer.traces should haveSize(4)
         tracer.traces[0].ruleName shouldBe "<syllables>/<initial>/1"
         tracer.traces[0].wordBeforeChange shouldBe "banana"
         tracer.traces[0].wordAfterChange shouldBe "ba.na.na"
@@ -128,6 +134,7 @@ class TestTracing: StringSpec({
 
         runTracing(ch, "aaa", tracer)
 
+        tracer.traces should haveSize(5)
         tracer.traces[0].ruleName shouldBe "<cleanup>/<initial>/foo"
         tracer.traces[0].wordBeforeChange shouldBe "aaa"
         tracer.traces[0].wordAfterChange shouldBe "bbb"

@@ -13,22 +13,29 @@ class SoundChanger(
         }
     }
 
+    private val sequencedRules = sequenceRules(rules)
+
     /**
      * The list of rule names that will be used in any tracing
      * output, in the order that the rules get applied.
      */
     val ruleNames: List<String> by lazy {
-        rules.flatMap {
-            val ruleName = it.rule?.name
-            val anchoredStepNames = it.anchoredSteps.mapNotNull { step ->
-                when (step) {
-                    is IntermediateRomanizerStep -> step.romanizer.name
-                    is CleanupStep -> step.cleanupRule.name
-                    is SyllabificationStep -> "syllables"
-                    else -> null
+        var lastRuleName = "<initial>"
+        var syllableRulesFoundAfterLastRule = 0
+        sequencedRules.map {
+            when (it) {
+                is ApplyRule -> {
+                    syllableRulesFoundAfterLastRule = 0
+                    lastRuleName = it.rule.name
+                    it.rule.name
                 }
+                is IntermediateRomanize -> it.rule.name
+                is Syllabify -> {
+                    syllableRulesFoundAfterLastRule += 1
+                    "<syllables>/$lastRuleName/$syllableRulesFoundAfterLastRule"
+                }
+                is CleanUp -> "<cleanup>/$lastRuleName/${it.rule.name}"
             }
-            anchoredStepNames + listOfNotNull(ruleName)
         }
     }
 
@@ -103,7 +110,7 @@ class SoundChanger(
         options: SoundChangeOptions = SoundChangeOptions(),
     ): Map<String?, List<Result<String>>> = SoundChangeSession.run(
         initialDeclarations = initialDeclarations,
-        rules = rules,
+        sequencedRules = sequencedRules,
         words = words,
         options,
     )
