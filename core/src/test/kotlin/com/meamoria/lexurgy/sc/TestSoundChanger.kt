@@ -139,8 +139,8 @@ class TestSoundChanger : StringSpec({
         val actual = ch.changeWithIndividualErrors(listOf("lo", "pye", "pte", "kwus", "ak"))
         actual[0] shouldBe Result.success("lo")
         actual[1] shouldBe Result.success("pye")
-        actual[2].exceptionOrNull().shouldBeInstanceOf<SyllableStructureViolated>()
+        actual[2].exceptionOrNull()?.cause.shouldBeInstanceOf<SyllableStructureViolated>()
         actual[3] shouldBe Result.success("kwus")
-        actual[4].exceptionOrNull().shouldBeInstanceOf<SyllableStructureViolated>()
+        actual[4].exceptionOrNull()?.cause.shouldBeInstanceOf<SyllableStructureViolated>()
     }
 })

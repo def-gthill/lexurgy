@@ -2,7 +2,9 @@ package com.meamoria.lexurgy.sc
 
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.beInstanceOf
 
 @Suppress("unused")
 class TestSyllables : StringSpec({
@@ -252,6 +254,18 @@ class TestSyllables : StringSpec({
         ch("tiramisu") shouldBe "ti.ra.mi.su"
     }
 
+    fun shouldFailSyllablesWithMessage(
+        message: String,
+        block: () -> Unit,
+    ) {
+        shouldThrow<LscRuleNotApplicable> {
+            block()
+        }.also {
+            it.cause should beInstanceOf<SyllableStructureViolated>()
+            it.cause?.message shouldBe message
+        }
+    }
+
     "We should get helpful error messages when a word violates the syllabification rules" {
         val ch = lsc(
             """
@@ -267,44 +281,39 @@ class TestSyllables : StringSpec({
             """.trimIndent()
         )
 
-        shouldThrow<SyllableStructureViolated> {
-            ch("bahu")
-        }.also {
-            it.message shouldBe
-                    "The segment \"h\" in \"ba(h)u\" doesn't fit the syllable structure; " +
+        shouldFailSyllablesWithMessage(
+            "The segment \"h\" in \"ba(h)u\" doesn't fit the syllable structure; " +
                     "no syllable pattern can start with \"h\""
+        ) {
+            ch("bahu")
         }
 
-        shouldThrow<SyllableStructureViolated> {
-            ch("katmandu")
-        }.also {
-            it.message shouldBe
-                    "The segment \"m\" in \"kat(m)andu\" doesn't fit the syllable structure; " +
+        shouldFailSyllablesWithMessage(
+            "The segment \"m\" in \"kat(m)andu\" doesn't fit the syllable structure; " +
                     "no syllable pattern that starts with \"t\" can continue with \"m\""
+        ) {
+            ch("katmandu")
         }
 
-        shouldThrow<SyllableStructureViolated> {
-            ch("kamadut")
-        }.also {
-            it.message shouldBe
-                    "The word \"kamadut\" doesn't fit the syllable structure; " +
+        shouldFailSyllablesWithMessage(
+            "The word \"kamadut\" doesn't fit the syllable structure; " +
                     "the last syllable \"t\" is incomplete"
+        ) {
+            ch("kamadut")
         }
 
-        shouldThrow<SyllableStructureViolated> {
-            ch("kaːmaːduː")
-        }.also {
-            it.message shouldBe
-                    "The segment \"aː\" in \"k(aː)maːduː\" doesn't fit the syllable structure; " +
+        shouldFailSyllablesWithMessage(
+            "The segment \"aː\" in \"k(aː)maːduː\" doesn't fit the syllable structure; " +
                     "no syllable pattern that starts with \"k\" can continue with \"aː\""
+        ) {
+            ch("kaːmaːduː")
         }
 
-        shouldThrow<SyllableStructureViolated> {
-            ch("ᵇkᶠtamanduᵃ")
-        }.also {
-            it.message shouldBe
-                    "The segment \"t\" in \"ᵇkᶠ(t)amanduᵃ\" doesn't fit the syllable structure; " +
+        shouldFailSyllablesWithMessage(
+            "The segment \"t\" in \"ᵇkᶠ(t)amanduᵃ\" doesn't fit the syllable structure; " +
                     "no syllable pattern that starts with \"k\" can continue with \"t\""
+        ) {
+            ch("ᵇkᶠtamanduᵃ")
         }
     }
 
@@ -316,20 +325,18 @@ class TestSyllables : StringSpec({
             """.trimIndent()
         )
 
-        shouldThrow<SyllableStructureViolated> {
-            ch("acac")
-        }.also {
-            it.message shouldBe
-                    "The segment \"c\" in \"a(c)ac\" doesn't fit the syllable structure; " +
+        shouldFailSyllablesWithMessage(
+            "The segment \"c\" in \"a(c)ac\" doesn't fit the syllable structure; " +
                     "no syllable pattern that starts with \"a\" can continue with \"c\""
+        ) {
+            ch("acac")
         }
 
-        shouldThrow<SyllableStructureViolated> {
-            ch("abcabc")
-        }.also {
-            it.message shouldBe
-                    "The segment \"a\" in \"abc(a)bc\" doesn't fit the syllable structure; " +
+        shouldFailSyllablesWithMessage(
+            "The segment \"a\" in \"abc(a)bc\" doesn't fit the syllable structure; " +
                     "no syllable pattern that starts with \"abc\" can continue with \"a\""
+        ) {
+            ch("abcabc")
         }
     }
 
@@ -341,12 +348,11 @@ class TestSyllables : StringSpec({
             """.trimIndent()
         )
 
-        shouldThrow<SyllableStructureViolated> {
-            ch("banabanani")
-        }.also {
-            it.message shouldBe
-                    "The segment \"i\" in \"banabanan(i)\" doesn't fit the syllable structure; " +
+        shouldFailSyllablesWithMessage(
+            "The segment \"i\" in \"banabanan(i)\" doesn't fit the syllable structure; " +
                     "no syllable pattern that starts with \"banan\" can continue with \"i\""
+        ) {
+            ch("banabanani")
         }
     }
 
@@ -370,8 +376,16 @@ class TestSyllables : StringSpec({
         ch("jaksprat") shouldBe "jak.sprat"
         ch("wisnagnit") shouldBe "wis.nag.nit"
 
-        shouldThrow<SyllableStructureViolated> { ch("mtar") }
-        shouldThrow<SyllableStructureViolated> { ch("antki") }
+        shouldThrow<LscRuleNotApplicable> {
+            ch("mtar")
+        }.also {
+            it.cause should beInstanceOf<SyllableStructureViolated>()
+        }
+        shouldThrow<LscRuleNotApplicable> {
+            ch("antki")
+        }.also {
+            it.cause should beInstanceOf<SyllableStructureViolated>()
+        }
     }
 
     "Syllabification should proceed left-to-right, always choosing the shortest syllable that doesn't cause subsequent syllables to fail" {
