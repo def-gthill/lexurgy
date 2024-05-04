@@ -221,16 +221,8 @@ class SoundChangeSession private constructor(
         return curPhrases.zip(origPhrases).map { (curRow, orig) ->
             curRow.map { curResult ->
                 curResult.mapCatching { curPhrase ->
-                    try {
+                    wrapError(syllableRuleName, orig, curPhrase.string) {
                         declarations.syllabify(curPhrase)
-                    } catch (e: Exception) {
-                        if (timedOut) {
-                            throw RunTimedOut(e)
-                        } else if (e is UserError) {
-                            throw LscRuleNotApplicable(e, syllableRuleName, orig, curPhrase.string)
-                        } else {
-                            throw LscRuleCrashed(e, syllableRuleName, orig, curPhrase.string)
-                        }
                     }
                 }
             }
@@ -259,16 +251,8 @@ class SoundChangeSession private constructor(
             }
             val result = curRow.map { curResult ->
                 curResult.mapCatching { curPhrase ->
-                    try {
+                    wrapError(rule.name, orig, curPhrase.string) {
                         rule(curPhrase).removeBoundingBreaks()
-                    } catch (e: Exception) {
-                        if (timedOut) {
-                            throw RunTimedOut(e)
-                        } else if (e is UserError) {
-                            throw LscRuleNotApplicable(e, rule.name, orig, curPhrase.string)
-                        } else {
-                            throw LscRuleCrashed(e, rule.name, orig, curPhrase.string)
-                        }
                     }
                 }
             }
@@ -278,8 +262,23 @@ class SoundChangeSession private constructor(
             trace(tracingRuleNameOverride ?: rule.name, curPhrases, newPhrases)
         }
 
-    private fun <T> wrapError(block: () -> T) {
-
+    private fun <T> wrapError(
+        ruleName: String,
+        originalPhrase: String,
+        currentPhrase: String,
+        block: () -> T
+    ): T {
+        try {
+            return block()
+        } catch (e: Exception) {
+            if (timedOut) {
+                throw RunTimedOut(e)
+            } else if (e is UserError) {
+                throw LscRuleNotApplicable(e, ruleName, originalPhrase, currentPhrase)
+            } else {
+                throw LscRuleCrashed(e, ruleName, originalPhrase, currentPhrase)
+            }
+        }
     }
 
     companion object {
