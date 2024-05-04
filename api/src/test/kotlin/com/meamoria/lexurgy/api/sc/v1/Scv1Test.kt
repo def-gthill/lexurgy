@@ -229,6 +229,34 @@ class Scv1Test {
     }
 
     @Test
+    fun onSyllableFailure_ReturnsListOfErrorsInSuccessResponse() = testApi {
+        client.postJson(
+            "/scv1",
+            scv1Request(
+                changes = "Syllables:\n  x",
+                inputWords = listOf("xxx", "foo"),
+            ),
+        ).apply {
+            assertEquals(HttpStatusCode.OK, status)
+            assertEquals(
+                scv1Response(
+                    ruleNames = listOf("<syllables>/<initial>/1"),
+                    outputWords = listOf("x.x.x", "ERROR"),
+                    errors = listOf(
+                        ruleFailure(
+                            message = "The segment \"f\" in \"(f)oo\" doesn't fit the syllable structure; no syllable pattern can start with \"f\"",
+                            rule = "<syllables>/<initial>/1",
+                            originalWord = "foo",
+                            currentWord = "foo",
+                        )
+                    )
+                ),
+                bodyAsText(),
+            )
+        }
+    }
+
+    @Test
     fun onDanglingDiacriticInRules_ReturnsBadRequest() = testApi {
         client.postJson(
             "/scv1",

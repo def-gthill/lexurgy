@@ -11,7 +11,7 @@ import java.util.concurrent.ForkJoinPool
 import kotlin.concurrent.schedule
 import kotlin.streams.toList
 
-class SoundChangeSession private constructor (
+class SoundChangeSession private constructor(
     val initialDeclarations: Declarations,
     val sequencedRules: List<SequencedRule>,
     val words: List<String>,
@@ -19,6 +19,7 @@ class SoundChangeSession private constructor (
 ) {
     private val executor = ForkJoinPool()
     private val timer = Timer(true)
+
     @Volatile
     private var timedOut = false
 
@@ -137,7 +138,7 @@ class SoundChangeSession private constructor (
 
                 is Syllabify -> {
                     curPhrases = applySyllables(
-                        sequencedRule.declarations, curPhrases
+                        sequencedRule.declarations, words, curPhrases
                     )
                 }
 
@@ -212,19 +213,31 @@ class SoundChangeSession private constructor (
 
     private fun applySyllables(
         declarations: Declarations,
+        origPhrases: List<String>,
         curPhrases: List<List<Result<Phrase>>>,
-    ): List<List<Result<Phrase>>> =
-        curPhrases.map { row ->
-            row.map { curResult ->
-                curResult.mapCatching {
-                    declarations.syllabify(it)
+    ): List<List<Result<Phrase>>> {
+        syllableRulesRunAfterLastRule += 1
+        val syllableRuleName = "<syllables>/$lastRuleName/$syllableRulesRunAfterLastRule"
+        return curPhrases.zip(origPhrases).map { (curRow, orig) ->
+            curRow.map { curResult ->
+                curResult.mapCatching { curPhrase ->
+                    try {
+                        declarations.syllabify(curPhrase)
+                    } catch (e: Exception) {
+                        if (timedOut) {
+                            throw RunTimedOut(e)
+                        } else if (e is UserError) {
+                            throw LscRuleNotApplicable(e, syllableRuleName, orig, curPhrase.string)
+                        } else {
+                            throw LscRuleCrashed(e, syllableRuleName, orig, curPhrase.string)
+                        }
+                    }
                 }
             }
         }.also { newPhrases ->
-            syllableRulesRunAfterLastRule += 1
-            val syllableRuleName = "<syllables>/$lastRuleName/$syllableRulesRunAfterLastRule"
             trace(syllableRuleName, curPhrases, newPhrases)
         }
+    }
 
     private fun applyRule(
         rule: NamedRule,
@@ -233,7 +246,7 @@ class SoundChangeSession private constructor (
         singleStepTimeoutSeconds: Double?,
         tracingRuleNameOverride: String? = null,
     ): List<List<Result<Phrase>>> =
-        curPhrases.zip(origPhrases).parallelStream().map { (cur, orig) ->
+        curPhrases.zip(origPhrases).parallelStream().map { (curRow, orig) ->
             if (this.timedOut) throw RunTimedOut(TooManyWords())
             var timerTask: TimerTask? = null
             var timedOut = false
@@ -244,26 +257,30 @@ class SoundChangeSession private constructor (
                     timedOut = true
                 }
             }
-            val result = cur.map { row ->
-                row.mapCatching { curPhrase ->
-                try {
-                    rule(curPhrase).removeBoundingBreaks()
-                } catch (e: Exception) {
-                    if (timedOut) {
-                        throw RunTimedOut(e)
-                    } else if (e is UserError) {
-                        throw LscRuleNotApplicable(e, rule.name, orig, curPhrase.string)
-                    } else {
-                        throw LscRuleCrashed(e, rule.name, orig, curPhrase.string)
+            val result = curRow.map { curResult ->
+                curResult.mapCatching { curPhrase ->
+                    try {
+                        rule(curPhrase).removeBoundingBreaks()
+                    } catch (e: Exception) {
+                        if (timedOut) {
+                            throw RunTimedOut(e)
+                        } else if (e is UserError) {
+                            throw LscRuleNotApplicable(e, rule.name, orig, curPhrase.string)
+                        } else {
+                            throw LscRuleCrashed(e, rule.name, orig, curPhrase.string)
+                        }
                     }
                 }
             }
-                }
             timerTask?.cancel()
             result
         }.toList().also { newPhrases ->
             trace(tracingRuleNameOverride ?: rule.name, curPhrases, newPhrases)
         }
+
+    private fun <T> wrapError(block: () -> T) {
+
+    }
 
     companion object {
         fun run(
