@@ -1,6 +1,7 @@
 package com.meamoria.lexurgy.sc
 
 import com.meamoria.lexurgy.*
+import com.meamoria.lexurgy.sc.element.EmptyMatcher
 import com.meamoria.lexurgy.sc.element.Matcher
 import com.meamoria.lexurgy.word.*
 
@@ -32,19 +33,7 @@ class Syllabifier(
         for (i in 0 until word.length) {
             val prev = syllableSequences[i]?.takeIf { !it.isPartial } ?: continue
             val newSequences = patterns.flatMapIndexed { patternNumber, pattern ->
-                pattern.matcher.claim(
-                    Phrase(word),
-                    PhraseIndex(0, i),
-                    Bindings(),
-                    partial = true,
-                ).map {
-                    prev + PatternMatch(
-                        patternNumber,
-                        it.index.segmentIndex,
-                        pattern.assignedMatrix,
-                        isPartial = it.isPartial,
-                    )
-                }
+                matchPattern(word, i, patternNumber, pattern).map { prev + it }
             }
             for (sequence in newSequences) {
                 val existing = syllableSequences[sequence.end]
@@ -58,6 +47,68 @@ class Syllabifier(
         }
         syllableStructureViolated(word, syllableSequences)
     }
+
+    private fun matchPattern(
+        word: Word,
+        segmentIndex: Int,
+        patternNumber: Int,
+        pattern: Pattern,
+    ): List<PatternMatch> = when (pattern) {
+        is SimplePattern -> pattern.matcher.claim(
+            Phrase(word),
+            PhraseIndex(0, segmentIndex),
+            Bindings(),
+            partial = true,
+        ).map {
+            PatternMatch(
+                patternNumber,
+                it.index.segmentIndex,
+                assignedMatrix = pattern.assignedMatrix,
+                isPartial = it.isPartial,
+            )
+        }
+        is StructuredPattern -> {
+            (pattern.reluctantOnset ?: EmptyMatcher).claim(
+                Phrase(word),
+                PhraseIndex(0, segmentIndex),
+                Bindings(),
+                partial = true,
+            ).flatMap { reluctantOnsetMatch ->
+                pattern.onset.claim(
+                    Phrase(word),
+                    PhraseIndex(0, reluctantOnsetMatch.index.segmentIndex),
+                    Bindings(),
+                    partial = true,
+                ).flatMap { onsetMatch ->
+                    pattern.nucleus.claim(
+                        Phrase(word),
+                        PhraseIndex(0, onsetMatch.index.segmentIndex),
+                        Bindings(),
+                        partial = true,
+                    ).flatMap { nucleusMatch ->
+                        (pattern.coda ?: EmptyMatcher).claim(
+                            Phrase(word),
+                            PhraseIndex(0, nucleusMatch.index.segmentIndex),
+                            Bindings(),
+                            partial = true,
+                        ).map { codaMatch ->
+                            PatternMatch(
+                                patternNumber,
+                                codaMatch.index.segmentIndex,
+                                reluctantOnsetLength = reluctantOnsetMatch.index.segmentIndex - segmentIndex,
+                                onsetLength = onsetMatch.index.segmentIndex - reluctantOnsetMatch.index.segmentIndex,
+                                nucleusLength = nucleusMatch.index.segmentIndex - onsetMatch.index.segmentIndex,
+                                codaLength = codaMatch.index.segmentIndex - nucleusMatch.index.segmentIndex,
+                                assignedMatrix = pattern.assignedMatrix,
+                                isPartial = codaMatch.isPartial,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
 
     private fun combineSyllableModifiers(
         word: Word, newSyllableBreaks: List<Int>, newSyllableMatrices: Map<Int, Matrix>
@@ -117,11 +168,28 @@ class Syllabifier(
         )
     }
 
-    data class Pattern(val matcher: Matcher, val assignedMatrix: Matrix?)
+    sealed interface Pattern
+
+    data class SimplePattern(
+        val matcher: Matcher,
+        val assignedMatrix: Matrix? = null,
+    ) : Pattern
+
+    data class StructuredPattern(
+        val onset: Matcher,
+        val nucleus: Matcher,
+        val coda: Matcher? = null,
+        val reluctantOnset: Matcher? = null,
+        val assignedMatrix: Matrix? = null,
+    ) : Pattern
 
     private data class PatternMatch(
         val patternNumber: Int,
         val end: Int,
+        val reluctantOnsetLength: Int? = null,
+        val onsetLength: Int? = null,
+        val nucleusLength: Int? = null,
+        val codaLength: Int? = null,
         val assignedMatrix: Matrix?,
         val isPartial: Boolean = false,
     )
@@ -138,13 +206,25 @@ class Syllabifier(
             if (this.isPartial != other.isPartial) {
                 return this.isPartial.compareTo(other.isPartial)
             }
-            for ((thisPattern, otherPattern) in patternMatches.zip(other.patternMatches)) {
+            var i = 0
+            while (i < patternMatches.size && i < other.patternMatches.size) {
+                val thisPattern = patternMatches[i]
+                val otherPattern = other.patternMatches[i]
+                if (i + 1 < patternMatches.size && i + 1 < other.patternMatches.size) {
+                    if (patternMatches[i + 1].reluctantOnsetLength != other.patternMatches[i + 1].reluctantOnsetLength) {
+                        return (patternMatches[i + 1].reluctantOnsetLength ?: 0).compareTo(other.patternMatches[i + 1].reluctantOnsetLength ?: 0)
+                    }
+                }
+                if (thisPattern.nucleusLength != otherPattern.nucleusLength) {
+                    return (otherPattern.nucleusLength ?: 0).compareTo(thisPattern.nucleusLength ?: 0)
+                }
                 if (thisPattern.end != otherPattern.end) {
                     return thisPattern.end.compareTo(otherPattern.end)
                 }
                 if (thisPattern.patternNumber != otherPattern.patternNumber) {
                     return thisPattern.patternNumber.compareTo(otherPattern.patternNumber)
                 }
+                i += 1
             }
             return 0
         }

@@ -1518,8 +1518,8 @@ object LscWalker : LscBaseVisitor<AstNode>() {
         val element: Element,
         val matrix: MatrixNode?,
     ) : BaseAstNode(text) {
-        fun syllabifierPattern(declarations: ParseTimeDeclarations): Syllabifier.Pattern =
-            Syllabifier.Pattern(
+        fun syllabifierPattern(declarations: ParseTimeDeclarations): Syllabifier.SimplePattern =
+            Syllabifier.SimplePattern(
                 element.matcher(ElementContext.aloneInMain(), declarations),
                 matrix?.matrix,
             )
