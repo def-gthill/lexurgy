@@ -3,6 +3,7 @@ package com.meamoria.lexurgy.sc
 import com.meamoria.lexurgy.*
 import com.meamoria.lexurgy.sc.element.EmptyMatcher
 import com.meamoria.lexurgy.sc.element.Matcher
+import com.meamoria.lexurgy.sc.element.PhraseMatchEnd
 import com.meamoria.lexurgy.word.*
 
 class Syllabifier(
@@ -67,48 +68,93 @@ class Syllabifier(
                 isPartial = it.isPartial,
             )
         }
-        is StructuredPattern -> {
-            (pattern.reluctantOnset ?: EmptyMatcher).claim(
-                Phrase(word),
-                PhraseIndex(0, segmentIndex),
-                Bindings(),
-                partial = true,
-            ).flatMap { reluctantOnsetMatch ->
-                pattern.onset.claim(
-                    Phrase(word),
-                    PhraseIndex(0, reluctantOnsetMatch.index.segmentIndex),
-                    Bindings(),
-                    partial = true,
-                ).flatMap { onsetMatch ->
-                    pattern.nucleus.claim(
-                        Phrase(word),
-                        PhraseIndex(0, onsetMatch.index.segmentIndex),
-                        Bindings(),
-                        partial = true,
-                    ).flatMap { nucleusMatch ->
-                        (pattern.coda ?: EmptyMatcher).claim(
-                            Phrase(word),
-                            PhraseIndex(0, nucleusMatch.index.segmentIndex),
-                            Bindings(),
-                            partial = true,
-                        ).map { codaMatch ->
-                            PatternMatch(
-                                patternNumber,
-                                codaMatch.index.segmentIndex,
-                                reluctantOnsetLength = reluctantOnsetMatch.index.segmentIndex - segmentIndex,
-                                onsetLength = onsetMatch.index.segmentIndex - reluctantOnsetMatch.index.segmentIndex,
-                                nucleusLength = nucleusMatch.index.segmentIndex - onsetMatch.index.segmentIndex,
-                                codaLength = codaMatch.index.segmentIndex - nucleusMatch.index.segmentIndex,
-                                assignedMatrix = pattern.assignedMatrix,
-                                isPartial = codaMatch.isPartial,
-                            )
-                        }
-                    }
-                }
-            }
-        }
+        is StructuredPattern ->
+            matchStructuredPattern(word, segmentIndex, patternNumber, pattern)
     }
 
+    private fun matchStructuredPattern(
+        word: Word,
+        segmentIndex: Int,
+        patternNumber: Int,
+        pattern: StructuredPattern,
+    ): List<PatternMatch> {
+        fun List<PatternMatch>.partials(): List<PatternMatch> {
+            return filter { it.end > segmentIndex }.map { it.partial() }
+        }
+
+        fun List<PatternMatch>.matchNextPart(
+            part: Matcher,
+            nextPatternMatch: (PatternMatch, PhraseMatchEnd) -> PatternMatch,
+        ) = filter { !it.isPartial }.flatMap { match ->
+            part.claim(
+                Phrase(word),
+                PhraseIndex(0, match.end),
+                Bindings(),
+                partial = true,
+            ).map { nextPatternMatch(match, it) }
+        }
+
+        val initialMatches = listOf(PatternMatch(patternNumber, segmentIndex))
+        val reluctantOnsetMatches = initialMatches.matchNextPart(
+            pattern.reluctantOnset ?: EmptyMatcher
+        ) { match, end ->
+            PatternMatch(
+                patternNumber,
+                end.index.segmentIndex,
+                reluctantOnsetLength = end.index.segmentIndex - match.end,
+                assignedMatrix = pattern.assignedMatrix,
+                isPartial = end.isPartial,
+            )
+        }
+        if (reluctantOnsetMatches.isEmpty()) {
+            return initialMatches.partials()
+        }
+        val onsetMatches = reluctantOnsetMatches.matchNextPart(pattern.onset) { match, end ->
+            PatternMatch(
+                patternNumber,
+                end.index.segmentIndex,
+                reluctantOnsetLength = match.reluctantOnsetLength,
+                onsetLength = end.index.segmentIndex - match.end,
+                assignedMatrix = pattern.assignedMatrix,
+                isPartial = end.isPartial,
+            )
+        }
+        if (onsetMatches.isEmpty()) {
+            return reluctantOnsetMatches.partials()
+        }
+        val nucleusMatches = onsetMatches.matchNextPart(pattern.nucleus) { match, end ->
+            PatternMatch(
+                patternNumber,
+                end.index.segmentIndex,
+                reluctantOnsetLength = match.reluctantOnsetLength,
+                onsetLength = match.onsetLength,
+                nucleusLength = end.index.segmentIndex - match.end,
+                assignedMatrix = pattern.assignedMatrix,
+                isPartial = end.isPartial,
+            )
+        }
+        if (nucleusMatches.isEmpty()) {
+            return onsetMatches.partials()
+        }
+        val codaMatches = nucleusMatches.matchNextPart(
+            pattern.coda ?: EmptyMatcher
+        ) { match, end ->
+            PatternMatch(
+                patternNumber,
+                end.index.segmentIndex,
+                reluctantOnsetLength = match.reluctantOnsetLength,
+                onsetLength = match.onsetLength,
+                nucleusLength = match.nucleusLength,
+                codaLength = end.index.segmentIndex - match.end,
+                assignedMatrix = pattern.assignedMatrix,
+                isPartial = end.isPartial,
+            )
+        }
+        if (codaMatches.isEmpty()) {
+            return nucleusMatches.partials()
+        }
+        return codaMatches
+    }
 
     private fun combineSyllableModifiers(
         word: Word, newSyllableBreaks: List<Int>, newSyllableMatrices: Map<Int, Matrix>
@@ -190,9 +236,11 @@ class Syllabifier(
         val onsetLength: Int? = null,
         val nucleusLength: Int? = null,
         val codaLength: Int? = null,
-        val assignedMatrix: Matrix?,
+        val assignedMatrix: Matrix? = null,
         val isPartial: Boolean = false,
-    )
+    ) {
+        fun partial(): PatternMatch = copy(isPartial = true)
+    }
 
     private data class PatternMatchSequence(
         val patternMatches: List<PatternMatch>,
@@ -235,9 +283,9 @@ class Syllabifier(
 }
 
 class SyllableStructureViolated(
-    word: Word,
-    lastSyllableBreak: Int,
-    invalidSymbolPosition: Int
+    val word: Word,
+    val lastSyllableBreak: Int,
+    val invalidSymbolPosition: Int
 ) :
     UserError(
         if(invalidSymbolPosition < word.length) {

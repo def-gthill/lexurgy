@@ -6,6 +6,7 @@ import com.meamoria.lexurgy.sc.element.RepeaterMatcher
 import com.meamoria.lexurgy.sc.element.TextMatcher
 import com.meamoria.lexurgy.word.StandardWord
 import com.meamoria.lexurgy.word.Word
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 
@@ -108,7 +109,7 @@ class TestSyllabifier : StringSpec({
         result.string shouldBe "baa.ba"
     }
 
-    "A reluctant onset comsumes as little to the left as possible" {
+    "A reluctant onset consumes as little to the left as possible" {
         // AKA "Why won't Lexurgy split clusters between syllables!?"
         val syllabifier = syllabifier(
             Syllabifier.StructuredPattern(
@@ -123,5 +124,39 @@ class TestSyllabifier : StringSpec({
         val result = syllabifier.syllabify(word)
 
         result.string shouldBe "spas.pa.pap.spa"
+    }
+
+    "Structured syllables correctly identify the problem segment if a component is missing" {
+        val syllabifier = syllabifier(
+            Syllabifier.StructuredPattern(
+                onset = text("b"),
+                nucleus = text("a"),
+            )
+        )
+        val word = word("b/a/b/o")
+
+        shouldThrow<SyllableStructureViolated> {
+            syllabifier.syllabify(word)
+        }.also {
+            it.lastSyllableBreak shouldBe 2
+            it.invalidSymbolPosition shouldBe 3
+        }
+    }
+
+    "Structured syllables correctly identify the problem segment if a component has a partial match" {
+        val syllabifier = syllabifier(
+            Syllabifier.StructuredPattern(
+                onset = text("b"),
+                nucleus = text("o/u"),
+            )
+        )
+        val word = word("b/o/u/b/o")
+
+        shouldThrow<SyllableStructureViolated> {
+            syllabifier.syllabify(word)
+        }.also {
+            it.lastSyllableBreak shouldBe 3
+            it.invalidSymbolPosition shouldBe 4
+        }
     }
 })
