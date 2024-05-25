@@ -401,6 +401,91 @@ class TestSyllables : StringSpec({
         ch("patso") shouldBe "pats.o"
     }
 
+    "We can define structured syllable rules" {
+        val ch = lsc(
+            """
+                Class vowel {a, e, i, o, u}
+                Class cons {p, t, k, s, m, n, l, r}
+                Syllables:
+                    @cons :: @vowel :: @cons?
+            """.trimIndent()
+        )
+
+        ch("paskanti") shouldBe "pas.kan.ti"
+    }
+
+    "The coda is optional in structured syllable rules" {
+        val ch = lsc(
+            """
+                Class vowel {a, e, i, o, u}
+                Class cons {p, t, k, s, m, n, l, r}
+                Syllables:
+                    @cons :: @vowel
+            """.trimIndent()
+        )
+
+        ch("pakani") shouldBe "pa.ka.ni"
+    }
+
+    "Structured syllable rules can have environments" {
+        val ch = lsc(
+            """
+                Class vowel {a, e, i, o, u}
+                Class cons {p, t, k, s, m, n, l, r}
+                Syllables:
+                    @cons? @cons :: @vowel / $ _
+                    @cons :: @vowel
+            """.trimIndent()
+        )
+
+        ch("spakani") shouldBe "spa.ka.ni"
+        shouldFailSyllablesWithMessage(
+            "The segment \"k\" in \"pas(k)ani\" doesn't fit the syllable structure; " +
+                    "no syllable pattern that starts with \"s\" can continue with \"k\""
+        ) {
+            ch("paskani")
+        }
+    }
+
+    "Structured syllable onsets obey the Maximal Onset Principle" {
+        val ch = lsc(
+            """
+                Class vowel {a, e, i, o, u}
+                Class cons {p, t, k, s, m, n, l, r}
+                Syllables:
+                    @cons? @cons? :: @vowel :: @cons? @cons?
+            """.trimIndent()
+        )
+
+        ch("spaspanspantspasp") shouldBe "spa.span.spant.spasp"
+    }
+
+    "Reluctant onsets violate the Maximal Onset Principle" {
+        val ch = lsc(
+            """
+                Class vowel {a, e, i, o, u}
+                Class cons {p, t, k, s, m, n, l, r}
+                Syllables:
+                    @cons? ?: @cons? :: @vowel :: @cons?
+            """.trimIndent()
+        )
+
+        ch("spaspanspas") shouldBe "spas.pan.spas"
+    }
+
+    "Syllable nuclei consume as many sounds as possible" {
+        val ch = lsc(
+            """
+                Class vowel {a, e, i, o, u}
+                Class cons {p, t, k, s, m, n, l, r}
+                Syllables:
+                    @cons? :: @vowel @vowel? :: @cons?
+            """.trimIndent()
+        )
+
+        ch("paikaoinik") shouldBe "pai.kao.i.nik"
+    }
+
     "Words that have been automatically syllabified should be re-syllabified after every named rule" {
         val ch = lsc(
             """

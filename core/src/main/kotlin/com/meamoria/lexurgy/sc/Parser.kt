@@ -303,16 +303,45 @@ object LscWalker : LscBaseVisitor<AstNode>() {
         walkSyllableDecl(
             ctx.text,
             if (ctx.CLEAR_SYLLABLES() != null) null
-            else listVisit(ctx.syllablePattern()),
+            else listVisit(ctx.syllableExpression()),
         )
 
-    override fun visitSyllablePattern(ctx: LscParser.SyllablePatternContext): AstNode =
-        walkSyllablePattern(
+    override fun visitSyllableExpression(ctx: LscParser.SyllableExpressionContext): AstNode =
+        walkSyllableExpression(
             ctx.text,
-            visit(ctx.ruleElement()),
+            visit(ctx.syllablePattern()),
             optionalVisit(ctx.compoundEnvironment()),
             optionalVisit(ctx.matrix()),
         )
+
+    override fun visitSyllablePattern(ctx: LscParser.SyllablePatternContext): AstNode =
+        visit(ctx.getChild(0))
+
+    override fun visitStructuredPattern(ctx: LscParser.StructuredPatternContext): AstNode =
+        walkStructuredPattern(
+            ctx.text,
+            reluctantOnset = optionalVisit(ctx.reluctantOnset()) as Element?,
+            onset = visit(ctx.unconditionalRuleElement(0)) as Element,
+            nucleus = visit(ctx.unconditionalRuleElement(1)) as Element,
+            coda = optionalVisit(ctx.unconditionalRuleElement(2)) as Element?,
+        )
+
+    override fun visitReluctantOnset(ctx: LscParser.ReluctantOnsetContext): AstNode =
+        visit(ctx.getChild(0))
+
+    private fun walkStructuredPattern(
+        text: String,
+        reluctantOnset: Element?,
+        onset: Element,
+        nucleus: Element,
+        coda: Element?,
+    ): AstNode = StructuredSyllablePatternNode(
+        text,
+        reluctantOnset = reluctantOnset,
+        onset = onset,
+        nucleus = nucleus,
+        coda = coda,
+    )
 
     override fun visitDeromanizer(ctx: LscParser.DeromanizerContext): AstNode =
         walkDeromanizer(
@@ -881,21 +910,43 @@ object LscWalker : LscBaseVisitor<AstNode>() {
         text: String,
         patterns: List<AstNode>?,
     ): AstNode =
-        SyllableStructureNode(text, patterns?.map { it as SyllablePatternNode })
+        SyllableStructureNode(text, patterns?.map { it as SyllableExpressionNode })
 
-    private fun walkSyllablePattern(
+    private fun walkSyllableExpression(
         text: String,
-        ruleElement: AstNode,
+        pattern: AstNode,
         environment: AstNode?,
         matrix: AstNode?,
-    ): AstNode =
-        SyllablePatternNode(
+    ): AstNode {
+        val patternNode = when (pattern) {
+            is Element -> environment?.let {
+                SimpleSyllablePatternNode(
+                    text,
+                    EnvironmentElement(
+                        text,
+                        pattern,
+                        it as CompoundEnvironmentNode
+                    )
+                )
+            } ?: SimpleSyllablePatternNode(text, pattern)
+            is StructuredSyllablePatternNode -> environment?.let {
+                StructuredSyllablePatternNode(
+                    text,
+                    reluctantOnset = pattern.reluctantOnset,
+                    onset = pattern.onset,
+                    nucleus = pattern.nucleus,
+                    coda = pattern.coda,
+                    environment = it as CompoundEnvironmentNode,
+                )
+            } ?: pattern
+            else -> throw AssertionError("Invalid syllable pattern")
+        }
+        return SyllableExpressionNode(
             text,
-            (environment?.let {
-                walkLookaround(text, ruleElement, it)
-            } ?: ruleElement) as Element,
+            patternNode,
             matrix as MatrixNode?,
         )
+    }
 
     private fun walkDeromanizer(
         text: String,
@@ -1502,7 +1553,7 @@ object LscWalker : LscBaseVisitor<AstNode>() {
 
     private class SyllableStructureNode(
         text: String,
-        val patterns: List<SyllablePatternNode>?,
+        val patterns: List<SyllableExpressionNode>?,
     ) : BaseAstNode(text) {
         fun syllabifier(declarations: ParseTimeDeclarations): Syllabifier? =
             patterns?.let { notNullPatterns ->
@@ -1513,15 +1564,55 @@ object LscWalker : LscBaseVisitor<AstNode>() {
             }
     }
 
-    private class SyllablePatternNode(
+    private class SyllableExpressionNode(
         text: String,
-        val element: Element,
+        val pattern: SyllablePatternNode,
         val matrix: MatrixNode?,
     ) : BaseAstNode(text) {
-        fun syllabifierPattern(declarations: ParseTimeDeclarations): Syllabifier.SimplePattern =
+        fun syllabifierPattern(declarations: ParseTimeDeclarations): Syllabifier.Pattern =
+            pattern.syllabifierPattern(declarations, matrix?.matrix)
+    }
+
+    private interface SyllablePatternNode {
+        fun syllabifierPattern(
+            declarations: ParseTimeDeclarations,
+            matrix: Matrix?
+        ): Syllabifier.Pattern
+    }
+
+    private class SimpleSyllablePatternNode(
+        text: String,
+        val element: Element,
+    ) : BaseAstNode(text), SyllablePatternNode {
+        override fun syllabifierPattern(
+            declarations: ParseTimeDeclarations,
+            matrix: Matrix?
+        ): Syllabifier.SimplePattern =
             Syllabifier.SimplePattern(
                 element.matcher(ElementContext.aloneInMain(), declarations),
-                matrix?.matrix,
+                matrix,
+            )
+    }
+
+    private class StructuredSyllablePatternNode(
+        text: String,
+        val reluctantOnset: Element?,
+        val onset: Element,
+        val nucleus: Element,
+        val coda: Element?,
+        val environment: CompoundEnvironmentNode? = null,
+    ) : BaseAstNode(text), SyllablePatternNode {
+        override fun syllabifierPattern(
+            declarations: ParseTimeDeclarations,
+            matrix: Matrix?
+        ): Syllabifier.StructuredPattern =
+            Syllabifier.StructuredPattern(
+                onset.matcher(ElementContext.aloneInMain(), declarations),
+                nucleus.matcher(ElementContext.aloneInMain(), declarations),
+                coda?.matcher(ElementContext.aloneInMain(), declarations),
+                reluctantOnset = reluctantOnset?.matcher(ElementContext.aloneInMain(), declarations),
+                environment = environment?.link(declarations),
+                assignedMatrix = matrix,
             )
     }
 

@@ -24,8 +24,14 @@ symbolDecl: SYMBOL_DECL WHITESPACE symbolName ((LIST_SEP symbolName)* | WHITESPA
 symbolName: text;
 
 syllableDecl:
-    SYLLABLE_DECL RULE_START (NEWLINE+ (EXPLICIT_SYLLABLES | CLEAR_SYLLABLES) | (NEWLINE+ syllablePattern)+);
-syllablePattern: ruleElement (CHANGE matrix)? compoundEnvironment?;
+    SYLLABLE_DECL RULE_START (NEWLINE+ (EXPLICIT_SYLLABLES | CLEAR_SYLLABLES) | (NEWLINE+ syllableExpression)+);
+syllableExpression: syllablePattern (CHANGE matrix)? compoundEnvironment?;
+syllablePattern: structuredPattern | ruleElement;
+structuredPattern:
+    (reluctantOnset QMARK_COLON)?
+    unconditionalRuleElement DOUBLE_COLON
+    unconditionalRuleElement (DOUBLE_COLON unconditionalRuleElement)?;
+reluctantOnset: unconditionalRuleElement;
 
 deromanizer: DEROMANIZER (WHITESPACE LITERAL)? RULE_START NEWLINE+ block;
 romanizer: ROMANIZER (WHITESPACE LITERAL)? RULE_START NEWLINE+ block;
@@ -138,6 +144,8 @@ AT_LEAST_ONE: '+';
 OPTIONAL: '?';
 HYPHEN: '-';
 RULE_START: ':';
+DOUBLE_COLON: WHITESPACE? '::' WHITESPACE?;
+QMARK_COLON: WHITESPACE? '?:' WHITESPACE?;
 INEXACT: '~';
 NEGATION: '!';
 SYLLABLE_BOUNDARY: '.';

@@ -1,9 +1,7 @@
 package com.meamoria.lexurgy.sc
 
 import com.meamoria.lexurgy.*
-import com.meamoria.lexurgy.sc.element.EmptyMatcher
-import com.meamoria.lexurgy.sc.element.Matcher
-import com.meamoria.lexurgy.sc.element.PhraseMatchEnd
+import com.meamoria.lexurgy.sc.element.*
 import com.meamoria.lexurgy.word.*
 
 class Syllabifier(
@@ -153,7 +151,19 @@ class Syllabifier(
         if (codaMatches.isEmpty()) {
             return nucleusMatches.partials()
         }
-        return codaMatches
+
+        val environmentMatches = pattern.environment?.let { env ->
+            codaMatches.filter { match ->
+                env.check(
+                    Phrase(word),
+                    PhraseIndex(0, segmentIndex),
+                    PhraseIndex(0, match.end),
+                    Bindings(),
+                ) != null
+            }
+        } ?: codaMatches
+
+        return environmentMatches
     }
 
     private fun combineSyllableModifiers(
@@ -226,6 +236,7 @@ class Syllabifier(
         val nucleus: Matcher,
         val coda: Matcher? = null,
         val reluctantOnset: Matcher? = null,
+        val environment: CompoundEnvironment? = null,
         val assignedMatrix: Matrix? = null,
     ) : Pattern
 
