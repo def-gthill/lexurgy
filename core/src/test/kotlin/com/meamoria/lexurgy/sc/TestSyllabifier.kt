@@ -1,9 +1,6 @@
 package com.meamoria.lexurgy.sc
 
-import com.meamoria.lexurgy.sc.element.AlternativeMatcher
-import com.meamoria.lexurgy.sc.element.Matcher
-import com.meamoria.lexurgy.sc.element.RepeaterMatcher
-import com.meamoria.lexurgy.sc.element.TextMatcher
+import com.meamoria.lexurgy.sc.element.*
 import com.meamoria.lexurgy.word.StandardWord
 import com.meamoria.lexurgy.word.Word
 import io.kotest.assertions.throwables.shouldThrow
@@ -19,10 +16,20 @@ class TestSyllabifier : StringSpec({
         )
     fun word(schematic: String): Word = StandardWord.fromSchematic(schematic)
     fun text(schematic: String): TextMatcher = TextMatcher(word(schematic))
+    fun capture(matcher: Matcher, number: Int): CaptureMatcher = CaptureMatcher(matcher, number)
+    fun captureReference(number: Int): CaptureReferenceMatcher = CaptureReferenceMatcher(
+        Declarations.empty,
+        number,
+        exact = true,
+    )
     fun optional(matcher: Matcher): RepeaterMatcher = RepeaterMatcher(
         Declarations.empty,
         matcher,
         StandardRepeaterType.ZERO_OR_ONE,
+    )
+    fun sequence(vararg matchers: Matcher): SequenceMatcher = SequenceMatcher(
+        Declarations.empty,
+        matchers.asList(),
     )
     fun either(vararg matchers: Matcher): AlternativeMatcher = AlternativeMatcher(
         Declarations.empty,
@@ -44,6 +51,22 @@ class TestSyllabifier : StringSpec({
         val result = syllabifier.syllabify(word)
 
         result.string shouldBe "ba.na.na"
+    }
+
+    "A syllabifier can include captures" {
+        val syllabifier = syllabifier(
+            Syllabifier.SimplePattern(
+                sequence(
+                    capture(either(text("a"), text("b")), 1),
+                    captureReference(1),
+                )
+            )
+        )
+        val word = word("a/a/b/b/a/a")
+
+        val result = syllabifier.syllabify(word)
+
+        result.string shouldBe "aa.bb.aa"
     }
 
     "A syllabifier with structured patterns can split up a word into syllables" {
@@ -158,5 +181,19 @@ class TestSyllabifier : StringSpec({
             it.lastSyllableBreak shouldBe 3
             it.invalidSymbolPosition shouldBe 4
         }
+    }
+
+    "A structured syllabifier can include captures" {
+        val syllabifier = syllabifier(
+            Syllabifier.StructuredPattern(
+                onset = capture(either(text("a"), text("b")), 1),
+                nucleus = captureReference(1),
+            )
+        )
+        val word = word("a/a/b/b/a/a")
+
+        val result = syllabifier.syllabify(word)
+
+        result.string shouldBe "aa.bb.aa"
     }
 })

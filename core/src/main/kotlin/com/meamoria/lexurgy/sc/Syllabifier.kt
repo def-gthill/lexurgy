@@ -62,6 +62,7 @@ class Syllabifier(
             PatternMatch(
                 patternNumber,
                 it.index.segmentIndex,
+                Bindings(),
                 assignedMatrix = pattern.assignedMatrix,
                 isPartial = it.isPartial,
             )
@@ -87,18 +88,19 @@ class Syllabifier(
             part.claim(
                 Phrase(word),
                 PhraseIndex(0, match.end),
-                Bindings(),
+                match.returnBindings,
                 partial = true,
             ).map { nextPatternMatch(match, it) }
         }
 
-        val initialMatches = listOf(PatternMatch(patternNumber, segmentIndex))
+        val initialMatches = listOf(PatternMatch(patternNumber, segmentIndex, Bindings()))
         val reluctantOnsetMatches = initialMatches.matchNextPart(
             pattern.reluctantOnset ?: EmptyMatcher
         ) { match, end ->
             PatternMatch(
                 patternNumber,
                 end.index.segmentIndex,
+                end.returnBindings,
                 reluctantOnsetLength = end.index.segmentIndex - match.end,
                 assignedMatrix = pattern.assignedMatrix,
                 isPartial = end.isPartial,
@@ -111,6 +113,7 @@ class Syllabifier(
             PatternMatch(
                 patternNumber,
                 end.index.segmentIndex,
+                end.returnBindings,
                 reluctantOnsetLength = match.reluctantOnsetLength,
                 onsetLength = end.index.segmentIndex - match.end,
                 assignedMatrix = pattern.assignedMatrix,
@@ -124,6 +127,7 @@ class Syllabifier(
             PatternMatch(
                 patternNumber,
                 end.index.segmentIndex,
+                end.returnBindings,
                 reluctantOnsetLength = match.reluctantOnsetLength,
                 onsetLength = match.onsetLength,
                 nucleusLength = end.index.segmentIndex - match.end,
@@ -140,6 +144,7 @@ class Syllabifier(
             PatternMatch(
                 patternNumber,
                 end.index.segmentIndex,
+                end.returnBindings,
                 reluctantOnsetLength = match.reluctantOnsetLength,
                 onsetLength = match.onsetLength,
                 nucleusLength = match.nucleusLength,
@@ -243,6 +248,7 @@ class Syllabifier(
     private data class PatternMatch(
         val patternNumber: Int,
         val end: Int,
+        val returnBindings: Bindings,
         val reluctantOnsetLength: Int? = null,
         val onsetLength: Int? = null,
         val nucleusLength: Int? = null,
