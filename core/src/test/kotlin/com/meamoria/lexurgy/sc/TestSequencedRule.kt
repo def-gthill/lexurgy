@@ -9,11 +9,12 @@ import io.kotest.matchers.types.shouldBeSameInstanceAs
 @Suppress("unused")
 class TestSequencedRule : StringSpec({
 
-    fun rule(name: String): StandardNamedRule =
+    fun rule(name: String, ruleType: RuleType = RuleType.NORMAL): StandardNamedRule =
         StandardNamedRule(
             name = name,
             declarations = Declarations.empty,
-            mainBlock = SequentialBlock(emptyList())
+            mainBlock = SequentialBlock(emptyList()),
+            ruleType = ruleType,
         )
 
     fun syllables(): SyllabificationStep =
@@ -140,6 +141,21 @@ class TestSequencedRule : StringSpec({
         sequencedRules[0] shouldBe instanceOf<CleanUp>()
         sequencedRules[1] shouldBe instanceOf<ApplyRule>()
         sequencedRules[2] shouldBeSameInstanceAs(sequencedRules[0])
+    }
+
+    "Sequencing a cleanup rule doesn't include it after the final romanizer" {
+        val rulesWithAnchoredSteps = listOf(
+            RuleWithAnchoredSteps(
+                rule("romanizer", ruleType = RuleType.ROMANIZER),
+                listOf(cleanup("foo"))
+            )
+        )
+
+        val sequencedRules = sequenceRules(rulesWithAnchoredSteps)
+
+        sequencedRules shouldHaveSize(2)
+        sequencedRules[0] shouldBe instanceOf<CleanUp>()
+        sequencedRules[1] shouldBe instanceOf<ApplyRule>()
     }
 
     "Start-at cuts off named rules before the specified rule" {

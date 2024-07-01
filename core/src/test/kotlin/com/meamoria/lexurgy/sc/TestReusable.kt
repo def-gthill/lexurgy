@@ -503,6 +503,20 @@ class TestReusable : StringSpec({
                 mapOf("x" to listOf("ben.en.e"), null to listOf("binini"))
     }
 
+    "Cleanup rules don't run after the final romanizer" {
+        val ch = lsc(
+            """
+                rule cleanup:
+                    o => a
+                
+                romanizer:
+                    u => o
+            """.trimIndent()
+        )
+
+        ch("bouba") shouldBe "baoba"
+    }
+
     "The \"cleanup\" modifier should be invalid in blocks" {
         shouldThrow<LscInvalidModifier> {
             lsc(
