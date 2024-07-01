@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "com.meamoria"
-version = "1.7.0"
+version = "1.7.1"
 
 repositories {
     mavenCentral()
