@@ -6,7 +6,7 @@ statement:
     deromanizer | interRomanizer | romanizer | changeRule | standardExpression;
 
 elementDecl: ELEMENT_DECL WHITESPACE name WHITESPACE ruleElement;
-classDecl: CLASS_DECL WHITESPACE name WHITESPACE (CLASS_START | LIST_START) classElement ((CLASS_SEP | LIST_SEP) classElement)* CLASS_SEP? LIST_END;
+classDecl: CLASS_DECL WHITESPACE name WHITESPACE (CLASS_START | LIST_START) classElement ((CLASS_SEP | LIST_SEP) classElement)* (CLASS_SEP | NEWLINE)? LIST_END;
 classElement: elementRef | text;
 featureDecl:
     FEATURE_DECL WHITESPACE (

@@ -85,6 +85,22 @@ class TestWhitespace : StringSpec({
         ch("1a2x3") shouldBe "123"
     }
 
+    "The trailing comma in a class declaration is optional" {
+        val ch = lsc(
+            """
+                Class letter {
+                    a, b, c, d, e, f, g, h, i, j, k, l, m,
+                    n, o, p, q, r, s, t, u, v, w, x, y, z
+                }
+                
+                destroy-letters:
+                    @letter => *
+            """.trimIndent()
+        )
+
+        ch("1a2x3") shouldBe "123"
+    }
+
     "The file format should be fairly robust to extra newlines and blank lines" {
         // We're just testing that these don't throw exceptions
         lsc("Deromanizer:\n    y => j\n")
