@@ -9,7 +9,10 @@ fun main() {
         Netty,
         port = System.getenv("PORT")?.toInt() ?: 8080,
         host = "0.0.0.0",
-        module = Application::module
+        module = Application::module,
+        configure = {
+            callGroupSize = 20
+        }
     ).start(wait = true)
 }
 
