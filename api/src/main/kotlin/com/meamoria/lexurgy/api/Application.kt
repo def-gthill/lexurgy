@@ -27,4 +27,13 @@ fun Application.module() {
         this.requestTimeoutSeconds = System.getenv("REQUEST_TIMEOUT").toDouble()
         this.totalTimeoutSeconds = System.getenv("TOTAL_TIMEOUT").toDouble()
     }
+    install(SessionAffinity) {
+        this.affinityHeaders = System.getenv("AFFINITY_HEADERS").parseMap()
+    }
 }
+
+fun String.parseMap(): Map<String, String> =
+    split(",").map {
+        val entry = it.split(":")
+        Pair(entry[0], entry[1])
+    }.toMap()
