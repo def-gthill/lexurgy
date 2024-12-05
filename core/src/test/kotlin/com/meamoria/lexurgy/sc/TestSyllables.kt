@@ -742,6 +742,7 @@ class TestSyllables : StringSpec({
         ch("ˈkita") shouldBe "ˈki.ta"
         ch("kiˈta") shouldBe "ki.ˈta"
         ch("ˈkiˈta") shouldBe "ˈki.ˈta"
+        ch("kititiˈtita") shouldBe "ki.ti.ti.ˈti.ta"
     }
 
     "We can assign \"first\" syllable-level features in the input words without explicit syllable breaks" {

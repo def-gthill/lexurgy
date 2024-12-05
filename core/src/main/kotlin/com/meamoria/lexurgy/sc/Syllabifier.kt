@@ -200,11 +200,8 @@ class Syllabifier(
         var newIndex = 0
         for (oldIndex in oldEnds.indices) {
             result[oldIndex] = newIndex
-            newIndex += when {
-                newIndex == newEnds.size - 1 -> 0
-                oldIndex + 1 < oldEnds.size && newEnds[newIndex] >= oldEnds[oldIndex + 1] -> 0
-                newIndex + 1 < newEnds.size && oldEnds[oldIndex] >= newEnds[newIndex + 1] -> 2
-                else -> 1
+            while (newIndex < newEnds.size && newEnds[newIndex] <= oldEnds[oldIndex]) {
+                newIndex += 1
             }
         }
         return result
