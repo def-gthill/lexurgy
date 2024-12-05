@@ -4,7 +4,7 @@
 #
 
 app = "lexurgy-fly"
-primary_region = "sea"
+primary_region = "yyz"
 
 [build]
 
