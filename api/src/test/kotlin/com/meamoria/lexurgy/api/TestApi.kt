@@ -14,6 +14,7 @@ fun testApi(block: suspend ApplicationTestBuilder.() -> Unit) {
             configureSerialization()
             configureRouting()
             install(Timeouts)
+            install(SessionAffinity)
         }
         block()
     }
@@ -30,6 +31,7 @@ fun testApiWithRequestTimeout(
             install(Timeouts) {
                 this.requestTimeoutSeconds = requestTimeoutSeconds
             }
+            install(SessionAffinity)
         }
         block()
     }
