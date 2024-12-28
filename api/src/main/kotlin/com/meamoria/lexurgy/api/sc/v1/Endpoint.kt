@@ -18,7 +18,8 @@ suspend fun ApplicationCall.runScV1() {
             totalTimeoutSeconds = totalTimeoutSeconds,
             requestTimeoutSeconds = requestTimeoutSeconds,
             singleStepTimeoutSeconds = singleStepTimeoutSeconds,
-        )
+        ),
+        application.environment.log,
     )
     when (response) {
         is SuccessResponse -> respond(response)

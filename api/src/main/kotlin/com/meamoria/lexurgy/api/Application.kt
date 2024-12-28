@@ -3,6 +3,7 @@ package com.meamoria.lexurgy.api
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
+import io.ktor.server.plugins.callloging.*
 
 fun main() {
     embeddedServer(
@@ -22,6 +23,7 @@ fun Application.module() {
     }
     configureSerialization()
     configureRouting()
+    install(CallLogging)
     install(Timeouts) {
         this.singleStepTimeoutSeconds = System.getenv("SINGLE_STEP_TIMEOUT").toDouble()
         this.requestTimeoutSeconds = System.getenv("REQUEST_TIMEOUT").toDouble()

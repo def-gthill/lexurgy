@@ -3,6 +3,7 @@ package com.meamoria.lexurgy.api.sc.v1
 import com.meamoria.lexurgy.LscUserError
 import com.meamoria.lexurgy.UserError
 import com.meamoria.lexurgy.sc.*
+import io.ktor.util.logging.*
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
@@ -11,7 +12,10 @@ import kotlin.concurrent.schedule
 fun runScv1(
     request: Request,
     timeoutSettings: TimeoutSettings,
+    logger: Logger,
 ): Response {
+    logger.info("Jobs already running: ${soundChangerJobs.size}")
+
     val soundChanger = try {
         SoundChanger.fromLsc(request.changes)
     } catch (e: LscNotParsable) {
