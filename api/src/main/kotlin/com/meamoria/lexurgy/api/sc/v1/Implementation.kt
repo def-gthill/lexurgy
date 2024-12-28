@@ -4,6 +4,9 @@ import com.meamoria.lexurgy.LscUserError
 import com.meamoria.lexurgy.UserError
 import com.meamoria.lexurgy.sc.*
 import io.ktor.util.logging.*
+import java.time.Duration
+import java.time.Instant
+import java.time.temporal.Temporal
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
@@ -14,7 +17,7 @@ fun runScv1(
     timeoutSettings: TimeoutSettings,
     logger: Logger,
 ): Response {
-    logger.info("Jobs already running: ${soundChangerJobs.size}")
+    removeExpiredSessions(timeoutSettings, logger)
 
     val soundChanger = try {
         SoundChanger.fromLsc(request.changes)
@@ -60,7 +63,7 @@ fun pollScv1(jobId: String): PollResponse {
     val uuid = UUID.fromString(jobId)
     val job = soundChangerJobs[uuid] ?: return ExpiredResponse
     if (job.result != null) {
-        timer.schedule(60000) {
+        timer.schedule(job.timeoutSettings.totalTimeoutSeconds.toLong() * 1000) {
             soundChangerJobs.remove(uuid)
         }
     }
@@ -72,15 +75,39 @@ fun pollScv1(jobId: String): PollResponse {
     }
 }
 
+fun removeExpiredSessions(timeoutSettings: TimeoutSettings, logger: Logger) {
+    logger.info("Jobs already running: ${soundChangerJobs.size}")
+    for ((id, job) in soundChangerJobs) {
+        val expiryTime = job.startTime +
+                Duration.ofSeconds(2 * timeoutSettings.totalTimeoutSeconds.toLong())
+        if (Instant.now() >= expiryTime) {
+            logger.info("Removing expired job $id")
+            soundChangerJobs.remove(id)
+        }
+    }
+}
+
 private val soundChangerJobs: MutableMap<UUID, SoundChangerJob> = ConcurrentHashMap()
 
 private val timer = Timer(true)
 
-private class SoundChangerJob(
+private class SoundChangerJob private constructor (
     val soundChanger: SoundChanger,
     val request: Request,
     val timeoutSettings: TimeoutSettings,
+    val startTime: Instant,
 ) {
+    constructor(
+        soundChanger: SoundChanger,
+        request: Request,
+        timeoutSettings: TimeoutSettings,
+    ) : this(
+        soundChanger = soundChanger,
+        request = request,
+        timeoutSettings = timeoutSettings,
+        startTime = Instant.now(),
+    )
+
     @Volatile
     private var _result: Response? = null
 
