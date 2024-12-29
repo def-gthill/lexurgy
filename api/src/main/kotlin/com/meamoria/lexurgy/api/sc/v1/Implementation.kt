@@ -11,6 +11,7 @@ import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import kotlin.concurrent.schedule
+import kotlin.math.max
 
 fun runScv1(
     request: Request,
@@ -63,7 +64,7 @@ fun pollScv1(jobId: String): PollResponse {
     val uuid = UUID.fromString(jobId)
     val job = soundChangerJobs[uuid] ?: return ExpiredResponse
     if (job.result != null) {
-        timer.schedule(job.timeoutSettings.totalTimeoutSeconds.toLong() * 1000) {
+        timer.schedule(job.timeoutSettings.expirySeconds * 1000) {
             soundChangerJobs.remove(uuid)
         }
     }
@@ -79,7 +80,7 @@ fun removeExpiredSessions(timeoutSettings: TimeoutSettings, logger: Logger) {
     logger.info("Jobs already running: ${soundChangerJobs.size}")
     for ((id, job) in soundChangerJobs) {
         val expiryTime = job.startTime +
-                Duration.ofSeconds(2 * timeoutSettings.totalTimeoutSeconds.toLong())
+                Duration.ofSeconds(timeoutSettings.totalTimeoutSeconds.toLong() + timeoutSettings.expirySeconds)
         if (Instant.now() >= expiryTime) {
             logger.info("Removing expired job $id")
             soundChangerJobs.remove(id)
@@ -181,7 +182,9 @@ data class TimeoutSettings(
     val singleStepTimeoutSeconds: Double,
     val requestTimeoutSeconds: Double,
     val totalTimeoutSeconds: Double,
-)
+) {
+    val expirySeconds: Long = max(totalTimeoutSeconds.toLong(), 1)
+}
 
 private typealias ScResult = Map<String?, List<Result<String>>>
 
