@@ -96,8 +96,8 @@ elementRef: CLASSREF name;
 captureRef: INEXACT? WORD_BOUNDARY SYLLABLE_BOUNDARY? NUMBER;
 
 fancyMatrix: MATRIX_START fancyValue? (WHITESPACE fancyValue)* MATRIX_END;
-fancyValue: matrixValue | negatedValue | absentFeature | featureVariable;
-negatedValue: NEGATION matrixValue;
+fancyValue: NEGATION? positiveValue;
+positiveValue: matrixValue | absentFeature | featureVariable;
 absentFeature: NULL name;
 featureVariable: WORD_BOUNDARY name;
 

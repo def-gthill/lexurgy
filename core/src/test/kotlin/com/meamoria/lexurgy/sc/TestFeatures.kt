@@ -229,7 +229,7 @@ class TestFeatures : StringSpec({
         ch("putsu") shouldBe "kukʰu"
     }
 
-    "Even if we name the absent value, we should still be able to use the * syntax for it" {
+    "Even if we name the absent value, we can still use the * syntax for it" {
         val ch = lsc(
             """
                |Feature Manner(stop)
@@ -254,7 +254,7 @@ class TestFeatures : StringSpec({
         ch("putsu") shouldBe "kukʰu"
     }
 
-    "A negated matrix value should only match sounds that don't have that feature value" {
+    "A negated matrix value only matches sounds that don't have that feature value" {
         val ch = lsc(
             """
                 Feature Place(lab, alv, glot)
@@ -282,7 +282,7 @@ class TestFeatures : StringSpec({
         }
     }
 
-    "An absent feature value should only match sounds that don't have any value from that feature" {
+    "An absent feature value only matches sounds that don't have any value from that feature" {
         val ch = lsc(
             """
                 Feature Type(cons)
@@ -300,6 +300,24 @@ class TestFeatures : StringSpec({
 
         ch("antata") shouldBe "atana"
         ch("adtata") shouldBe "adtana"
+    }
+
+    "A negated absent feature value only matches sounds that have *some* value from that feature" {
+        val ch = lsc(
+            """
+                Feature Type(cons)
+                Feature Manner(stop, fric, nas)
+                Feature Voicing(unvcd, vcd)
+                Symbol t [cons stop unvcd]
+                Symbol d [cons stop vcd]
+                Symbol n [cons nas]
+                drop-stop:
+                [cons !*Voicing] => * / _ [stop]
+            """.trimIndent()
+        )
+
+        ch("antata") shouldBe "antata"
+        ch("adtatta") shouldBe "atata"
     }
 
     "We should be able to copy feature variables from one matrix to another using feature variables" {

@@ -1,4 +1,4 @@
-// Generated from /Users/gthill/projects/lexurgy/core/src/antlr/sc/Lsc.g4 by ANTLR 4.13.1
+// Generated from /Users/gthill/projects/lexurgy/core/src/antlr/sc/Lsc.g4 by ANTLR 4.13.2
 package com.meamoria.lexurgy.sc.java;
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
@@ -459,7 +459,7 @@ public class LscBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements Ls
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitNegatedValue(LscParser.NegatedValueContext ctx) { return visitChildren(ctx); }
+	@Override public T visitPositiveValue(LscParser.PositiveValueContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *

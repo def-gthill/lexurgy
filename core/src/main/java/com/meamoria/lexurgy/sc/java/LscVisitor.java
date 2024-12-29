@@ -1,4 +1,4 @@
-// Generated from /Users/gthill/projects/lexurgy/core/src/antlr/sc/Lsc.g4 by ANTLR 4.13.1
+// Generated from /Users/gthill/projects/lexurgy/core/src/antlr/sc/Lsc.g4 by ANTLR 4.13.2
 package com.meamoria.lexurgy.sc.java;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
@@ -389,11 +389,11 @@ public interface LscVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitFancyValue(LscParser.FancyValueContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link LscParser#negatedValue}.
+	 * Visit a parse tree produced by {@link LscParser#positiveValue}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitNegatedValue(LscParser.NegatedValueContext ctx);
+	T visitPositiveValue(LscParser.PositiveValueContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link LscParser#absentFeature}.
 	 * @param ctx the parse tree

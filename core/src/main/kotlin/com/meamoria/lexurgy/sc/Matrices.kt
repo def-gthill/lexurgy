@@ -60,16 +60,12 @@ interface MatrixValue {
         matches(declarations, matrix, bindings) != null
 }
 
-data class NegatedValue(val value: String) : MatrixValue {
+data class NegatedValue(val value: MatrixValue) : MatrixValue {
     override fun wordLevel(declarations: Declarations): WordLevel =
-        with(declarations) {
-            value.toSimpleValue().toFeature().level
-        }
+        value.wordLevel(declarations)
 
     override fun matchesNonBinding(declarations: Declarations, matrix: Matrix, bindings: Bindings): Boolean =
-        with(declarations) {
-            value.toSimpleValue() !in matrix.simpleValues
-        }
+        !value.matchesNonBinding(declarations, matrix, bindings)
 
     override fun toString(): String = "!$value"
 }

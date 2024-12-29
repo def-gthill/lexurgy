@@ -711,14 +711,18 @@ object LscWalker : LscBaseVisitor<AstNode>() {
             listVisit(ctx.fancyValue()),
         )
 
-    override fun visitFancyValue(ctx: LscParser.FancyValueContext): AstNode =
-        visit(ctx.getChild(0))
-
-    override fun visitNegatedValue(ctx: LscParser.NegatedValueContext): AstNode =
-        walkNegatedValue(
-            ctx.text,
-            visit(ctx.matrixValue()),
-        )
+    override fun visitFancyValue(ctx: LscParser.FancyValueContext): AstNode {
+        val negated = ctx.NEGATION() != null
+        val positiveValue = visit(ctx.positiveValue())
+        return if (negated) {
+            MatrixValueNode(
+                ctx.text,
+                NegatedValue((positiveValue as MatrixValueNode).value)
+            )
+        } else {
+            positiveValue
+        }
+    }
 
     override fun visitAbsentFeature(ctx: LscParser.AbsentFeatureContext): AstNode =
         walkAbsentFeature(
@@ -1176,15 +1180,6 @@ object LscWalker : LscBaseVisitor<AstNode>() {
             else -> element as Element
         }
     )
-
-    private fun walkNegatedValue(
-        text: String,
-        value: AstNode,
-    ): AstNode =
-        MatrixValueNode(
-            text,
-            NegatedValue((value as SimpleValueNode).simpleValue.name)
-        )
 
     private fun walkAbsentFeature(
         text: String,
