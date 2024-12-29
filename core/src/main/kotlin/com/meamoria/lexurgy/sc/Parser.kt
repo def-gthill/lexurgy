@@ -90,7 +90,7 @@ object LscWalker : LscBaseVisitor<AstNode>() {
         val rulesWithAnchoredStatements = visitRulesWithAnchoredStatements(statementContexts)
         val deromanizerContext = extractDeromanizerContext(statementContexts)
         val romanizerContext = extractRomanizerContext(statementContexts)
-        return walkFile(
+        return SoundChangerNodeImpl(
             ctx.text,
             featureDeclarations = listVisit(statementContexts.filterIsInstance<LscParser.FeatureDeclContext>()),
             diacriticDeclarations = listVisit(statementContexts.filterIsInstance<LscParser.DiacriticDeclContext>()),
@@ -226,17 +226,17 @@ object LscWalker : LscBaseVisitor<AstNode>() {
             LscDuplicateName("rule", "<romanizer>")
         }
 
-    override fun visitElementDecl(ctx: LscParser.ElementDeclContext): AstNode = walkElementDeclaration(
-        ctx.text,
-        visit(ctx.name()),
-        visit(ctx.ruleElement()),
-    )
+    override fun visitElementDecl(ctx: LscParser.ElementDeclContext): AstNode {
+        val elementName = (visit(ctx.name()) as NameNode).name
+        val element = visit(ctx.ruleElement())
+        return ElementDeclarationNode(ctx.text, elementName, element)
+    }
 
-    override fun visitClassDecl(ctx: LscParser.ClassDeclContext): AstNode = walkClassDeclaration(
-        ctx.text,
-        visit(ctx.name()),
-        listVisit(ctx.classElement()),
-    )
+    override fun visitClassDecl(ctx: LscParser.ClassDeclContext): AstNode {
+        val className = (visit(ctx.name()) as NameNode).name
+        val elements = listVisit(ctx.classElement())
+        return ClassDeclarationNode(ctx.text, className, elements)
+    }
 
     override fun visitClassElement(ctx: LscParser.ClassElementContext): AstNode = visit(ctx.getChild(0))
 
@@ -246,126 +246,140 @@ object LscWalker : LscBaseVisitor<AstNode>() {
                 listVisit(ctx.plusFeature()),
             )
         } else {
-            AstNodeList(
-                listOf(
-                    walkFeatureDeclaration(
-                        ctx.text,
-                        visit(ctx.name()!!),
-                        optionalVisit(ctx.nullAlias()),
-                        listVisit(ctx.featureValue()),
-                        optionalVisit(ctx.featureModifier())
-                    )
-                )
-            )
+            val name = (visit(ctx.name()) as NameNode).name
+            val values = listVisitAs<SimpleValueNode>(ctx.featureValue())
+                .map { it.simpleValue }
+            val absentAlias = optionalVisitAs<SimpleValueNode>(ctx.nullAlias())?.simpleValue
+            val level = optionalVisitAs<FeatureLevelNode>(ctx.featureModifier())?.level
+                ?: WordLevel.SEGMENT
+            val feature = Feature(name, values, absentAlias, level)
+            AstNodeList(listOf(FeatureDeclarationNode(ctx.text, feature)))
         }
 
     override fun visitFeatureModifier(ctx: LscParser.FeatureModifierContext): AstNode =
         FeatureLevelNode(ctx.text, WordLevel.SYLLABLE)
 
-    override fun visitPlusFeature(ctx: LscParser.PlusFeatureContext): AstNode = walkPlusFeature(
-        ctx.text,
-        visit(ctx.name()),
-        ctx.AT_LEAST_ONE() != null,
-        optionalVisit(ctx.featureModifier()),
-    )
+    override fun visitPlusFeature(ctx: LscParser.PlusFeatureContext): AstNode {
+        val name = (visit(ctx.name()) as NameNode).name
+        val plusOnly = ctx.AT_LEAST_ONE() != null
+        val featureLevel = optionalVisitAs<FeatureLevelNode>(ctx.featureModifier())?.level
+            ?: WordLevel.SEGMENT
+        val feature = if (plusOnly) {
+            Feature.plusOnly(name, featureLevel)
+        } else {
+            Feature.plusMinus(name, featureLevel)
+        }
+        return FeatureDeclarationNode(ctx.text, feature)
+    }
 
     override fun visitNullAlias(ctx: LscParser.NullAliasContext): AstNode = visit(ctx.featureValue())
 
     override fun visitDiacriticDecl(ctx: LscParser.DiacriticDeclContext): AstNode {
         val modifiers = ctx.diacriticModifier()
+        val diacritic = removeEscapes(ctx.text().text)
+        val matrix = visit(ctx.matrix()) as MatrixNode
         val position = when {
             modifiers.any { it.DIA_BEFORE() != null } -> ModifierPosition.BEFORE
             modifiers.any { it.DIA_FIRST() != null } -> ModifierPosition.FIRST
             else -> ModifierPosition.AFTER
         }
         val floating = modifiers.any { it.DIA_FLOATING() != null }
-        return walkDiacriticDeclaration(
+        return DiacriticDeclarationNode(
             ctx.text,
-            removeEscapes(ctx.text().text),
-            visit(ctx.matrix()),
-            position,
-            floating,
+            Diacritic(diacritic, matrix.matrix, position, floating)
         )
     }
 
     override fun visitSymbolDecl(ctx: LscParser.SymbolDeclContext): AstNode {
         val symbolNames = ctx.symbolName().map { removeEscapes(it.text) }
-        val matrix = ctx.matrix()
+        val matrix = optionalVisitAs<MatrixNode>(ctx.matrix())
         return if (matrix == null) AstNodeList(
-            symbolNames.map { walkSymbolDeclaration(it, it, null) }
+            symbolNames.map { SymbolDeclarationNode(it, Symbol(it, null)) }
         )
         else AstNodeList(
-            listOf(walkSymbolDeclaration(ctx.text, symbolNames.single(), visit(matrix)))
+            listOf(SymbolDeclarationNode(ctx.text, Symbol(symbolNames.single(), matrix.matrix)))
         )
     }
 
-    override fun visitSyllableDecl(ctx: LscParser.SyllableDeclContext): AstNode =
-        walkSyllableDecl(
-            ctx.text,
-            if (ctx.CLEAR_SYLLABLES() != null) null
-            else listVisit(ctx.syllableExpression()),
-        )
+    override fun visitSyllableDecl(ctx: LscParser.SyllableDeclContext): AstNode {
+        val patterns = if (ctx.CLEAR_SYLLABLES() != null) null else {
+            listVisitAs<SyllableExpressionNode>(ctx.syllableExpression())
+        }
+        return SyllableStructureNode(ctx.text, patterns)
+    }
 
-    override fun visitSyllableExpression(ctx: LscParser.SyllableExpressionContext): AstNode =
-        walkSyllableExpression(
-            ctx.text,
-            visit(ctx.syllablePattern()),
-            optionalVisit(ctx.compoundEnvironment()),
-            optionalVisit(ctx.matrix()),
-        )
+    override fun visitSyllableExpression(ctx: LscParser.SyllableExpressionContext): AstNode {
+        val pattern = visit(ctx.syllablePattern())
+        val environment = optionalVisitAs<CompoundEnvironmentNode>(ctx.compoundEnvironment())
+        val matrix = optionalVisitAs<MatrixNode>(ctx.matrix())
+        val patternNode = makePatternNode(ctx.text, pattern, environment)
+        return SyllableExpressionNode(ctx.text, patternNode, matrix)
+    }
+
+    private fun makePatternNode(
+        text: String,
+        pattern: AstNode,
+        environment: CompoundEnvironmentNode?
+    ): SyllablePatternNode = when (pattern) {
+        is Element -> environment?.let {
+            SimpleSyllablePatternNode(
+                text,
+                EnvironmentElement(text, pattern, it)
+            )
+        } ?: SimpleSyllablePatternNode(text, pattern)
+        is StructuredSyllablePatternNode -> environment?.let {
+            StructuredSyllablePatternNode(
+                text,
+                reluctantOnset = pattern.reluctantOnset,
+                onset = pattern.onset,
+                nucleus = pattern.nucleus,
+                coda = pattern.coda,
+                environment = it,
+            )
+        } ?: pattern
+        else -> throw AssertionError("Invalid syllable pattern")
+    }
 
     override fun visitSyllablePattern(ctx: LscParser.SyllablePatternContext): AstNode =
         visit(ctx.getChild(0))
 
-    override fun visitStructuredPattern(ctx: LscParser.StructuredPatternContext): AstNode =
-        walkStructuredPattern(
+    override fun visitStructuredPattern(ctx: LscParser.StructuredPatternContext): AstNode {
+        val reluctantOnset = optionalVisitAs<Element>(ctx.reluctantOnset())
+        val onset = visit(ctx.unconditionalRuleElement(0)) as Element
+        val nucleus = visit(ctx.unconditionalRuleElement(1)) as Element
+        val coda = optionalVisitAs<Element>(ctx.unconditionalRuleElement(2))
+        return StructuredSyllablePatternNode(
             ctx.text,
-            reluctantOnset = optionalVisit(ctx.reluctantOnset()) as Element?,
-            onset = visit(ctx.unconditionalRuleElement(0)) as Element,
-            nucleus = visit(ctx.unconditionalRuleElement(1)) as Element,
-            coda = optionalVisit(ctx.unconditionalRuleElement(2)) as Element?,
+            reluctantOnset = reluctantOnset,
+            onset = onset,
+            nucleus = nucleus,
+            coda = coda,
         )
+    }
 
     override fun visitReluctantOnset(ctx: LscParser.ReluctantOnsetContext): AstNode =
         visit(ctx.getChild(0))
 
-    private fun walkStructuredPattern(
-        text: String,
-        reluctantOnset: Element?,
-        onset: Element,
-        nucleus: Element,
-        coda: Element?,
-    ): AstNode = StructuredSyllablePatternNode(
-        text,
-        reluctantOnset = reluctantOnset,
-        onset = onset,
-        nucleus = nucleus,
-        coda = coda,
-    )
+    override fun visitDeromanizer(ctx: LscParser.DeromanizerContext): AstNode {
+        val blocks = unpackBlock(visit(ctx.block()) as UnlinkedRule)
+        val literal = ctx.LITERAL() != null
+        return UnlinkedDeromanizer(ctx.text, blocks, literal)
+    }
 
-    override fun visitDeromanizer(ctx: LscParser.DeromanizerContext): AstNode =
-        walkDeromanizer(
-            ctx.text,
-            unpackBlock(visit(ctx.block())),
-            ctx.LITERAL() != null
-        )
+    override fun visitRomanizer(ctx: LscParser.RomanizerContext): AstNode {
+        val blocks = unpackBlock(visit(ctx.block()) as UnlinkedRule)
+        val literal = ctx.LITERAL() != null
+        return UnlinkedRomanizer(ctx.text, blocks, literal)
+    }
 
-    override fun visitRomanizer(ctx: LscParser.RomanizerContext): AstNode =
-        walkRomanizer(
-            ctx.text,
-            unpackBlock(visit(ctx.block())),
-            ctx.LITERAL() != null
-        )
+    override fun visitInterRomanizer(ctx: LscParser.InterRomanizerContext): AstNode {
+        val ruleName = ctx.ruleName().text
+        val blocks = unpackBlock(visit(ctx.block()) as UnlinkedRule)
+        val literal = ctx.LITERAL() != null
+        return UnlinkedRomanizer(ctx.text, blocks, literal, stageName = ruleName)
+    }
 
-    override fun visitInterRomanizer(ctx: LscParser.InterRomanizerContext): AstNode =
-        walkIntermediateRomanizer(
-            ctx.text,
-            ctx.ruleName().text,
-            unpackBlock(visit(ctx.block())),
-            ctx.LITERAL() != null
-        )
-
-    private fun unpackBlock(block: AstNode): List<AstNode> =
+    private fun unpackBlock(block: UnlinkedRule): List<UnlinkedRule> =
         when (block) {
             is UnlinkedSequentialBlock -> block.subRules
             else -> listOf(block)
@@ -861,181 +875,6 @@ object LscWalker : LscBaseVisitor<AstNode>() {
         text.split("\\\\").joinToString("\\") {
             it.replace("\\", "")
         }
-
-    private fun walkFile(
-        text: String,
-        featureDeclarations: List<AstNode>,
-        diacriticDeclarations: List<AstNode>,
-        symbolDeclarations: List<AstNode>,
-        classDeclarations: List<AstNode>,
-        elementDeclarations: List<AstNode>,
-        deromanizer: AstNode?,
-        changeRules: List<RuleWithAnchoredStatements>,
-        romanizer: AstNode?,
-    ): AstNode = SoundChangerNodeImpl(
-        text,
-        featureDeclarations = featureDeclarations,
-        diacriticDeclarations = diacriticDeclarations,
-        symbolDeclarations = symbolDeclarations,
-        classDeclarations = classDeclarations,
-        elementDeclarations = elementDeclarations,
-        deromanizer = deromanizer,
-        changeRules = changeRules,
-        romanizer = romanizer,
-    )
-
-    private fun walkElementDeclaration(
-        text: String,
-        className: AstNode,
-        element: AstNode,
-    ): AstNode =
-        ElementDeclarationNode(
-            text,
-            (className as NameNode).name,
-            element,
-        )
-
-    private fun walkClassDeclaration(
-        text: String,
-        className: AstNode,
-        elements: List<AstNode>,
-    ): AstNode =
-        ClassDeclarationNode(
-            text,
-            (className as NameNode).name,
-            elements,
-        )
-
-    private fun walkFeatureDeclaration(
-        text: String,
-        featureName: AstNode,
-        nullAlias: AstNode?,
-        values: List<AstNode>,
-        level: AstNode?,
-    ): AstNode = FeatureDeclarationNode(
-        text,
-        Feature(
-            (featureName as NameNode).name,
-            values.map { (it as SimpleValueNode).simpleValue },
-            (nullAlias as SimpleValueNode?)?.simpleValue,
-            (level as FeatureLevelNode?)?.level ?: WordLevel.SEGMENT,
-        )
-    )
-
-    private fun walkPlusFeature(
-        text: String,
-        featureName: AstNode,
-        plusOnly: Boolean,
-        level: AstNode?,
-    ): AstNode {
-        val name = (featureName as NameNode).name
-        val featureLevel = (level as FeatureLevelNode?)?.level ?: WordLevel.SEGMENT
-        val feature = if (plusOnly) {
-            Feature.plusOnly(name, featureLevel)
-        } else {
-            Feature.plusMinus(name, featureLevel)
-        }
-        return FeatureDeclarationNode(text, feature)
-    }
-
-    private fun walkDiacriticDeclaration(
-        text: String,
-        diacritic: String,
-        matrix: AstNode,
-        position: ModifierPosition,
-        floating: Boolean,
-    ): AstNode =
-        DiacriticDeclarationNode(
-            text,
-            Diacritic(diacritic, (matrix as MatrixNode).matrix, position, floating),
-        )
-
-    private fun walkSymbolDeclaration(
-        text: String,
-        symbol: String,
-        matrix: AstNode?,
-    ): AstNode =
-        SymbolDeclarationNode(
-            text,
-            Symbol(symbol, (matrix as? MatrixNode)?.matrix),
-        )
-
-    private fun walkSyllableDecl(
-        text: String,
-        patterns: List<AstNode>?,
-    ): AstNode =
-        SyllableStructureNode(text, patterns?.map { it as SyllableExpressionNode })
-
-    private fun walkSyllableExpression(
-        text: String,
-        pattern: AstNode,
-        environment: AstNode?,
-        matrix: AstNode?,
-    ): AstNode {
-        val patternNode = when (pattern) {
-            is Element -> environment?.let {
-                SimpleSyllablePatternNode(
-                    text,
-                    EnvironmentElement(
-                        text,
-                        pattern,
-                        it as CompoundEnvironmentNode
-                    )
-                )
-            } ?: SimpleSyllablePatternNode(text, pattern)
-            is StructuredSyllablePatternNode -> environment?.let {
-                StructuredSyllablePatternNode(
-                    text,
-                    reluctantOnset = pattern.reluctantOnset,
-                    onset = pattern.onset,
-                    nucleus = pattern.nucleus,
-                    coda = pattern.coda,
-                    environment = it as CompoundEnvironmentNode,
-                )
-            } ?: pattern
-            else -> throw AssertionError("Invalid syllable pattern")
-        }
-        return SyllableExpressionNode(
-            text,
-            patternNode,
-            matrix as MatrixNode?,
-        )
-    }
-
-    private fun walkDeromanizer(
-        text: String,
-        subRules: List<AstNode>,
-        literal: Boolean,
-    ): AstNode =
-        UnlinkedDeromanizer(
-            text,
-            subRules.map { it as UnlinkedRule },
-            literal
-        )
-
-    private fun walkRomanizer(
-        text: String,
-        subRules: List<AstNode>,
-        literal: Boolean
-    ): AstNode =
-        UnlinkedRomanizer(
-            text,
-            subRules.map { it as UnlinkedRule },
-            literal
-        )
-
-    private fun walkIntermediateRomanizer(
-        text: String,
-        ruleName: String,
-        subRules: List<AstNode>,
-        literal: Boolean
-    ): AstNode =
-        UnlinkedRomanizer(
-            text,
-            subRules.map { it as UnlinkedRule },
-            literal,
-            stageName = ruleName,
-        )
 
     private data class AstNodeList(
         val elements: List<AstNode>
