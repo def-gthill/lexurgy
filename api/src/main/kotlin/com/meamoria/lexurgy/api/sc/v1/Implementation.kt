@@ -78,6 +78,9 @@ fun pollScv1(jobId: String): PollResponse {
 
 fun removeExpiredSessions(timeoutSettings: TimeoutSettings, logger: Logger) {
     logger.info("Jobs already running: ${soundChangerJobs.size}")
+    logger.info("Max memory: ${Runtime.getRuntime().maxMemory()}B")
+    logger.info("Total memory: ${Runtime.getRuntime().totalMemory()}B")
+    logger.info("Free memory: ${Runtime.getRuntime().freeMemory()}B")
     for ((id, job) in soundChangerJobs) {
         val expiryTime = job.startTime +
                 Duration.ofSeconds(timeoutSettings.totalTimeoutSeconds.toLong() + timeoutSettings.expirySeconds)
