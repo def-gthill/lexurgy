@@ -504,11 +504,19 @@ object LscWalker : LscBaseVisitor<AstNode>() {
             allModifierContexts
         ) { element, modifierContexts ->
             val modifiers = modifierContexts.getModifiers("<${blockType.text}>") {
-                it.CLEANUP() == null
+                it.CLEANUP() == null && it.BLOCK() == null
             }
-            val block = if (modifiers.isPropagate) {
-                UnlinkedPropagateBlock(element)
-            } else element
+            var block = element
+            if (modifiers.isPropagate) {
+                block = UnlinkedPropagateBlock(element)
+            }
+            if (modifiers.ruleFilter != null) {
+                val ruleFilter = when (val node = modifiers.ruleFilter) {
+                    is MatrixNode -> MatrixElement(node.text, node.matrix)
+                    else -> node as Element
+                }
+                block = FilterBlock(element, ruleFilter)
+            }
             block.tryWithMatchMode(modifiers.matchMode)
         }
         return when (blockType) {
@@ -1476,7 +1484,6 @@ object LscWalker : LscBaseVisitor<AstNode>() {
                 name,
                 declarations.runtime,
                 if (propagate) PropagateBlock(subRule) else subRule,
-                filter = filter,
             )
         }
     }
@@ -1535,6 +1542,41 @@ object LscWalker : LscBaseVisitor<AstNode>() {
                 inherited,
             )
         )
+
+        override val text: String = subRule.text
+
+        override val subRules: List<UnlinkedRule> = listOf(subRule)
+    }
+
+    private class FilterBlock(
+        val subRule: UnlinkedRule,
+        val filter: Element,
+    ) : UnlinkedRule {
+        override val numExpressions: Int = subRule.numExpressions
+
+        override fun link(
+            firstExpressionNumber: Int,
+            declarations: ParseTimeDeclarations,
+            inherited: InheritedRuleProperties
+        ): ChangeRule {
+            val inheritedFilter = inherited.filter ?: { true }
+            val combinedFilter = { segment: Segment ->
+                val thisMatches = filter.matcher(ElementContext.aloneInMain(), declarations).claim(
+                    Phrase(StandardWord.single(segment)),
+                    PhraseIndex(0, 0),
+                    Bindings(),
+                ).any { it.index.segmentIndex == 1 }
+                thisMatches && inheritedFilter(segment)
+            }
+            val inheritedWithThisFilter = inherited.copy(
+                filter = combinedFilter,
+            )
+            return subRule.link(
+                firstExpressionNumber,
+                declarations,
+                inheritedWithThisFilter,
+            )
+        }
 
         override val text: String = subRule.text
 

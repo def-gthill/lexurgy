@@ -44,7 +44,6 @@ class StandardNamedRule(
     override val declarations: Declarations,
     val mainBlock: ChangeRule,
     override val ruleType: RuleType = RuleType.NORMAL,
-    val filter: ((Segment) -> Boolean)? = null,
 ) : NamedRule {
     override operator fun invoke(phrase: Phrase): Phrase =
         mainBlock(phrase) ?: phrase

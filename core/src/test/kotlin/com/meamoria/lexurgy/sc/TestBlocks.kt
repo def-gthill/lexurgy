@@ -8,7 +8,7 @@ import io.kotest.matchers.shouldBe
 class TestBlocks : StringSpec({
     val lsc = SoundChanger.Companion::fromLsc
 
-    "We should be able to sequence rule expressions rather than having them all happen at once" {
+    "We can sequence rule expressions rather than having them all happen at once" {
         val chain = lsc(
             """
                 Symbol ts
@@ -36,7 +36,7 @@ class TestBlocks : StringSpec({
         nonchain("tatsasaha") shouldBe "hahahaa"
     }
 
-    "We should be able to use Else: to apply later rules only if earlier ones didn't match" {
+    "We can use Else: to apply later rules only if earlier ones didn't match" {
         val ch = lsc(
             """
                 Feature type(cons, vowel)
@@ -62,7 +62,7 @@ class TestBlocks : StringSpec({
         ch("tatinati") shouldBe "tatinatiˈ"
     }
 
-    "We should be able to group Then's within an Else or vice versa using parens" {
+    "We can group Then's within an Else or vice versa using parens" {
         val ch = lsc(
             """
                 foo:
@@ -80,7 +80,7 @@ class TestBlocks : StringSpec({
         ch("ikide") shouldBe "ikiff"
     }
 
-    "Flat Then-Else combinations should raise an error" {
+    "Flat Then-Else combinations raise an error" {
         shouldThrow<LscMixedBlock> {
             lsc(
                 """
@@ -93,7 +93,7 @@ class TestBlocks : StringSpec({
         }
     }
 
-    "Elses should independently apply rules to each word" {
+    "Elses independently apply rules to each word" {
         val ch = lsc(
             """
                 Feature type(cons, vowel)

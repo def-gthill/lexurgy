@@ -69,7 +69,7 @@ class TestFilters : StringSpec({
         }
     }
 
-    "Negated features should be usable in filters" {
+    "Negated features are usable in filters" {
         val ch = lsc(
             """
                 Feature Type(*cons, vowel)
@@ -90,7 +90,7 @@ class TestFilters : StringSpec({
         ch("pinɑku") shouldBe "pinɑki"
     }
 
-    "Classes should be usable as filters" {
+    "Classes are usable as filters" {
         val ch = lsc(
             """
                 Class low {a, e}
@@ -108,7 +108,7 @@ class TestFilters : StringSpec({
         ch("ibstveki") shouldBe "ibstvike"
     }
 
-    "Overlapping rules in a filter rule should be resolved in precedence order" {
+    "Overlapping rules in a filter rule are resolved in precedence order" {
         val ch = lsc(
             """
                 Feature Type(vowel)
@@ -138,5 +138,21 @@ class TestFilters : StringSpec({
         )
 
         ch("banana") shouldBe "benene"
+    }
+
+    "Filters can be applied to blocks" {
+        val ch = lsc(
+            """
+                Class stop {p, b, t, d, k, ɡ}
+                Class labial {p, b, f, v, m}
+                
+                foo @stop:
+                    unchanged
+                    then @labial:
+                        [] => x
+            """.trimIndent()
+        )
+
+        ch("batafapam") shouldBe "xatafaxam"
     }
 })
