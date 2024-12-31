@@ -392,18 +392,11 @@ object LscWalker : LscBaseVisitor<AstNode>() {
             noColon(ruleName, modifierContexts, ctx.NEWLINE(0))
         }
         val modifiers = modifierContexts.getModifiers(ruleName)
-        val ruleFilter = when (val node = modifiers.ruleFilter) {
-            is MatrixNode -> MatrixElement(node.text, node.matrix)
-            else -> node as Element?
-        }
         val mainBlock = visit(ctx.block()) as UnlinkedRule
         return UnlinkedStandardRule(
             ctx.text,
             ruleName,
-            mainBlock,
-            ruleFilter = ruleFilter,
-            matchMode = modifiers.matchMode,
-            propagate = modifiers.isPropagate,
+            mainBlock.wrapWithModifierBlocks(modifiers),
             cleanup = modifiers.isCleanup,
             deferred = modifiers.isDeferred,
         )
@@ -459,13 +452,32 @@ object LscWalker : LscBaseVisitor<AstNode>() {
         )
     }
 
+    private fun UnlinkedRule.wrapWithModifierBlocks(modifiers: RuleModifiers): UnlinkedRule {
+        var block = this
+        if (modifiers.isPropagate) {
+            block = UnlinkedPropagateBlock(block)
+        }
+        modifiers.filterElement?.let { filterElement ->
+            block = FilterBlock(block, filterElement)
+        }
+        block = block.tryWithMatchMode(modifiers.matchMode)
+        return block
+    }
+
     private data class RuleModifiers(
         val ruleFilter: AstNode?,
         val matchMode: MatchMode,
         val isPropagate: Boolean,
         val isCleanup: Boolean,
         val isDeferred: Boolean,
-    )
+    ) {
+        val filterElement: Element? = ruleFilter?.let { node ->
+            when (node) {
+                is MatrixNode -> MatrixElement(node.text, node.matrix)
+                else -> node as Element
+            }
+        }
+    }
 
     private fun noColon(
         ruleName: String, modifiers: List<LscParser.ChangeRuleModifierContext>, newline: TerminalNode
@@ -503,21 +515,11 @@ object LscWalker : LscBaseVisitor<AstNode>() {
         val blockElements = listVisitAs<UnlinkedRule>(ctx.blockElement()).zip(
             allModifierContexts
         ) { element, modifierContexts ->
-            val modifiers = modifierContexts.getModifiers("<${blockType.text}>") {
-                it.CLEANUP() == null && it.BLOCK() == null
-            }
-            var block = element
-            if (modifiers.isPropagate) {
-                block = UnlinkedPropagateBlock(element)
-            }
-            if (modifiers.ruleFilter != null) {
-                val ruleFilter = when (val node = modifiers.ruleFilter) {
-                    is MatrixNode -> MatrixElement(node.text, node.matrix)
-                    else -> node as Element
-                }
-                block = FilterBlock(element, ruleFilter)
-            }
-            block.tryWithMatchMode(modifiers.matchMode)
+            val modifiers = modifierContexts.getModifiers(
+                ruleName = "<${blockType.text}>",
+                isModifierValid = { it.CLEANUP() == null && it.BLOCK() == null }
+            )
+            element.wrapWithModifierBlocks(modifiers)
         }
         return when (blockType) {
             BlockType.SEQUENTIAL ->
@@ -1240,6 +1242,15 @@ object LscWalker : LscBaseVisitor<AstNode>() {
             inherited: InheritedRuleProperties,
         ): ChangeRule
 
+        fun tryWithMatchMode(matchMode: MatchMode): UnlinkedRule =
+            if (matchMode == MatchMode.SIMULTANEOUS) {
+                this
+            } else {
+                tryWithDirectionalMatch(matchMode)
+            }
+
+        fun tryWithDirectionalMatch(matchMode: MatchMode): UnlinkedRule
+
         val subRules: List<UnlinkedRule>
     }
 
@@ -1334,16 +1345,12 @@ object LscWalker : LscBaseVisitor<AstNode>() {
         fun withMatchMode(matchMode: MatchMode): UnlinkedSimpleChangeRule =
             UnlinkedSimpleChangeRule(text, expressions, matchMode)
 
+        override fun tryWithDirectionalMatch(matchMode: MatchMode): UnlinkedRule =
+            UnlinkedSimpleChangeRule(text, expressions, matchMode)
+
         override val subRules: List<UnlinkedRule>
             get() = emptyList()
     }
-
-    private fun UnlinkedRule.tryWithMatchMode(matchMode: MatchMode): UnlinkedRule =
-        if (matchMode == MatchMode.SIMULTANEOUS) this else
-        when (this) {
-            is UnlinkedSimpleChangeRule -> withMatchMode(matchMode)
-            else -> throw LscIllegalNestedModifier(matchMode.string)
-        }
 
     private class UnlinkedDeromanizer(
         text: String,
@@ -1384,6 +1391,10 @@ object LscWalker : LscBaseVisitor<AstNode>() {
                     ruleType = RuleType.DEROMANIZER,
                 )
             }
+        }
+
+        override fun tryWithDirectionalMatch(matchMode: MatchMode): UnlinkedRule {
+            throw LscInvalidModifier(name, matchMode.string)
         }
     }
 
@@ -1434,15 +1445,16 @@ object LscWalker : LscBaseVisitor<AstNode>() {
                 )
             }
         }
+
+        override fun tryWithDirectionalMatch(matchMode: MatchMode): UnlinkedRule {
+            throw LscInvalidModifier(name, matchMode.string)
+        }
     }
 
     internal class UnlinkedStandardRule(
         text: String,
         val name: String,
         val mainBlock: UnlinkedRule,
-        val ruleFilter: Element?,
-        val matchMode: MatchMode,
-        val propagate: Boolean,
         val cleanup: Boolean,
         val deferred: Boolean,
     ) : BaseUnlinkedRule(text, listOf(mainBlock)) {
@@ -1452,39 +1464,20 @@ object LscWalker : LscBaseVisitor<AstNode>() {
             declarations: ParseTimeDeclarations,
             inherited: InheritedRuleProperties
         ): ChangeRule {
-            val filter = if (ruleFilter != null || inherited.filter != null) {
-                val thisFilter = ruleFilter?.let { filter ->
-                    { segment: Segment ->
-                        filter.matcher(ElementContext.aloneInMain(), declarations).claim(
-                            Phrase(StandardWord.single(segment)),
-                            PhraseIndex(0, 0),
-                            Bindings(),
-                        ).any { it.index.segmentIndex == 1 }
-                    }
-                } ?: { true }
-                val inheritedFilter = inherited.filter ?: { true }
-                { segment: Segment ->
-                    thisFilter(segment) && inheritedFilter(segment)
-                }
-            } else null
-
             val subRule = linkSubRules(
                 firstExpressionNumber,
             ) { _, subRule, subFirstExpressionNumber ->
-                subRule.tryWithMatchMode(matchMode).link(
+                subRule.link(
                     subFirstExpressionNumber,
                     declarations,
-                    inherited.copy(
-                        name = name,
-                        filter = filter,
-                    )
+                    inherited.copy(name = name)
                 )
             }.single()
-            return StandardNamedRule(
-                name,
-                declarations.runtime,
-                if (propagate) PropagateBlock(subRule) else subRule,
-            )
+            return StandardNamedRule(name, declarations.runtime, subRule)
+        }
+
+        override fun tryWithDirectionalMatch(matchMode: MatchMode): UnlinkedRule {
+            throw LscIllegalNestedModifier(matchMode.string)
         }
     }
 
@@ -1504,6 +1497,10 @@ object LscWalker : LscBaseVisitor<AstNode>() {
                     subRule.link(subFirstExpressionNumber, declarations, inherited)
                 }
             )
+
+        override fun tryWithDirectionalMatch(matchMode: MatchMode): UnlinkedRule {
+            throw LscIllegalNestedModifier(matchMode.string)
+        }
     }
 
     private class UnlinkedFirstMatchingBlock(
@@ -1524,6 +1521,10 @@ object LscWalker : LscBaseVisitor<AstNode>() {
                     }
                 )
             )
+
+        override fun tryWithDirectionalMatch(matchMode: MatchMode): UnlinkedRule {
+            throw LscIllegalNestedModifier(matchMode.string)
+        }
     }
 
     private class UnlinkedPropagateBlock(
@@ -1542,6 +1543,9 @@ object LscWalker : LscBaseVisitor<AstNode>() {
                 inherited,
             )
         )
+
+        override fun tryWithDirectionalMatch(matchMode: MatchMode): UnlinkedRule =
+            UnlinkedPropagateBlock(subRule.tryWithMatchMode(matchMode))
 
         override val text: String = subRule.text
 
@@ -1578,6 +1582,9 @@ object LscWalker : LscBaseVisitor<AstNode>() {
             )
         }
 
+        override fun tryWithDirectionalMatch(matchMode: MatchMode): UnlinkedRule =
+            FilterBlock(subRule.tryWithMatchMode(matchMode), filter)
+
         override val text: String = subRule.text
 
         override val subRules: List<UnlinkedRule> = listOf(subRule)
@@ -1594,6 +1601,10 @@ object LscWalker : LscBaseVisitor<AstNode>() {
             declarations.dereferenceBlock(name).link(
                 firstExpressionNumber, declarations, inherited
             )
+
+        override fun tryWithDirectionalMatch(matchMode: MatchMode): UnlinkedRule {
+            throw LscIllegalNestedModifier(matchMode.string)
+        }
 
         override val text: String = ":$name"
 
