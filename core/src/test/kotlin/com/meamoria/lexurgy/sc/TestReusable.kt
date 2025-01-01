@@ -3,6 +3,8 @@ package com.meamoria.lexurgy.sc
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.beInstanceOf
+import io.kotest.matchers.types.shouldBeInstanceOf
 
 @Suppress("unused")
 class TestReusable : StringSpec({
@@ -116,6 +118,21 @@ class TestReusable : StringSpec({
             )
         }.also {
             it.message shouldBe "Non-class elements like \"foo\" can't be used in class declarations like \"bar\""
+        }
+    }
+
+    "Element references are checked to make sure the element is valid in context" {
+        shouldThrow<LscInvalidRuleExpression> {
+            lsc(
+                """
+                    element foo b ${'$'}
+                    bar:
+                        @foo => x
+                """.trimIndent()
+            )
+        }.also {
+            it.cause.shouldBeInstanceOf<LscIllegalStructure>()
+            it.cause!!.message shouldBe "A word boundary like \"\$\" can't be used in the input of a rule"
         }
     }
 

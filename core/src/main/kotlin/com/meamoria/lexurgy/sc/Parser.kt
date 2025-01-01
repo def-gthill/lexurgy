@@ -1342,9 +1342,6 @@ object LscWalker : LscBaseVisitor<AstNode>() {
                 }
             }
 
-        fun withMatchMode(matchMode: MatchMode): UnlinkedSimpleChangeRule =
-            UnlinkedSimpleChangeRule(text, expressions, matchMode)
-
         override fun tryWithDirectionalMatch(matchMode: MatchMode): UnlinkedRule =
             UnlinkedSimpleChangeRule(text, expressions, matchMode)
 
