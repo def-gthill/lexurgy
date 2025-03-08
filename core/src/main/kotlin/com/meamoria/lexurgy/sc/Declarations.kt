@@ -26,20 +26,20 @@ class Declarations private constructor(
     private val diacriticNameToDiacritic = normalizedDiacritics.associateBy { it.name }
     private val floatingDiacritics = normalizedDiacritics.filter { it.floating }
 
-    private val normalizedSymbols = symbols.map { it.normalize() }
-    private val symbolsAsComplexSymbols = normalizedSymbols.map { complexSymbol(it) }
-    private val symbolNameToSymbol = normalizedSymbols.associateBy { it.name }
-    private val matrixToSimpleSymbol = normalizedSymbols.associateByNotNull {
-        it.declaredMatrix?.removeExplicitDefaults()
-    }
-
     // Symbols
     private val matrixFullValueSetCache = ConcurrentHashMap<Matrix, Set<MatrixValue>>()
     private val matrixSimpleValueCache = ConcurrentHashMap<Matrix, Set<SimpleValue>>()
-    private val matrixToSymbolCache = ConcurrentHashMap<Matrix, Segment>()
+    private val matrixToSymbolCache = ConcurrentHashMap<Matrix, ComplexSymbol>()
     private val phoneticSegmentToComplexSymbolCache = ConcurrentHashMap<Segment, ComplexSymbol>()
     private val phoneticSegmentMatchCache = ConcurrentHashMap<Pair<Segment, Segment>, Boolean>()
     private val undeclaredSymbolCache = ConcurrentHashMap<String, Symbol>()
+
+    private val normalizedSymbols = symbols.map { it.normalize() }
+    private val matrixToSimpleSymbol = normalizedSymbols.associateByNotNull {
+        it.declaredMatrix?.removeExplicitDefaults()
+    }
+    private val symbolsAsComplexSymbols = normalizedSymbols.map { complexSymbol(it) }
+    private val symbolNameToSymbol = normalizedSymbols.associateBy { it.name }
 
     private val diacriticsByLevel = diacritics.groupBy { diacritic ->
             val values = diacritic.matrix.explicitSimpleValues
@@ -89,7 +89,7 @@ class Declarations private constructor(
     fun parsePhonetic(word: Word): Word = parsePhonetic(word.string)
 
     private fun Word.fixDiacriticOrder(): Word {
-        val fixed = StandardWord(segments.map { it.toMatrix().toSymbol() })
+        val fixed = StandardWord(segments.map { it.toMatrix().toSegment() })
         return if (isSyllabified()) {
             fixed.withSyllabification(
                 syllableBreaks, syllableModifiers
@@ -125,12 +125,10 @@ class Declarations private constructor(
         val thisSymbol = this.toComplexSymbol()
         if (!thisSymbol.diacritics.any { it.floating }) return this == pattern
         val patternSymbol = pattern.toComplexSymbol()
-        val symbolWithDiacritics = addDiacriticsToMatch(
-            thisSymbol.toMatrix(),
-            startingCandidates = listOf(patternSymbol),
-            availableDiacritics = floatingDiacritics
-        )
-        return (symbolWithDiacritics == this.toComplexSymbol()).also {
+        val matches = thisSymbol.symbol == patternSymbol.symbol
+                && patternSymbol.diacritics.all { it in thisSymbol.diacritics }
+                && thisSymbol.diacritics.all { it.floating || it in patternSymbol.diacritics }
+        return matches.also {
             phoneticSegmentMatchCache[this to pattern] = it
         }
     }
@@ -178,15 +176,17 @@ class Declarations private constructor(
 
     fun Segment.toMatrix(): Matrix = toComplexSymbol().toMatrix()
 
-    fun Symbol.toSegment(): Segment = Segment(name)
-
     /**
      * Creates a ``ComplexSymbol`` with the specified core and diacritics. This
      * is a member of ``Declarations`` (and the ``ComplexSymbol`` constructor is
-     * marked ``internal``) because it enforces declaration order on the diacritics.
+     * marked ``internal``) because it reduces the symbol to its canonical
+     * representation: removing duplicate or redundant diacritics, reordering
+     * diacritics into declaration order where possible.
      */
-    fun complexSymbol(coreSymbol: Symbol?, diacritics: Iterable<Diacritic> = emptyList()): ComplexSymbol =
-        ComplexSymbol(coreSymbol, normalizedDiacritics.filter { it in diacritics })
+    fun complexSymbol(coreSymbol: Symbol?, diacritics: List<Diacritic> = emptyList()): ComplexSymbol =
+        ComplexSymbol(coreSymbol, diacritics).normalize()
+
+    fun ComplexSymbol.normalize(): ComplexSymbol = toMatrix().toSymbol()
 
     fun ComplexSymbol.withDiacritic(diacritic: Diacritic): ComplexSymbol =
         complexSymbol(symbol, diacritics + diacritic)
@@ -243,17 +243,19 @@ class Declarations private constructor(
             }
         }
 
-    fun Matrix.toSymbol(): Segment {
+    fun Matrix.toSymbol(): ComplexSymbol {
         matrixToSymbolCache[this]?.let { return it }
 
         val matrix = removeExplicitDefaults()
 
-        val result = matrixToSimpleSymbol[matrix]?.toSegment()
-            ?: findSymbolWithDiacriticsMatching(matrix)?.toSegment()
+        val result = matrixToSimpleSymbol[matrix]?.let { ComplexSymbol(it) }
+            ?: findSymbolWithDiacriticsMatching(matrix)
             ?: throw LscInvalidMatrix(matrix)
 
         return result.also { matrixToSymbolCache[this] = it }
     }
+
+    fun Matrix.toSegment(): Segment = toSymbol().toSegment()
 
     fun Matrix.toModifiers(): List<Modifier> =
         toDiacritics().map { it.toModifier() }
@@ -283,7 +285,7 @@ class Declarations private constructor(
 
     private fun findSymbolWithDiacriticsMatching(matrix: Matrix): ComplexSymbol? {
         val startingCandidates = if (matrix.hasUndeclaredSymbol()) {
-            listOf(complexSymbol(matrix.undeclaredSymbol()))
+            listOf(ComplexSymbol(matrix.undeclaredSymbol()))
         } else {
             symbolsAsComplexSymbols
         }
@@ -291,48 +293,67 @@ class Declarations private constructor(
     }
 
     private fun addDiacriticsToMatch(
-        matrix: Matrix,
+        target: Matrix,
         startingCandidates: List<ComplexSymbol>,
         availableDiacritics: List<Diacritic> = normalizedDiacritics,
     ): ComplexSymbol? {
-        return recursivelyAddDiacriticsToMatch(
-            matrix,
-            startingCandidates = startingCandidates,
-            availableDiacritics = availableDiacritics,
-        )
-    }
-
-    private fun recursivelyAddDiacriticsToMatch(
-        matrix: Matrix,
-        startingCandidates: List<ComplexSymbol>,
-        availableDiacritics: List<Diacritic> = normalizedDiacritics,
-        bestDistance: Int? = null,
-    ): ComplexSymbol? {
-        if (startingCandidates.isEmpty()) return null
-        val sortedCandidates = startingCandidates.sortedBy { it.distanceTo(matrix) }
-        sortedCandidates.first().takeIf { it.distanceTo(matrix) == 0 }?.let { return it }
-        if (availableDiacritics.isEmpty()) return null
-
-        for (candidate in sortedCandidates) {
-            val candidateDistance = candidate.distanceTo(matrix)
-            if (bestDistance != null && candidateDistance >= bestDistance) return null
-            val withDiacritics = availableDiacritics.map { candidate.withDiacritic(it) }
-            recursivelyAddDiacriticsToMatch(
-                matrix,
-                withDiacritics,
-                availableDiacritics,
-                candidateDistance,
-            )?.let { return it }
+        val seen = mutableSetOf<Matrix>()
+        val viableDiacritic = viableDiacriticsFor(target, availableDiacritics)
+        var candidates = startingCandidates.map { symbol ->
+            DiacriticSearchCandidate(
+                symbol = symbol,
+                matrix = symbol.toMatrix(),
+                viableDiacritics = viableDiacritic,
+            )
+        }
+        while (candidates.isNotEmpty()) {
+            val newCandidates = mutableListOf<DiacriticSearchCandidate>()
+            for ((symbol, matrix, viableDiacritics) in candidates) {
+                if (matrix == target) {
+                    return symbol
+                } else {
+                    seen.add(matrix)
+                    for (diacritic in viableDiacritics) {
+                        val newSymbol = ComplexSymbol(symbol.symbol, symbol.diacritics + diacritic)
+                        val newMatrix = newSymbol.toMatrix().removeExplicitDefaults()
+                        if (newMatrix !in seen) {
+                            newCandidates += DiacriticSearchCandidate(
+                                symbol = newSymbol,
+                                matrix = newMatrix,
+                                viableDiacritics = viableDiacritics,
+                            )
+                        }
+                    }
+                }
+            }
+            candidates = newCandidates
         }
         return null
     }
 
-    private fun ComplexSymbol.distanceTo(matrix: Matrix): Int {
-        val symbolMatrix = toMatrix()
-        val difference = (matrix.simpleValues.filterNot { it in symbolMatrix.simpleValues } +
-                symbolMatrix.simpleValues.filterNot { it in matrix.simpleValues }
-                )
-        return difference.size
+    private data class DiacriticSearchCandidate(
+        val symbol: ComplexSymbol,
+        val matrix: Matrix,
+        val viableDiacritics: List<Diacritic>,
+    )
+
+    private fun viableDiacriticsFor(
+        target: Matrix,
+        availableDiacritics: List<Diacritic>,
+    ): List<Diacritic> {
+        val targetValuesByFeature = target.simpleValues.associateBy { it.toFeature() }
+        val valuesReachedBySomeDiacritic = availableDiacritics
+            .flatMap { it.matrix.explicitSimpleValues }
+            .toSet()
+        return availableDiacritics.filter { diacritic ->
+            val correspondingFeatures = diacritic.matrix.explicitSimpleValues.map { value ->
+                Pair(value, targetValuesByFeature.getValue(value.toFeature()))
+            }
+            correspondingFeatures.all { (diacriticValue, targetValue) ->
+                diacriticValue == targetValue ||
+                        targetValue in valuesReachedBySomeDiacritic
+            }
+        }
     }
 
     private fun Matrix.removeExplicitDefaults(): Matrix =

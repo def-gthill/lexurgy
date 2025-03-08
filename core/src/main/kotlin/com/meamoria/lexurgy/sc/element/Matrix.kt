@@ -58,13 +58,13 @@ class MatrixEmitter(val declarations: Declarations, val matrix: Matrix) :
                     val boundMatrix = matrix.bindVariables(bindings)
                     if (original.isEmpty()) {
                         try {
-                            StandardWord.single(boundMatrix.toSymbol())
+                            StandardWord.single(boundMatrix.toSegment())
                         } catch (e: LscInvalidMatrix) {
                             StandardWord.EMPTY
                         }
                     } else {
                         val resultSegments = original.segments.map {
-                            it.toMatrix().update(boundMatrix).toSymbol()
+                            it.toMatrix().update(boundMatrix).toSegment()
                         }
                         original.recoverStructure(
                             StandardWord(resultSegments)

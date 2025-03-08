@@ -3,7 +3,9 @@ package com.meamoria.lexurgy.sc
 import com.meamoria.lexurgy.normalizeCompose
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.beInstanceOf
 
 @Suppress("unused")
 class TestDiacritics : StringSpec({
@@ -34,7 +36,7 @@ class TestDiacritics : StringSpec({
         ch("petetsa") shouldBe "pecetʰa"
     }
 
-    "Multiple-character diacritics and diacritics with special characters should still work" {
+    "Multiple-character diacritics and diacritics with special characters still work" {
         val ch = lsc(
             """
                 Feature Tone(*low, med, high)
@@ -48,7 +50,7 @@ class TestDiacritics : StringSpec({
         ch("sasktponesktwisuskt") shouldBe "sfn+-*aponesktwisfn+-*u"
     }
 
-    "Diacritic search should ignore expicit absent values" {
+    "Diacritic search ignores expicit absent values" {
         val ch = lsc(
             """
                 Feature Type(*cons, vowel)
@@ -72,6 +74,129 @@ class TestDiacritics : StringSpec({
         ch("putatu") shouldBe "pútatu"
         ch("ichigaku") shouldBe "íchigaku"
         ch("epistrefu") shouldBe "épistrefu"
+    }
+
+    "Diacritic search prioritizes using the fewest diacritics" {
+        val ch = lsc(
+            """
+                Feature +a, +b, +c, +d, +x
+                
+                Diacritic a [+a]
+                Diacritic b [+b]
+                Diacritic c [+c]
+                Diacritic d [-d]
+                Diacritic e [+a +b +c +d]
+                
+                Symbol x [+x]
+                
+                rule:
+                    x => [+a +b +c]
+            """.trimIndent()
+        )
+
+        ch("x") shouldBe "xed"
+    }
+
+    "Diacritic search can efficiently find a match even with a huge number of diacritics" {
+        val ch = lsc(
+            """
+                Feature +a, +b, +c, +d, +e, +f, +g, +h, +i, +j, +k, +l, +m, +n, +o, +p
+                
+                Diacritic a [+a]
+                Diacritic b [+b]
+                Diacritic c [+c]
+                Diacritic d [+d]
+                Diacritic e [+e]
+                Diacritic f [+f]
+                Diacritic g [+g]
+                Diacritic h [+h]
+                Diacritic i [+i]
+                Diacritic j [+j]
+                Diacritic k [+k]
+                Diacritic l [+l]
+                Diacritic m [+m]
+                Diacritic n [+n]
+                Diacritic o [+o]
+                Diacritic p [+p]
+                
+                Symbol q [+c +d +h]
+                
+                rule:
+                    q => [+f +g +l +m +n +o]
+                
+            """.trimIndent()
+        )
+
+        ch("q") shouldBe "qfglmno"
+    }
+
+    "Diacritic search can efficiently find a match even with a huge number of diacritics" {
+        val ch = lsc(
+            """
+                Feature +a, +b, +c, +d, +e, +f, +g, +h, +i, +j, +k, +l, +m, +n, +o, +p
+                
+                Diacritic a [+a]
+                Diacritic b [+b]
+                Diacritic c [+c]
+                Diacritic d [+d]
+                Diacritic e [+e]
+                Diacritic f [+f]
+                Diacritic g [+g]
+                Diacritic h [+h]
+                Diacritic i [+i]
+                Diacritic j [+j]
+                Diacritic k [+k]
+                Diacritic l [+l]
+                Diacritic m [+m]
+                Diacritic n [+n]
+                Diacritic o [+o]
+                Diacritic p [+p]
+                
+                Symbol q [+c +d +h]
+                
+                rule:
+                    q => [+f +g +l +m +n +o]
+                
+            """.trimIndent()
+        )
+
+        ch("q") shouldBe "qfglmno"
+    }
+
+    "Diacritic search can efficiently rule out a match even with a huge number of diacritics" {
+        val ch = lsc(
+            """
+                Feature +a, +b, +c, +d, +e, +f, +g, +h, +i, +j, +k, +l, +m, +n, +o, +p
+                
+                Diacritic a [+a]
+                Diacritic b [+b]
+                Diacritic c [+c]
+                Diacritic d [+d]
+                Diacritic e [+e]
+                Diacritic f [+f]
+                Diacritic g [+g]
+                Diacritic h [+h]
+                Diacritic i [+i]
+                Diacritic j [+j]
+                Diacritic k [+k]
+                Diacritic m [+m]
+                Diacritic n [+n]
+                Diacritic o [+o]
+                Diacritic p [+p]
+                
+                Symbol q [+c +d +h]
+                
+                rule:
+                    q => [+f +g +l +m +n +o]
+                
+            """.trimIndent()
+        )
+
+        shouldThrow<LscRuleNotApplicable> {
+            ch("q")
+        }.also {
+            it.cause should beInstanceOf<LscInvalidMatrix>()
+        }
     }
 
     "We should be able to give diacritics matrices with all default values" {
@@ -145,7 +270,7 @@ class TestDiacritics : StringSpec({
         ch("pageid") shouldBe "pakeit"
     }
 
-    "Diacritics should be able to give a diacritic feature to an undeclared symbol" {
+    "Diacritics can give a diacritic feature to an undeclared symbol" {
         val ch = lsc(
             """
                 Feature Length(*short, long)
@@ -169,36 +294,6 @@ class TestDiacritics : StringSpec({
         ch("keət") shouldBe "kɛːt"
         ch("sæek") shouldBe "siːk"
         ch("bætɔm") shouldBe "bætɔm"
-    }
-
-    "Floating diacritics should still float when on undeclared symbols" {
-        val ch = lsc(
-            """
-                Feature Stress(*unstressed, stressed)
-                Feature Tone(*lowtone, hightone)
-                Feature Atr(*natr, atr)
-                Diacritic ˈ (before) (floating) [stressed]
-                Diacritic ́  (floating) [hightone]
-                Diacritic ̘  [atr]
-                Class front {e, i}
-                w-back:
-                    {e, i} => {a, u} / _ w
-                stress-raise:
-                    {ˈa, ˈe} => {ˈu, ˈi}
-                tone-atr:
-                    {ú, í} => {u̘, i̘}
-                j-front:
-                    {a, u} => {e, i} / _ j
-                coalesce:
-                    ui => ú
-                palatalization:
-                    t => tʃ / _ @front
-            """.trimIndent()
-        )
-
-        ch("tˈewtáj") shouldBe "tˈuwtʃéj"
-        ch("tˈájtaj") shouldBe "tˈu̘jtʃej"
-        ch("tˈuitui") shouldBe "tˈútú"
     }
 
     "Duplicate diacritic declarations produce an LscDuplicateName" {
@@ -243,7 +338,7 @@ class TestDiacritics : StringSpec({
         }
     }
 
-    "Symbol literals should match symbols with floating diacritics" {
+    "Symbol literals match symbols with floating diacritics" {
         val ch = lsc(
             """
                 Feature Height(low, high)
@@ -278,7 +373,7 @@ class TestDiacritics : StringSpec({
         ch("tˈuitui") shouldBe "tˈútú"
     }
 
-    "Matrix to literal changes should preserve floating diacritics" {
+    "Matrix to literal changes preserve floating diacritics" {
         val ch = lsc(
             """
                 Feature +hightone, +long
@@ -291,6 +386,36 @@ class TestDiacritics : StringSpec({
         )
 
         ch("piːkuː") shouldBe "píːkíː".normalizeCompose()
+    }
+
+    "Floating diacritics still float when on undeclared symbols" {
+        val ch = lsc(
+            """
+                Feature Stress(*unstressed, stressed)
+                Feature Tone(*lowtone, hightone)
+                Feature Atr(*natr, atr)
+                Diacritic ˈ (before) (floating) [stressed]
+                Diacritic ́  (floating) [hightone]
+                Diacritic ̘  [atr]
+                Class front {e, i}
+                w-back:
+                    {e, i} => {a, u} / _ w
+                stress-raise:
+                    {ˈa, ˈe} => {ˈu, ˈi}
+                tone-atr:
+                    {ú, í} => {u̘, i̘}
+                j-front:
+                    {a, u} => {e, i} / _ j
+                coalesce:
+                    ui => ú
+                palatalization:
+                    t => tʃ / _ @front
+            """.trimIndent()
+        )
+
+        ch("tˈewtáj") shouldBe "tˈuwtʃéj"
+        ch("tˈájtaj") shouldBe "tˈu̘jtʃej"
+        ch("tˈuitui") shouldBe "tˈútú"
     }
 
     "Symbol literals with ! after them should force an exact match" {
