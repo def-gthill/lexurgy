@@ -187,5 +187,5 @@ STR: ANY+;
 
 fragment CHAR: [A-Za-z0-9];
 fragment DIGIT: [0-9];
-fragment ANY: ('\\' .) | ~[ \\,.=>()*[\]{}+?/\-_:!~$@#&\n\r];
+fragment ANY: ('\\' .) | ~[\p{White_Space}\\,.=>()*[\]{}+?/\-_:!~$@#&];
 fragment COMMENT_START: '#';

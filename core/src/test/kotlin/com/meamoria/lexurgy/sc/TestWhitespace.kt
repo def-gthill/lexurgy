@@ -139,4 +139,10 @@ class TestWhitespace : StringSpec({
         lsc("Class foo { f, o }")
         lsc("rule:\n{ a, b } => { c, d }")
     }
+
+    "We can use tabs as whitespace" {
+        val ch = lsc("rule:\na\t=>\tb")
+
+        ch("aaa") shouldBe "bbb"
+    }
 })
