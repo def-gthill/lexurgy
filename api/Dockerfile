@@ -1,4 +1,4 @@
-FROM openjdk:11
+FROM eclipse-temurin:25
 EXPOSE 8080:8080
 RUN mkdir /app
 COPY ./build/install/api/bin /app/bin
