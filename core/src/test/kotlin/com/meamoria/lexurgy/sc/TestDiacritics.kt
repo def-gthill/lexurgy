@@ -57,14 +57,14 @@ class TestDiacritics : StringSpec({
                 Feature Height(*low, high)
                 Feature Depth(*front, back)
                 Feature Stress(*unstr, str)
-        
+
                 Diacritic ́  [str]
-        
+
                 Symbol a [vowel low back]
                 Symbol e [vowel low front]
                 Symbol i [vowel high front]
                 Symbol u [vowel high back]
-        
+
                 stress [vowel]:
                 [] => [str] / $ _
             """.trimIndent()
@@ -80,15 +80,15 @@ class TestDiacritics : StringSpec({
         val ch = lsc(
             """
                 Feature +a, +b, +c, +d, +x
-                
+
                 Diacritic a [+a]
                 Diacritic b [+b]
                 Diacritic c [+c]
                 Diacritic d [-d]
                 Diacritic e [+a +b +c +d]
-                
+
                 Symbol x [+x]
-                
+
                 rule:
                     x => [+a +b +c]
             """.trimIndent()
@@ -101,7 +101,7 @@ class TestDiacritics : StringSpec({
         val ch = lsc(
             """
                 Feature +a, +b, +c, +d, +e, +f, +g, +h, +i, +j, +k, +l, +m, +n, +o, +p
-                
+
                 Diacritic a [+a]
                 Diacritic b [+b]
                 Diacritic c [+c]
@@ -118,45 +118,12 @@ class TestDiacritics : StringSpec({
                 Diacritic n [+n]
                 Diacritic o [+o]
                 Diacritic p [+p]
-                
+
                 Symbol q [+c +d +h]
-                
+
                 rule:
                     q => [+f +g +l +m +n +o]
-                
-            """.trimIndent()
-        )
 
-        ch("q") shouldBe "qfglmno"
-    }
-
-    "Diacritic search can efficiently find a match even with a huge number of diacritics" {
-        val ch = lsc(
-            """
-                Feature +a, +b, +c, +d, +e, +f, +g, +h, +i, +j, +k, +l, +m, +n, +o, +p
-                
-                Diacritic a [+a]
-                Diacritic b [+b]
-                Diacritic c [+c]
-                Diacritic d [+d]
-                Diacritic e [+e]
-                Diacritic f [+f]
-                Diacritic g [+g]
-                Diacritic h [+h]
-                Diacritic i [+i]
-                Diacritic j [+j]
-                Diacritic k [+k]
-                Diacritic l [+l]
-                Diacritic m [+m]
-                Diacritic n [+n]
-                Diacritic o [+o]
-                Diacritic p [+p]
-                
-                Symbol q [+c +d +h]
-                
-                rule:
-                    q => [+f +g +l +m +n +o]
-                
             """.trimIndent()
         )
 
@@ -167,7 +134,7 @@ class TestDiacritics : StringSpec({
         val ch = lsc(
             """
                 Feature +a, +b, +c, +d, +e, +f, +g, +h, +i, +j, +k, +l, +m, +n, +o, +p
-                
+
                 Diacritic a [+a]
                 Diacritic b [+b]
                 Diacritic c [+c]
@@ -183,12 +150,12 @@ class TestDiacritics : StringSpec({
                 Diacritic n [+n]
                 Diacritic o [+o]
                 Diacritic p [+p]
-                
+
                 Symbol q [+c +d +h]
-                
+
                 rule:
                     q => [+f +g +l +m +n +o]
-                
+
             """.trimIndent()
         )
 
@@ -209,22 +176,22 @@ class TestDiacritics : StringSpec({
                 Feature height(low, high)
                 Feature depth(front, central, back)
                 Feature +syllabic
-                
+
                 Diacritic ̥  [-voice]
                 Diacritic ̯  [-syllabic]
-                
+
                 Symbol m [labial nasal +voice]
                 Symbol n [alveolar nasal +voice]
                 Symbol a [low central +syllabic +vowel]
                 Symbol i [high front +syllabic +vowel]
                 Symbol u [high back +syllabic +vowel]
-                
+
                 devoice:
                     h [nasal] => * [-voice]
-                
+
                 desyllabify:
                     [high +vowel] => [-syllabic] / [+vowel] _
-                
+
                 voice:
                     [nasal -voice] => [+voice] / [+vowel] _ [+vowel]
             """.trimIndent()
@@ -244,7 +211,7 @@ class TestDiacritics : StringSpec({
                 Symbol t [alveolar]
                 Diacritic ⁿ (before) [prenasalized]
                 Diacritic ʰ [preaspirated] (before)
-                
+
                 swallow-nasal:
                     n [preaspirated] => * [*Preaspirated prenasalized]
             """.trimIndent()
@@ -279,13 +246,13 @@ class TestDiacritics : StringSpec({
                 Diacritic ˈ [stressed]
                 Class vowel {a, e, i, ɔ, u, ɛ, ə, æ}
                 Class cons {b, t, k, m, s}
-                
+
                 stress-first-syllable @vowel:
                 [] => [stressed] / $ _
-                
+
                 stressed-vowel-clusters-merge:
                 {eˈə, æˈə, əˈæ, eˈæ, æˈe, əˈe} => {ɛːˈ, aːˈ, ɛːˈ, aːˈ, iːˈ, aːˈ}
-                
+
                 remove-stress:
                 [stressed] => [unstressed]
             """.trimIndent()
@@ -379,7 +346,7 @@ class TestDiacritics : StringSpec({
                 Feature +hightone, +long
                 Diacritic ́  (floating) [+hightone]
                 Diacritic ː (floating) [+long]
-                
+
                 tonogenesis:
                     [+long] => í / {p, t, k} _
             """.trimIndent()
@@ -499,7 +466,7 @@ class TestDiacritics : StringSpec({
 
                 Symbol e [vowel]
                 Symbol ç [con]
-                
+
                 rule:
                     [con] => x
             """.trimIndent()
