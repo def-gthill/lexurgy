@@ -3,6 +3,7 @@ package com.meamoria.lexurgy.sc
 import com.meamoria.lexurgy.normalizeCompose
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.doubles.shouldBeLessThan
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.beInstanceOf
@@ -100,7 +101,7 @@ class TestDiacritics : StringSpec({
     "Diacritic search can efficiently find a match even with a huge number of diacritics" {
         val ch = lsc(
             """
-                Feature +a, +b, +c, +d, +e, +f, +g, +h, +i, +j, +k, +l, +m, +n, +o, +p
+                Feature +a, +b, +c, +d, +e, +f, +g, +h, +i, +j, +k, +l, +m, +n, +o, +p, +r, +s, +t, +u, +v, +w, +x, +y, +z
 
                 Diacritic a [+a]
                 Diacritic b [+b]
@@ -118,6 +119,15 @@ class TestDiacritics : StringSpec({
                 Diacritic n [+n]
                 Diacritic o [+o]
                 Diacritic p [+p]
+                Diacritic r [+r]
+                Diacritic s [+s]
+                Diacritic t [+t]
+                Diacritic u [+u]
+                Diacritic v [+v]
+                Diacritic w [+w]
+                Diacritic x [+x]
+                Diacritic y [+y]
+                Diacritic z [+z]
 
                 Symbol q [+c +d +h]
 
@@ -128,6 +138,74 @@ class TestDiacritics : StringSpec({
         )
 
         ch("q") shouldBe "qfglmno"
+    }
+
+    "Diacritic search can efficiently find a match even with a huge number of opposing diacritics" {
+        val ch = lsc(
+            """
+                Feature +a, +b, +c, +d, +e, +f, +g, +h, +i, +j, +k, +l, +m, +n, +o, +p, +r, +s, +t, +u, +v, +w, +x, +y, +z
+
+                Diacritic a [+a]
+                Diacritic b [+b]
+                Diacritic c [+c]
+                Diacritic d [+d]
+                Diacritic e [+e]
+                Diacritic f [+f]
+                Diacritic g [+g]
+                Diacritic h [+h]
+                Diacritic i [+i]
+                Diacritic j [+j]
+                Diacritic k [+k]
+                Diacritic l [+l]
+                Diacritic m [+m]
+                Diacritic n [+n]
+                Diacritic o [+o]
+                Diacritic p [+p]
+                Diacritic r [+r]
+                Diacritic s [+s]
+                Diacritic t [+t]
+                Diacritic u [+u]
+                Diacritic v [+v]
+                Diacritic w [+w]
+                Diacritic x [+x]
+                Diacritic y [+y]
+                Diacritic z [+z]
+                Diacritic A [-a]
+                Diacritic B [-b]
+                Diacritic C [-c]
+                Diacritic D [-d]
+                Diacritic E [-e]
+                Diacritic F [-f]
+                Diacritic G [-g]
+                Diacritic H [-h]
+                Diacritic I [-i]
+                Diacritic J [-j]
+                Diacritic K [-k]
+                Diacritic L [-l]
+                Diacritic M [-m]
+                Diacritic N [-n]
+                Diacritic O [-o]
+                Diacritic P [-p]
+                Diacritic R [-r]
+                Diacritic S [-s]
+                Diacritic T [-t]
+                Diacritic U [-u]
+                Diacritic V [-v]
+                Diacritic W [-w]
+                Diacritic X [-x]
+                Diacritic Y [-y]
+                Diacritic Z [-z]
+
+
+                Symbol q [+c +d +h]
+
+                rule:
+                    q => [+f +g +l +m +n +o]
+
+            """.trimIndent()
+        )
+
+        ch.change(listOf("q"), SoundChangeOptions(singleStepTimeoutSeconds = 0.1)) shouldBe listOf("qfglmno")
     }
 
     "Diacritic search can efficiently rule out a match even with a huge number of diacritics" {

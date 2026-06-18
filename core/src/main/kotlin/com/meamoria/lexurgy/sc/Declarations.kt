@@ -42,19 +42,19 @@ class Declarations private constructor(
     private val symbolNameToSymbol = normalizedSymbols.associateBy { it.name }
 
     private val diacriticsByLevel = diacritics.groupBy { diacritic ->
-            val values = diacritic.matrix.explicitSimpleValues
-            val level = values.first().wordLevel(this)
-            val firstConflictingValue = values.firstOrNull { it.wordLevel(this) != level }
-            if (firstConflictingValue != null) {
-                throw LscInvalidFeatureLevel(
-                    firstConflictingValue.name,
-                    "a ${level.text}-level diacritic",
-                    firstConflictingValue.wordLevel(this),
-                    listOf(level),
-                )
-            }
-            level
+        val values = diacritic.matrix.explicitSimpleValues
+        val level = values.first().wordLevel(this)
+        val firstConflictingValue = values.firstOrNull { it.wordLevel(this) != level }
+        if (firstConflictingValue != null) {
+            throw LscInvalidFeatureLevel(
+                firstConflictingValue.name,
+                "a ${level.text}-level diacritic",
+                firstConflictingValue.wordLevel(this),
+                listOf(level),
+            )
         }
+        level
+    }
 
     private val phoneticParser = PhoneticParser(
         (symbols + normalizedSymbols).map { it.name },
@@ -349,10 +349,16 @@ class Declarations private constructor(
             val correspondingFeatures = diacritic.matrix.explicitSimpleValues.map { value ->
                 Pair(value, targetValuesByFeature.getValue(value.toFeature()))
             }
-            correspondingFeatures.all { (diacriticValue, targetValue) ->
-                diacriticValue == targetValue ||
-                        targetValue in valuesReachedBySomeDiacritic
-            }
+            // The diacritic must move *something* towards the target.
+            correspondingFeatures.any { (diacriticValue, targetValue) ->
+                diacriticValue == targetValue
+            } &&
+                    // All features the diacritic sets *away from* the target must have their
+                    // target value reachable by some other diacritic.
+                    correspondingFeatures.all { (diacriticValue, targetValue) ->
+                        diacriticValue == targetValue ||
+                                targetValue in valuesReachedBySomeDiacritic
+                    }
         }
     }
 
@@ -579,7 +585,13 @@ class Declarations private constructor(
             val valueToFeature = valueToFeature(features)
             matrix.explicitSimpleValues.checkDuplicates(
                 { listOf(valueToFeature.getValue(it)) },
-                { feature, new, existing -> throw RepeatedFeature(matrix, feature.name, listOf(existing.name, new.name))}
+                { feature, new, existing ->
+                    throw RepeatedFeature(
+                        matrix,
+                        feature.name,
+                        listOf(existing.name, new.name)
+                    )
+                }
             )
         }
 
