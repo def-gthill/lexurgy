@@ -29,7 +29,7 @@ class Syllabification(
     }
 
     private fun List<Modifier>?.concat(): String =
-        (this ?: emptyList()).joinToString { it.string }
+        (this ?: emptyList()).joinToString("") { it.string }
 
     fun normalize(parser: PhoneticParser): Syllabification =
         Syllabification(

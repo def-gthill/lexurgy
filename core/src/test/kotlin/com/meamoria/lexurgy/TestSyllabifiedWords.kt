@@ -16,12 +16,14 @@ class TestSyllabifiedWords : FreeSpec({
     val shine = word("sc/ei/n||ʰ))`")
     val startBreak = word("//f/oo")
     val endBreak = word("f/oo//")
+    val multiple = word("f/oo))`^")
     val empty = StandardWord.EMPTY
     val breakOnly = StandardWord.SYLLABLE_BREAK_ONLY
 
     val stress = Modifier("ˈ", ModifierPosition.BEFORE)
     val h = Modifier("ʰ", ModifierPosition.FIRST)
     val backquote = Modifier("`", ModifierPosition.AFTER)
+    val caret = Modifier("^", ModifierPosition.AFTER)
 
     "The \"string\" value of a syllabified word should include syllable markup" {
         banana.string shouldBe "ba.na.na"
@@ -29,6 +31,7 @@ class TestSyllabifiedWords : FreeSpec({
         shine.string shouldBe "sʰcein`"
         startBreak.string shouldBe ".foo"
         endBreak.string shouldBe "foo."
+        multiple.string shouldBe "foo`^"
         breakOnly.string shouldBe "."
     }
 
@@ -74,6 +77,9 @@ class TestSyllabifiedWords : FreeSpec({
         )
         startBreak.syllableModifiers shouldBe emptyMap()
         endBreak.syllableModifiers shouldBe emptyMap()
+        multiple.syllableModifiers shouldBe mapOf(
+            0 to listOf(backquote, caret)
+        )
     }
 
     "Syllabified words return syllable modifiers for any index in the syllable" {
