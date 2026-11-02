@@ -430,7 +430,7 @@ class TestDiacritics : StringSpec({
             """.trimIndent()
         )
 
-        ch("piːkuː") shouldBe "píːkíː".normalizeCompose()
+        ch("piːkuː") shouldBe "píːkíː"
     }
 
     "Floating diacritics still float when on undeclared symbols" {
